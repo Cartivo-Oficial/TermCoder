@@ -9,6 +9,8 @@ import { WebSocketServer, type WebSocket } from "ws";
 import {
   loadConfig,
   PermissionManager,
+  renderSessionHtml,
+  renderSessionMarkdown,
   Session,
   SessionStore,
   ToolRegistry,
@@ -106,6 +108,25 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     const id = parts[1]!;
     if (!ctx.store.exists(id)) return sendJson(res, 404, { error: "session not found" });
     return sendJson(res, 200, ctx.store.load(id));
+  }
+
+  // Shareable transcript: HTML by default, Markdown with ?format=md.
+  if (
+    req.method === "GET" &&
+    parts.length === 3 &&
+    parts[0] === "sessions" &&
+    parts[2] === "share"
+  ) {
+    const id = parts[1]!;
+    if (!ctx.store.exists(id)) return sendJson(res, 404, { error: "session not found" });
+    const record = ctx.store.load(id);
+    const format = url.searchParams.get("format");
+    if (format === "md" || format === "markdown") {
+      res.writeHead(200, { "content-type": "text/markdown; charset=utf-8" });
+      return void res.end(renderSessionMarkdown(record));
+    }
+    res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    return void res.end(renderSessionHtml(record));
   }
 
   sendJson(res, 404, { error: "not found" });

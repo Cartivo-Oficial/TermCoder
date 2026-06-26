@@ -36,6 +36,13 @@ export {
 } from "./plugin/plugin";
 
 export {
+  renderSessionHtml,
+  renderSessionMarkdown,
+  transcriptSegments,
+  type TranscriptSegment,
+} from "./share/share";
+
+export {
   SessionStore,
   defaultSessionsDir,
   type SessionRecord,

@@ -130,4 +130,21 @@ describe("server", () => {
     expect(types).toContain("done");
     expect(existsSync(join(dir, "hello.ts"))).toBe(true);
   });
+
+  it("serves a shareable transcript as HTML and Markdown", async () => {
+    const record = store.create({ cwd: dir, model: "m", title: "Shared" });
+    record.messages.push({ role: "user", content: "hi <b>there</b>" });
+    store.save(record);
+
+    const html = await fetch(`${base()}/sessions/${record.id}/share`);
+    expect(html.status).toBe(200);
+    expect(html.headers.get("content-type")).toMatch(/text\/html/);
+    const htmlBody = await html.text();
+    expect(htmlBody).toContain("<!doctype html>");
+    expect(htmlBody).toContain("&lt;b&gt;there&lt;/b&gt;");
+
+    const md = await fetch(`${base()}/sessions/${record.id}/share?format=md`);
+    expect(md.headers.get("content-type")).toMatch(/text\/markdown/);
+    expect(await md.text()).toContain("# Shared");
+  });
 });

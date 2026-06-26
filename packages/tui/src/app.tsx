@@ -1,7 +1,10 @@
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { useRef, useState } from "react";
 import { Box, useApp } from "ink";
 import {
   PermissionManager,
+  renderSessionHtml,
   Session,
   SessionStore,
   ToolRegistry,
@@ -22,6 +25,7 @@ const HELP = [
   "  /new               start a new session",
   "  /sessions          list saved sessions",
   "  /model             show the active model",
+  "  /share             export this session to an HTML file",
   "  /clear             clear the screen",
   "  /exit              quit",
 ].join("\n");
@@ -157,6 +161,16 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
       case "model":
         push({ kind: "notice", text: `Model: ${config.model}` });
         break;
+      case "share": {
+        const file = join(cwd, `termcoder-${session.record.id.slice(0, 8)}.html`);
+        try {
+          writeFileSync(file, renderSessionHtml(session.record), "utf8");
+          push({ kind: "notice", text: `Saved transcript to ${file}` });
+        } catch (err) {
+          push({ kind: "error", text: `Could not write transcript: ${String(err)}` });
+        }
+        break;
+      }
       case "exit":
       case "quit":
         exit();

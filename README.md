@@ -27,9 +27,13 @@ rewrite.
 - `POST /sessions` — create a session (`{ "cwd": "..." }`) → session record
 - `GET /sessions` — list sessions
 - `GET /sessions/:id` — fetch one session
+- `GET /sessions/:id/share` — a shareable transcript (HTML; `?format=md` for Markdown)
 - `WS /sessions/:id/stream` — send `{ "type": "prompt", "text": "..." }`; receive the
   core's event stream. On `{ "type": "permission-request", "id", "request" }`, reply with
   `{ "type": "permission-decision", "id", "decision": "allow" | "deny" | "allow-always" }`.
+
+In the TUI, `/share` writes the current session to a self-contained HTML file you can open
+in a browser or send to someone.
 
 ## MCP servers
 
