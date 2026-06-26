@@ -38,6 +38,9 @@ importers:
       tinyglobby:
         specifier: ^0.2.10
         version: 0.2.17
+      vscode-jsonrpc:
+        specifier: ^8.2.1
+        version: 8.2.1
       zod:
         specifier: ^3.24.1
         version: 3.25.76
@@ -1656,6 +1659,10 @@ packages:
       jsdom:
         optional: true
 
+  vscode-jsonrpc@8.2.1:
+    resolution: {integrity: sha512-kdjOSJ2lLIn7r1rtrMbbNCHjyMPfRnowdKjBQ+mGq6NAW5QY2bEZC/khaC5OR8svbbjvLEaIXkOq45e2X9BIbQ==}
+    engines: {node: '>=14.0.0'}
+
   which@2.0.2:
     resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}
     engines: {node: '>= 8'}
@@ -3053,6 +3060,8 @@ snapshots:
       - sugarss
       - supports-color
       - terser
+
+  vscode-jsonrpc@8.2.1: {}
 
   which@2.0.2:
     dependencies:

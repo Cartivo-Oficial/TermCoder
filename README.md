@@ -55,6 +55,26 @@ server both report connection status); a server that fails doesn't block the oth
 Tools the server marks read-only run automatically; the rest are gated under the `mcp`
 permission. A server that fails to connect is reported but never blocks startup.
 
+## Language servers (LSP)
+
+Configure language servers and termcoder exposes a `diagnostics` tool that runs the
+right server for a file's extension and returns its errors/warnings to the agent:
+
+```json
+{
+  "lsp": {
+    "typescript": {
+      "command": "typescript-language-server",
+      "args": ["--stdio"],
+      "extensions": [".ts", ".tsx", ".js", ".jsx"]
+    }
+  }
+}
+```
+
+The agent can call `diagnostics` after editing a file to check its work. Servers launch
+at startup; one that fails to start is reported but never blocks the others.
+
 ## Development
 
 ```bash

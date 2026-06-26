@@ -1,5 +1,11 @@
 import { render } from "ink";
-import { builtinTools, connectMcpServers, loadConfig, ToolRegistry } from "@termcoder/core";
+import {
+  builtinTools,
+  connectLspServers,
+  connectMcpServers,
+  loadConfig,
+  ToolRegistry,
+} from "@termcoder/core";
 import { App } from "./app";
 
 async function main() {
@@ -27,20 +33,26 @@ async function main() {
     );
   }
 
-  // Connect any configured MCP servers and fold their tools into the registry.
+  // Connect configured MCP and LSP servers and fold their tools into the registry.
   const mcp = await connectMcpServers(config);
-  const registry = new ToolRegistry([...builtinTools, ...mcp.tools]);
-  const notices = mcp.servers.map((s) =>
-    s.ok
-      ? `MCP "${s.name}" connected — ${s.toolCount} tool(s).`
-      : `MCP "${s.name}" failed to connect: ${s.error}`,
-  );
+  const lsp = await connectLspServers(config, cwd);
+  const registry = new ToolRegistry([...builtinTools, ...mcp.tools, ...lsp.tools]);
+  const notices = [
+    ...mcp.servers.map((s) =>
+      s.ok
+        ? `MCP "${s.name}" connected — ${s.toolCount} tool(s).`
+        : `MCP "${s.name}" failed to connect: ${s.error}`,
+    ),
+    ...lsp.servers.map((s) =>
+      s.ok ? `LSP "${s.name}" started.` : `LSP "${s.name}" failed to start: ${s.error}`,
+    ),
+  ];
 
   const app = render(<App config={config} cwd={cwd} registry={registry} notices={notices} />, {
     exitOnCtrlC: true,
   });
   await app.waitUntilExit();
-  await mcp.close();
+  await Promise.all([mcp.close(), lsp.close()]);
 }
 
 void main();

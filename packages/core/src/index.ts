@@ -2,10 +2,12 @@ export {
   ConfigSchema,
   PermissionModeSchema,
   McpServerSchema,
+  LspServerSchema,
   loadConfig,
   type Config,
   type PermissionMode,
   type McpServerConfig,
+  type LspServerConfig,
   type LoadConfigOptions,
 } from "./config/config";
 
@@ -15,6 +17,15 @@ export {
   type McpConnectResult,
   type McpClientLike,
 } from "./mcp/mcp";
+
+export {
+  connectLspServers,
+  LspClient,
+  LspManager,
+  type LspConnectResult,
+  type LspDiagnostic,
+  type LspServerHandle,
+} from "./lsp/lsp";
 
 export {
   SessionStore,

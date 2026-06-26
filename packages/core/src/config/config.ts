@@ -25,6 +25,15 @@ export const McpServerSchema = z.discriminatedUnion("type", [
 ]);
 export type McpServerConfig = z.infer<typeof McpServerSchema>;
 
+/** A language server to launch over stdio, keyed by the file extensions it handles. */
+export const LspServerSchema = z.object({
+  command: z.string(),
+  args: z.array(z.string()).default([]),
+  extensions: z.array(z.string()).min(1),
+  enabled: z.boolean().default(true),
+});
+export type LspServerConfig = z.infer<typeof LspServerSchema>;
+
 export const ConfigSchema = z.object({
   /** Provider-qualified model id, e.g. "anthropic/claude-sonnet-4-6". */
   model: z.string().default("anthropic/claude-sonnet-4-6"),
@@ -47,6 +56,8 @@ export const ConfigSchema = z.object({
     .default({}),
   /** External MCP servers to connect at startup, keyed by name. */
   mcp: z.record(z.string(), McpServerSchema).default({}),
+  /** Language servers to launch at startup, keyed by name. */
+  lsp: z.record(z.string(), LspServerSchema).default({}),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
