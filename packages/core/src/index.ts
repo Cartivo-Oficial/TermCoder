@@ -28,6 +28,14 @@ export {
 } from "./lsp/lsp";
 
 export {
+  definePlugin,
+  loadPlugins,
+  type Plugin,
+  type PluginApi,
+  type LoadPluginsResult,
+} from "./plugin/plugin";
+
+export {
   SessionStore,
   defaultSessionsDir,
   type SessionRecord,

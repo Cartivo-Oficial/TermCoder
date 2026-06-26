@@ -58,6 +58,8 @@ export const ConfigSchema = z.object({
   mcp: z.record(z.string(), McpServerSchema).default({}),
   /** Language servers to launch at startup, keyed by name. */
   lsp: z.record(z.string(), LspServerSchema).default({}),
+  /** Plugin module specifiers (package names or file paths) to load at startup. */
+  plugins: z.array(z.string()).default([]),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

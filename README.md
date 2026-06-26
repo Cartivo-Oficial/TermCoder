@@ -75,6 +75,40 @@ right server for a file's extension and returns its errors/warnings to the agent
 The agent can call `diagnostics` after editing a file to check its work. Servers launch
 at startup; one that fails to start is reported but never blocks the others.
 
+## Plugins
+
+Extend termcoder with your own tools. A plugin is a module that default-exports a
+`{ name, register }` object; `register` receives an API for adding tools:
+
+```js
+// my-plugin.mjs
+import { definePlugin, defineTool } from "@termcoder/core";
+import { z } from "zod";
+
+export default definePlugin({
+  name: "my-plugin",
+  register(api) {
+    api.addTool(
+      defineTool({
+        name: "now",
+        description: "Return the current time",
+        inputSchema: z.object({}),
+        readOnly: true,
+        run: async () => ({ output: new Date().toISOString() }),
+      }),
+    );
+  },
+});
+```
+
+Reference it in config (`plugins` accepts package names or file paths):
+
+```json
+{ "plugins": ["./my-plugin.mjs", "@me/termcoder-plugin"] }
+```
+
+A plugin that fails to load is reported but never blocks startup.
+
 ## Development
 
 ```bash

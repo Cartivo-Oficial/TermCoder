@@ -4,6 +4,7 @@ import {
   connectLspServers,
   connectMcpServers,
   loadConfig,
+  loadPlugins,
   ToolRegistry,
 } from "@termcoder/core";
 import { App } from "./app";
@@ -33,10 +34,16 @@ async function main() {
     );
   }
 
-  // Connect configured MCP and LSP servers and fold their tools into the registry.
+  // Connect MCP/LSP servers and load plugins; fold all their tools into the registry.
   const mcp = await connectMcpServers(config);
   const lsp = await connectLspServers(config, cwd);
-  const registry = new ToolRegistry([...builtinTools, ...mcp.tools, ...lsp.tools]);
+  const plugins = await loadPlugins(config.plugins, { config, cwd });
+  const registry = new ToolRegistry([
+    ...builtinTools,
+    ...mcp.tools,
+    ...lsp.tools,
+    ...plugins.tools,
+  ]);
   const notices = [
     ...mcp.servers.map((s) =>
       s.ok
@@ -46,6 +53,10 @@ async function main() {
     ...lsp.servers.map((s) =>
       s.ok ? `LSP "${s.name}" started.` : `LSP "${s.name}" failed to start: ${s.error}`,
     ),
+    ...plugins.plugins.map((p) =>
+      p.ok ? `Plugin "${p.name}" loaded — ${p.toolCount} tool(s).` : `Plugin "${p.name}" failed: ${p.error}`,
+    ),
+    ...plugins.logs,
   ];
 
   const app = render(<App config={config} cwd={cwd} registry={registry} notices={notices} />, {
