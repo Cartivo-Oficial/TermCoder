@@ -1,8 +1,8 @@
 import { render } from "ink";
-import { loadConfig } from "@termcoder/core";
+import { builtinTools, connectMcpServers, loadConfig, ToolRegistry } from "@termcoder/core";
 import { App } from "./app";
 
-function main() {
+async function main() {
   const args = process.argv.slice(2);
   if (args.includes("--help") || args.includes("-h")) {
     process.stdout.write(
@@ -21,14 +21,26 @@ function main() {
     Boolean(process.env.ANTHROPIC_API_KEY) ||
     Boolean(process.env.OPENAI_API_KEY) ||
     Object.values(config.providers).some((p) => p.apiKey);
-
   if (!hasKey) {
     process.stderr.write(
       "[termcoder] No API key found. Set ANTHROPIC_API_KEY (or OPENAI_API_KEY) so the agent can run.\n",
     );
   }
 
-  render(<App config={config} cwd={cwd} />, { exitOnCtrlC: true });
+  // Connect any configured MCP servers and fold their tools into the registry.
+  const mcp = await connectMcpServers(config);
+  const registry = new ToolRegistry([...builtinTools, ...mcp.tools]);
+  const notices = mcp.servers.map((s) =>
+    s.ok
+      ? `MCP "${s.name}" connected — ${s.toolCount} tool(s).`
+      : `MCP "${s.name}" failed to connect: ${s.error}`,
+  );
+
+  const app = render(<App config={config} cwd={cwd} registry={registry} notices={notices} />, {
+    exitOnCtrlC: true,
+  });
+  await app.waitUntilExit();
+  await mcp.close();
 }
 
-main();
+void main();

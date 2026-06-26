@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { PermissionManager, type PermissionDecision } from "./permission";
 
-const baseConfig = { bash: "ask", write: "ask", edit: "ask" } as const;
+const baseConfig = { bash: "ask", write: "ask", edit: "ask", mcp: "ask" } as const;
 
-function req(kind: "bash" | "write" | "edit" = "write") {
+function req(kind: "bash" | "write" | "edit" | "mcp" = "write") {
   return { toolName: kind, kind, title: `do ${kind}` };
 }
 

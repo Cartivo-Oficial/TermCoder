@@ -31,6 +31,30 @@ rewrite.
   core's event stream. On `{ "type": "permission-request", "id", "request" }`, reply with
   `{ "type": "permission-decision", "id", "decision": "allow" | "deny" | "allow-always" }`.
 
+## MCP servers
+
+termcoder can connect to external [MCP](https://modelcontextprotocol.io) servers and
+expose their tools to the agent alongside the built-ins. Configure them in
+`.termcoder/config.json` (project) or `~/.config/termcoder/config.json` (global):
+
+```json
+{
+  "mcp": {
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
+    },
+    "remote": { "type": "http", "url": "https://example.com/mcp" }
+  }
+}
+```
+
+Tools are namespaced as `<server>_<tool>`. Servers connect at startup (the TUI and the
+server both report connection status); a server that fails doesn't block the others.
+Tools the server marks read-only run automatically; the rest are gated under the `mcp`
+permission. A server that fails to connect is reported but never blocks startup.
+
 ## Development
 
 ```bash

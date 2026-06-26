@@ -1,11 +1,20 @@
 export {
   ConfigSchema,
   PermissionModeSchema,
+  McpServerSchema,
   loadConfig,
   type Config,
   type PermissionMode,
+  type McpServerConfig,
   type LoadConfigOptions,
 } from "./config/config";
+
+export {
+  connectMcpServers,
+  wrapClientTools,
+  type McpConnectResult,
+  type McpClientLike,
+} from "./mcp/mcp";
 
 export {
   SessionStore,

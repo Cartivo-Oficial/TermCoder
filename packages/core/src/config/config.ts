@@ -8,6 +8,23 @@ import { deepMerge } from "../util/merge";
 export const PermissionModeSchema = z.enum(["ask", "allow", "deny"]);
 export type PermissionMode = z.infer<typeof PermissionModeSchema>;
 
+/** How to connect to an external MCP (Model Context Protocol) server. */
+export const McpServerSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("stdio"),
+    command: z.string(),
+    args: z.array(z.string()).default([]),
+    env: z.record(z.string(), z.string()).optional(),
+    enabled: z.boolean().default(true),
+  }),
+  z.object({
+    type: z.literal("http"),
+    url: z.string().url(),
+    enabled: z.boolean().default(true),
+  }),
+]);
+export type McpServerConfig = z.infer<typeof McpServerSchema>;
+
 export const ConfigSchema = z.object({
   /** Provider-qualified model id, e.g. "anthropic/claude-sonnet-4-6". */
   model: z.string().default("anthropic/claude-sonnet-4-6"),
@@ -21,12 +38,15 @@ export const ConfigSchema = z.object({
       bash: PermissionModeSchema.default("ask"),
       write: PermissionModeSchema.default("ask"),
       edit: PermissionModeSchema.default("ask"),
+      mcp: PermissionModeSchema.default("ask"),
     })
     .default({}),
   /** Per-provider settings; apiKey falls back to environment variables. */
   providers: z
     .record(z.string(), z.object({ apiKey: z.string().optional() }))
     .default({}),
+  /** External MCP servers to connect at startup, keyed by name. */
+  mcp: z.record(z.string(), McpServerSchema).default({}),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

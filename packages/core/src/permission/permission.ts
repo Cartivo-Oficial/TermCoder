@@ -1,7 +1,7 @@
 import type { Config } from "../config/config";
 
 /** Classes of action that can be gated. Read-only tools never reach the gate. */
-export type PermissionKind = "bash" | "write" | "edit";
+export type PermissionKind = "bash" | "write" | "edit" | "mcp";
 
 export interface PermissionRequest {
   /** The tool requesting permission, e.g. "write". */

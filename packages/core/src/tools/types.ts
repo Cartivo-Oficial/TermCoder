@@ -1,3 +1,4 @@
+import type { Schema } from "ai";
 import type { z } from "zod";
 import type { PermissionKind } from "../permission/permission";
 
@@ -28,7 +29,8 @@ export interface ToolDescription {
 export interface TermTool<Args = any> {
   name: string;
   description: string;
-  inputSchema: z.ZodType<Args>;
+  /** A zod schema (built-in tools) or an AI SDK Schema (MCP tools via jsonSchema). */
+  inputSchema: z.ZodType<Args> | Schema<Args>;
   readOnly: boolean;
   permissionKind?: PermissionKind;
   describe?: (args: Args, ctx: ToolContext) => ToolDescription;

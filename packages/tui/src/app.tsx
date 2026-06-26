@@ -29,14 +29,19 @@ const HELP = [
 interface AppProps {
   config: Config;
   cwd: string;
+  /** Tool registry (built-ins plus any MCP tools). Defaults to built-ins only. */
+  registry?: ToolRegistry;
+  /** Startup notices to show (e.g. MCP connection results). */
+  notices?: string[];
 }
 
-export function App({ config, cwd }: AppProps) {
+export function App({ config, cwd, registry: registryProp, notices }: AppProps) {
   const theme = getTheme(config.theme);
   const { exit } = useApp();
 
-  const [items, setItems] = useState<ViewItem[]>([
+  const [items, setItems] = useState<ViewItem[]>(() => [
     { kind: "notice", text: "Welcome to termcoder. Type /help for commands." },
+    ...(notices ?? []).map((text): ViewItem => ({ kind: "notice", text })),
   ]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -45,7 +50,7 @@ export function App({ config, cwd }: AppProps) {
 
   // Built once; the permission asker bridges the core's promise to the modal.
   const store = useRef(new SessionStore()).current;
-  const registry = useRef(new ToolRegistry()).current;
+  const registry = useRef(registryProp ?? new ToolRegistry()).current;
   const permission = useRef(
     new PermissionManager(
       config.permission,

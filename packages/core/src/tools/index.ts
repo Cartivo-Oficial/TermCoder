@@ -1,4 +1,4 @@
-import { tool, type ToolSet } from "ai";
+import { tool, type Schema, type ToolSet } from "ai";
 import type { z } from "zod";
 import type { TermTool } from "./types";
 import { readTool } from "./read";
@@ -48,7 +48,7 @@ export class ToolRegistry {
     for (const t of this.byName.values()) {
       set[t.name] = tool({
         description: t.description,
-        inputSchema: t.inputSchema as z.ZodType,
+        inputSchema: t.inputSchema as z.ZodType | Schema,
       });
     }
     return set;
