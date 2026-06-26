@@ -1,0 +1,56 @@
+import { tool, type ToolSet } from "ai";
+import type { z } from "zod";
+import type { TermTool } from "./types";
+import { readTool } from "./read";
+import { lsTool } from "./ls";
+import { globTool } from "./glob";
+import { grepTool } from "./grep";
+import { writeTool } from "./write";
+import { editTool } from "./edit";
+import { bashTool } from "./bash";
+
+export type { TermTool, ToolContext, ToolResult } from "./types";
+export { defineTool } from "./types";
+
+/** All built-in tools, keyed by name. */
+export const builtinTools: TermTool[] = [
+  readTool,
+  lsTool,
+  globTool,
+  grepTool,
+  writeTool,
+  editTool,
+  bashTool,
+];
+
+export class ToolRegistry {
+  private readonly byName = new Map<string, TermTool>();
+
+  constructor(tools: TermTool[] = builtinTools) {
+    for (const t of tools) this.byName.set(t.name, t);
+  }
+
+  get(name: string): TermTool | undefined {
+    return this.byName.get(name);
+  }
+
+  list(): TermTool[] {
+    return [...this.byName.values()];
+  }
+
+  /**
+   * Build the AI SDK ToolSet. Tools are defined WITHOUT an `execute` function so
+   * the agent loop receives tool calls and runs them itself (through the
+   * permission gate). The model only ever sees the schema, not the executor.
+   */
+  toToolSet(): ToolSet {
+    const set: ToolSet = {};
+    for (const t of this.byName.values()) {
+      set[t.name] = tool({
+        description: t.description,
+        inputSchema: t.inputSchema as z.ZodType,
+      });
+    }
+    return set;
+  }
+}
