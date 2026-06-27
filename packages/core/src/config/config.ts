@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { z } from "zod";
 import { deepMerge } from "../util/merge";
 
@@ -95,6 +95,18 @@ function readJsonIfExists(path: string): Record<string, unknown> {
   }
 }
 
+/** Find the nearest `.termcoder/config.json` walking up from `startDir`. */
+function findProjectConfig(startDir: string): string | undefined {
+  let dir = resolve(startDir);
+  for (;;) {
+    const candidate = join(dir, ".termcoder", "config.json");
+    if (existsSync(candidate)) return candidate;
+    const parent = dirname(dir);
+    if (parent === dir) return undefined;
+    dir = parent;
+  }
+}
+
 function envOverrides(env: NodeJS.ProcessEnv): Record<string, unknown> {
   const overrides: Record<string, unknown> = {};
   if (env.TERMCODER_MODEL) overrides.model = env.TERMCODER_MODEL;
@@ -113,7 +125,8 @@ export function loadConfig(options: LoadConfigOptions = {}): Config {
   const configDir = options.configDir ?? defaultConfigDir(env);
 
   const globalRaw = readJsonIfExists(join(configDir, "config.json"));
-  const projectRaw = readJsonIfExists(join(cwd, ".termcoder", "config.json"));
+  const projectConfigPath = findProjectConfig(cwd);
+  const projectRaw = projectConfigPath ? readJsonIfExists(projectConfigPath) : {};
 
   const merged = deepMerge<Record<string, unknown>>(
     globalRaw,

@@ -21,8 +21,10 @@ async function main() {
     return;
   }
 
-  const config = loadConfig();
-  const cwd = process.cwd();
+  // INIT_CWD is the directory the user ran the command from (pnpm/npm set it);
+  // fall back to process.cwd() for a directly-invoked binary.
+  const cwd = process.env.INIT_CWD ?? process.cwd();
+  const config = loadConfig({ cwd });
 
   const provider = config.model.split("/")[0];
   const hasKey =
