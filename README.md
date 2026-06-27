@@ -113,6 +113,14 @@ Reference it in config (`plugins` accepts package names or file paths):
 
 A plugin that fails to load is reported but never blocks startup.
 
+## Sub-agents
+
+The agent has a `task` tool that delegates a focused, self-contained instruction to a
+sub-agent — a nested session that works autonomously with the same tools and returns a
+summary. The sub-agent reuses the same permission gate (so mutating actions still prompt)
+and cannot itself delegate, bounding delegation to a single level. This keeps the main
+conversation focused while parallelizable or independent work happens in a sub-agent.
+
 ## Development
 
 ```bash

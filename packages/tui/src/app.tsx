@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { useRef, useState } from "react";
 import { Box, useApp } from "ink";
 import {
+  createSubagentTool,
   PermissionManager,
   renderSessionHtml,
   Session,
@@ -54,7 +55,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
 
   // Built once; the permission asker bridges the core's promise to the modal.
   const store = useRef(new SessionStore()).current;
-  const registry = useRef(registryProp ?? new ToolRegistry()).current;
+  const subRegistry = useRef(registryProp ?? new ToolRegistry()).current;
   const permission = useRef(
     new PermissionManager(
       config.permission,
@@ -64,6 +65,14 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           setPermRequest(request);
         }),
     ),
+  ).current;
+  // The main agent also gets a `task` tool that delegates to a sub-agent which
+  // reuses this permission gate but cannot itself delegate (no task tool).
+  const registry = useRef(
+    new ToolRegistry([
+      ...subRegistry.list(),
+      createSubagentTool({ store, registry: subRegistry, config, permission }),
+    ]),
   ).current;
 
   const [session, setSession] = useState<Session>(() =>

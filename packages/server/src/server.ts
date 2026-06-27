@@ -7,6 +7,7 @@ import {
 } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
 import {
+  createSubagentTool,
   loadConfig,
   PermissionManager,
   renderSessionHtml,
@@ -158,6 +159,19 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
       }),
   );
 
+  // This connection's registry adds a `task` tool bound to its permission gate;
+  // the sub-agent runs against ctx.registry (no task tool — single-level delegation).
+  const registry = new ToolRegistry([
+    ...ctx.registry.list(),
+    createSubagentTool({
+      store: ctx.store,
+      registry: ctx.registry,
+      config: ctx.config,
+      permission,
+      runner: ctx.runner,
+    }),
+  ]);
+
   let running = false;
 
   async function runPrompt(text: string): Promise<void> {
@@ -167,7 +181,7 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
     }
     running = true;
     try {
-      const session = Session.resume({ ...ctx, permission }, sessionId);
+      const session = Session.resume({ ...ctx, registry, permission }, sessionId);
       for await (const event of session.prompt(text)) {
         ws.send(JSON.stringify(event));
       }

@@ -42,6 +42,8 @@ export {
   type TranscriptSegment,
 } from "./share/share";
 
+export { createSubagentTool, type SubagentDeps } from "./agent/subagent";
+
 export {
   SessionStore,
   defaultSessionsDir,
