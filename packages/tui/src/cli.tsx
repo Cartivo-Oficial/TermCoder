@@ -24,13 +24,21 @@ async function main() {
   const config = loadConfig();
   const cwd = process.cwd();
 
+  const provider = config.model.split("/")[0];
   const hasKey =
-    Boolean(process.env.ANTHROPIC_API_KEY) ||
-    Boolean(process.env.OPENAI_API_KEY) ||
+    provider === "ollama" ||
+    Boolean(
+      process.env.ANTHROPIC_API_KEY ||
+        process.env.OPENAI_API_KEY ||
+        process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+        process.env.GEMINI_API_KEY,
+    ) ||
     Object.values(config.providers).some((p) => p.apiKey);
   if (!hasKey) {
     process.stderr.write(
-      "[termcoder] No API key found. Set ANTHROPIC_API_KEY (or OPENAI_API_KEY) so the agent can run.\n",
+      "[termcoder] No model credentials found. Use a free option — e.g. set " +
+        '`model` to "ollama/llama3.1" (local) or "google/gemini-2.0-flash" with a free ' +
+        "GEMINI_API_KEY. See the README.\n",
     );
   }
 

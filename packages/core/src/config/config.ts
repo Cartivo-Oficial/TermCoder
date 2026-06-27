@@ -52,7 +52,14 @@ export const ConfigSchema = z.object({
     .default({}),
   /** Per-provider settings; apiKey falls back to environment variables. */
   providers: z
-    .record(z.string(), z.object({ apiKey: z.string().optional() }))
+    .record(
+      z.string(),
+      z.object({
+        apiKey: z.string().optional(),
+        /** Override the API base URL (for OpenAI-compatible servers like Groq, OpenRouter, local). */
+        baseURL: z.string().optional(),
+      }),
+    )
     .default({}),
   /** External MCP servers to connect at startup, keyed by name. */
   mcp: z.record(z.string(), McpServerSchema).default({}),

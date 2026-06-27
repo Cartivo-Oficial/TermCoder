@@ -35,6 +35,45 @@ rewrite.
 In the TUI, `/share` writes the current session to a self-contained HTML file you can open
 in a browser or send to someone.
 
+## Free / no-cost setup
+
+You don't need a paid API key. Pick a model with `model` in config (or `TERMCODER_MODEL`):
+
+**Ollama (local, fully free, no key, no account):**
+
+1. Install [Ollama](https://ollama.com) and pull a tool-capable model: `ollama pull llama3.1`
+2. Configure termcoder:
+
+   ```json
+   { "model": "ollama/llama3.1" }
+   ```
+
+   That's it — it talks to Ollama on `http://localhost:11434`. Good models for tool use:
+   `llama3.1`, `qwen2.5`, `mistral-nemo`.
+
+**Google Gemini (free tier, cloud):** get a free key at
+[aistudio.google.com](https://aistudio.google.com/apikey), then:
+
+```bash
+export GEMINI_API_KEY="..."
+```
+```json
+{ "model": "google/gemini-2.0-flash" }
+```
+
+**Any OpenAI-compatible free endpoint (Groq, OpenRouter, …):** point the `openai` provider
+at it:
+
+```json
+{
+  "model": "openai/llama-3.3-70b-versatile",
+  "providers": { "openai": { "baseURL": "https://api.groq.com/openai/v1", "apiKey": "gsk_..." } }
+}
+```
+
+> Tool-calling quality varies by model — bigger/instruct models follow the tool protocol
+> better. If a small local model struggles with tools, try `qwen2.5` or a larger variant.
+
 ## MCP servers
 
 termcoder can connect to external [MCP](https://modelcontextprotocol.io) servers and
