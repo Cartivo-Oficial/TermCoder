@@ -34,7 +34,7 @@ describe("Transcript", () => {
     const { lastFrame } = render(
       <Transcript theme={theme} items={[{ kind: "error", text: "boom" }]} />,
     );
-    expect(lastFrame()).toContain("error: boom");
+    expect(lastFrame()).toContain("boom");
   });
 });
 

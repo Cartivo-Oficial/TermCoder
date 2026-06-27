@@ -12,30 +12,37 @@ interface ComposerProps {
   disabled: boolean;
 }
 
-/** Bottom input bar. Shows a spinner while a turn is running. */
+/** Bottom input: a rounded prompt box with a hint line; a spinner while busy. */
 export function Composer({ theme, value, onChange, onSubmit, busy, disabled }: ComposerProps) {
   if (busy) {
     return (
-      <Box marginTop={1}>
-        <Text color={theme.running}>
+      <Box marginTop={1} paddingX={1}>
+        <Text color={theme.accent}>
           <Spinner type="dots" />
         </Text>
-        <Text color={theme.muted}> working… (esc to interrupt is not yet supported)</Text>
+        <Text color={theme.muted}> thinking…</Text>
       </Box>
     );
   }
 
   return (
     <Box flexDirection="column" marginTop={1}>
-      <Box>
-        <Text color={theme.primary}>{"› "}</Text>
+      <Box borderStyle="round" borderColor={theme.border} paddingX={1}>
+        <Text color={theme.accent}>{"❯ "}</Text>
         <TextInput
           value={value}
           onChange={onChange}
           onSubmit={onSubmit}
           focus={!disabled}
-          placeholder="Ask termcoder to do something… (/help)"
+          placeholder="Ask termcoder to do something…"
         />
+      </Box>
+      <Box paddingX={1}>
+        <Text color={theme.muted}>enter send</Text>
+        <Text color={theme.border}>{"  ·  "}</Text>
+        <Text color={theme.muted}>/help</Text>
+        <Text color={theme.border}>{"  ·  "}</Text>
+        <Text color={theme.muted}>ctrl+c quit</Text>
       </Box>
     </Box>
   );
