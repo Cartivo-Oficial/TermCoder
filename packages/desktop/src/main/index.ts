@@ -30,7 +30,12 @@ async function startServer(): Promise<void> {
     ...plugins.tools,
   ]);
 
-  const server = createServer({ config, registry, cwd });
+  const server = createServer({
+    config,
+    registry,
+    cwd,
+    status: { mcp: mcp.servers, lsp: lsp.servers, plugins: plugins.plugins },
+  });
   await new Promise<void>((resolve) => server.listen(0, resolve));
   const address = server.address();
   serverPort = typeof address === "object" && address ? address.port : 0;

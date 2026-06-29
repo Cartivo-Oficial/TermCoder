@@ -21,6 +21,12 @@ import {
   type PermissionDecision,
 } from "@termcoder/core";
 
+export interface ServerStatus {
+  mcp: Array<{ name: string; ok: boolean; toolCount: number; error?: string }>;
+  lsp: Array<{ name: string; ok: boolean; error?: string }>;
+  plugins: Array<{ name: string; ok: boolean; toolCount: number; error?: string }>;
+}
+
 export interface ServerDeps {
   config?: Config;
   store?: SessionStore;
@@ -29,6 +35,8 @@ export interface ServerDeps {
   runner?: ModelRunner;
   /** Default working directory for new sessions. */
   cwd?: string;
+  /** MCP/LSP/plugin connection status to expose at GET /status. */
+  status?: ServerStatus;
 }
 
 interface Ctx {
@@ -37,6 +45,7 @@ interface Ctx {
   registry: ToolRegistry;
   runner?: ModelRunner;
   cwd: string;
+  status: ServerStatus;
 }
 
 /**
@@ -51,6 +60,7 @@ export function createServer(deps: ServerDeps = {}): Server {
     registry: deps.registry ?? new ToolRegistry(),
     runner: deps.runner,
     cwd: deps.cwd ?? process.cwd(),
+    status: deps.status ?? { mcp: [], lsp: [], plugins: [] },
   };
 
   const http = createHttpServer((req, res) => {
@@ -68,6 +78,14 @@ const CORS = {
   "access-control-allow-methods": "GET,POST,OPTIONS",
   "access-control-allow-headers": "content-type",
 };
+
+function hasKey(config: Config, env: NodeJS.ProcessEnv, provider: string): boolean {
+  if (config.providers[provider]?.apiKey) return true;
+  if (provider === "anthropic") return Boolean(env.ANTHROPIC_API_KEY);
+  if (provider === "openai") return Boolean(env.OPENAI_API_KEY);
+  if (provider === "google") return Boolean(env.GOOGLE_GENERATIVE_AI_API_KEY || env.GEMINI_API_KEY);
+  return false;
+}
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   const payload = JSON.stringify(body);
@@ -114,6 +132,17 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
 
   if (req.method === "GET" && parts.length === 1 && parts[0] === "sessions") {
     return sendJson(res, 200, ctx.store.list());
+  }
+
+  if (req.method === "GET" && parts.length === 1 && parts[0] === "status") {
+    const env = process.env;
+    const providers = [
+      { name: "anthropic", configured: hasKey(ctx.config, env, "anthropic") },
+      { name: "openai", configured: hasKey(ctx.config, env, "openai") },
+      { name: "google", configured: hasKey(ctx.config, env, "google") },
+      { name: "ollama", configured: true },
+    ];
+    return sendJson(res, 200, { model: ctx.config.model, providers, ...ctx.status });
   }
 
   if (req.method === "GET" && parts.length === 2 && parts[0] === "sessions") {

@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { FileTree } from "./FileTree";
 import { CommandPalette, type PaletteItem } from "./CommandPalette";
+import { Settings, type ServerStatus, type SettingsTab } from "./Settings";
 import {
   IconBack,
   IconClose,
@@ -12,10 +13,12 @@ import {
   IconGear,
   IconHelp,
   IconMaximize,
+  IconMenu,
   IconMinimize,
   IconMoon,
   IconNewChat,
   IconPanelRight,
+  IconServer,
   IconPlus,
   IconSearch,
   IconSend,
@@ -47,10 +50,17 @@ const wsBase = `ws://localhost:${port}`;
 
 const MODELS = [
   "google/gemini-2.5-flash",
+  "google/gemini-2.0-flash",
+  "google/gemini-2.5-pro",
   "anthropic/claude-opus-4-8",
   "anthropic/claude-sonnet-4-6",
+  "anthropic/claude-haiku-4-5",
   "openai/gpt-4o",
+  "openai/gpt-4o-mini",
+  "openai/o3-mini",
   "ollama/llama3.1",
+  "ollama/qwen2.5",
+  "ollama/mistral-nemo",
 ];
 
 interface Message {
@@ -78,7 +88,7 @@ const isDiff = (t: string) => /^[+-] /m.test(t);
 const baseName = (p: string) => p.split(/[\\/]/).filter(Boolean).pop() ?? "project";
 const shortPath = (p: string) => {
   const parts = p.split(/[\\/]/).filter(Boolean);
-  return parts.length > 3 ? `…\\${parts.slice(-2).join("\\")}` : p;
+  return parts.length > 3 ? `â€¦\\${parts.slice(-2).join("\\")}` : p;
 };
 const fmtTokens = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
 
@@ -167,7 +177,7 @@ function TabbedViewer({
               className={`vtab ${t.id === tab.id ? "active" : ""}`}
               onClick={() => onActivate(t.id)}
             >
-              <span className="vtab-name">{t.kind === "diff" ? "± " : ""}{t.name}</span>
+              <span className="vtab-name">{t.kind === "diff" ? "Â± " : ""}{t.name}</span>
               <button
                 className="vtab-close"
                 onClick={(e) => {
@@ -198,7 +208,7 @@ function segToMessage(seg: Segment): Message {
   if (seg.role === "user") return { role: "user", text: seg.text };
   if (seg.role === "assistant" && !seg.label) return { role: "assistant", text: seg.text };
   if (seg.role === "assistant")
-    return { role: "tool", name: seg.label?.replace("→ ", ""), status: "done", text: "", detail: seg.text };
+    return { role: "tool", name: seg.label?.replace("â†’ ", ""), status: "done", text: "", detail: seg.text };
   return {
     role: "tool",
     name: seg.label ?? "tool",
@@ -231,10 +241,21 @@ export function App() {
   );
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>("general");
+  const [serverStatus, setServerStatus] = useState<ServerStatus | null>(null);
   const [autoApprove, setAutoApprove] = useState(() => localStorage.getItem("tc-auto") === "1");
   const [defaultModel, setDefaultModel] = useState(() => localStorage.getItem("tc-model") || "");
+  const [sendOnEnter, setSendOnEnter] = useState(() => localStorage.getItem("tc-enter") !== "0");
+  const [expandTools, setExpandTools] = useState(() => localStorage.getItem("tc-expand") === "1");
+  const [progressBar, setProgressBar] = useState(() => localStorage.getItem("tc-progress") !== "0");
+  const [fontSize, setFontSize] = useState(() => Number(localStorage.getItem("tc-fs")) || 14);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [serversOpen, setServersOpen] = useState(false);
   const [fileList, setFileList] = useState<string[]>([]);
   const autoApproveRef = useRef(autoApprove);
+  const navStack = useRef<string[]>([]);
+  const navPos = useRef(-1);
+  const navigating = useRef(false);
   const [mention, setMention] = useState<{ query: string; items: string[]; active: number } | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -257,6 +278,20 @@ export function App() {
   useEffect(() => {
     if (defaultModel) localStorage.setItem("tc-model", defaultModel);
   }, [defaultModel]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--fs", `${fontSize}px`);
+    localStorage.setItem("tc-fs", String(fontSize));
+  }, [fontSize]);
+  useEffect(() => {
+    localStorage.setItem("tc-enter", sendOnEnter ? "1" : "0");
+  }, [sendOnEnter]);
+  useEffect(() => {
+    localStorage.setItem("tc-expand", expandTools ? "1" : "0");
+  }, [expandTools]);
+  useEffect(() => {
+    localStorage.setItem("tc-progress", progressBar ? "1" : "0");
+  }, [progressBar]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -326,6 +361,38 @@ export function App() {
     }
   }
 
+  async function refreshStatus() {
+    try {
+      setServerStatus((await (await fetch(`${httpBase}/status`)).json()) as ServerStatus);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function pushNav(id: string) {
+    if (navigating.current) {
+      navigating.current = false;
+      return;
+    }
+    navStack.current = navStack.current.slice(0, navPos.current + 1);
+    navStack.current.push(id);
+    navPos.current = navStack.current.length - 1;
+  }
+  function navBack() {
+    if (navPos.current > 0) {
+      navPos.current -= 1;
+      navigating.current = true;
+      void openSession(navStack.current[navPos.current]!);
+    }
+  }
+  function navForward() {
+    if (navPos.current < navStack.current.length - 1) {
+      navPos.current += 1;
+      navigating.current = true;
+      void openSession(navStack.current[navPos.current]!);
+    }
+  }
+
   function connect(id: string) {
     wsRef.current?.close();
     assistantIdx.current = null;
@@ -365,7 +432,9 @@ export function App() {
     setMessages([]);
     setWorkingDir(record.cwd);
     connect(record.id);
+    pushNav(record.id);
     void refreshSessions();
+    void refreshStatus();
   }
 
   async function newSession() {
@@ -389,6 +458,7 @@ export function App() {
       setMessages(segments.map(segToMessage));
       setWorkingDir(record.cwd);
       connect(id);
+      pushNav(id);
     } catch {
       /* ignore */
     }
@@ -551,7 +621,7 @@ export function App() {
 
   const paletteItems: PaletteItem[] = [
     { id: "new", label: "New session", hint: "command", run: () => void newSession() },
-    { id: "folder", label: "Choose folder…", hint: "command", run: () => void chooseFolder() },
+    { id: "folder", label: "Choose folderâ€¦", hint: "command", run: () => void chooseFolder() },
     { id: "left", label: "Toggle sessions panel", hint: "command", run: () => setLeftOpen((v) => !v) },
     { id: "right", label: "Toggle files panel", hint: "command", run: () => setRightOpen((v) => !v) },
     {
@@ -574,9 +644,25 @@ export function App() {
     <div className="shell">
       <header className="toolbar">
         <div className="tb-left">
-          <button className="icon" title="Toggle sidebar" onClick={() => setLeftOpen((v) => !v)}><IconSidebar /></button>
-          <button className="icon dim" title="Back"><IconBack /></button>
-          <button className="icon dim" title="Forward"><IconForward /></button>
+          <div className="menu-wrap">
+            <button className="icon" title="Menu" onClick={() => setMenuOpen((v) => !v)}><IconMenu /></button>
+            {menuOpen ? (
+              <div className="menu" onMouseLeave={() => setMenuOpen(false)}>
+                <button onClick={() => { setMenuOpen(false); void newSession(); }}>New session<span className="mk">Ctrl N</span></button>
+                <button onClick={() => { setMenuOpen(false); void chooseFolder(); }}>Open folderâ€¦<span className="mk">Ctrl O</span></button>
+                <div className="menu-sep" />
+                <button onClick={() => { setMenuOpen(false); setSettingsOpen(true); }}>Settings</button>
+                <button onClick={() => { setMenuOpen(false); setPaletteOpen(true); }}>Command palette<span className="mk">Ctrl K</span></button>
+                <button onClick={() => { setMenuOpen(false); setTheme((t) => (t === "dark" ? "light" : "dark")); }}>Toggle theme</button>
+                <div className="menu-sep" />
+                <button onClick={() => location.reload()}>Reload</button>
+                <button onClick={() => window.api?.closeWindow()}>Quit</button>
+              </div>
+            ) : null}
+          </div>
+          <button className="icon" title="Toggle sidebar (Ctrl B)" onClick={() => setLeftOpen((v) => !v)}><IconSidebar /></button>
+          <button className="icon dim" title="Back" onClick={navBack}><IconBack /></button>
+          <button className="icon dim" title="Forward" onClick={navForward}><IconForward /></button>
         </div>
         <div className="tb-center">
           <button className="search" onClick={() => setPaletteOpen(true)}>
@@ -586,13 +672,24 @@ export function App() {
           </button>
         </div>
         <div className="tb-right">
-          <button className="icon" title="New session" onClick={() => void newSession()}><IconNewChat /></button>
-          <button className="icon" title="Toggle files" onClick={() => setRightOpen((v) => !v)}><IconPanelRight /></button>
-          <button
-            className="icon"
-            title="Toggle theme"
-            onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
-          >
+          <div className="menu-wrap">
+            <button className="icon srv" title="Servers" onClick={() => { setServersOpen((v) => !v); void refreshStatus(); }}>
+              <IconServer />
+              <span className="srv-dot" />
+            </button>
+            {serversOpen ? (
+              <div className="menu servers-pop" onMouseLeave={() => setServersOpen(false)}>
+                <div className="sp-row"><span className="dot on" /> Local server <span className="muted">running</span></div>
+                <div className="sp-line"><span>MCP</span><span className="muted">{serverStatus?.mcp.length ?? 0}</span></div>
+                <div className="sp-line"><span>LSP</span><span className="muted">{serverStatus?.lsp.length ?? 0}</span></div>
+                <div className="sp-line"><span>Plugins</span><span className="muted">{serverStatus?.plugins.length ?? 0}</span></div>
+                <button className="sp-manage" onClick={() => { setServersOpen(false); setSettingsTab("servers"); setSettingsOpen(true); }}>Manage servers</button>
+              </div>
+            ) : null}
+          </div>
+          <button className="icon" title="New session (Ctrl N)" onClick={() => void newSession()}><IconNewChat /></button>
+          <button className="icon" title="Toggle files (Ctrl J)" onClick={() => setRightOpen((v) => !v)}><IconPanelRight /></button>
+          <button className="icon" title="Toggle theme" onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}>
             {theme === "dark" ? <IconSun /> : <IconMoon />}
           </button>
           <div className="win-controls">
@@ -612,7 +709,7 @@ export function App() {
                 <div className="pname">{project}</div>
                 {cwd ? <div className="ppath">{shortPath(cwd)}</div> : null}
               </div>
-              <button className="icon" title="Choose folder" onClick={() => void chooseFolder()}>…</button>
+              <button className="icon" title="Choose folder" onClick={() => void chooseFolder()}>â€¦</button>
             </div>
             <button className="new-session" onClick={() => void newSession()}>
               <IconNewChat /> New session
@@ -643,6 +740,7 @@ export function App() {
               {tokens > 0 ? <span className="muted">{fmtTokens(tokens)} tok</span> : null}
             </div>
           </div>
+          {busy && progressBar ? <div className="progress" /> : null}
 
           <div className="transcript" ref={scrollRef}>
             {messages.length === 0 ? (
@@ -666,18 +764,18 @@ export function App() {
                   <div className="tool-wrap">
                     <div className="tool">
                       <span className={`status ${m.status}`}>
-                        {m.status === "error" ? "✗" : m.status === "done" ? "✓" : "•"}
+                        {m.status === "error" ? "âœ—" : m.status === "done" ? "âœ“" : "â€¢"}
                       </span>
                       <span className="toolname">{m.name}</span>
                       {m.text ? <span className="muted"> {m.text}</span> : null}
                     </div>
-                    {m.detail ? (isDiff(m.detail) ? <DiffBlock text={m.detail} /> : <pre className="detail">{m.detail}</pre>) : null}
+                    {m.detail && expandTools ? (isDiff(m.detail) ? <DiffBlock text={m.detail} /> : <pre className="detail">{m.detail}</pre>) : null}
                   </div>
                 ) : null}
-                {m.role === "error" ? <div className="bubble error">✗ {m.text}</div> : null}
+                {m.role === "error" ? <div className="bubble error">âœ— {m.text}</div> : null}
               </div>
             ))}
-            {busy ? <div className="bubble muted">▍ thinking…</div> : null}
+            {busy ? <div className="bubble muted">â– thinkingâ€¦</div> : null}
           </div>
 
           {perm ? (
@@ -718,7 +816,7 @@ export function App() {
               <textarea
                 ref={inputRef}
                 value={input}
-                placeholder="Ask anything…  (@ to add a file)"
+                placeholder="Ask anythingâ€¦  (@ to add a file)"
                 onChange={(e) => {
                   setInput(e.target.value);
                   updateMention(e.target.value, e.target.selectionStart ?? e.target.value.length);
@@ -745,7 +843,10 @@ export function App() {
                       return;
                     }
                   }
-                  if (e.key === "Enter" && !e.shiftKey) {
+                  const wantSend = sendOnEnter
+                    ? e.key === "Enter" && !e.shiftKey
+                    : e.key === "Enter" && (e.ctrlKey || e.metaKey);
+                  if (wantSend) {
                     e.preventDefault();
                     send();
                   }
@@ -754,7 +855,13 @@ export function App() {
               <button className="send" onClick={send} disabled={busy || !connected}><IconSend /></button>
             </div>
             <div className="selectors">
-              <span className="chip">Build ▾</span>
+              <button
+                className={`chip ${autoApprove ? "armed" : ""}`}
+                title="Toggle auto-approve"
+                onClick={() => setAutoApprove((v) => !v)}
+              >
+                {autoApprove ? "Auto" : "Build"} â–¾
+              </button>
               <span className="chip model">
                 <select value={model} onChange={(e) => changeModel(e.target.value)}>
                   {MODELS.includes(model) ? null : <option value={model}>{model}</option>}
@@ -763,7 +870,9 @@ export function App() {
                   ))}
                 </select>
               </span>
-              <span className="chip">Default ▾</span>
+              <button className="chip" onClick={() => { setSettingsTab("general"); setSettingsOpen(true); }}>
+                Settings â–¾
+              </button>
             </div>
           </div>
         </main>
@@ -816,68 +925,33 @@ export function App() {
       {paletteOpen ? <CommandPalette items={paletteItems} onClose={() => setPaletteOpen(false)} /> : null}
 
       {settingsOpen ? (
-        <div className="settings" onClick={() => setSettingsOpen(false)}>
-          <div className="settings-card" onClick={(e) => e.stopPropagation()}>
-            <div className="settings-head">
-              <span>Settings</span>
-              <button className="icon" onClick={() => setSettingsOpen(false)}><IconClose /></button>
-            </div>
-            <div className="settings-body">
-              <section>
-                <h4>Appearance</h4>
-                <div className="seg">
-                  <button className={theme === "dark" ? "active" : ""} onClick={() => setTheme("dark")}>Dark</button>
-                  <button className={theme === "light" ? "active" : ""} onClick={() => setTheme("light")}>Light</button>
-                </div>
-              </section>
-              <section>
-                <h4>Model for new sessions</h4>
-                <select
-                  className="settings-select"
-                  value={defaultModel || model}
-                  onChange={(e) => {
-                    setDefaultModel(e.target.value);
-                    changeModel(e.target.value);
-                  }}
-                >
-                  {MODELS.includes(defaultModel || model) ? null : (
-                    <option value={defaultModel || model}>{defaultModel || model}</option>
-                  )}
-                  {MODELS.map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
-              </section>
-              <section>
-                <h4>Behavior</h4>
-                <label className="toggle">
-                  <input type="checkbox" checked={autoApprove} onChange={(e) => setAutoApprove(e.target.checked)} />
-                  Auto-approve tool actions (skip permission prompts)
-                </label>
-              </section>
-              <section>
-                <h4>Workspace</h4>
-                <div className="kv"><span className="muted">Folder</span><span className="kv-val">{cwd ?? "—"}</span></div>
-                <button className="settings-btn" onClick={() => void chooseFolder()}>Change folder…</button>
-              </section>
-              <section>
-                <h4>Shortcuts</h4>
-                <div className="shortcuts">
-                  <div><kbd>Ctrl K</kbd> Command palette</div>
-                  <div><kbd>Ctrl N</kbd> New session</div>
-                  <div><kbd>Ctrl B</kbd> Toggle sessions</div>
-                  <div><kbd>Ctrl J</kbd> Toggle files</div>
-                  <div><kbd>Ctrl O</kbd> Open folder</div>
-                  <div><kbd>@</kbd> Mention a file</div>
-                </div>
-              </section>
-              <section>
-                <h4>About</h4>
-                <div className="kv"><span className="muted">Server</span><span className="kv-val">localhost:{port}</span></div>
-              </section>
-            </div>
-          </div>
-        </div>
+        <Settings
+          onClose={() => setSettingsOpen(false)}
+          tab={settingsTab}
+          setTab={setSettingsTab}
+          theme={theme}
+          setTheme={setTheme}
+          model={model}
+          defaultModel={defaultModel}
+          setDefaultModel={setDefaultModel}
+          changeModel={changeModel}
+          models={MODELS}
+          autoApprove={autoApprove}
+          setAutoApprove={setAutoApprove}
+          sendOnEnter={sendOnEnter}
+          setSendOnEnter={setSendOnEnter}
+          expandTools={expandTools}
+          setExpandTools={setExpandTools}
+          progressBar={progressBar}
+          setProgressBar={setProgressBar}
+          fontSize={fontSize}
+          setFontSize={setFontSize}
+          cwd={cwd}
+          chooseFolder={() => void chooseFolder()}
+          serverStatus={serverStatus}
+          refreshStatus={() => void refreshStatus()}
+          port={port}
+        />
       ) : null}
     </div>
   );
