@@ -96,7 +96,8 @@ svg { display: block; }
 .new-session:hover { background: var(--elev2); }
 .new-session svg { color: var(--muted); }
 
-.session-list { display: flex; flex-direction: column; gap: 1px; overflow-y: auto; }
+.session-list { display: flex; flex-direction: column; gap: 1px; overflow-y: auto; flex: 1; }
+.left-footer { display: flex; gap: 4px; padding-top: 8px; border-top: 1px solid var(--border); }
 .session {
   text-align: left; background: transparent; color: var(--muted);
   border: none; border-radius: 8px; padding: 8px 10px;
@@ -260,6 +261,27 @@ svg { display: block; }
 .perm-actions .allow { background: var(--text); color: var(--bg); }
 .perm-actions .always { background: var(--elev2); color: var(--text); border: 1px solid var(--border); }
 .perm-actions .deny { background: transparent; color: var(--bad); border: 1px solid var(--border); }
+
+/* Settings */
+.settings { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: flex-start; padding-top: 8vh; z-index: 30; }
+.settings-card { width: min(560px, 92%); max-height: 84vh; background: var(--panel); border: 1px solid var(--border); border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.settings-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 15px; }
+.settings-body { overflow-y: auto; padding: 6px 18px 18px; }
+.settings-body section { padding: 14px 0; border-bottom: 1px solid var(--border); }
+.settings-body section:last-child { border-bottom: none; }
+.settings-body h4 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 600; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+.seg button { background: transparent; border: none; color: var(--muted); padding: 7px 18px; }
+.seg button.active { background: var(--elev2); color: var(--text); }
+.settings-select { background: var(--elev); border: 1px solid var(--border); color: var(--text); border-radius: 9px; padding: 8px 10px; font: inherit; width: 100%; outline: none; }
+.toggle { display: flex; align-items: center; gap: 10px; color: var(--text); cursor: pointer; }
+.toggle input { width: 16px; height: 16px; accent-color: var(--text); }
+.kv { display: flex; justify-content: space-between; gap: 16px; padding: 4px 0; }
+.kv-val { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings-btn { margin-top: 10px; background: var(--elev); border: 1px solid var(--border); color: var(--text); border-radius: 9px; padding: 8px 14px; }
+.settings-btn:hover { background: var(--elev2); }
+.shortcuts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; color: var(--muted); }
+.shortcuts kbd { display: inline-block; min-width: 48px; text-align: center; background: var(--elev); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; margin-right: 8px; color: var(--text); font-size: 11px; font-family: ui-monospace, monospace; }
 
 /* Light theme */
 :root[data-theme="light"] {

@@ -9,6 +9,8 @@ import {
   IconBack,
   IconClose,
   IconForward,
+  IconGear,
+  IconHelp,
   IconMaximize,
   IconMinimize,
   IconMoon,
@@ -228,7 +230,11 @@ export function App() {
     () => (localStorage.getItem("tc-theme") as "dark" | "light") || "dark",
   );
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [autoApprove, setAutoApprove] = useState(() => localStorage.getItem("tc-auto") === "1");
+  const [defaultModel, setDefaultModel] = useState(() => localStorage.getItem("tc-model") || "");
   const [fileList, setFileList] = useState<string[]>([]);
+  const autoApproveRef = useRef(autoApprove);
   const [mention, setMention] = useState<{ query: string; items: string[]; active: number } | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -242,6 +248,15 @@ export function App() {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("tc-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    autoApproveRef.current = autoApprove;
+    localStorage.setItem("tc-auto", autoApprove ? "1" : "0");
+  }, [autoApprove]);
+
+  useEffect(() => {
+    if (defaultModel) localStorage.setItem("tc-model", defaultModel);
+  }, [defaultModel]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -336,7 +351,17 @@ export function App() {
     ).json()) as { id: string; cwd: string; model: string };
     setCurrentId(record.id);
     localStorage.setItem("tc-session", record.id);
-    setModel(record.model);
+    const dm = localStorage.getItem("tc-model");
+    if (dm && dm !== record.model) {
+      setModel(dm);
+      void fetch(`${httpBase}/sessions/${record.id}/model`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ model: dm }),
+      });
+    } else {
+      setModel(record.model);
+    }
     setMessages([]);
     setWorkingDir(record.cwd);
     connect(record.id);
@@ -427,6 +452,10 @@ export function App() {
 
   function onEvent(e: StreamEvent) {
     if (e.type === "permission-request") {
+      if (autoApproveRef.current) {
+        wsRef.current?.send(JSON.stringify({ type: "permission-decision", id: e.id, decision: "allow" }));
+        return;
+      }
       setPerm({ id: e.id, title: e.request.title, detail: e.request.detail });
       return;
     }
@@ -598,6 +627,10 @@ export function App() {
                   {s.title}
                 </button>
               ))}
+            </div>
+            <div className="left-footer">
+              <button className="icon" title="Settings" onClick={() => setSettingsOpen(true)}><IconGear /></button>
+              <button className="icon" title="Command palette (Ctrl K)" onClick={() => setPaletteOpen(true)}><IconHelp /></button>
             </div>
           </aside>
         ) : null}
@@ -781,6 +814,71 @@ export function App() {
         />
       ) : null}
       {paletteOpen ? <CommandPalette items={paletteItems} onClose={() => setPaletteOpen(false)} /> : null}
+
+      {settingsOpen ? (
+        <div className="settings" onClick={() => setSettingsOpen(false)}>
+          <div className="settings-card" onClick={(e) => e.stopPropagation()}>
+            <div className="settings-head">
+              <span>Settings</span>
+              <button className="icon" onClick={() => setSettingsOpen(false)}><IconClose /></button>
+            </div>
+            <div className="settings-body">
+              <section>
+                <h4>Appearance</h4>
+                <div className="seg">
+                  <button className={theme === "dark" ? "active" : ""} onClick={() => setTheme("dark")}>Dark</button>
+                  <button className={theme === "light" ? "active" : ""} onClick={() => setTheme("light")}>Light</button>
+                </div>
+              </section>
+              <section>
+                <h4>Model for new sessions</h4>
+                <select
+                  className="settings-select"
+                  value={defaultModel || model}
+                  onChange={(e) => {
+                    setDefaultModel(e.target.value);
+                    changeModel(e.target.value);
+                  }}
+                >
+                  {MODELS.includes(defaultModel || model) ? null : (
+                    <option value={defaultModel || model}>{defaultModel || model}</option>
+                  )}
+                  {MODELS.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </section>
+              <section>
+                <h4>Behavior</h4>
+                <label className="toggle">
+                  <input type="checkbox" checked={autoApprove} onChange={(e) => setAutoApprove(e.target.checked)} />
+                  Auto-approve tool actions (skip permission prompts)
+                </label>
+              </section>
+              <section>
+                <h4>Workspace</h4>
+                <div className="kv"><span className="muted">Folder</span><span className="kv-val">{cwd ?? "—"}</span></div>
+                <button className="settings-btn" onClick={() => void chooseFolder()}>Change folder…</button>
+              </section>
+              <section>
+                <h4>Shortcuts</h4>
+                <div className="shortcuts">
+                  <div><kbd>Ctrl K</kbd> Command palette</div>
+                  <div><kbd>Ctrl N</kbd> New session</div>
+                  <div><kbd>Ctrl B</kbd> Toggle sessions</div>
+                  <div><kbd>Ctrl J</kbd> Toggle files</div>
+                  <div><kbd>Ctrl O</kbd> Open folder</div>
+                  <div><kbd>@</kbd> Mention a file</div>
+                </div>
+              </section>
+              <section>
+                <h4>About</h4>
+                <div className="kv"><span className="muted">Server</span><span className="kv-val">localhost:{port}</span></div>
+              </section>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

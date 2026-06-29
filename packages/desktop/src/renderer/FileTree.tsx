@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { IconChevron, IconFile, IconFolder } from "./Icons";
+import { IconChevron } from "./Icons";
+import { fileIcon, folderIcon } from "./FileIcons";
 
 interface Entry {
   name: string;
@@ -10,17 +11,6 @@ interface TreeProps {
   root: string | null;
   status: Record<string, string>;
   onOpen: (path: string) => void;
-}
-
-const EXT_COLOR: Record<string, string> = {
-  ts: "#3178c6", tsx: "#3178c6", js: "#e3b341", jsx: "#e3b341", mjs: "#e3b341", cjs: "#e3b341",
-  json: "#e3b341", md: "#58a6ff", css: "#56d4dd", scss: "#56d4dd", html: "#ff7b72",
-  py: "#3572A5", go: "#39c5cf", rs: "#ff7b72", yml: "#cb9bff", yaml: "#cb9bff", env: "#56d364",
-};
-
-function fileColor(name: string): string {
-  const ext = name.includes(".") ? name.split(".").pop()! : "";
-  return EXT_COLOR[ext] ?? "var(--muted)";
 }
 
 function statusColor(letter: string): string {
@@ -70,9 +60,7 @@ function TreeNode({
         <span className="caret">
           {dir ? <IconChevron style={{ transform: open ? "rotate(90deg)" : "none" }} /> : null}
         </span>
-        <span className="ficon" style={{ color: dir ? "var(--muted)" : fileColor(name) }}>
-          {dir ? <IconFolder /> : <IconFile />}
-        </span>
+        <span className="ficon">{dir ? folderIcon(name, open) : fileIcon(name)}</span>
         <span className="fname">{name}</span>
         {folderChanged ? <span className="changed-dot" /> : null}
         {fileStatus ? <span className="git-badge" style={{ color: statusColor(fileStatus) }}>{fileStatus}</span> : null}
