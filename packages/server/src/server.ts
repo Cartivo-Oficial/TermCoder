@@ -134,6 +134,19 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 200, transcriptSegments(ctx.store.load(id)));
   }
 
+  // Change the model used by a saved session.
+  if (req.method === "POST" && parts.length === 3 && parts[0] === "sessions" && parts[2] === "model") {
+    const id = parts[1]!;
+    if (!ctx.store.exists(id)) return sendJson(res, 404, { error: "session not found" });
+    const body = await readJson(req);
+    const record = ctx.store.load(id);
+    if (typeof body.model === "string" && body.model) {
+      record.model = body.model;
+      ctx.store.save(record);
+    }
+    return sendJson(res, 200, { model: record.model });
+  }
+
   // Shareable transcript: HTML by default, Markdown with ?format=md.
   if (
     req.method === "GET" &&

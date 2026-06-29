@@ -2,10 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
+import { FileTree } from "./FileTree";
 
 declare global {
   interface Window {
-    api?: { serverPort: number; pickFolder: () => Promise<string | null> };
+    api?: {
+      serverPort: number;
+      pickFolder: () => Promise<string | null>;
+      listDir: (dir: string) => Promise<Array<{ name: string; dir: boolean }>>;
+    };
   }
 }
 
@@ -14,6 +19,14 @@ const port =
 const httpBase = `http://localhost:${port}`;
 const wsBase = `ws://localhost:${port}`;
 
+const MODELS = [
+  "google/gemini-2.5-flash",
+  "anthropic/claude-opus-4-8",
+  "anthropic/claude-sonnet-4-6",
+  "openai/gpt-4o",
+  "ollama/llama3.1",
+];
+
 interface Message {
   role: "user" | "assistant" | "tool" | "notice" | "error";
   text: string;
@@ -21,35 +34,32 @@ interface Message {
   status?: "running" | "done" | "error";
   detail?: string;
 }
-
 interface SessionSummary {
   id: string;
   title: string;
   messageCount: number;
 }
-
 interface Segment {
   role: "user" | "assistant" | "tool";
   label?: string;
   code?: boolean;
   text: string;
 }
-
 // deno-lint-ignore no-explicit-any
 type StreamEvent = any;
 
-function isDiff(text: string): boolean {
-  return /^[+-] /m.test(text);
-}
+const isDiff = (t: string) => /^[+-] /m.test(t);
+const baseName = (p: string) => p.split(/[\\/]/).filter(Boolean).pop() ?? "project";
+const shortPath = (p: string) => {
+  const parts = p.split(/[\\/]/).filter(Boolean);
+  return parts.length > 3 ? `…\\${parts.slice(-2).join("\\")}` : p;
+};
 
 function DiffBlock({ text }: { text: string }) {
   return (
     <pre className="diff">
       {text.split("\n").map((line, i) => (
-        <div
-          key={i}
-          className={line.startsWith("+") ? "add" : line.startsWith("-") ? "del" : "ctx"}
-        >
+        <div key={i} className={line.startsWith("+") ? "add" : line.startsWith("-") ? "del" : "ctx"}>
           {line}
         </div>
       ))}
@@ -60,9 +70,8 @@ function DiffBlock({ text }: { text: string }) {
 function segToMessage(seg: Segment): Message {
   if (seg.role === "user") return { role: "user", text: seg.text };
   if (seg.role === "assistant" && !seg.label) return { role: "assistant", text: seg.text };
-  if (seg.role === "assistant") {
+  if (seg.role === "assistant")
     return { role: "tool", name: seg.label?.replace("→ ", ""), status: "done", text: "", detail: seg.text };
-  }
   return {
     role: "tool",
     name: seg.label ?? "tool",
@@ -79,7 +88,12 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [connected, setConnected] = useState(false);
   const [cwd, setCwd] = useState<string | null>(null);
+  const [model, setModel] = useState<string>(MODELS[0]!);
   const [perm, setPerm] = useState<{ id: string; title: string; detail?: string } | null>(null);
+  const [leftOpen, setLeftOpen] = useState(true);
+  const [rightOpen, setRightOpen] = useState(true);
+  const [rightTab, setRightTab] = useState<"files" | "changes">("files");
+  const [search, setSearch] = useState("");
 
   const wsRef = useRef<WebSocket | null>(null);
   const assistantIdx = useRef<number | null>(null);
@@ -102,8 +116,7 @@ export function App() {
 
   async function refreshSessions() {
     try {
-      const list = (await (await fetch(`${httpBase}/sessions`)).json()) as SessionSummary[];
-      setSessions(list);
+      setSessions((await (await fetch(`${httpBase}/sessions`)).json()) as SessionSummary[]);
     } catch {
       /* ignore */
     }
@@ -119,20 +132,22 @@ export function App() {
     ws.onmessage = (ev) => onEvent(JSON.parse(ev.data) as StreamEvent);
   }
 
+  async function createSession(folder?: string) {
+    const body = JSON.stringify(folder ? { cwd: folder } : {});
+    const record = (await (
+      await fetch(`${httpBase}/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body })
+    ).json()) as { id: string; cwd: string; model: string };
+    setCurrentId(record.id);
+    setCwd(record.cwd);
+    setModel(record.model);
+    setMessages([]);
+    connect(record.id);
+    void refreshSessions();
+  }
+
   async function newSession() {
     try {
-      const body = JSON.stringify(cwd ? { cwd } : {});
-      const record = (await (
-        await fetch(`${httpBase}/sessions`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body,
-        })
-      ).json()) as { id: string };
-      setCurrentId(record.id);
-      setMessages([]);
-      connect(record.id);
-      void refreshSessions();
+      await createSession(cwd ?? undefined);
     } catch {
       setMessages([{ role: "error", text: "Could not reach the termcoder server." }]);
     }
@@ -141,9 +156,14 @@ export function App() {
   async function openSession(id: string) {
     if (id === currentId) return;
     try {
-      const segments = (await (await fetch(`${httpBase}/sessions/${id}/transcript`)).json()) as Segment[];
-      setMessages(segments.map(segToMessage));
+      const [record, segments] = await Promise.all([
+        fetch(`${httpBase}/sessions/${id}`).then((r) => r.json()) as Promise<{ cwd: string; model: string }>,
+        fetch(`${httpBase}/sessions/${id}/transcript`).then((r) => r.json()) as Promise<Segment[]>,
+      ]);
       setCurrentId(id);
+      setCwd(record.cwd);
+      setModel(record.model);
+      setMessages(segments.map(segToMessage));
       connect(id);
     } catch {
       /* ignore */
@@ -152,21 +172,17 @@ export function App() {
 
   async function chooseFolder() {
     const folder = await window.api?.pickFolder();
-    if (folder) {
-      setCwd(folder);
-      // Start a fresh session rooted at the chosen folder.
-      const body = JSON.stringify({ cwd: folder });
-      const record = (await (
-        await fetch(`${httpBase}/sessions`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body,
-        })
-      ).json()) as { id: string };
-      setCurrentId(record.id);
-      setMessages([]);
-      connect(record.id);
-      void refreshSessions();
+    if (folder) await createSession(folder);
+  }
+
+  function changeModel(m: string) {
+    setModel(m);
+    if (currentId) {
+      void fetch(`${httpBase}/sessions/${currentId}/model`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ model: m }),
+      });
     }
   }
 
@@ -226,100 +242,166 @@ export function App() {
     wsRef.current?.send(JSON.stringify({ type: "prompt", text }));
   }
 
+  const project = cwd ? baseName(cwd) : "termcoder";
+  const currentTitle = sessions.find((s) => s.id === currentId)?.title ?? "New session";
+  const visibleSessions = search
+    ? sessions.filter((s) => s.title.toLowerCase().includes(search.toLowerCase()))
+    : sessions;
+
   return (
-    <div className="app">
-      <aside className="sidebar">
-        <div className="brand">❯ termcoder</div>
-        <button className="primary" onClick={() => void newSession()}>+ New chat</button>
-        <button className="ghost" onClick={() => void chooseFolder()}>
-          📁 {cwd ? cwd.split(/[\\/]/).pop() : "Choose folder"}
-        </button>
-        <div className="sessions">
-          {sessions.map((s) => (
-            <button
-              key={s.id}
-              className={`session ${s.id === currentId ? "active" : ""}`}
-              onClick={() => void openSession(s.id)}
-            >
-              <span className="title">{s.title}</span>
-              <span className="muted">{s.messageCount} msgs</span>
-            </button>
-          ))}
+    <div className="shell">
+      <header className="toolbar">
+        <div className="tb-left">
+          <button className="icon" title="Toggle sidebar" onClick={() => setLeftOpen((v) => !v)}>▥</button>
+          <button className="icon dim" title="Back">‹</button>
+          <button className="icon dim" title="Forward">›</button>
         </div>
-      </aside>
-
-      <main className="main">
-        <header className="topbar">
-          <span className={`dot ${connected ? "on" : "off"}`} />
-          <span className="muted">{connected ? "connected" : "connecting…"}</span>
-        </header>
-
-        <div className="transcript" ref={scrollRef}>
-          {messages.length === 0 ? (
-            <div className="empty">Ask termcoder to write code, run commands, or search the web.</div>
-          ) : null}
-          {messages.map((m, i) => (
-            <div key={i} className={`msg ${m.role}`}>
-              {m.role === "user" ? <div className="bubble user">{m.text}</div> : null}
-              {m.role === "assistant" ? (
-                <div className="bubble assistant markdown">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
-                    {m.text}
-                  </ReactMarkdown>
-                </div>
-              ) : null}
-              {m.role === "tool" ? (
-                <div className="tool-wrap">
-                  <div className="tool">
-                    <span className={`status ${m.status}`}>
-                      {m.status === "error" ? "✗" : m.status === "done" ? "✓" : "•"}
-                    </span>
-                    <span className="toolname">{m.name}</span>
-                    {m.text ? <span className="muted"> {m.text}</span> : null}
-                  </div>
-                  {m.detail ? (
-                    isDiff(m.detail) ? <DiffBlock text={m.detail} /> : <pre className="detail">{m.detail}</pre>
-                  ) : null}
-                </div>
-              ) : null}
-              {m.role === "error" ? <div className="bubble error">✗ {m.text}</div> : null}
-            </div>
-          ))}
-          {busy ? <div className="bubble muted">▍ thinking…</div> : null}
+        <div className="tb-center">
+          <input
+            className="search"
+            placeholder={`Search ${project}`}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <span className="kbd">Ctrl+K</span>
         </div>
+        <div className="tb-right">
+          <button className="icon" title="New session" onClick={() => void newSession()}>＋</button>
+          <button className="icon" title="Toggle files" onClick={() => setRightOpen((v) => !v)}>▤</button>
+        </div>
+      </header>
 
-        {perm ? (
-          <div className="perm">
-            <div className="perm-card">
-              <div className="perm-title">Allow this action?</div>
-              <div className="perm-detail">{perm.title}</div>
-              {perm.detail ? (
-                isDiff(perm.detail) ? <DiffBlock text={perm.detail} /> : <pre className="detail">{perm.detail}</pre>
-              ) : null}
-              <div className="perm-actions">
-                <button className="allow" onClick={() => decide("allow")}>Allow</button>
-                <button className="always" onClick={() => decide("allow-always")}>Always</button>
-                <button className="deny" onClick={() => decide("deny")}>Deny</button>
+      <div className="body">
+        {leftOpen ? (
+          <aside className="left">
+            <div className="project">
+              <div className="avatar">{project.charAt(0).toUpperCase()}</div>
+              <div className="pinfo">
+                <div className="pname">{project}</div>
+                {cwd ? <div className="ppath">{shortPath(cwd)}</div> : null}
               </div>
+              <button className="icon" title="Choose folder" onClick={() => void chooseFolder()}>…</button>
             </div>
-          </div>
+            <button className="new-session" onClick={() => void newSession()}>✎ New session</button>
+            <div className="session-list">
+              {visibleSessions.map((s) => (
+                <button
+                  key={s.id}
+                  className={`session ${s.id === currentId ? "active" : ""}`}
+                  onClick={() => void openSession(s.id)}
+                >
+                  {s.title}
+                </button>
+              ))}
+            </div>
+          </aside>
         ) : null}
 
-        <div className="composer">
-          <textarea
-            value={input}
-            placeholder="Ask termcoder to do something…  (Enter to send, Shift+Enter for newline)"
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                send();
-              }
-            }}
-          />
-          <button onClick={send} disabled={busy || !connected}>Send</button>
-        </div>
-      </main>
+        <main className="center">
+          <div className="chat-head">
+            <span className="ch-title">{currentTitle}</span>
+            <span className={`dot ${connected ? "on" : "off"}`} title={connected ? "connected" : "connecting"} />
+          </div>
+
+          <div className="transcript" ref={scrollRef}>
+            {messages.length === 0 ? (
+              <div className="empty">Ask termcoder to write code, run commands, or search the web.</div>
+            ) : null}
+            {messages.map((m, i) => (
+              <div key={i} className={`msg ${m.role}`}>
+                {m.role === "user" ? <div className="bubble user">{m.text}</div> : null}
+                {m.role === "assistant" ? (
+                  <div className="bubble assistant markdown">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+                      {m.text}
+                    </ReactMarkdown>
+                  </div>
+                ) : null}
+                {m.role === "tool" ? (
+                  <div className="tool-wrap">
+                    <div className="tool">
+                      <span className={`status ${m.status}`}>
+                        {m.status === "error" ? "✗" : m.status === "done" ? "✓" : "•"}
+                      </span>
+                      <span className="toolname">{m.name}</span>
+                      {m.text ? <span className="muted"> {m.text}</span> : null}
+                    </div>
+                    {m.detail ? (isDiff(m.detail) ? <DiffBlock text={m.detail} /> : <pre className="detail">{m.detail}</pre>) : null}
+                  </div>
+                ) : null}
+                {m.role === "error" ? <div className="bubble error">✗ {m.text}</div> : null}
+              </div>
+            ))}
+            {busy ? <div className="bubble muted">▍ thinking…</div> : null}
+          </div>
+
+          {perm ? (
+            <div className="perm">
+              <div className="perm-card">
+                <div className="perm-title">Allow this action?</div>
+                <div className="perm-detail">{perm.title}</div>
+                {perm.detail ? (isDiff(perm.detail) ? <DiffBlock text={perm.detail} /> : <pre className="detail">{perm.detail}</pre>) : null}
+                <div className="perm-actions">
+                  <button className="allow" onClick={() => decide("allow")}>Allow</button>
+                  <button className="always" onClick={() => decide("allow-always")}>Always</button>
+                  <button className="deny" onClick={() => decide("deny")}>Deny</button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="dock">
+            <div className="composer">
+              <button className="attach" title="Attach">＋</button>
+              <textarea
+                value={input}
+                placeholder="Ask anything…"
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    send();
+                  }
+                }}
+              />
+              <button className="send" onClick={send} disabled={busy || !connected}>↑</button>
+            </div>
+            <div className="selectors">
+              <span className="chip">⚙ Build ▾</span>
+              <span className="chip model">
+                ⚡
+                <select value={model} onChange={(e) => changeModel(e.target.value)}>
+                  {MODELS.includes(model) ? null : <option value={model}>{model}</option>}
+                  {MODELS.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </span>
+              <span className="chip">Default ▾</span>
+            </div>
+          </div>
+        </main>
+
+        {rightOpen ? (
+          <aside className="right">
+            <div className="right-tabs">
+              <button className={rightTab === "changes" ? "active" : ""} onClick={() => setRightTab("changes")}>
+                0 Changes
+              </button>
+              <button className={rightTab === "files" ? "active" : ""} onClick={() => setRightTab("files")}>
+                All files
+              </button>
+            </div>
+            {rightTab === "files" ? (
+              <FileTree root={cwd} />
+            ) : (
+              <div className="muted tree-empty">No changes tracked yet.</div>
+            )}
+          </aside>
+        ) : null}
+      </div>
     </div>
   );
 }

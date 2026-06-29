@@ -1,3 +1,4 @@
+import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import {
@@ -67,6 +68,19 @@ function createWindow(): void {
 ipcMain.handle("pick-folder", async () => {
   const result = await dialog.showOpenDialog({ properties: ["openDirectory"] });
   return result.canceled || !result.filePaths[0] ? null : result.filePaths[0];
+});
+
+ipcMain.handle("list-dir", (_event, dir: string) => {
+  try {
+    return readdirSync(dir, { withFileTypes: true })
+      .map((d) => ({ name: d.name, dir: d.isDirectory() }))
+      .sort((a, b) =>
+        a.dir === b.dir ? a.name.localeCompare(b.name) : a.dir ? -1 : 1,
+      )
+      .slice(0, 500);
+  } catch {
+    return [];
+  }
 });
 
 app.whenReady().then(async () => {
