@@ -126,9 +126,12 @@ ipcMain.handle("all-files", (_event, dir: string) => {
 
 ipcMain.handle("git-diff", (_event, dir: string, path: string) => {
   try {
-    const opts = { cwd: dir, encoding: "utf8" as const, maxBuffer: 5_000_000 };
-    let diff = spawnSync("git", ["diff", "--no-color", "--", path], opts).stdout ?? "";
-    if (!diff.trim()) diff = spawnSync("git", ["diff", "--no-color", "--staged", "--", path], opts).stdout ?? "";
+    const opts = { cwd: dir, encoding: "utf8" as const, maxBuffer: 10_000_000 };
+    const pathArgs = path ? ["--", path] : [];
+    let diff = spawnSync("git", ["diff", "--no-color", ...pathArgs], opts).stdout ?? "";
+    if (!diff.trim()) {
+      diff = spawnSync("git", ["diff", "--no-color", "--staged", ...pathArgs], opts).stdout ?? "";
+    }
     return { diff };
   } catch {
     return { diff: "" };

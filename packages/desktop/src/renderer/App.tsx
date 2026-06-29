@@ -245,11 +245,26 @@ export function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      const mod = e.ctrlKey || e.metaKey;
+      const k = e.key.toLowerCase();
+      if (mod && k === "k") {
         e.preventDefault();
         setPaletteOpen((v) => !v);
+      } else if (mod && k === "n") {
+        e.preventDefault();
+        void newSession();
+      } else if (mod && k === "b") {
+        e.preventDefault();
+        setLeftOpen((v) => !v);
+      } else if (mod && k === "j") {
+        e.preventDefault();
+        setRightOpen((v) => !v);
+      } else if (mod && k === "o") {
+        e.preventDefault();
+        void chooseFolder();
       } else if (e.key === "Escape") {
         setPaletteOpen(false);
+        setViewerOpen(false);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -387,6 +402,15 @@ export function App() {
       addTab({ id: `diff:${relPath}`, name: baseName(relPath), kind: "diff", content: res.diff });
     } else {
       await openFile(`${dir}/${relPath}`);
+    }
+  }
+
+  async function openAllDiffs() {
+    const dir = cwdRef.current;
+    if (!dir) return;
+    const res = await window.api?.gitDiff(dir, "");
+    if (res && res.diff.trim()) {
+      addTab({ id: "diff:__all__", name: "All changes", kind: "diff", content: res.diff });
     }
   }
 
@@ -727,6 +751,9 @@ export function App() {
               <div className="muted tree-empty">No changes.</div>
             ) : (
               <div className="tree">
+                <button className="view-all" onClick={() => void openAllDiffs()}>
+                  View all diffs
+                </button>
                 {changedFiles.map(([path, letter]) => (
                   <div key={path} className="tree-row" onClick={() => void openDiff(path)}>
                     <span
