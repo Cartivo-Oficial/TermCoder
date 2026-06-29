@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { relative } from "node:path";
 import { z } from "zod";
+import { formatDiff } from "../util/diff";
 import { resolveInside } from "../util/path";
 import { defineTool } from "./types";
 
@@ -13,13 +14,6 @@ function countOccurrences(haystack: string, needle: string): number {
     index = haystack.indexOf(needle, index + needle.length);
   }
   return count;
-}
-
-/** A compact preview of the replacement for the permission prompt. */
-function previewDiff(oldString: string, newString: string): string {
-  const minus = oldString.split("\n").map((l) => `- ${l}`);
-  const plus = newString.split("\n").map((l) => `+ ${l}`);
-  return [...minus, ...plus].slice(0, 12).join("\n");
 }
 
 export const editTool = defineTool({
@@ -39,7 +33,7 @@ export const editTool = defineTool({
   permissionKind: "edit",
   describe(args, ctx) {
     const rel = relative(ctx.cwd, resolveInside(ctx.cwd, args.path)).split("\\").join("/");
-    return { title: `Edit ${rel}`, detail: previewDiff(args.oldString, args.newString) };
+    return { title: `Edit ${rel}`, detail: formatDiff(args.oldString, args.newString) };
   },
   async run(args, ctx) {
     const abs = resolveInside(ctx.cwd, args.path);

@@ -1,6 +1,7 @@
 import { Box, Text } from "ink";
 import type { Theme } from "../theme";
 import type { ViewItem } from "../types";
+import { DiffView, isDiff } from "./DiffView";
 import { Markdown } from "./Markdown";
 
 interface TranscriptProps {
@@ -15,13 +16,14 @@ export function Transcript({ theme, items }: TranscriptProps) {
   return (
     <Box flexDirection="column">
       {items.map((item, i) => (
-        <Item key={i} theme={theme} item={item} />
+        <TranscriptItem key={i} theme={theme} item={item} />
       ))}
     </Box>
   );
 }
 
-function Item({ theme, item }: { theme: Theme; item: ViewItem }) {
+/** Render a single transcript entry. Exported for use inside Ink's <Static>. */
+export function TranscriptItem({ theme, item }: { theme: Theme; item: ViewItem }) {
   switch (item.kind) {
     case "user":
       return (
@@ -59,7 +61,13 @@ function Item({ theme, item }: { theme: Theme; item: ViewItem }) {
             </Text>
             {item.title ? <Text color={theme.muted}>{`  ${item.title}`}</Text> : null}
           </Text>
-          {item.detail ? <Text color={theme.muted}>{indent(item.detail)}</Text> : null}
+          {item.detail ? (
+            isDiff(item.detail) ? (
+              <DiffView theme={theme} text={item.detail} />
+            ) : (
+              <Text color={theme.muted}>{indent(item.detail)}</Text>
+            )
+          ) : null}
           {item.output && item.status !== "running" ? (
             <Text color={theme.muted}>{indent(preview(item.output))}</Text>
           ) : null}

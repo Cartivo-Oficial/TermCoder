@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Box, Text } from "ink";
 import type { Theme } from "../theme";
+import { highlightCode } from "./highlight";
 
 /** Render inline `code` and **bold** spans within a line of text. */
 function renderInline(text: string, theme: Theme): ReactNode[] {
@@ -49,8 +50,9 @@ export function Markdown({ theme, text }: { theme: Theme; text: string }) {
     }
     if (inCode) {
       rows.push(
-        <Text key={i} color={theme.code}>
-          {"  " + line}
+        <Text key={i}>
+          {"  "}
+          {highlightCode(line, theme)}
         </Text>,
       );
       return;

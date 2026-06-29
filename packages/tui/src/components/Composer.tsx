@@ -10,17 +10,21 @@ interface ComposerProps {
   onSubmit: (value: string) => void;
   busy: boolean;
   disabled: boolean;
+  /** Status shown next to the spinner while busy (e.g. "Editing…"). */
+  status?: string;
 }
 
 /** Bottom input: a rounded prompt box with a hint line; a spinner while busy. */
-export function Composer({ theme, value, onChange, onSubmit, busy, disabled }: ComposerProps) {
+export function Composer({ theme, value, onChange, onSubmit, busy, disabled, status }: ComposerProps) {
   if (busy) {
     return (
       <Box marginTop={1} paddingX={1}>
         <Text color={theme.accent}>
           <Spinner type="dots" />
         </Text>
-        <Text color={theme.muted}> thinking…</Text>
+        <Text color={theme.muted}>{` ${status ?? "Thinking…"}`}</Text>
+        <Text color={theme.border}>{"  ·  "}</Text>
+        <Text color={theme.muted}>esc to interrupt</Text>
       </Box>
     );
   }

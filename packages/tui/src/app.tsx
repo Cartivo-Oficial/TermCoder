@@ -1,7 +1,7 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { useRef, useState } from "react";
-import { Box, useApp } from "ink";
+import { useMemo, useRef, useState } from "react";
+import { Box, Static, useApp, useInput } from "ink";
 import {
   createSubagentTool,
   PermissionManager,
@@ -15,10 +15,10 @@ import {
 } from "@termcoder/core";
 import { getTheme } from "./theme";
 import type { ViewItem } from "./types";
-import { Header } from "./components/Header";
-import { Transcript } from "./components/Transcript";
+import { Banner } from "./components/Banner";
 import { Composer } from "./components/Composer";
 import { PermissionModal } from "./components/PermissionModal";
+import { Transcript, TranscriptItem } from "./components/Transcript";
 
 const HELP = [
   "Commands:",
@@ -34,26 +34,49 @@ const HELP = [
 interface AppProps {
   config: Config;
   cwd: string;
-  /** Tool registry (built-ins plus any MCP tools). Defaults to built-ins only. */
   registry?: ToolRegistry;
-  /** Startup notices to show (e.g. MCP connection results). */
   notices?: string[];
+}
+
+function statusFor(toolName?: string): string {
+  switch (toolName) {
+    case "read":
+    case "ls":
+    case "glob":
+    case "grep":
+      return "Reading…";
+    case "write":
+      return "Writing…";
+    case "edit":
+      return "Editing…";
+    case "bash":
+      return "Running command…";
+    case "diagnostics":
+      return "Checking diagnostics…";
+    case "task":
+      return "Delegating to sub-agent…";
+    default:
+      return toolName ? `Running ${toolName}…` : "Thinking…";
+  }
 }
 
 export function App({ config, cwd, registry: registryProp, notices }: AppProps) {
   const theme = getTheme(config.theme);
   const { exit } = useApp();
 
-  const [items, setItems] = useState<ViewItem[]>(() => [
+  const [history, setHistory] = useState<ViewItem[]>(() => [
     { kind: "notice", text: "Welcome to termcoder. Type /help for commands." },
     ...(notices ?? []).map((text): ViewItem => ({ kind: "notice", text })),
   ]);
+  const [live, setLive] = useState<ViewItem[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState("Thinking…");
+  const [clearEpoch, setClearEpoch] = useState(0);
   const [permRequest, setPermRequest] = useState<PermissionRequest | null>(null);
   const permResolve = useRef<((decision: PermissionDecision) => void) | null>(null);
+  const aborted = useRef(false);
 
-  // Built once; the permission asker bridges the core's promise to the modal.
   const store = useRef(new SessionStore()).current;
   const subRegistry = useRef(registryProp ?? new ToolRegistry()).current;
   const permission = useRef(
@@ -66,8 +89,6 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         }),
     ),
   ).current;
-  // The main agent also gets a `task` tool that delegates to a sub-agent which
-  // reuses this permission gate but cannot itself delegate (no task tool).
   const registry = useRef(
     new ToolRegistry([
       ...subRegistry.list(),
@@ -79,7 +100,14 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     Session.create({ store, registry, config, permission }, { cwd }),
   );
 
-  const push = (item: ViewItem) => setItems((prev) => [...prev, item]);
+  // Esc interrupts the active turn (the stream is abandoned client-side).
+  useInput((_input, key) => {
+    if (key.escape && busy) aborted.current = true;
+  });
+
+  function pushHistory(item: ViewItem) {
+    setHistory((prev) => [...prev, item]);
+  }
 
   function onDecision(decision: PermissionDecision) {
     setPermRequest(null);
@@ -88,27 +116,38 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
   }
 
   async function runPrompt(text: string) {
+    aborted.current = false;
     setBusy(true);
+    setStatus("Thinking…");
+
+    const localLive: ViewItem[] = [];
     let assistantIdx: number | null = null;
-    for await (const event of session.prompt(text)) {
-      setItems((prev) => {
-        const next = [...prev];
+    const sync = () => setLive([...localLive]);
+
+    try {
+      for await (const event of session.prompt(text)) {
+        if (aborted.current) {
+          localLive.push({ kind: "notice", text: "⛔ Interrupted." });
+          break;
+        }
         switch (event.type) {
           case "text-delta": {
+            setStatus("Thinking…");
             if (assistantIdx === null) {
-              next.push({ kind: "assistant", text: event.text });
-              assistantIdx = next.length - 1;
+              localLive.push({ kind: "assistant", text: event.text });
+              assistantIdx = localLive.length - 1;
             } else {
-              const cur = next[assistantIdx];
+              const cur = localLive[assistantIdx];
               if (cur?.kind === "assistant") {
-                next[assistantIdx] = { ...cur, text: cur.text + event.text };
+                localLive[assistantIdx] = { ...cur, text: cur.text + event.text };
               }
             }
             break;
           }
           case "tool-call": {
             assistantIdx = null;
-            next.push({
+            setStatus(statusFor(event.name));
+            localLive.push({
               kind: "tool",
               id: event.id,
               name: event.name,
@@ -119,10 +158,11 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
             break;
           }
           case "tool-result": {
-            const idx = next.findIndex((it) => it.kind === "tool" && it.id === event.id);
-            const t = idx >= 0 ? next[idx] : undefined;
+            setStatus("Thinking…");
+            const idx = localLive.findIndex((it) => it.kind === "tool" && it.id === event.id);
+            const t = idx >= 0 ? localLive[idx] : undefined;
             if (t?.kind === "tool") {
-              next[idx] = {
+              localLive[idx] = {
                 ...t,
                 status: event.isError ? "error" : "done",
                 output: event.output,
@@ -131,52 +171,58 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
             break;
           }
           case "error":
-            next.push({ kind: "error", text: event.error });
+            localLive.push({ kind: "error", text: event.error });
             break;
           case "done":
             break;
         }
-        return next;
-      });
+        sync();
+      }
+    } finally {
+      // Commit the finished turn to the static scrollback.
+      setHistory((prev) => [...prev, ...localLive]);
+      setLive([]);
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   function handleCommand(text: string) {
     const [cmd] = text.slice(1).split(/\s+/);
     switch (cmd) {
       case "help":
-        push({ kind: "notice", text: HELP });
+        pushHistory({ kind: "notice", text: HELP });
         break;
       case "clear":
-        setItems([]);
+        setHistory([]);
+        setLive([]);
+        setClearEpoch((n) => n + 1);
         break;
       case "new": {
         const fresh = Session.create({ store, registry, config, permission }, { cwd });
         setSession(fresh);
-        setItems([{ kind: "notice", text: "Started a new session." }]);
+        setHistory([{ kind: "notice", text: "Started a new session." }]);
+        setLive([]);
+        setClearEpoch((n) => n + 1);
         break;
       }
       case "sessions": {
         const list = store.list().slice(0, 10);
         const lines = list.length
-          ? list
-              .map((s) => `  ${s.id.slice(0, 8)}  ${s.messageCount} msgs  ${s.title}`)
-              .join("\n")
+          ? list.map((s) => `  ${s.id.slice(0, 8)}  ${s.messageCount} msgs  ${s.title}`).join("\n")
           : "  (no saved sessions)";
-        push({ kind: "notice", text: `Sessions:\n${lines}` });
+        pushHistory({ kind: "notice", text: `Sessions:\n${lines}` });
         break;
       }
       case "model":
-        push({ kind: "notice", text: `Model: ${config.model}` });
+        pushHistory({ kind: "notice", text: `Model: ${config.model}` });
         break;
       case "share": {
         const file = join(cwd, `termcoder-${session.record.id.slice(0, 8)}.html`);
         try {
           writeFileSync(file, renderSessionHtml(session.record), "utf8");
-          push({ kind: "notice", text: `Saved transcript to ${file}` });
+          pushHistory({ kind: "notice", text: `Saved transcript to ${file}` });
         } catch (err) {
-          push({ kind: "error", text: `Could not write transcript: ${String(err)}` });
+          pushHistory({ kind: "error", text: `Could not write transcript: ${String(err)}` });
         }
         break;
       }
@@ -185,7 +231,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         exit();
         break;
       default:
-        push({ kind: "notice", text: `Unknown command: /${cmd} (try /help)` });
+        pushHistory({ kind: "notice", text: `Unknown command: /${cmd} (try /help)` });
     }
   }
 
@@ -197,14 +243,36 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
       handleCommand(text);
       return;
     }
-    push({ kind: "user", text });
+    pushHistory({ kind: "user", text });
     void runPrompt(text);
   }
 
+  type StaticEntry = { banner: true } | { banner: false; item: ViewItem };
+  const staticEntries = useMemo<StaticEntry[]>(
+    () => [{ banner: true }, ...history.map((item) => ({ banner: false as const, item }))],
+    [history],
+  );
+
   return (
-    <Box flexDirection="column">
-      <Header theme={theme} model={config.model} cwd={cwd} sessionId={session.record.id} />
-      <Transcript theme={theme} items={items} />
+    <Box flexDirection="column" key={`${session.record.id}:${clearEpoch}`}>
+      <Static items={staticEntries}>
+        {(entry, index) =>
+          entry.banner ? (
+            <Banner
+              key="banner"
+              theme={theme}
+              model={config.model}
+              cwd={cwd}
+              sessionId={session.record.id}
+            />
+          ) : (
+            <TranscriptItem key={index} theme={theme} item={entry.item} />
+          )
+        }
+      </Static>
+
+      {live.length > 0 ? <Transcript theme={theme} items={live} /> : null}
+
       {permRequest ? (
         <PermissionModal theme={theme} request={permRequest} onDecision={onDecision} />
       ) : (
@@ -215,6 +283,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           onSubmit={onSubmit}
           busy={busy}
           disabled={busy}
+          status={status}
         />
       )}
     </Box>

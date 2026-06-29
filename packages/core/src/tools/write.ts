@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, relative } from "node:path";
 import { z } from "zod";
+import { formatDiff } from "../util/diff";
 import { resolveInside } from "../util/path";
 import { defineTool } from "./types";
 
@@ -15,12 +16,13 @@ export const writeTool = defineTool({
   readOnly: false,
   permissionKind: "write",
   describe(args, ctx) {
-    const rel = relative(ctx.cwd, resolveInside(ctx.cwd, args.path)).split("\\").join("/");
-    const exists = existsSync(resolveInside(ctx.cwd, args.path));
-    const lines = args.content.split("\n").length;
+    const abs = resolveInside(ctx.cwd, args.path);
+    const rel = relative(ctx.cwd, abs).split("\\").join("/");
+    const exists = existsSync(abs);
+    const previous = exists ? readFileSync(abs, "utf8") : "";
     return {
       title: `${exists ? "Overwrite" : "Create"} ${rel}`,
-      detail: `${lines} line(s), ${args.content.length} bytes`,
+      detail: formatDiff(previous, args.content),
     };
   },
   async run(args, ctx) {

@@ -1,6 +1,7 @@
 import { Box, Text, useInput } from "ink";
 import type { PermissionRequest, PermissionDecision } from "@termcoder/core";
 import type { Theme } from "../theme";
+import { DiffView, isDiff } from "./DiffView";
 
 interface PermissionModalProps {
   theme: Theme;
@@ -32,7 +33,11 @@ export function PermissionModal({ theme, request, onDecision }: PermissionModalP
       </Text>
       {request.detail ? (
         <Box marginTop={1}>
-          <Text color={theme.muted}>{request.detail}</Text>
+          {isDiff(request.detail) ? (
+            <DiffView theme={theme} text={request.detail} />
+          ) : (
+            <Text color={theme.muted}>{request.detail}</Text>
+          )}
         </Box>
       ) : null}
       <Box marginTop={1}>
