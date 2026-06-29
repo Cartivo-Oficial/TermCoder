@@ -1,8 +1,19 @@
 import { useEffect, useRef, useState } from "react";
+import hljs from "highlight.js";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { FileTree } from "./FileTree";
+import {
+  IconBack,
+  IconClose,
+  IconForward,
+  IconNewChat,
+  IconPanelRight,
+  IconPlus,
+  IconSend,
+  IconSidebar,
+} from "./Icons";
 
 declare global {
   interface Window {
@@ -10,6 +21,8 @@ declare global {
       serverPort: number;
       pickFolder: () => Promise<string | null>;
       listDir: (dir: string) => Promise<Array<{ name: string; dir: boolean }>>;
+      readFile: (path: string) => Promise<{ content: string; error?: string }>;
+      gitStatus: (dir: string) => Promise<{ map: Record<string, string>; count: number }>;
     };
   }
 }
@@ -54,6 +67,7 @@ const shortPath = (p: string) => {
   const parts = p.split(/[\\/]/).filter(Boolean);
   return parts.length > 3 ? `…\\${parts.slice(-2).join("\\")}` : p;
 };
+const fmtTokens = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
 
 function DiffBlock({ text }: { text: string }) {
   return (
@@ -64,6 +78,38 @@ function DiffBlock({ text }: { text: string }) {
         </div>
       ))}
     </pre>
+  );
+}
+
+function Viewer({ name, content, onClose }: { name: string; content: string; onClose: () => void }) {
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.removeAttribute("data-highlighted");
+      try {
+        hljs.highlightElement(ref.current);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [name, content]);
+  const ext = name.includes(".") ? name.split(".").pop()! : "";
+  return (
+    <div className="viewer" onClick={onClose}>
+      <div className="viewer-card" onClick={(e) => e.stopPropagation()}>
+        <div className="viewer-head">
+          <span className="vname">{name}</span>
+          <button className="icon" onClick={onClose}>
+            <IconClose />
+          </button>
+        </div>
+        <pre className="viewer-body">
+          <code ref={ref} className={`language-${ext}`}>
+            {content}
+          </code>
+        </pre>
+      </div>
+    </div>
   );
 }
 
@@ -89,7 +135,11 @@ export function App() {
   const [connected, setConnected] = useState(false);
   const [cwd, setCwd] = useState<string | null>(null);
   const [model, setModel] = useState<string>(MODELS[0]!);
+  const [tokens, setTokens] = useState(0);
+  const [status, setStatus] = useState<Record<string, string>>({});
+  const [changes, setChanges] = useState(0);
   const [perm, setPerm] = useState<{ id: string; title: string; detail?: string } | null>(null);
+  const [viewer, setViewer] = useState<{ name: string; content: string } | null>(null);
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
   const [rightTab, setRightTab] = useState<"files" | "changes">("files");
@@ -98,6 +148,7 @@ export function App() {
   const wsRef = useRef<WebSocket | null>(null);
   const assistantIdx = useRef<number | null>(null);
   const started = useRef(false);
+  const cwdRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -122,6 +173,16 @@ export function App() {
     }
   }
 
+  async function refreshGit() {
+    const dir = cwdRef.current;
+    if (!dir) return;
+    const res = await window.api?.gitStatus(dir);
+    if (res) {
+      setStatus(res.map);
+      setChanges(res.count);
+    }
+  }
+
   function connect(id: string) {
     wsRef.current?.close();
     assistantIdx.current = null;
@@ -132,22 +193,28 @@ export function App() {
     ws.onmessage = (ev) => onEvent(JSON.parse(ev.data) as StreamEvent);
   }
 
+  function setWorkingDir(dir: string) {
+    setCwd(dir);
+    cwdRef.current = dir;
+    void refreshGit();
+  }
+
   async function createSession(folder?: string) {
     const body = JSON.stringify(folder ? { cwd: folder } : {});
     const record = (await (
       await fetch(`${httpBase}/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body })
     ).json()) as { id: string; cwd: string; model: string };
     setCurrentId(record.id);
-    setCwd(record.cwd);
     setModel(record.model);
     setMessages([]);
+    setWorkingDir(record.cwd);
     connect(record.id);
     void refreshSessions();
   }
 
   async function newSession() {
     try {
-      await createSession(cwd ?? undefined);
+      await createSession(cwdRef.current ?? undefined);
     } catch {
       setMessages([{ role: "error", text: "Could not reach the termcoder server." }]);
     }
@@ -161,9 +228,9 @@ export function App() {
         fetch(`${httpBase}/sessions/${id}/transcript`).then((r) => r.json()) as Promise<Segment[]>,
       ]);
       setCurrentId(id);
-      setCwd(record.cwd);
       setModel(record.model);
       setMessages(segments.map(segToMessage));
+      setWorkingDir(record.cwd);
       connect(id);
     } catch {
       /* ignore */
@@ -173,6 +240,11 @@ export function App() {
   async function chooseFolder() {
     const folder = await window.api?.pickFolder();
     if (folder) await createSession(folder);
+  }
+
+  async function openFile(path: string) {
+    const res = await window.api?.readFile(path);
+    if (res) setViewer({ name: baseName(path), content: res.content });
   }
 
   function changeModel(m: string) {
@@ -189,6 +261,10 @@ export function App() {
   function onEvent(e: StreamEvent) {
     if (e.type === "permission-request") {
       setPerm({ id: e.id, title: e.request.title, detail: e.request.detail });
+      return;
+    }
+    if (e.type === "usage") {
+      setTokens((t) => t + e.inputTokens + e.outputTokens);
       return;
     }
     setMessages((prev) => {
@@ -221,6 +297,7 @@ export function App() {
         case "done":
           setBusy(false);
           void refreshSessions();
+          void refreshGit();
           break;
       }
       return next;
@@ -247,14 +324,15 @@ export function App() {
   const visibleSessions = search
     ? sessions.filter((s) => s.title.toLowerCase().includes(search.toLowerCase()))
     : sessions;
+  const changedFiles = Object.entries(status);
 
   return (
     <div className="shell">
       <header className="toolbar">
         <div className="tb-left">
-          <button className="icon" title="Toggle sidebar" onClick={() => setLeftOpen((v) => !v)}>▥</button>
-          <button className="icon dim" title="Back">‹</button>
-          <button className="icon dim" title="Forward">›</button>
+          <button className="icon" title="Toggle sidebar" onClick={() => setLeftOpen((v) => !v)}><IconSidebar /></button>
+          <button className="icon dim" title="Back"><IconBack /></button>
+          <button className="icon dim" title="Forward"><IconForward /></button>
         </div>
         <div className="tb-center">
           <input
@@ -263,11 +341,11 @@ export function App() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <span className="kbd">Ctrl+K</span>
+          <span className="kbd">Ctrl K</span>
         </div>
         <div className="tb-right">
-          <button className="icon" title="New session" onClick={() => void newSession()}>＋</button>
-          <button className="icon" title="Toggle files" onClick={() => setRightOpen((v) => !v)}>▤</button>
+          <button className="icon" title="New session" onClick={() => void newSession()}><IconNewChat /></button>
+          <button className="icon" title="Toggle files" onClick={() => setRightOpen((v) => !v)}><IconPanelRight /></button>
         </div>
       </header>
 
@@ -282,7 +360,9 @@ export function App() {
               </div>
               <button className="icon" title="Choose folder" onClick={() => void chooseFolder()}>…</button>
             </div>
-            <button className="new-session" onClick={() => void newSession()}>✎ New session</button>
+            <button className="new-session" onClick={() => void newSession()}>
+              <IconNewChat /> New session
+            </button>
             <div className="session-list">
               {visibleSessions.map((s) => (
                 <button
@@ -301,6 +381,9 @@ export function App() {
           <div className="chat-head">
             <span className="ch-title">{currentTitle}</span>
             <span className={`dot ${connected ? "on" : "off"}`} title={connected ? "connected" : "connecting"} />
+            <div className="ch-right">
+              {tokens > 0 ? <span className="muted">{fmtTokens(tokens)} tok</span> : null}
+            </div>
           </div>
 
           <div className="transcript" ref={scrollRef}>
@@ -352,7 +435,7 @@ export function App() {
 
           <div className="dock">
             <div className="composer">
-              <button className="attach" title="Attach">＋</button>
+              <button className="attach" title="Attach"><IconPlus /></button>
               <textarea
                 value={input}
                 placeholder="Ask anything…"
@@ -364,18 +447,15 @@ export function App() {
                   }
                 }}
               />
-              <button className="send" onClick={send} disabled={busy || !connected}>↑</button>
+              <button className="send" onClick={send} disabled={busy || !connected}><IconSend /></button>
             </div>
             <div className="selectors">
-              <span className="chip">⚙ Build ▾</span>
+              <span className="chip">Build ▾</span>
               <span className="chip model">
-                ⚡
                 <select value={model} onChange={(e) => changeModel(e.target.value)}>
                   {MODELS.includes(model) ? null : <option value={model}>{model}</option>}
                   {MODELS.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
+                    <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
               </span>
@@ -388,20 +468,40 @@ export function App() {
           <aside className="right">
             <div className="right-tabs">
               <button className={rightTab === "changes" ? "active" : ""} onClick={() => setRightTab("changes")}>
-                0 Changes
+                {changes} Changes
               </button>
               <button className={rightTab === "files" ? "active" : ""} onClick={() => setRightTab("files")}>
                 All files
               </button>
             </div>
             {rightTab === "files" ? (
-              <FileTree root={cwd} />
+              <FileTree root={cwd} status={status} onOpen={(p) => void openFile(p)} />
+            ) : changedFiles.length === 0 ? (
+              <div className="muted tree-empty">No changes.</div>
             ) : (
-              <div className="muted tree-empty">No changes tracked yet.</div>
+              <div className="tree">
+                {changedFiles.map(([path, letter]) => (
+                  <div
+                    key={path}
+                    className="tree-row"
+                    onClick={() => cwd && void openFile(`${cwd}/${path}`)}
+                  >
+                    <span
+                      className="git-badge"
+                      style={{ color: letter === "A" ? "var(--ok)" : letter === "D" ? "var(--bad)" : "var(--warn)" }}
+                    >
+                      {letter}
+                    </span>
+                    <span className="fname">{path}</span>
+                  </div>
+                ))}
+              </div>
             )}
           </aside>
         ) : null}
       </div>
+
+      {viewer ? <Viewer name={viewer.name} content={viewer.content} onClose={() => setViewer(null)} /> : null}
     </div>
   );
 }

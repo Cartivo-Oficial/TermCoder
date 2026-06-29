@@ -1,4 +1,5 @@
-import { readdirSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import {
@@ -80,6 +81,35 @@ ipcMain.handle("list-dir", (_event, dir: string) => {
       .slice(0, 500);
   } catch {
     return [];
+  }
+});
+
+ipcMain.handle("read-file", (_event, path: string) => {
+  try {
+    const content = readFileSync(path, "utf8");
+    const max = 200_000;
+    return { content: content.length > max ? `${content.slice(0, max)}\n…(truncated)` : content };
+  } catch (err) {
+    return { content: "", error: String(err) };
+  }
+});
+
+ipcMain.handle("git-status", (_event, dir: string) => {
+  try {
+    const out = spawnSync("git", ["status", "--porcelain"], { cwd: dir, encoding: "utf8" });
+    if (out.status !== 0 || !out.stdout) return { map: {}, count: 0 };
+    const map: Record<string, string> = {};
+    for (const line of out.stdout.split("\n")) {
+      if (!line.trim()) continue;
+      const index = line[0] ?? " ";
+      const work = line[1] ?? " ";
+      let path = line.slice(3).trim();
+      if (path.includes(" -> ")) path = path.split(" -> ")[1] ?? path;
+      map[path] = line.startsWith("??") ? "A" : work !== " " ? work : index;
+    }
+    return { map, count: Object.keys(map).length };
+  } catch {
+    return { map: {}, count: 0 };
   }
 });
 

@@ -7,4 +7,8 @@ contextBridge.exposeInMainWorld("api", {
   pickFolder: (): Promise<string | null> => ipcRenderer.invoke("pick-folder"),
   listDir: (dir: string): Promise<Array<{ name: string; dir: boolean }>> =>
     ipcRenderer.invoke("list-dir", dir),
+  readFile: (path: string): Promise<{ content: string; error?: string }> =>
+    ipcRenderer.invoke("read-file", path),
+  gitStatus: (dir: string): Promise<{ map: Record<string, string>; count: number }> =>
+    ipcRenderer.invoke("git-status", dir),
 });
