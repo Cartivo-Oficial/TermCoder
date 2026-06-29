@@ -4,15 +4,21 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { FileTree } from "./FileTree";
+import { CommandPalette, type PaletteItem } from "./CommandPalette";
 import {
   IconBack,
   IconClose,
   IconForward,
+  IconMaximize,
+  IconMinimize,
+  IconMoon,
   IconNewChat,
   IconPanelRight,
   IconPlus,
+  IconSearch,
   IconSend,
   IconSidebar,
+  IconSun,
 } from "./Icons";
 
 declare global {
@@ -21,8 +27,12 @@ declare global {
       serverPort: number;
       pickFolder: () => Promise<string | null>;
       listDir: (dir: string) => Promise<Array<{ name: string; dir: boolean }>>;
+      allFiles: (dir: string) => Promise<string[]>;
       readFile: (path: string) => Promise<{ content: string; error?: string }>;
       gitStatus: (dir: string) => Promise<{ map: Record<string, string>; count: number }>;
+      minimize: () => void;
+      maximize: () => void;
+      closeWindow: () => void;
     };
   }
 }
@@ -143,13 +153,37 @@ export function App() {
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
   const [rightTab, setRightTab] = useState<"files" | "changes">("files");
-  const [search, setSearch] = useState("");
+  const [theme, setTheme] = useState<"dark" | "light">(
+    () => (localStorage.getItem("tc-theme") as "dark" | "light") || "dark",
+  );
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [fileList, setFileList] = useState<string[]>([]);
+  const [mention, setMention] = useState<{ query: string; items: string[]; active: number } | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const assistantIdx = useRef<number | null>(null);
   const started = useRef(false);
   const cwdRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("tc-theme", theme);
+  }, [theme]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      } else if (e.key === "Escape") {
+        setPaletteOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     if (started.current) return;
@@ -197,6 +231,7 @@ export function App() {
     setCwd(dir);
     cwdRef.current = dir;
     void refreshGit();
+    void window.api?.allFiles(dir).then(setFileList);
   }
 
   async function createSession(folder?: string) {
@@ -313,18 +348,66 @@ export function App() {
     const text = input.trim();
     if (!text || busy || !connected) return;
     setInput("");
+    setMention(null);
     assistantIdx.current = null;
     setMessages((prev) => [...prev, { role: "user", text }]);
     setBusy(true);
     wsRef.current?.send(JSON.stringify({ type: "prompt", text }));
   }
 
+  function updateMention(value: string, caret: number) {
+    const m = /@([\w./\\-]*)$/.exec(value.slice(0, caret));
+    if (!m) {
+      setMention(null);
+      return;
+    }
+    const q = m[1]!.toLowerCase();
+    const items = fileList.filter((f) => f.toLowerCase().includes(q)).slice(0, 8);
+    setMention(items.length ? { query: m[1]!, items, active: 0 } : null);
+  }
+
+  function insertMention(file: string) {
+    const el = inputRef.current;
+    if (!el) return;
+    const caret = el.selectionStart ?? input.length;
+    const upto = input.slice(0, caret);
+    const m = /@([\w./\\-]*)$/.exec(upto);
+    if (!m) return;
+    const before = upto.slice(0, m.index);
+    const next = `${before}@${file} ${input.slice(caret)}`;
+    setInput(next);
+    setMention(null);
+    requestAnimationFrame(() => {
+      const pos = `${before}@${file} `.length;
+      el.focus();
+      el.setSelectionRange(pos, pos);
+    });
+  }
+
   const project = cwd ? baseName(cwd) : "termcoder";
   const currentTitle = sessions.find((s) => s.id === currentId)?.title ?? "New session";
-  const visibleSessions = search
-    ? sessions.filter((s) => s.title.toLowerCase().includes(search.toLowerCase()))
-    : sessions;
   const changedFiles = Object.entries(status);
+
+  const paletteItems: PaletteItem[] = [
+    { id: "new", label: "New session", hint: "command", run: () => void newSession() },
+    { id: "folder", label: "Choose folder…", hint: "command", run: () => void chooseFolder() },
+    { id: "left", label: "Toggle sessions panel", hint: "command", run: () => setLeftOpen((v) => !v) },
+    { id: "right", label: "Toggle files panel", hint: "command", run: () => setRightOpen((v) => !v) },
+    {
+      id: "theme",
+      label: `Switch to ${theme === "dark" ? "light" : "dark"} theme`,
+      hint: "command",
+      run: () => setTheme((t) => (t === "dark" ? "light" : "dark")),
+    },
+    ...MODELS.map((m) => ({ id: `model:${m}`, label: m, hint: "model", run: () => changeModel(m) })),
+    ...sessions.map((s) => ({ id: `sess:${s.id}`, label: s.title, hint: "session", run: () => void openSession(s.id) })),
+    ...fileList.slice(0, 600).map((f) => ({
+      id: `file:${f}`,
+      label: f,
+      hint: "file",
+      run: () => cwd && void openFile(`${cwd}/${f}`),
+    })),
+  ];
 
   return (
     <div className="shell">
@@ -335,17 +418,27 @@ export function App() {
           <button className="icon dim" title="Forward"><IconForward /></button>
         </div>
         <div className="tb-center">
-          <input
-            className="search"
-            placeholder={`Search ${project}`}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <span className="kbd">Ctrl K</span>
+          <button className="search" onClick={() => setPaletteOpen(true)}>
+            <IconSearch />
+            <span className="search-label">Search {project}</span>
+            <span className="kbd">Ctrl K</span>
+          </button>
         </div>
         <div className="tb-right">
           <button className="icon" title="New session" onClick={() => void newSession()}><IconNewChat /></button>
           <button className="icon" title="Toggle files" onClick={() => setRightOpen((v) => !v)}><IconPanelRight /></button>
+          <button
+            className="icon"
+            title="Toggle theme"
+            onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+          >
+            {theme === "dark" ? <IconSun /> : <IconMoon />}
+          </button>
+          <div className="win-controls">
+            <button className="win-btn" title="Minimize" onClick={() => window.api?.minimize()}><IconMinimize /></button>
+            <button className="win-btn" title="Maximize" onClick={() => window.api?.maximize()}><IconMaximize /></button>
+            <button className="win-btn close" title="Close" onClick={() => window.api?.closeWindow()}><IconClose /></button>
+          </div>
         </div>
       </header>
 
@@ -364,7 +457,7 @@ export function App() {
               <IconNewChat /> New session
             </button>
             <div className="session-list">
-              {visibleSessions.map((s) => (
+              {sessions.map((s) => (
                 <button
                   key={s.id}
                   className={`session ${s.id === currentId ? "active" : ""}`}
@@ -434,13 +527,55 @@ export function App() {
           ) : null}
 
           <div className="dock">
+            {mention ? (
+              <div className="mention-pop">
+                {mention.items.map((f, i) => (
+                  <div
+                    key={f}
+                    className={`mention-item ${i === mention.active ? "active" : ""}`}
+                    onMouseEnter={() => setMention((m) => (m ? { ...m, active: i } : m))}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      insertMention(f);
+                    }}
+                  >
+                    {f}
+                  </div>
+                ))}
+              </div>
+            ) : null}
             <div className="composer">
               <button className="attach" title="Attach"><IconPlus /></button>
               <textarea
+                ref={inputRef}
                 value={input}
-                placeholder="Ask anything…"
-                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ask anything…  (@ to add a file)"
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  updateMention(e.target.value, e.target.selectionStart ?? e.target.value.length);
+                }}
                 onKeyDown={(e) => {
+                  if (mention) {
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      setMention((m) => (m ? { ...m, active: Math.min(m.active + 1, m.items.length - 1) } : m));
+                      return;
+                    }
+                    if (e.key === "ArrowUp") {
+                      e.preventDefault();
+                      setMention((m) => (m ? { ...m, active: Math.max(m.active - 1, 0) } : m));
+                      return;
+                    }
+                    if (e.key === "Enter" || e.key === "Tab") {
+                      e.preventDefault();
+                      insertMention(mention.items[mention.active]!);
+                      return;
+                    }
+                    if (e.key === "Escape") {
+                      setMention(null);
+                      return;
+                    }
+                  }
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     send();
@@ -502,6 +637,7 @@ export function App() {
       </div>
 
       {viewer ? <Viewer name={viewer.name} content={viewer.content} onClose={() => setViewer(null)} /> : null}
+      {paletteOpen ? <CommandPalette items={paletteItems} onClose={() => setPaletteOpen(false)} /> : null}
     </div>
   );
 }

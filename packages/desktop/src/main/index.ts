@@ -48,7 +48,8 @@ function createWindow(): void {
     minWidth: 640,
     minHeight: 480,
     title: "termcoder",
-    backgroundColor: "#0d1117",
+    backgroundColor: "#0a0a0b",
+    frame: false,
     autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,
@@ -93,6 +94,42 @@ ipcMain.handle("read-file", (_event, path: string) => {
     return { content: "", error: String(err) };
   }
 });
+
+const WALK_IGNORE = new Set(["node_modules", ".git", "dist", "out", "release", ".next", ".turbo"]);
+
+ipcMain.handle("all-files", (_event, dir: string) => {
+  const results: string[] = [];
+  const walk = (d: string, rel: string, depth: number) => {
+    if (results.length >= 3000 || depth > 8) return;
+    let entries: Array<{ name: string; isDirectory: () => boolean }>;
+    try {
+      entries = readdirSync(d, { withFileTypes: true }) as Array<{
+        name: string;
+        isDirectory: () => boolean;
+      }>;
+    } catch {
+      return;
+    }
+    for (const ent of entries) {
+      if (WALK_IGNORE.has(ent.name)) continue;
+      const childRel = rel ? `${rel}/${ent.name}` : ent.name;
+      if (ent.isDirectory()) walk(join(d, ent.name), childRel, depth + 1);
+      else {
+        results.push(childRel);
+        if (results.length >= 3000) return;
+      }
+    }
+  };
+  walk(dir, "", 0);
+  return results;
+});
+
+ipcMain.on("window-minimize", (e) => BrowserWindow.fromWebContents(e.sender)?.minimize());
+ipcMain.on("window-maximize", (e) => {
+  const w = BrowserWindow.fromWebContents(e.sender);
+  if (w) (w.isMaximized() ? w.unmaximize() : w.maximize());
+});
+ipcMain.on("window-close", (e) => BrowserWindow.fromWebContents(e.sender)?.close());
 
 ipcMain.handle("git-status", (_event, dir: string) => {
   try {
