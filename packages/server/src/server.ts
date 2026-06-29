@@ -15,6 +15,7 @@ import {
   Session,
   SessionStore,
   ToolRegistry,
+  transcriptSegments,
   type Config,
   type ModelRunner,
   type PermissionDecision,
@@ -119,6 +120,18 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     const id = parts[1]!;
     if (!ctx.store.exists(id)) return sendJson(res, 404, { error: "session not found" });
     return sendJson(res, 200, ctx.store.load(id));
+  }
+
+  // Flattened, render-ready transcript for a saved session.
+  if (
+    req.method === "GET" &&
+    parts.length === 3 &&
+    parts[0] === "sessions" &&
+    parts[2] === "transcript"
+  ) {
+    const id = parts[1]!;
+    if (!ctx.store.exists(id)) return sendJson(res, 404, { error: "session not found" });
+    return sendJson(res, 200, transcriptSegments(ctx.store.load(id)));
   }
 
   // Shareable transcript: HTML by default, Markdown with ?format=md.

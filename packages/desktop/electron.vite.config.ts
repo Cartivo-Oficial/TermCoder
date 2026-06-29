@@ -10,6 +10,11 @@ export default defineConfig({
       rollupOptions: { input: { index: resolve(__dirname, "src/main/index.ts") } },
     },
   },
+  preload: {
+    build: {
+      rollupOptions: { input: { index: resolve(__dirname, "src/preload/index.ts") } },
+    },
+  },
   renderer: {
     root: resolve(__dirname, "src/renderer"),
     build: {
