@@ -1,6 +1,8 @@
 {
   "name": "termcoder-monorepo",
   "private": true,
+  "description": "An open-source AI coding agent for your terminal, with a focus on a clean, polished UX.",
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=20"

@@ -1,6 +1,12 @@
 {
   "name": "@termcoder/core",
   "version": "0.0.0",
+  "description": "Headless engine for termcoder: agent loop, tools, permissions, sessions, MCP/LSP, providers.",
+  "license": "MIT",
+  "author": "Eduardo <eduardo.wankax@gmail.com>",
+  "keywords": ["ai", "agent", "coding-agent", "llm", "cli", "termcoder"],
+  "engines": { "node": ">=20" },
+  "publishConfig": { "access": "public" },
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

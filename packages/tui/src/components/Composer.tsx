@@ -12,10 +12,16 @@ interface ComposerProps {
   disabled: boolean;
   /** Status shown next to the spinner while busy (e.g. "Editing…"). */
   status?: string;
+  /** Cumulative tokens used this session, shown in the hint line. */
+  tokens?: number;
+}
+
+function formatTokens(n: number): string {
+  return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
 }
 
 /** Bottom input: a rounded prompt box with a hint line; a spinner while busy. */
-export function Composer({ theme, value, onChange, onSubmit, busy, disabled, status }: ComposerProps) {
+export function Composer({ theme, value, onChange, onSubmit, busy, disabled, status, tokens }: ComposerProps) {
   if (busy) {
     return (
       <Box marginTop={1} paddingX={1}>
@@ -47,6 +53,12 @@ export function Composer({ theme, value, onChange, onSubmit, busy, disabled, sta
         <Text color={theme.muted}>/help</Text>
         <Text color={theme.border}>{"  ·  "}</Text>
         <Text color={theme.muted}>ctrl+c quit</Text>
+        {tokens && tokens > 0 ? (
+          <>
+            <Text color={theme.border}>{"  ·  "}</Text>
+            <Text color={theme.muted}>{`${formatTokens(tokens)} tok`}</Text>
+          </>
+        ) : null}
       </Box>
     </Box>
   );

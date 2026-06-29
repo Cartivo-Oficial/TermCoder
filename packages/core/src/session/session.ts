@@ -12,6 +12,7 @@ export type SessionEvent =
   | { type: "text-delta"; text: string }
   | { type: "tool-call"; id: string; name: string; args: unknown; title?: string; detail?: string }
   | { type: "tool-result"; id: string; name: string; output: string; isError: boolean }
+  | { type: "usage"; inputTokens: number; outputTokens: number }
   | { type: "done" }
   | { type: "error"; error: string };
 
@@ -21,6 +22,7 @@ export interface ModelStreamResult {
   response: Promise<{ messages: ModelMessage[] }>;
   finishReason: Promise<string>;
   toolCalls: Promise<Array<{ toolCallId: string; toolName: string; input: unknown }>>;
+  usage?: Promise<{ inputTokens?: number; outputTokens?: number } | undefined>;
 }
 
 /** Runs one model turn. Overridable in tests with a scripted fake. */
@@ -77,6 +79,28 @@ function stringifyError(error: unknown): string {
   return JSON.stringify(error);
 }
 
+/** Turn a raw provider error into something actionable for the user. */
+function friendlyError(raw: string): string {
+  const s = raw.toLowerCase();
+  if (
+    s.includes("quota") ||
+    s.includes("rate limit") ||
+    s.includes("429") ||
+    s.includes("resource_exhausted")
+  ) {
+    return "Rate limit or quota reached. Wait a moment and retry, or switch model with /model.";
+  }
+  if (
+    s.includes("fetch failed") ||
+    s.includes("enotfound") ||
+    s.includes("econnrefused") ||
+    s.includes("network")
+  ) {
+    return "Network error — check your connection and try again.";
+  }
+  return raw;
+}
+
 /**
  * A live conversation with the model. {@link prompt} drives the manual agent
  * loop: stream text, run requested tools through the permission gate, append
@@ -127,6 +151,9 @@ export class Session {
     this.record.messages.push({ role: "user", content: text });
     this.persist();
 
+    let inputTokens = 0;
+    let outputTokens = 0;
+
     try {
       for (let step = 0; step < maxSteps; step++) {
         if (signal?.aborted) return;
@@ -142,7 +169,7 @@ export class Session {
             yield { type: "text-delta", text: chunk.text ?? "" };
           } else if (chunk.type === "error") {
             if (signal?.aborted) return;
-            yield { type: "error", error: stringifyError(chunk.error) };
+            yield { type: "error", error: friendlyError(stringifyError(chunk.error)) };
             return;
           }
         }
@@ -150,9 +177,20 @@ export class Session {
         const response = await result.response;
         this.record.messages.push(...response.messages);
 
+        if (result.usage) {
+          try {
+            const usage = await result.usage;
+            inputTokens += usage?.inputTokens ?? 0;
+            outputTokens += usage?.outputTokens ?? 0;
+          } catch {
+            // usage is best-effort
+          }
+        }
+
         const finishReason = await result.finishReason;
         if (finishReason !== "tool-calls") {
           this.persist();
+          if (inputTokens || outputTokens) yield { type: "usage", inputTokens, outputTokens };
           yield { type: "done" };
           return;
         }
@@ -169,7 +207,7 @@ export class Session {
       yield { type: "error", error: `Stopped after ${maxSteps} tool-execution rounds.` };
     } catch (err) {
       if (signal?.aborted || (err as Error)?.name === "AbortError") return;
-      yield { type: "error", error: stringifyError(err) };
+      yield { type: "error", error: friendlyError(stringifyError(err)) };
     }
   }
 

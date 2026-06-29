@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { globSync } from "tinyglobby";
+import { gitignoreGlobs } from "../util/gitignore";
 import { defineTool } from "./types";
 
 const IGNORE = ["**/node_modules/**", "**/.git/**", "**/dist/**"];
@@ -16,7 +17,7 @@ export const globTool = defineTool({
   async run(args, ctx) {
     const matches = globSync(args.pattern, {
       cwd: ctx.cwd,
-      ignore: IGNORE,
+      ignore: [...IGNORE, ...gitignoreGlobs(ctx.cwd)],
       dot: false,
       onlyFiles: true,
     });

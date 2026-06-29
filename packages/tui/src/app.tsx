@@ -89,6 +89,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("Thinking…");
+  const [tokens, setTokens] = useState(0);
   const [clearEpoch, setClearEpoch] = useState(0);
   const [permRequest, setPermRequest] = useState<PermissionRequest | null>(null);
   const permResolve = useRef<((decision: PermissionDecision) => void) | null>(null);
@@ -210,6 +211,9 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
             }
             break;
           }
+          case "usage":
+            setTokens((t) => t + event.inputTokens + event.outputTokens);
+            break;
           case "error":
             localLive.push({ kind: "error", text: event.error });
             break;
@@ -357,6 +361,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           busy={busy}
           disabled={busy}
           status={status}
+          tokens={tokens}
         />
       )}
     </Box>

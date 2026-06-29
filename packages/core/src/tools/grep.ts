@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { relative } from "node:path";
 import { z } from "zod";
 import { globSync } from "tinyglobby";
+import { gitignoreGlobs } from "../util/gitignore";
 import { defineTool } from "./types";
 
 const IGNORE = ["**/node_modules/**", "**/.git/**", "**/dist/**"];
@@ -38,7 +39,7 @@ export const grepTool = defineTool({
 
     const files = globSync(args.glob ?? "**/*", {
       cwd: ctx.cwd,
-      ignore: IGNORE,
+      ignore: [...IGNORE, ...gitignoreGlobs(ctx.cwd)],
       dot: false,
       onlyFiles: true,
       absolute: true,
