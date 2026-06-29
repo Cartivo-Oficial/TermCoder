@@ -7,7 +7,12 @@ import { defineConfig } from "electron-vite";
 export default defineConfig({
   main: {
     build: {
-      rollupOptions: { input: { index: resolve(__dirname, "src/main/index.ts") } },
+      rollupOptions: {
+        input: { index: resolve(__dirname, "src/main/index.ts") },
+        // ws's optional native deps — leave them as runtime requires so ws falls
+        // back to its pure-JS implementation when they're absent.
+        external: ["bufferutil", "utf-8-validate"],
+      },
     },
   },
   preload: {
