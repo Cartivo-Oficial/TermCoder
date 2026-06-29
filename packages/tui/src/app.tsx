@@ -1,4 +1,4 @@
-import { writeFileSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { useMemo, useRef, useState } from "react";
 import { Box, Static, useApp, useInput } from "ink";
@@ -15,7 +15,7 @@ import {
   type PermissionRequest,
   type SessionRecord,
 } from "@termcoder/core";
-import { getTheme } from "./theme";
+import { getTheme, themes } from "./theme";
 import type { ViewItem } from "./types";
 import { Banner } from "./components/Banner";
 import { Composer } from "./components/Composer";
@@ -28,13 +28,29 @@ const HELP = [
   "  /new               start a new session",
   "  /sessions          list saved sessions",
   "  /resume <id>       resume a saved session",
-  "  /model [id]        show or set the model (e.g. /model openai/gpt-4o)",
+  "  /model [id]        show or set the model",
+  "  /theme [name]      show or set the color theme",
+  "  /tools             list available tools",
+  "  /auto              toggle auto-approve (run tools without asking)",
+  "  /retry             re-run your last message",
+  "  /tokens            show token usage for this session",
+  "  /init              create an AGENTS.md in this project",
   "  /share             export this session to an HTML file",
   "  /clear             clear the screen",
   "  /exit              quit",
   "",
   "↑/↓ browse input history · esc interrupt a running turn",
 ].join("\n");
+
+const AGENTS_TEMPLATE = `# Project instructions for termcoder
+
+Describe how the agent should work in this project. For example:
+
+- Stack & conventions: (e.g. TypeScript, ESM, 2-space indent)
+- How to run tests: (e.g. \`pnpm test\`)
+- Things to avoid: (e.g. don't edit generated files in dist/)
+- Anything else the agent should always keep in mind.
+`;
 
 /** Convert a saved session's messages into renderable transcript items. */
 function recordToItems(record: SessionRecord): ViewItem[] {
@@ -78,7 +94,8 @@ function statusFor(toolName?: string): string {
 }
 
 export function App({ config, cwd, registry: registryProp, notices }: AppProps) {
-  const theme = getTheme(config.theme);
+  const [themeName, setThemeName] = useState(config.theme);
+  const theme = getTheme(themeName);
   const { exit } = useApp();
 
   const [history, setHistory] = useState<ViewItem[]>(() => [
@@ -90,6 +107,9 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("Thinking…");
   const [tokens, setTokens] = useState(0);
+  const [tokensIn, setTokensIn] = useState(0);
+  const [tokensOut, setTokensOut] = useState(0);
+  const [autoApprove, setAutoApprove] = useState(false);
   const [clearEpoch, setClearEpoch] = useState(0);
   const [permRequest, setPermRequest] = useState<PermissionRequest | null>(null);
   const permResolve = useRef<((decision: PermissionDecision) => void) | null>(null);
@@ -97,6 +117,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
   const abortController = useRef<AbortController | null>(null);
   const inputHistory = useRef<string[]>([]);
   const histIndex = useRef(-1);
+  const lastPrompt = useRef("");
 
   const store = useRef(new SessionStore()).current;
   const subRegistry = useRef(registryProp ?? new ToolRegistry()).current;
@@ -213,6 +234,8 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           }
           case "usage":
             setTokens((t) => t + event.inputTokens + event.outputTokens);
+            setTokensIn((t) => t + event.inputTokens);
+            setTokensOut((t) => t + event.outputTokens);
             break;
           case "error":
             localLive.push({ kind: "error", text: event.error });
@@ -301,6 +324,65 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         }
         break;
       }
+      case "theme":
+        if (arg && themes[arg]) {
+          setThemeName(arg);
+          pushHistory({ kind: "notice", text: `Theme set to ${arg}.` });
+        } else {
+          pushHistory({
+            kind: "notice",
+            text: `Themes: ${Object.keys(themes).join(", ")}. Usage: /theme <name>`,
+          });
+        }
+        break;
+      case "tools": {
+        const lines = registry
+          .list()
+          .map((t) => `  ${t.readOnly ? "○" : "●"} ${t.name}`)
+          .join("\n");
+        pushHistory({ kind: "notice", text: `Tools (● asks permission, ○ read-only):\n${lines}` });
+        break;
+      }
+      case "auto": {
+        const next = !autoApprove;
+        setAutoApprove(next);
+        permission.setAutoApprove(next);
+        pushHistory({
+          kind: "notice",
+          text: next
+            ? "Auto-approve ON — tools run without asking. /auto to turn off."
+            : "Auto-approve OFF — you'll be asked before changes.",
+        });
+        break;
+      }
+      case "retry":
+        if (!lastPrompt.current) {
+          pushHistory({ kind: "notice", text: "Nothing to retry yet." });
+          break;
+        }
+        pushHistory({ kind: "user", text: lastPrompt.current });
+        void runPrompt(lastPrompt.current);
+        break;
+      case "tokens":
+        pushHistory({
+          kind: "notice",
+          text: `Tokens — input: ${tokensIn}, output: ${tokensOut}, total: ${tokensIn + tokensOut}`,
+        });
+        break;
+      case "init": {
+        const file = join(cwd, "AGENTS.md");
+        if (existsSync(file)) {
+          pushHistory({ kind: "notice", text: "AGENTS.md already exists." });
+          break;
+        }
+        try {
+          writeFileSync(file, AGENTS_TEMPLATE, "utf8");
+          pushHistory({ kind: "notice", text: `Created ${file}. Edit it to guide the agent.` });
+        } catch (err) {
+          pushHistory({ kind: "error", text: String(err) });
+        }
+        break;
+      }
       case "exit":
       case "quit":
         exit();
@@ -320,6 +402,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
       handleCommand(text);
       return;
     }
+    lastPrompt.current = text;
     pushHistory({ kind: "user", text });
     void runPrompt(text);
   }

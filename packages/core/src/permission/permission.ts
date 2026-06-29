@@ -31,14 +31,25 @@ export type PermissionAsker = (
  */
 export class PermissionManager {
   private readonly always = new Set<PermissionKind>();
+  private autoApprove = false;
 
   constructor(
     private readonly config: Config["permission"],
     private readonly asker: PermissionAsker,
   ) {}
 
+  /** Approve every gated action without prompting (the "auto/yolo" mode). */
+  setAutoApprove(enabled: boolean): void {
+    this.autoApprove = enabled;
+  }
+
+  isAutoApprove(): boolean {
+    return this.autoApprove;
+  }
+
   /** Returns true if the action is permitted to run. */
   async check(request: PermissionRequest): Promise<boolean> {
+    if (this.autoApprove) return true;
     const mode = this.config[request.kind];
     if (mode === "allow") return true;
     if (mode === "deny") return false;
