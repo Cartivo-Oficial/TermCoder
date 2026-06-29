@@ -230,10 +230,23 @@ svg { display: block; }
 /* File viewer */
 .viewer { position: absolute; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 20; }
 .viewer-card { width: min(880px, 90%); max-height: 84%; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
-.viewer-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--border); }
-.vname { font-weight: 600; }
+.viewer-tabs { display: flex; align-items: center; gap: 2px; padding: 6px 8px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+.vtab { display: flex; align-items: center; gap: 6px; padding: 5px 8px 5px 10px; border-radius: 8px; color: var(--muted); cursor: pointer; white-space: nowrap; font-size: 12.5px; }
+.vtab:hover { background: var(--elev); }
+.vtab.active { background: var(--elev2); color: var(--text); }
+.vtab-close { background: transparent; border: none; color: var(--faint); width: 18px; height: 18px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; }
+.vtab-close:hover { background: var(--border); color: var(--text); }
+.vtab-close svg { width: 12px; height: 12px; }
+.vtab-spacer { flex: 1; }
 .viewer-body { margin: 0; padding: 14px; overflow: auto; font-size: 12.5px; background: #08080a; }
 .viewer-body code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.viewer-body.diff { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.viewer-body.diff .add { color: var(--ok); }
+.viewer-body.diff .del { color: var(--bad); }
+.viewer-body.diff .hunk { color: #58a6ff; }
+.viewer-body.diff .ctx { color: var(--muted); }
+
+.bubble.assistant.streaming { border-left: 2px solid var(--border); padding-left: 14px; white-space: pre-wrap; word-break: break-word; }
 
 /* Permission overlay */
 .perm { position: absolute; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 20; }

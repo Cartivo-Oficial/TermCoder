@@ -30,6 +30,7 @@ declare global {
       allFiles: (dir: string) => Promise<string[]>;
       readFile: (path: string) => Promise<{ content: string; error?: string }>;
       gitStatus: (dir: string) => Promise<{ map: Record<string, string>; count: number }>;
+      gitDiff: (dir: string, path: string) => Promise<{ diff: string }>;
       minimize: () => void;
       maximize: () => void;
       closeWindow: () => void;
@@ -91,7 +92,14 @@ function DiffBlock({ text }: { text: string }) {
   );
 }
 
-function Viewer({ name, content, onClose }: { name: string; content: string; onClose: () => void }) {
+interface Tab {
+  id: string;
+  name: string;
+  kind: "file" | "diff";
+  content: string;
+}
+
+function FileBody({ name, content }: { name: string; content: string }) {
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
     if (ref.current) {
@@ -105,19 +113,80 @@ function Viewer({ name, content, onClose }: { name: string; content: string; onC
   }, [name, content]);
   const ext = name.includes(".") ? name.split(".").pop()! : "";
   return (
+    <pre className="viewer-body">
+      <code ref={ref} className={`language-${ext}`}>
+        {content}
+      </code>
+    </pre>
+  );
+}
+
+function DiffBody({ content }: { content: string }) {
+  return (
+    <pre className="viewer-body diff">
+      {content.split("\n").map((line, i) => {
+        const cls =
+          line.startsWith("+") && !line.startsWith("+++") ? "add"
+          : line.startsWith("-") && !line.startsWith("---") ? "del"
+          : line.startsWith("@@") ? "hunk"
+          : "ctx";
+        return (
+          <div key={i} className={cls}>
+            {line || " "}
+          </div>
+        );
+      })}
+    </pre>
+  );
+}
+
+function TabbedViewer({
+  tabs,
+  activeTab,
+  onActivate,
+  onClose,
+  onCloseTab,
+}: {
+  tabs: Tab[];
+  activeTab: string | null;
+  onActivate: (id: string) => void;
+  onClose: () => void;
+  onCloseTab: (id: string) => void;
+}) {
+  const tab = tabs.find((t) => t.id === activeTab) ?? tabs[0];
+  if (!tab) return null;
+  return (
     <div className="viewer" onClick={onClose}>
       <div className="viewer-card" onClick={(e) => e.stopPropagation()}>
-        <div className="viewer-head">
-          <span className="vname">{name}</span>
+        <div className="viewer-tabs">
+          {tabs.map((t) => (
+            <div
+              key={t.id}
+              className={`vtab ${t.id === tab.id ? "active" : ""}`}
+              onClick={() => onActivate(t.id)}
+            >
+              <span className="vtab-name">{t.kind === "diff" ? "± " : ""}{t.name}</span>
+              <button
+                className="vtab-close"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCloseTab(t.id);
+                }}
+              >
+                <IconClose />
+              </button>
+            </div>
+          ))}
+          <div className="vtab-spacer" />
           <button className="icon" onClick={onClose}>
             <IconClose />
           </button>
         </div>
-        <pre className="viewer-body">
-          <code ref={ref} className={`language-${ext}`}>
-            {content}
-          </code>
-        </pre>
+        {tab.kind === "file" ? (
+          <FileBody name={tab.name} content={tab.content} />
+        ) : (
+          <DiffBody content={tab.content} />
+        )}
       </div>
     </div>
   );
@@ -149,7 +218,9 @@ export function App() {
   const [status, setStatus] = useState<Record<string, string>>({});
   const [changes, setChanges] = useState(0);
   const [perm, setPerm] = useState<{ id: string; title: string; detail?: string } | null>(null);
-  const [viewer, setViewer] = useState<{ name: string; content: string } | null>(null);
+  const [tabs, setTabs] = useState<Tab[]>([]);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
   const [rightTab, setRightTab] = useState<"files" | "changes">("files");
@@ -189,8 +260,16 @@ export function App() {
     if (started.current) return;
     started.current = true;
     void (async () => {
-      await refreshSessions();
-      await newSession();
+      try {
+        const list = (await (await fetch(`${httpBase}/sessions`)).json()) as SessionSummary[];
+        setSessions(list);
+        const savedSession = localStorage.getItem("tc-session");
+        const savedCwd = localStorage.getItem("tc-cwd");
+        if (savedSession && list.some((s) => s.id === savedSession)) await openSession(savedSession);
+        else await createSession(savedCwd ?? undefined);
+      } catch {
+        setMessages([{ role: "error", text: "Could not reach the termcoder server." }]);
+      }
     })();
     return () => wsRef.current?.close();
   }, []);
@@ -230,6 +309,7 @@ export function App() {
   function setWorkingDir(dir: string) {
     setCwd(dir);
     cwdRef.current = dir;
+    localStorage.setItem("tc-cwd", dir);
     void refreshGit();
     void window.api?.allFiles(dir).then(setFileList);
   }
@@ -240,6 +320,7 @@ export function App() {
       await fetch(`${httpBase}/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body })
     ).json()) as { id: string; cwd: string; model: string };
     setCurrentId(record.id);
+    localStorage.setItem("tc-session", record.id);
     setModel(record.model);
     setMessages([]);
     setWorkingDir(record.cwd);
@@ -263,6 +344,7 @@ export function App() {
         fetch(`${httpBase}/sessions/${id}/transcript`).then((r) => r.json()) as Promise<Segment[]>,
       ]);
       setCurrentId(id);
+      localStorage.setItem("tc-session", id);
       setModel(record.model);
       setMessages(segments.map(segToMessage));
       setWorkingDir(record.cwd);
@@ -277,9 +359,35 @@ export function App() {
     if (folder) await createSession(folder);
   }
 
+  function addTab(tab: Tab) {
+    setTabs((prev) =>
+      prev.some((t) => t.id === tab.id) ? prev.map((t) => (t.id === tab.id ? tab : t)) : [...prev, tab],
+    );
+    setActiveTab(tab.id);
+    setViewerOpen(true);
+  }
+
+  function closeTab(id: string) {
+    const rest = tabs.filter((t) => t.id !== id);
+    setTabs(rest);
+    if (rest.length === 0) setViewerOpen(false);
+    else if (activeTab === id) setActiveTab(rest[rest.length - 1]!.id);
+  }
+
   async function openFile(path: string) {
     const res = await window.api?.readFile(path);
-    if (res) setViewer({ name: baseName(path), content: res.content });
+    if (res) addTab({ id: `file:${path}`, name: baseName(path), kind: "file", content: res.content });
+  }
+
+  async function openDiff(relPath: string) {
+    const dir = cwdRef.current;
+    if (!dir) return;
+    const res = await window.api?.gitDiff(dir, relPath);
+    if (res && res.diff.trim()) {
+      addTab({ id: `diff:${relPath}`, name: baseName(relPath), kind: "diff", content: res.diff });
+    } else {
+      await openFile(`${dir}/${relPath}`);
+    }
   }
 
   function changeModel(m: string) {
@@ -487,11 +595,15 @@ export function App() {
               <div key={i} className={`msg ${m.role}`}>
                 {m.role === "user" ? <div className="bubble user">{m.text}</div> : null}
                 {m.role === "assistant" ? (
-                  <div className="bubble assistant markdown">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
-                      {m.text}
-                    </ReactMarkdown>
-                  </div>
+                  busy && i === messages.length - 1 ? (
+                    <div className="bubble assistant streaming">{m.text}</div>
+                  ) : (
+                    <div className="bubble assistant markdown">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+                        {m.text}
+                      </ReactMarkdown>
+                    </div>
+                  )
                 ) : null}
                 {m.role === "tool" ? (
                   <div className="tool-wrap">
@@ -616,11 +728,7 @@ export function App() {
             ) : (
               <div className="tree">
                 {changedFiles.map(([path, letter]) => (
-                  <div
-                    key={path}
-                    className="tree-row"
-                    onClick={() => cwd && void openFile(`${cwd}/${path}`)}
-                  >
+                  <div key={path} className="tree-row" onClick={() => void openDiff(path)}>
                     <span
                       className="git-badge"
                       style={{ color: letter === "A" ? "var(--ok)" : letter === "D" ? "var(--bad)" : "var(--warn)" }}
@@ -636,7 +744,15 @@ export function App() {
         ) : null}
       </div>
 
-      {viewer ? <Viewer name={viewer.name} content={viewer.content} onClose={() => setViewer(null)} /> : null}
+      {viewerOpen && tabs.length ? (
+        <TabbedViewer
+          tabs={tabs}
+          activeTab={activeTab}
+          onActivate={setActiveTab}
+          onClose={() => setViewerOpen(false)}
+          onCloseTab={closeTab}
+        />
+      ) : null}
       {paletteOpen ? <CommandPalette items={paletteItems} onClose={() => setPaletteOpen(false)} /> : null}
     </div>
   );

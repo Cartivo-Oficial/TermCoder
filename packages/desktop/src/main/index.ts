@@ -124,6 +124,17 @@ ipcMain.handle("all-files", (_event, dir: string) => {
   return results;
 });
 
+ipcMain.handle("git-diff", (_event, dir: string, path: string) => {
+  try {
+    const opts = { cwd: dir, encoding: "utf8" as const, maxBuffer: 5_000_000 };
+    let diff = spawnSync("git", ["diff", "--no-color", "--", path], opts).stdout ?? "";
+    if (!diff.trim()) diff = spawnSync("git", ["diff", "--no-color", "--staged", "--", path], opts).stdout ?? "";
+    return { diff };
+  } catch {
+    return { diff: "" };
+  }
+});
+
 ipcMain.on("window-minimize", (e) => BrowserWindow.fromWebContents(e.sender)?.minimize());
 ipcMain.on("window-maximize", (e) => {
   const w = BrowserWindow.fromWebContents(e.sender);

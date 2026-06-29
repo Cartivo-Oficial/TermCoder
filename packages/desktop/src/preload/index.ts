@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.invoke("read-file", path),
   gitStatus: (dir: string): Promise<{ map: Record<string, string>; count: number }> =>
     ipcRenderer.invoke("git-status", dir),
+  gitDiff: (dir: string, path: string): Promise<{ diff: string }> =>
+    ipcRenderer.invoke("git-diff", dir, path),
   minimize: () => ipcRenderer.send("window-minimize"),
   maximize: () => ipcRenderer.send("window-maximize"),
   closeWindow: () => ipcRenderer.send("window-close"),
