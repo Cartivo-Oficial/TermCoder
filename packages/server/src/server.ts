@@ -62,9 +62,15 @@ export function createServer(deps: ServerDeps = {}): Server {
   return http;
 }
 
+const CORS = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "GET,POST,OPTIONS",
+  "access-control-allow-headers": "content-type",
+};
+
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   const payload = JSON.stringify(body);
-  res.writeHead(status, { "content-type": "application/json" });
+  res.writeHead(status, { "content-type": "application/json", ...CORS });
   res.end(payload);
 }
 
@@ -89,6 +95,10 @@ function inertPermission(config: Config): PermissionManager {
 }
 
 async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): Promise<void> {
+  if (req.method === "OPTIONS") {
+    res.writeHead(204, CORS);
+    return void res.end();
+  }
   const url = new URL(req.url ?? "/", "http://localhost");
   const parts = url.pathname.split("/").filter(Boolean);
 
@@ -123,10 +133,10 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     const record = ctx.store.load(id);
     const format = url.searchParams.get("format");
     if (format === "md" || format === "markdown") {
-      res.writeHead(200, { "content-type": "text/markdown; charset=utf-8" });
+      res.writeHead(200, { "content-type": "text/markdown; charset=utf-8", ...CORS });
       return void res.end(renderSessionMarkdown(record));
     }
-    res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    res.writeHead(200, { "content-type": "text/html; charset=utf-8", ...CORS });
     return void res.end(renderSessionHtml(record));
   }
 

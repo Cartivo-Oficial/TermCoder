@@ -160,6 +160,18 @@ summary. The sub-agent reuses the same permission gate (so mutating actions stil
 and cannot itself delegate, bounding delegation to a single level. This keeps the main
 conversation focused while parallelizable or independent work happens in a sub-agent.
 
+## Desktop app
+
+`@termcoder/desktop` is an Electron app that embeds the local server and opens a window
+with a React UI talking to it over HTTP/WebSocket — the same engine as the TUI.
+
+```bash
+pnpm --filter @termcoder/desktop dev      # launch the desktop app (dev)
+pnpm --filter @termcoder/desktop build    # build it
+```
+
+It uses the same `.termcoder/config.json` (model, MCP, LSP, plugins) as the TUI.
+
 ## Development
 
 ```bash
