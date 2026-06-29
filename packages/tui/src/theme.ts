@@ -2,7 +2,7 @@
 export interface Theme {
   /** Brand + interactive accent. */
   primary: string;
-  /** Assistant / signature accent. */
+  /** Assistant / signature accent (also code keywords). */
   accent: string;
   user: string;
   assistant: string;
@@ -17,7 +17,23 @@ export interface Theme {
   border: string;
 }
 
-const base: Theme = {
+// Clean monochrome: grayscale chrome, semantic color only for diffs/status.
+const mono: Theme = {
+  primary: "#ffffff",
+  accent: "#ffffff",
+  user: "#e8e8ea",
+  assistant: "#c8c8cd",
+  tool: "#b6b6bc",
+  code: "#9a9aa0",
+  running: "#7a7a80",
+  success: "#4ade80",
+  error: "#f87171",
+  muted: "#7a7a80",
+  border: "#2a2a2e",
+};
+
+// Optional colorful palettes (use `/theme vivid`).
+const vivid: Theme = {
   primary: "#58a6ff",
   accent: "#b794f6",
   user: "#7ee787",
@@ -32,11 +48,10 @@ const base: Theme = {
 };
 
 export const themes: Record<string, Theme> = {
-  default: base,
-  // A warmer signature: amber brand, coral accent.
-  warm: { ...base, primary: "#e3b341", accent: "#ff7b72", user: "#7ee787", code: "#ffa657" },
-  // A cooler, mono-leaning take.
-  cool: { ...base, primary: "#39c5cf", accent: "#56d4dd", tool: "#39c5cf", code: "#39c5cf" },
+  default: mono,
+  mono,
+  vivid,
+  warm: { ...vivid, primary: "#e3b341", accent: "#ff7b72", code: "#ffa657" },
 };
 
 export function getTheme(name: string): Theme {
