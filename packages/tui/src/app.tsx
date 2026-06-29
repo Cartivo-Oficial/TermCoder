@@ -9,9 +9,11 @@ import {
   Session,
   SessionStore,
   ToolRegistry,
+  transcriptSegments,
   type Config,
   type PermissionDecision,
   type PermissionRequest,
+  type SessionRecord,
 } from "@termcoder/core";
 import { getTheme } from "./theme";
 import type { ViewItem } from "./types";
@@ -25,11 +27,26 @@ const HELP = [
   "  /help              show this help",
   "  /new               start a new session",
   "  /sessions          list saved sessions",
-  "  /model             show the active model",
+  "  /resume <id>       resume a saved session",
+  "  /model [id]        show or set the model (e.g. /model openai/gpt-4o)",
   "  /share             export this session to an HTML file",
   "  /clear             clear the screen",
   "  /exit              quit",
+  "",
+  "↑/↓ browse input history · esc interrupt a running turn",
 ].join("\n");
+
+/** Convert a saved session's messages into renderable transcript items. */
+function recordToItems(record: SessionRecord): ViewItem[] {
+  return transcriptSegments(record).map((seg): ViewItem => {
+    if (seg.role === "user") return { kind: "user", text: seg.text };
+    if (seg.role === "assistant" && !seg.label) return { kind: "assistant", text: seg.text };
+    if (seg.role === "assistant") {
+      return { kind: "tool", id: "-", name: seg.label!.replace("→ ", ""), status: "done", detail: seg.text };
+    }
+    return { kind: "tool", id: "-", name: seg.label ?? "tool", status: "done", output: seg.text };
+  });
+}
 
 interface AppProps {
   config: Config;
@@ -76,6 +93,9 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
   const [permRequest, setPermRequest] = useState<PermissionRequest | null>(null);
   const permResolve = useRef<((decision: PermissionDecision) => void) | null>(null);
   const aborted = useRef(false);
+  const abortController = useRef<AbortController | null>(null);
+  const inputHistory = useRef<string[]>([]);
+  const histIndex = useRef(-1);
 
   const store = useRef(new SessionStore()).current;
   const subRegistry = useRef(registryProp ?? new ToolRegistry()).current;
@@ -100,9 +120,27 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     Session.create({ store, registry, config, permission }, { cwd }),
   );
 
-  // Esc interrupts the active turn (the stream is abandoned client-side).
+  // Esc interrupts the active turn; ↑/↓ browse input history when idle.
   useInput((_input, key) => {
-    if (key.escape && busy) aborted.current = true;
+    if (key.escape && busy) {
+      aborted.current = true;
+      abortController.current?.abort();
+      return;
+    }
+    if (busy || permRequest) return;
+    const h = inputHistory.current;
+    if (key.upArrow && h.length > 0) {
+      histIndex.current = histIndex.current === -1 ? h.length - 1 : Math.max(0, histIndex.current - 1);
+      setInput(h[histIndex.current] ?? "");
+    } else if (key.downArrow && histIndex.current !== -1) {
+      if (histIndex.current >= h.length - 1) {
+        histIndex.current = -1;
+        setInput("");
+      } else {
+        histIndex.current += 1;
+        setInput(h[histIndex.current] ?? "");
+      }
+    }
   });
 
   function pushHistory(item: ViewItem) {
@@ -117,6 +155,8 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
 
   async function runPrompt(text: string) {
     aborted.current = false;
+    const controller = new AbortController();
+    abortController.current = controller;
     setBusy(true);
     setStatus("Thinking…");
 
@@ -125,7 +165,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     const sync = () => setLive([...localLive]);
 
     try {
-      for await (const event of session.prompt(text)) {
+      for await (const event of session.prompt(text, { signal: controller.signal })) {
         if (aborted.current) {
           localLive.push({ kind: "notice", text: "⛔ Interrupted." });
           break;
@@ -187,7 +227,8 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
   }
 
   function handleCommand(text: string) {
-    const [cmd] = text.slice(1).split(/\s+/);
+    const [cmd, ...rest] = text.slice(1).split(/\s+/);
+    const arg = rest.join(" ").trim();
     switch (cmd) {
       case "help":
         pushHistory({ kind: "notice", text: HELP });
@@ -214,8 +255,38 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         break;
       }
       case "model":
-        pushHistory({ kind: "notice", text: `Model: ${config.model}` });
+        if (arg) {
+          session.record.model = arg;
+          store.save(session.record);
+          pushHistory({ kind: "notice", text: `Model set to ${arg} for this session.` });
+        } else {
+          pushHistory({ kind: "notice", text: `Model: ${session.record.model}` });
+        }
         break;
+      case "resume": {
+        if (!arg) {
+          pushHistory({ kind: "notice", text: "Usage: /resume <session-id>" });
+          break;
+        }
+        const match = store.list().find((s) => s.id.startsWith(arg));
+        if (!match) {
+          pushHistory({ kind: "notice", text: `No session matching "${arg}".` });
+          break;
+        }
+        try {
+          const resumed = Session.resume({ store, registry, config, permission }, match.id);
+          setSession(resumed);
+          setHistory([
+            { kind: "notice", text: `Resumed ${match.id.slice(0, 8)} (${match.messageCount} msgs).` },
+            ...recordToItems(resumed.record),
+          ]);
+          setLive([]);
+          setClearEpoch((n) => n + 1);
+        } catch (err) {
+          pushHistory({ kind: "error", text: String(err) });
+        }
+        break;
+      }
       case "share": {
         const file = join(cwd, `termcoder-${session.record.id.slice(0, 8)}.html`);
         try {
@@ -239,6 +310,8 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     const text = raw.trim();
     setInput("");
     if (!text) return;
+    inputHistory.current.push(text);
+    histIndex.current = -1;
     if (text.startsWith("/")) {
       handleCommand(text);
       return;

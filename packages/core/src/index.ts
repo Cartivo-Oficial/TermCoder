@@ -44,6 +44,8 @@ export {
 
 export { createSubagentTool, type SubagentDeps } from "./agent/subagent";
 
+export { loadProjectContext } from "./util/context";
+
 export {
   SessionStore,
   defaultSessionsDir,

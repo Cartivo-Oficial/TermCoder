@@ -5,6 +5,7 @@ import { resolveModel } from "../provider/provider";
 import type { SessionStore, SessionRecord } from "../storage/storage";
 import type { ToolContext } from "../tools/types";
 import type { ToolRegistry } from "../tools";
+import { loadProjectContext } from "../util/context";
 
 /** Events emitted while a turn runs. The client renders these; the core stays UI-agnostic. */
 export type SessionEvent =
@@ -27,6 +28,7 @@ export type ModelRunner = (opts: {
   system: string;
   messages: ModelMessage[];
   tools: ToolSet;
+  signal?: AbortSignal;
 }) => ModelStreamResult;
 
 export interface SessionDeps {
@@ -49,13 +51,24 @@ interface ToolResultPart {
 }
 
 function systemPrompt(cwd: string): string {
-  return [
+  const lines = [
     "You are termcoder, an AI coding agent operating in a terminal.",
     `Working directory: ${cwd}`,
     "Use the provided tools to read and modify files and run shell commands.",
     "Inspect the project before making changes, and keep explanations concise.",
     "When you change files, briefly state what you did.",
-  ].join("\n");
+  ];
+  const projectContext = loadProjectContext(cwd);
+  if (projectContext) {
+    lines.push(
+      "",
+      "The project provides these instructions — follow them closely:",
+      "<project-instructions>",
+      projectContext,
+      "</project-instructions>",
+    );
+  }
+  return lines.join("\n");
 }
 
 function stringifyError(error: unknown): string {
@@ -97,31 +110,38 @@ export class Session {
       config: this.deps.config,
       env: this.deps.env,
     });
-    return ({ system, messages, tools }) =>
-      streamText({ model, system, messages, tools }) as unknown as ModelStreamResult;
+    return ({ system, messages, tools, signal }) =>
+      streamText({ model, system, messages, tools, abortSignal: signal }) as unknown as ModelStreamResult;
   }
 
-  async *prompt(text: string): AsyncGenerator<SessionEvent, void> {
+  async *prompt(
+    text: string,
+    opts: { signal?: AbortSignal } = {},
+  ): AsyncGenerator<SessionEvent, void> {
     const ctx: ToolContext = { cwd: this.record.cwd };
     const tools = this.deps.registry.toToolSet();
     const runner = this.deps.runner ?? this.buildRunner();
     const maxSteps = this.deps.maxSteps ?? 25;
+    const { signal } = opts;
 
     this.record.messages.push({ role: "user", content: text });
     this.persist();
 
     try {
       for (let step = 0; step < maxSteps; step++) {
+        if (signal?.aborted) return;
         const result = runner({
           system: systemPrompt(ctx.cwd),
           messages: this.record.messages,
           tools,
+          signal,
         });
 
         for await (const chunk of result.fullStream) {
           if (chunk.type === "text-delta") {
             yield { type: "text-delta", text: chunk.text ?? "" };
           } else if (chunk.type === "error") {
+            if (signal?.aborted) return;
             yield { type: "error", error: stringifyError(chunk.error) };
             return;
           }
@@ -148,6 +168,7 @@ export class Session {
       }
       yield { type: "error", error: `Stopped after ${maxSteps} tool-execution rounds.` };
     } catch (err) {
+      if (signal?.aborted || (err as Error)?.name === "AbortError") return;
       yield { type: "error", error: stringifyError(err) };
     }
   }

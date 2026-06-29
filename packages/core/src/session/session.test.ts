@@ -151,4 +151,18 @@ describe("Session agent loop", () => {
 
     expect(events).toEqual([{ type: "error", error: "boom" }]);
   });
+
+  it("stops immediately when the abort signal is already aborted", async () => {
+    const runner = scriptedRunner([
+      {
+        chunks: [{ type: "text-delta", text: "should not appear" }],
+        finishReason: "stop",
+        responseMessages: [{ role: "assistant", content: "x" }],
+      },
+    ]);
+    const session = makeSession(runner);
+    const events: SessionEvent[] = [];
+    for await (const e of session.prompt("hi", { signal: AbortSignal.abort() })) events.push(e);
+    expect(events).toEqual([]);
+  });
 });

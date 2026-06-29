@@ -8,6 +8,8 @@ import { grepTool } from "./grep";
 import { writeTool } from "./write";
 import { editTool } from "./edit";
 import { bashTool } from "./bash";
+import { webfetchTool } from "./webfetch";
+import { websearchTool } from "./websearch";
 
 export type { TermTool, ToolContext, ToolResult } from "./types";
 export { defineTool } from "./types";
@@ -21,6 +23,8 @@ export const builtinTools: TermTool[] = [
   writeTool,
   editTool,
   bashTool,
+  webfetchTool,
+  websearchTool,
 ];
 
 export class ToolRegistry {
