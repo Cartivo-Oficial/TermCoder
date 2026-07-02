@@ -10,6 +10,9 @@ import { editTool } from "./edit";
 import { bashTool } from "./bash";
 import { webfetchTool } from "./webfetch";
 import { websearchTool } from "./websearch";
+import { skillTool } from "./skill";
+import { repomapTool } from "./repomap";
+import { symbolsTool } from "./symbols";
 
 export type { TermTool, ToolContext, ToolResult } from "./types";
 export { defineTool } from "./types";
@@ -25,6 +28,9 @@ export const builtinTools: TermTool[] = [
   bashTool,
   webfetchTool,
   websearchTool,
+  skillTool,
+  repomapTool,
+  symbolsTool,
 ];
 
 export class ToolRegistry {
@@ -47,9 +53,10 @@ export class ToolRegistry {
    * the agent loop receives tool calls and runs them itself (through the
    * permission gate). The model only ever sees the schema, not the executor.
    */
-  toToolSet(): ToolSet {
+  toToolSet(filter?: (t: TermTool) => boolean): ToolSet {
     const set: ToolSet = {};
     for (const t of this.byName.values()) {
+      if (filter && !filter(t)) continue;
       set[t.name] = tool({
         description: t.description,
         inputSchema: t.inputSchema as z.ZodType | Schema,

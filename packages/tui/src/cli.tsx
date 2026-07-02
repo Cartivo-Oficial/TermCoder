@@ -14,8 +14,10 @@ async function main() {
   if (args.includes("--help") || args.includes("-h")) {
     process.stdout.write(
       "termcoder — an AI coding agent in your terminal\n\n" +
-        "Usage: termcoder\n\n" +
-        "Set an API key first, e.g. ANTHROPIC_API_KEY.\n" +
+        "Usage: term            (or: termcoder)\n" +
+        "  Run it in any project folder to open the panel.\n\n" +
+        "Install: npm install -g @termcoder/tui\n" +
+        "Set an API key first, e.g. ANTHROPIC_API_KEY (or use a free model — see the README).\n" +
         "Configure via .termcoder/config.json or ~/.config/termcoder/config.json.\n",
     );
     return;

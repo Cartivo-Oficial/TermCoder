@@ -2,7 +2,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { loadConfig } from "./config";
+import { loadConfig, saveConfig } from "./config";
 
 describe("loadConfig", () => {
   let dir: string;
@@ -82,5 +82,23 @@ describe("loadConfig", () => {
       JSON.stringify({ permission: { bash: "maybe" } }),
     );
     expect(() => loadConfig({ cwd, configDir, env: {} })).toThrow();
+  });
+
+  it("saveConfig merges into the global file and persists", () => {
+    saveConfig({ providers: { google: { apiKey: "k1" } } }, { configDir, env: {} });
+    saveConfig({ permission: { write: "allow" }, model: "google/gemini-2.5-flash" }, { configDir, env: {} });
+
+    const config = loadConfig({ cwd, configDir, env: {} });
+    expect(config.providers.google?.apiKey).toBe("k1"); // preserved across writes
+    expect(config.permission.write).toBe("allow");
+    expect(config.model).toBe("google/gemini-2.5-flash");
+  });
+
+  it("saveConfig rejects an invalid value before writing", () => {
+    expect(() =>
+      saveConfig({ permission: { bash: "maybe" } }, { configDir, env: {} }),
+    ).toThrow();
+    // Nothing persisted, so load still returns defaults.
+    expect(loadConfig({ cwd, configDir, env: {} }).permission.bash).toBe("ask");
   });
 });

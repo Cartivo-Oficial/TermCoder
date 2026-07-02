@@ -1,14 +1,22 @@
 export {
   ConfigSchema,
+  AgentSchema,
   PermissionModeSchema,
+  PermissionRuleSchema,
   McpServerSchema,
   LspServerSchema,
   loadConfig,
+  saveConfig,
+  readGlobalConfig,
+  writeGlobalConfig,
   type Config,
+  type AgentConfig,
   type PermissionMode,
+  type PermissionRule,
   type McpServerConfig,
   type LspServerConfig,
   type LoadConfigOptions,
+  type SaveConfigOptions,
 } from "./config/config";
 
 export {
@@ -44,6 +52,37 @@ export {
 
 export { createSubagentTool, type SubagentDeps } from "./agent/subagent";
 
+export {
+  discoverAgents,
+  resolveAgent,
+  agentToolFilter,
+  agentCanMutate,
+  BUILTIN_AGENTS,
+  type AgentDef,
+  type AgentMode,
+  type DiscoverAgentsOptions,
+} from "./agent/agents";
+
+export {
+  discoverSkills,
+  getSkill,
+  skillsMenu,
+  type SkillDef,
+  type DiscoverSkillsOptions,
+} from "./skill/skills";
+
+export { isTrusted, trustFolder } from "./trust/trust";
+export { loadDraft, saveDraft, clearDraft } from "./draft/draft";
+
+export { CheckpointManager, checkpointDir } from "./checkpoint/checkpoint";
+
+export {
+  discoverCommands,
+  expandCommand,
+  type CommandDef,
+  type DiscoverCommandsOptions,
+} from "./command/commands";
+
 export { loadProjectContext } from "./util/context";
 
 export {
@@ -55,7 +94,9 @@ export {
 
 export {
   PermissionManager,
+  resolvePermissionMode,
   type PermissionKind,
+  type PermissionMap,
   type PermissionRequest,
   type PermissionDecision,
   type PermissionAsker,
@@ -70,7 +111,26 @@ export {
   type ToolResult,
 } from "./tools";
 
-export { resolveModel, type ResolveModelOptions } from "./provider/provider";
+export { discoverTools, type DiscoverToolsResult } from "./tool/discover";
+
+export {
+  resolveModel,
+  pickAutoModel,
+  classifyTaskComplexity,
+  transcribeAudio,
+  completeCode,
+  type ResolveModelOptions,
+  type TranscribeOptions,
+  type CompleteCodeOptions,
+  type TaskComplexity,
+} from "./provider/provider";
+
+export { projectSummary, repoDetail } from "./knowledge/repomap";
+export { buildSymbolIndex, findSymbols, type SymbolEntry } from "./knowledge/symbols";
+
+export { getModelCatalog, type ModelEntry } from "./models/catalog";
+
+export { formatFile, formattersFor } from "./format/formatters";
 
 export {
   Session,

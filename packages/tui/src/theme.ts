@@ -17,18 +17,19 @@ export interface Theme {
   border: string;
 }
 
-// Clean monochrome: grayscale chrome, semantic color only for diffs/status.
+// Clean, near-monochrome chrome with a single soft-blue accent for interactive
+// glyphs; semantic color reserved for diffs and status.
 const mono: Theme = {
-  primary: "#ffffff",
-  accent: "#ffffff",
+  primary: "#eceff6",
+  accent: "#7aa2f7",
   user: "#e8e8ea",
   assistant: "#c8c8cd",
   tool: "#b6b6bc",
   code: "#9a9aa0",
-  running: "#7a7a80",
-  success: "#4ade80",
-  error: "#f87171",
-  muted: "#7a7a80",
+  running: "#e0af68",
+  success: "#7bd88f",
+  error: "#f7768e",
+  muted: "#6f6f77",
   border: "#2a2a2e",
 };
 
@@ -47,11 +48,24 @@ const vivid: Theme = {
   border: "#30363d",
 };
 
+// A calm, near-monochrome base recoloured with a single accent — a family of
+// tasteful themes selectable via `/theme <name>`.
+function accented(accent: string, running: string): Theme {
+  return { ...mono, primary: "#eceff6", accent, running };
+}
+
 export const themes: Record<string, Theme> = {
   default: mono,
   mono,
   vivid,
   warm: { ...vivid, primary: "#e3b341", accent: "#ff7b72", code: "#ffa657" },
+  ember: accented("#ff7a45", "#e0af68"),
+  ocean: accented("#38bdf8", "#22d3ee"),
+  forest: accented("#4ade80", "#a3e635"),
+  rose: accented("#fb7185", "#f472b6"),
+  amber: accented("#fbbf24", "#f59e0b"),
+  violet: accented("#a78bfa", "#c084fc"),
+  nord: accented("#88c0d0", "#81a1c1"),
 };
 
 export function getTheme(name: string): Theme {

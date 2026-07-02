@@ -2,7 +2,15 @@ import type { ReactNode } from "react";
 import { Text } from "ink";
 import type { Theme } from "../theme";
 
-type TokenType = "string" | "comment" | "number" | "keyword" | "text";
+type TokenType =
+  | "string"
+  | "comment"
+  | "number"
+  | "keyword"
+  | "function"
+  | "type"
+  | "operator"
+  | "text";
 
 const KEYWORDS = new Set([
   "function", "func", "def", "fn", "return", "const", "let", "var", "val",
@@ -16,7 +24,11 @@ const KEYWORDS = new Set([
   "true", "false", "this", "self", "super", "extends", "implements",
   "void", "int", "string", "bool", "float", "double", "char", "byte",
   "go", "defer", "chan", "map", "range", "select", "lambda", "pub", "mut",
+  "let", "where", "default", "typeof", "instanceof", "readonly", "namespace",
 ]);
+
+const LITERALS = new Set(["true", "false", "null", "nil", "none", "undefined", "self", "this", "super"]);
+const OPERATORS = "=+-*/%<>!&|^~?:;,.(){}[]";
 
 /** Split one line of code into typed tokens (language-agnostic, best effort). */
 function tokenize(line: string): Array<{ type: TokenType; text: string }> {
@@ -27,11 +39,7 @@ function tokenize(line: string): Array<{ type: TokenType; text: string }> {
   while (i < n) {
     const ch = line[i]!;
 
-    if (ch === "/" && line[i + 1] === "/") {
-      tokens.push({ type: "comment", text: line.slice(i) });
-      break;
-    }
-    if (ch === "#") {
+    if ((ch === "/" && line[i + 1] === "/") || ch === "#") {
       tokens.push({ type: "comment", text: line.slice(i) });
       break;
     }
@@ -64,8 +72,18 @@ function tokenize(line: string): Array<{ type: TokenType; text: string }> {
       let j = i + 1;
       while (j < n && /[A-Za-z0-9_$]/.test(line[j]!)) j++;
       const word = line.slice(i, j);
-      tokens.push({ type: KEYWORDS.has(word) ? "keyword" : "text", text: word });
+      let type: TokenType;
+      if (KEYWORDS.has(word) || LITERALS.has(word)) type = "keyword";
+      else if (line[j] === "(") type = "function"; // called like a function
+      else if (/^[A-Z]/.test(word)) type = "type"; // PascalCase → type/class
+      else type = "text";
+      tokens.push({ type, text: word });
       i = j;
+      continue;
+    }
+    if (OPERATORS.includes(ch)) {
+      tokens.push({ type: "operator", text: ch });
+      i++;
       continue;
     }
     tokens.push({ type: "text", text: ch });
@@ -80,14 +98,20 @@ export function highlightCode(line: string, theme: Theme): ReactNode[] {
   return tokenize(line).map((token, k) => {
     const color =
       token.type === "string"
-        ? theme.user
+        ? theme.success
         : token.type === "comment"
           ? theme.muted
           : token.type === "number"
-            ? theme.code
+            ? theme.running
             : token.type === "keyword"
               ? theme.accent
-              : theme.assistant;
+              : token.type === "function"
+                ? theme.primary
+                : token.type === "type"
+                  ? theme.tool
+                  : token.type === "operator"
+                    ? theme.muted
+                    : theme.assistant;
     return (
       <Text key={k} color={color}>
         {token.text}

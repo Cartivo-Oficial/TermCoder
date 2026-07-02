@@ -34,6 +34,12 @@ export interface TermTool<Args = any> {
   readOnly: boolean;
   permissionKind?: PermissionKind;
   describe?: (args: Args, ctx: ToolContext) => ToolDescription;
+  /**
+   * What this call targets for glob-based permission rules: a workspace-relative
+   * file path (write/edit) or the command string (bash). Omit for tools whose
+   * permission isn't path-scoped.
+   */
+  target?: (args: Args, ctx: ToolContext) => string | undefined;
   run: (args: Args, ctx: ToolContext) => Promise<ToolResult>;
 }
 
@@ -45,6 +51,7 @@ export function defineTool<S extends z.ZodType>(def: {
   readOnly: boolean;
   permissionKind?: PermissionKind;
   describe?: (args: z.infer<S>, ctx: ToolContext) => ToolDescription;
+  target?: (args: z.infer<S>, ctx: ToolContext) => string | undefined;
   run: (args: z.infer<S>, ctx: ToolContext) => Promise<ToolResult>;
 }): TermTool<z.infer<S>> {
   return def as TermTool<z.infer<S>>;

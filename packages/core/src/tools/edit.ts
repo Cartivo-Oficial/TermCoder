@@ -31,6 +31,9 @@ export const editTool = defineTool({
   }),
   readOnly: false,
   permissionKind: "edit",
+  target(args, ctx) {
+    return relative(ctx.cwd, resolveInside(ctx.cwd, args.path)).split("\\").join("/");
+  },
   describe(args, ctx) {
     const rel = relative(ctx.cwd, resolveInside(ctx.cwd, args.path)).split("\\").join("/");
     return { title: `Edit ${rel}`, detail: formatDiff(args.oldString, args.newString) };

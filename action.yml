@@ -1,0 +1,45 @@
+name: termcoder
+description: Run the termcoder AI coding agent on GitHub issues and pull requests.
+branding:
+  icon: terminal
+  color: gray-dark
+
+inputs:
+  github-token:
+    description: Token used to post comments and (when applying) push commits.
+    required: true
+  model:
+    description: Model id, e.g. "anthropic/claude-sonnet-4-6", "google/gemini-2.0-flash", or "termcoder/auto".
+    default: termcoder/auto
+  trigger:
+    description: Phrase in a comment or issue body that activates the bot.
+    default: /termcoder
+  apply:
+    description: 'When "true", the agent may edit files and push a commit. Otherwise it answers read-only.'
+    default: "false"
+  task:
+    description: An explicit task; overrides the comment/issue body when set.
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+      with:
+        version: 11
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - name: Build termcoder engine
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: pnpm install --frozen-lockfile && pnpm --filter @termcoder/core build
+    - name: Run termcoder
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        TC_MODEL: ${{ inputs.model }}
+        TC_TRIGGER: ${{ inputs.trigger }}
+        TC_APPLY: ${{ inputs.apply }}
+        TC_TASK: ${{ inputs.task }}
+      run: node "${{ github.action_path }}/.github/scripts/termcoder-action.mjs"

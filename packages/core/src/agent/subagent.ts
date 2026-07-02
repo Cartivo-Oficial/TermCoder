@@ -29,17 +29,27 @@ export function createSubagentTool(deps: SubagentDeps): TermTool {
   return {
     name: "task",
     description:
-      "Delegate a focused, self-contained sub-task to a sub-agent. It works autonomously " +
-      "with the same tools and returns a summary. Use it for independent, well-scoped chunks of work.",
+      "Delegate a focused, self-contained sub-task to a sub-agent that works autonomously and " +
+      "returns a summary. Pick a specialist via `agent`: explore/scout (read-only research), " +
+      "reviewer (critique a change), architect (design a plan), tester (write & run tests), " +
+      "debugger (root-cause & fix a bug), or general (full access, default). Use it for " +
+      "independent, well-scoped chunks so your own context stays lean.",
     inputSchema: z.object({
       prompt: z
         .string()
         .describe("The task for the sub-agent, written as a complete, standalone instruction."),
+      agent: z
+        .string()
+        .optional()
+        .describe("Specialist to use: explore, scout, reviewer, architect, tester, debugger, or general."),
     }),
     // The call itself is auto-allowed; the sub-agent's own tool calls are gated.
     readOnly: true,
-    describe: (args: { prompt: string }) => ({ title: "sub-agent task", detail: args.prompt }),
-    run: async (args: { prompt: string }, ctx) => {
+    describe: (args: { prompt: string; agent?: string }) => ({
+      title: args.agent ? `sub-agent: ${args.agent}` : "sub-agent task",
+      detail: args.prompt,
+    }),
+    run: async (args: { prompt: string; agent?: string }, ctx) => {
       const sub = Session.create(
         {
           store: deps.store,
@@ -49,7 +59,7 @@ export function createSubagentTool(deps: SubagentDeps): TermTool {
           env: deps.env,
           runner: deps.runner,
         },
-        { cwd: ctx.cwd, title: `Sub-agent: ${args.prompt.slice(0, 48)}` },
+        { cwd: ctx.cwd, agent: args.agent, title: `Sub-agent: ${args.prompt.slice(0, 48)}` },
       );
 
       const texts: string[] = [];

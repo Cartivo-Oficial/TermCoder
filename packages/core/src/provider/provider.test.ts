@@ -1,10 +1,34 @@
 import { describe, expect, it } from "vitest";
 import { loadConfig, type Config } from "../config/config";
-import { resolveModel } from "./provider";
+import { pickAutoModel, resolveModel } from "./provider";
 
 function baseConfig(): Config {
   return loadConfig({ cwd: "/", configDir: "/none", env: {} });
 }
+
+describe("pickAutoModel (termcoder/auto router)", () => {
+  it("falls back to local Ollama when no keys are configured", () => {
+    expect(pickAutoModel(baseConfig(), {})).toBe("ollama/llama3.1");
+  });
+
+  it("prefers Google's free tier when its key is present", () => {
+    const config = baseConfig();
+    config.providers.google = { apiKey: "g" };
+    expect(pickAutoModel(config, {})).toBe("google/gemini-2.5-flash");
+  });
+
+  it("honours an explicit route override", () => {
+    const config = baseConfig();
+    config.termcoder = { route: ["ollama/qwen2.5-coder"] };
+    expect(pickAutoModel(config, {})).toBe("ollama/qwen2.5-coder");
+  });
+
+  it("resolveModel routes termcoder/auto to a concrete model", () => {
+    const config = baseConfig();
+    config.providers.google = { apiKey: "g" };
+    expect(resolveModel("termcoder/auto", { config, env: {} })).toBeDefined();
+  });
+});
 
 describe("resolveModel", () => {
   it("requires a provider/model id", () => {

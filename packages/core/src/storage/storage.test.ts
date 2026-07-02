@@ -55,4 +55,23 @@ describe("SessionStore", () => {
   it("returns an empty list when no sessions exist", () => {
     expect(store.list()).toEqual([]);
   });
+
+  it("deletes a single session and reports whether it existed", () => {
+    const a = store.create({ cwd: "/a", model: "m" });
+    const b = store.create({ cwd: "/b", model: "m" });
+
+    expect(store.delete(a.id)).toBe(true);
+    expect(store.exists(a.id)).toBe(false);
+    expect(store.exists(b.id)).toBe(true);
+    expect(store.delete("missing")).toBe(false);
+  });
+
+  it("deletes every session and returns the count removed", () => {
+    store.create({ cwd: "/a", model: "m" });
+    store.create({ cwd: "/b", model: "m" });
+
+    expect(store.deleteAll()).toBe(2);
+    expect(store.list()).toEqual([]);
+    expect(store.deleteAll()).toBe(0);
+  });
 });

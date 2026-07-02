@@ -49,6 +49,9 @@ export const bashTool = defineTool({
   }),
   readOnly: false,
   permissionKind: "bash",
+  target(args) {
+    return args.command;
+  },
   describe(args) {
     return { title: "Run shell command", detail: args.command };
   },

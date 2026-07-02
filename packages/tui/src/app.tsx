@@ -1,9 +1,18 @@
 import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { useMemo, useRef, useState } from "react";
-import { Box, Static, useApp, useInput } from "ink";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Box, Static, Text, useApp, useInput } from "ink";
 import {
   createSubagentTool,
+  discoverAgents,
+  discoverCommands,
+  discoverSkills,
+  isTrusted,
+  trustFolder,
+  saveConfig,
+  loadDraft,
+  saveDraft,
+  clearDraft,
   PermissionManager,
   renderSessionHtml,
   Session,
@@ -16,31 +25,16 @@ import {
   type SessionRecord,
 } from "@termcoder/core";
 import { getTheme, themes } from "./theme";
+import { matchCommands, helpText } from "./commands";
+import { listProjectFiles, matchFiles } from "./files";
 import type { ViewItem } from "./types";
-import { Banner } from "./components/Banner";
+import { Hero } from "./components/Hero";
 import { Composer } from "./components/Composer";
 import { PermissionModal } from "./components/PermissionModal";
+import { TrustPrompt } from "./components/TrustPrompt";
 import { Transcript, TranscriptItem } from "./components/Transcript";
 
-const HELP = [
-  "Commands:",
-  "  /help              show this help",
-  "  /new               start a new session",
-  "  /sessions          list saved sessions",
-  "  /resume <id>       resume a saved session",
-  "  /model [id]        show or set the model",
-  "  /theme [name]      show or set the color theme",
-  "  /tools             list available tools",
-  "  /auto              toggle auto-approve (run tools without asking)",
-  "  /retry             re-run your last message",
-  "  /tokens            show token usage for this session",
-  "  /init              create an AGENTS.md in this project",
-  "  /share             export this session to an HTML file",
-  "  /clear             clear the screen",
-  "  /exit              quit",
-  "",
-  "↑/↓ browse input history · esc interrupt a running turn",
-].join("\n");
+const VERSION = "0.1.0";
 
 const AGENTS_TEMPLATE = `# Project instructions for termcoder
 
@@ -93,24 +87,40 @@ function statusFor(toolName?: string): string {
   }
 }
 
+/** A descriptive busy status for a tool call: the concrete target when known. */
+function toolStatus(name: string, title?: string, detail?: string): string {
+  if (name === "bash" && detail) return `Running: ${detail.split("\n")[0]!.slice(0, 52)}…`;
+  if (name === "task") return "Delegating to sub-agent…";
+  if (title) return `${title}…`;
+  return statusFor(name);
+}
+
+/** Current wall-clock time as a compact HH:MM for message timestamps. */
+function now(): string {
+  return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
 export function App({ config, cwd, registry: registryProp, notices }: AppProps) {
   const [themeName, setThemeName] = useState(config.theme);
   const theme = getTheme(themeName);
   const { exit } = useApp();
 
-  const [history, setHistory] = useState<ViewItem[]>(() => [
-    { kind: "notice", text: "Welcome to termcoder. Type /help for commands." },
-    ...(notices ?? []).map((text): ViewItem => ({ kind: "notice", text })),
-  ]);
+  const [history, setHistory] = useState<ViewItem[]>(() =>
+    (notices ?? []).map((text): ViewItem => ({ kind: "notice", text })),
+  );
   const [live, setLive] = useState<ViewItem[]>([]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(() => loadDraft(cwd)); // restore an unsent draft
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("Thinking…");
   const [tokens, setTokens] = useState(0);
   const [tokensIn, setTokensIn] = useState(0);
   const [tokensOut, setTokensOut] = useState(0);
+  const [lastCtx, setLastCtx] = useState(0);
   const [autoApprove, setAutoApprove] = useState(false);
   const [clearEpoch, setClearEpoch] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const [menuSel, setMenuSel] = useState(0);
+  const [trusted, setTrusted] = useState(() => isTrusted(cwd));
   const [permRequest, setPermRequest] = useState<PermissionRequest | null>(null);
   const permResolve = useRef<((decision: PermissionDecision) => void) | null>(null);
   const aborted = useRef(false);
@@ -142,19 +152,107 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     Session.create({ store, registry, config, permission }, { cwd }),
   );
 
-  // Esc interrupts the active turn; ↑/↓ browse input history when idle.
+  // While a turn runs, tick an elapsed-seconds counter for the status line.
+  useEffect(() => {
+    if (!busy) {
+      setElapsed(0);
+      return;
+    }
+    const start = Date.now();
+    const id = setInterval(() => setElapsed(Math.floor((Date.now() - start) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [busy]);
+
+  // Auto-save an unsent draft (debounced) so it survives a restart.
+  useEffect(() => {
+    const id = setTimeout(() => saveDraft(cwd, input), 400);
+    return () => clearTimeout(id);
+  }, [input, cwd]);
+
+  // Whether a usable model/provider is configured (drives the readiness dot).
+  const modelReady =
+    ["ollama", "termcoder", "termexplorer"].includes(session.record.model.split("/")[0] ?? "") ||
+    Boolean(
+      process.env.ANTHROPIC_API_KEY ||
+        process.env.OPENAI_API_KEY ||
+        process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+        process.env.GEMINI_API_KEY,
+    ) ||
+    Object.values(config.providers).some((p) => p.apiKey);
+
+  // Project files for @-mention completion (scanned once per cwd).
+  const projectFiles = useMemo(() => listProjectFiles(cwd), [cwd]);
+  const [menuDismissed, setMenuDismissed] = useState(false);
+
+  // Derive the active dropdown from the current input (end-anchored). A leading
+  // "/" opens the command menu; a trailing "@token" opens the file menu.
+  const showMenus = !busy && !permRequest && !menuDismissed;
+  const commandMatches =
+    showMenus && input.startsWith("/") && !input.includes(" ") ? matchCommands(input.slice(1)) : [];
+  const mentionQuery =
+    showMenus && commandMatches.length === 0 ? /(^|\s)@([^\s@]*)$/.exec(input) : null;
+  const mentionMatches = mentionQuery ? matchFiles(projectFiles, mentionQuery[2] ?? "") : [];
+  const activeLen = commandMatches.length || mentionMatches.length;
+  const menuSelClamped = Math.min(menuSel, Math.max(0, activeLen - 1));
+
+  const menuControl = {
+    open: activeLen > 0,
+    onMove: (delta: number) => setMenuSel(() => (activeLen ? (menuSelClamped + delta + activeLen) % activeLen : 0)),
+    onAccept: () => {
+      if (commandMatches.length > 0) {
+        const chosen = commandMatches[menuSelClamped]!;
+        // No-arg commands run immediately; ones taking an argument complete and wait.
+        if (chosen.arg) {
+          setInput(`/${chosen.name} `);
+        } else {
+          setInput("");
+          setMenuSel(0);
+          handleCommand(`/${chosen.name}`);
+          return;
+        }
+      } else if (mentionMatches.length > 0) {
+        const chosen = mentionMatches[menuSelClamped]!;
+        setInput(input.replace(/(^|\s)@([^\s@]*)$/, (_m, pre: string) => `${pre}@${chosen} `));
+      }
+      setMenuSel(0);
+    },
+    onClose: () => setMenuDismissed(true),
+  };
+
+  // Esc interrupts the active turn; Shift+Tab cycles the mode/agent. Editing,
+  // menu and history keys live in MultilineInput.
   useInput((_input, key) => {
     if (key.escape && busy) {
       aborted.current = true;
       abortController.current?.abort();
-      return;
+    } else if (key.tab && key.shift && !busy && !permRequest) {
+      cycleMode();
+    } else if (key.ctrl && _input === "p" && !busy && !permRequest) {
+      // Command palette: open the "/" menu.
+      setInput("/");
+      setMenuSel(0);
     }
-    if (busy || permRequest) return;
+  });
+
+  const [, forceRender] = useState(0);
+  function cycleMode() {
+    const primaries = discoverAgents({ config, cwd })
+      .filter((a) => a.mode !== "subagent")
+      .map((a) => a.name);
+    const list = primaries.length ? primaries : ["build", "plan"];
+    const cur = session.record.agent ?? session.record.mode ?? "build";
+    const next = list[(list.indexOf(cur) + 1) % list.length]!;
+    session.record.agent = next;
+    store.save(session.record);
+    forceRender((n) => n + 1);
+  }
+
+  function onHistory(dir: "up" | "down") {
     const h = inputHistory.current;
-    if (key.upArrow && h.length > 0) {
+    if (dir === "up" && h.length > 0) {
       histIndex.current = histIndex.current === -1 ? h.length - 1 : Math.max(0, histIndex.current - 1);
       setInput(h[histIndex.current] ?? "");
-    } else if (key.downArrow && histIndex.current !== -1) {
+    } else if (dir === "down" && histIndex.current !== -1) {
       if (histIndex.current >= h.length - 1) {
         histIndex.current = -1;
         setInput("");
@@ -163,7 +261,13 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         setInput(h[histIndex.current] ?? "");
       }
     }
-  });
+  }
+
+  function handleChange(v: string) {
+    setInput(v);
+    setMenuSel(0);
+    setMenuDismissed(false);
+  }
 
   function pushHistory(item: ViewItem) {
     setHistory((prev) => [...prev, item]);
@@ -175,7 +279,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     permResolve.current = null;
   }
 
-  async function runPrompt(text: string) {
+  async function runPrompt(text: string, useSession: Session = session) {
     aborted.current = false;
     const controller = new AbortController();
     abortController.current = controller;
@@ -187,7 +291,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     const sync = () => setLive([...localLive]);
 
     try {
-      for await (const event of session.prompt(text, { signal: controller.signal })) {
+      for await (const event of useSession.prompt(text, { signal: controller.signal })) {
         if (aborted.current) {
           localLive.push({ kind: "notice", text: "⛔ Interrupted." });
           break;
@@ -208,7 +312,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           }
           case "tool-call": {
             assistantIdx = null;
-            setStatus(statusFor(event.name));
+            setStatus(toolStatus(event.name, event.title, event.detail));
             localLive.push({
               kind: "tool",
               id: event.id,
@@ -236,6 +340,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
             setTokens((t) => t + event.inputTokens + event.outputTokens);
             setTokensIn((t) => t + event.inputTokens);
             setTokensOut((t) => t + event.outputTokens);
+            setLastCtx(event.inputTokens);
             break;
           case "error":
             localLive.push({ kind: "error", text: event.error });
@@ -246,8 +351,12 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         sync();
       }
     } finally {
-      // Commit the finished turn to the static scrollback.
-      setHistory((prev) => [...prev, ...localLive]);
+      // Commit the finished turn to the static scrollback, timestamping the
+      // assistant reply.
+      const stamped = localLive.map((it) =>
+        it.kind === "assistant" ? { ...it, time: now() } : it,
+      );
+      setHistory((prev) => [...prev, ...stamped]);
       setLive([]);
       setBusy(false);
     }
@@ -258,8 +367,42 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     const arg = rest.join(" ").trim();
     switch (cmd) {
       case "help":
-        pushHistory({ kind: "notice", text: HELP });
+        pushHistory({ kind: "notice", text: helpText() });
         break;
+      case "setup":
+        pushHistory({
+          kind: "notice",
+          text: [
+            "Set up a model — pick one (the first two are free):",
+            "",
+            "  • Google Gemini (free tier): get a key at https://aistudio.google.com/apikey",
+            "      then run:  /key google YOUR_KEY",
+            "  • Ollama (local, no key, no account): install from https://ollama.com,",
+            "      run 'ollama pull llama3.1', then:  /model ollama/llama3.1",
+            "  • Anthropic:  /key anthropic sk-ant-…       • OpenAI:  /key openai sk-…",
+            "",
+            "Keys are saved to your global config; you only do this once.",
+          ].join("\n"),
+        });
+        break;
+      case "key": {
+        const [rawProv, ...rest] = arg.split(/\s+/);
+        const provider = rawProv === "gemini" ? "google" : (rawProv ?? "");
+        const value = rest.join(" ").trim();
+        if (!["google", "anthropic", "openai"].includes(provider) || !value) {
+          pushHistory({ kind: "notice", text: "Usage: /key <google|anthropic|openai> <api-key>" });
+          break;
+        }
+        try {
+          saveConfig({ providers: { [provider]: { apiKey: value } } });
+          config.providers[provider] = { ...config.providers[provider], apiKey: value };
+          forceRender((n) => n + 1);
+          pushHistory({ kind: "notice", text: `✓ Saved your ${provider} API key — you're ready to go!` });
+        } catch (err) {
+          pushHistory({ kind: "error", text: `Could not save the key: ${String(err)}` });
+        }
+        break;
+      }
       case "clear":
         setHistory([]);
         setLive([]);
@@ -290,6 +433,44 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           pushHistory({ kind: "notice", text: `Model: ${session.record.model}` });
         }
         break;
+      case "agent":
+        if (arg) {
+          const known = discoverAgents({ config, cwd }).map((a) => a.name);
+          if (!known.includes(arg)) {
+            pushHistory({ kind: "notice", text: `No agent "${arg}". Try /agents. (${known.join(", ")})` });
+            break;
+          }
+          session.record.agent = arg;
+          store.save(session.record);
+          pushHistory({ kind: "notice", text: `Agent set to ${arg} for this session.` });
+        } else {
+          pushHistory({ kind: "notice", text: `Agent: ${session.record.agent ?? session.record.mode ?? "build"}` });
+        }
+        break;
+      case "agents": {
+        const list = discoverAgents({ config, cwd });
+        const lines = list
+          .map((a) => `  ${a.builtin ? "○" : "●"} ${a.name.padEnd(10)} ${a.description ?? ""}`)
+          .join("\n");
+        pushHistory({ kind: "notice", text: `Agents (● custom, ○ built-in):\n${lines}` });
+        break;
+      }
+      case "commands": {
+        const list = discoverCommands({ cwd });
+        const text = list.length
+          ? list.map((c) => `  /${c.name.padEnd(12)} ${c.description ?? ""}`).join("\n")
+          : "  (no custom commands — add .termcoder/commands/*.md)";
+        pushHistory({ kind: "notice", text: `Project commands:\n${text}` });
+        break;
+      }
+      case "skills": {
+        const list = discoverSkills({ cwd });
+        const text = list.length
+          ? list.map((s) => `  ${s.name.padEnd(14)} ${s.description}`).join("\n")
+          : "  (no skills — add .termcoder/skills/*.md with name + description)";
+        pushHistory({ kind: "notice", text: `Skills (loaded on demand by the agent):\n${text}` });
+        break;
+      }
       case "resume": {
         if (!arg) {
           pushHistory({ kind: "notice", text: "Usage: /resume <session-id>" });
@@ -327,7 +508,12 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
       case "theme":
         if (arg && themes[arg]) {
           setThemeName(arg);
-          pushHistory({ kind: "notice", text: `Theme set to ${arg}.` });
+          try {
+            saveConfig({ theme: arg }); // remember it across sessions
+          } catch {
+            /* config not writable — theme still applies this session */
+          }
+          pushHistory({ kind: "notice", text: `Theme set to ${arg} (saved).` });
         } else {
           pushHistory({
             kind: "notice",
@@ -360,7 +546,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           pushHistory({ kind: "notice", text: "Nothing to retry yet." });
           break;
         }
-        pushHistory({ kind: "user", text: lastPrompt.current });
+        pushHistory({ kind: "user", text: lastPrompt.current, time: now() });
         void runPrompt(lastPrompt.current);
         break;
       case "tokens":
@@ -395,41 +581,80 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
   function onSubmit(raw: string) {
     const text = raw.trim();
     setInput("");
+    clearDraft(cwd); // the draft has been sent (or discarded)
     if (!text) return;
     inputHistory.current.push(text);
     histIndex.current = -1;
     if (text.startsWith("/")) {
+      setMenuSel(0);
       handleCommand(text);
       return;
     }
+    if (text.startsWith("$")) {
+      // Delegate straight to a fresh sub-agent (keeps the main thread clean).
+      const task = text.slice(1).trim();
+      if (task) void runSubagent(task);
+      return;
+    }
     lastPrompt.current = text;
-    pushHistory({ kind: "user", text });
+    pushHistory({ kind: "user", text, time: now() });
     void runPrompt(text);
   }
 
-  type StaticEntry = { banner: true } | { banner: false; item: ViewItem };
-  const staticEntries = useMemo<StaticEntry[]>(
-    () => [{ banner: true }, ...history.map((item) => ({ banner: false as const, item }))],
-    [history],
-  );
+  /** Run a one-off task in a fresh general sub-agent, streamed inline. */
+  function runSubagent(task: string) {
+    pushHistory({ kind: "user", text: `$ ${task}`, time: now() });
+    pushHistory({ kind: "notice", text: "Delegating to a sub-agent…" });
+    const sub = Session.create(
+      { store, registry: subRegistry, config, permission },
+      { cwd, agent: "general" },
+    );
+    return runPrompt(task, sub);
+  }
+
+  // Show the animated hero until a real conversation starts (startup notices
+  // don't count). It lives outside <Static> so its starfield can twinkle.
+  const conversationEmpty =
+    !busy &&
+    live.length === 0 &&
+    !history.some((h) => h.kind === "user" || h.kind === "assistant");
+
+  // Gate the whole interface behind the trust decision — the "do you trust this
+  // folder?" question appears on its own, before the splash and composer.
+  if (!trusted) {
+    return (
+      <TrustPrompt
+        theme={theme}
+        cwd={cwd}
+        onDecision={(ok) => {
+          if (ok) {
+            trustFolder(cwd);
+            setTrusted(true);
+          } else {
+            exit();
+          }
+        }}
+      />
+    );
+  }
 
   return (
     <Box flexDirection="column" key={`${session.record.id}:${clearEpoch}`}>
-      <Static items={staticEntries}>
-        {(entry, index) =>
-          entry.banner ? (
-            <Banner
-              key="banner"
-              theme={theme}
-              model={config.model}
-              cwd={cwd}
-              sessionId={session.record.id}
-            />
-          ) : (
-            <TranscriptItem key={index} theme={theme} item={entry.item} />
-          )
-        }
+      <Static items={history}>
+        {(item, index) => <TranscriptItem key={index} theme={theme} item={item} />}
       </Static>
+
+      {conversationEmpty ? <Hero theme={theme} /> : null}
+
+      {conversationEmpty && !modelReady ? (
+        <Box justifyContent="center" marginBottom={1}>
+          <Text color={theme.running}>{"⚠  No model set — type "}</Text>
+          <Text color={theme.accent} bold>
+            /setup
+          </Text>
+          <Text color={theme.running}>{" to get started (free options)"}</Text>
+        </Box>
+      ) : null}
 
       {live.length > 0 ? <Transcript theme={theme} items={live} /> : null}
 
@@ -439,12 +664,25 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         <Composer
           theme={theme}
           value={input}
-          onChange={setInput}
+          onChange={handleChange}
           onSubmit={onSubmit}
           busy={busy}
           disabled={busy}
           status={status}
+          elapsed={elapsed}
+          onHistory={onHistory}
+          commandMenu={commandMatches}
+          mentionMenu={mentionMatches}
+          menuSelected={menuSelClamped}
+          menuControl={menuControl}
+          model={session.record.model}
+          agent={session.record.agent ?? session.record.mode ?? "build"}
+          cwd={cwd}
           tokens={tokens}
+          lastCtx={lastCtx}
+          autoApprove={autoApprove}
+          version={VERSION}
+          ready={modelReady}
         />
       )}
     </Box>

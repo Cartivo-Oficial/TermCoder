@@ -1,19 +1,37 @@
 import { spawnSync } from "node:child_process";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  globalShortcut,
+  ipcMain,
+  Menu,
+  nativeImage,
+  Notification,
+  session,
+  Tray,
+} from "electron";
 import {
   builtinTools,
   connectLspServers,
   connectMcpServers,
+  discoverTools,
   loadConfig,
   loadPlugins,
   ToolRegistry,
 } from "@termcoder/core";
 import { createServer } from "@termcoder/server";
 
+// Set as early as possible (before app is ready) so Windows groups the app
+// under our own id and shows our taskbar icon instead of the generic Electron one.
+if (process.platform === "win32") app.setAppUserModelId("ai.termcoder.app");
+
 let serverPort = 0;
 let cleanup: () => Promise<void> = async () => {};
+let mainWindow: BrowserWindow | null = null;
+let tray: Tray | null = null;
 
 /** Start an in-process termcoder server and capture its port. */
 async function startServer(): Promise<void> {
@@ -23,18 +41,26 @@ async function startServer(): Promise<void> {
   const mcp = await connectMcpServers(config);
   const lsp = await connectLspServers(config, cwd);
   const plugins = await loadPlugins(config.plugins, { config, cwd });
+  const custom = await discoverTools({ cwd });
   const registry = new ToolRegistry([
     ...builtinTools,
     ...mcp.tools,
     ...lsp.tools,
     ...plugins.tools,
+    ...custom.tools,
   ]);
+
+  // Surface loaded custom tools (and load errors) alongside plugins in the UI.
+  const customStatus = [
+    ...custom.tools.map((t) => ({ name: `tool: ${t.name}`, ok: true, toolCount: 1 })),
+    ...custom.errors.map((e) => ({ name: `tool: ${e.file.split(/[\\/]/).pop()}`, ok: false, toolCount: 0, error: e.error })),
+  ];
 
   const server = createServer({
     config,
     registry,
     cwd,
-    status: { mcp: mcp.servers, lsp: lsp.servers, plugins: plugins.plugins },
+    status: { mcp: mcp.servers, lsp: lsp.servers, plugins: [...plugins.plugins, ...customStatus] },
   });
   await new Promise<void>((resolve) => server.listen(0, resolve));
   const address = server.address();
@@ -44,6 +70,26 @@ async function startServer(): Promise<void> {
     await Promise.all([mcp.close(), lsp.close()]);
     server.close();
   };
+}
+
+function appIconPath(): string | undefined {
+  // Windows taskbar wants an .ico; everything else takes the PNG. build/ holds
+  // these in dev (under __dirname/../../build) and resources/ when packaged.
+  const names = process.platform === "win32" ? ["icon.ico", "icon.png"] : ["icon.png"];
+  for (const name of names) {
+    for (const candidate of [
+      join(__dirname, "../../build", name),
+      join(process.resourcesPath ?? "", name),
+    ]) {
+      if (candidate && existsSync(candidate)) return candidate;
+    }
+  }
+  return undefined;
+}
+
+function appIconImage(): Electron.NativeImage | undefined {
+  const path = appIconPath();
+  return path ? nativeImage.createFromPath(path) : undefined;
 }
 
 function createWindow(): void {
@@ -56,11 +102,22 @@ function createWindow(): void {
     backgroundColor: "#0a0a0b",
     frame: false,
     autoHideMenuBar: true,
+    icon: appIconImage(),
     webPreferences: {
       contextIsolation: true,
       preload: join(__dirname, "../preload/index.js"),
     },
   });
+
+  mainWindow = win;
+  win.on("closed", () => {
+    if (mainWindow === win) mainWindow = null;
+  });
+
+  // Re-assert the icon after creation; in dev the taskbar otherwise keeps the
+  // generic Electron icon.
+  const icon = appIconImage();
+  if (icon) win.setIcon(icon);
 
   const devUrl = process.env.ELECTRON_RENDERER_URL;
   if (devUrl) {
@@ -75,6 +132,56 @@ function createWindow(): void {
 ipcMain.handle("pick-folder", async () => {
   const result = await dialog.showOpenDialog({ properties: ["openDirectory"] });
   return result.canceled || !result.filePaths[0] ? null : result.filePaths[0];
+});
+
+ipcMain.handle("pick-file", async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ["openFile", "multiSelections"],
+  });
+  return result.canceled ? [] : result.filePaths;
+});
+
+const IMAGE_MIME: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+  bmp: "image/bmp",
+  svg: "image/svg+xml",
+};
+
+ipcMain.handle("write-file", (_event, path: string, content: string) => {
+  try {
+    writeFileSync(path, content, "utf8");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+});
+
+ipcMain.handle("save-file", async (_event, defaultName: string, content: string) => {
+  const result = await dialog.showSaveDialog({ defaultPath: defaultName });
+  if (result.canceled || !result.filePath) return { ok: false };
+  try {
+    writeFileSync(result.filePath, content, "utf8");
+    return { ok: true, path: result.filePath };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+});
+
+ipcMain.handle("read-image", (_event, path: string) => {
+  try {
+    const ext = path.toLowerCase().split(".").pop() ?? "";
+    const mediaType = IMAGE_MIME[ext];
+    if (!mediaType) return null;
+    const buf = readFileSync(path);
+    if (buf.length > 8_000_000) return null; // 8 MB cap
+    return { dataUrl: `data:${mediaType};base64,${buf.toString("base64")}`, mediaType };
+  } catch {
+    return null;
+  }
 });
 
 ipcMain.handle("list-dir", (_event, dir: string) => {
@@ -143,6 +250,80 @@ ipcMain.handle("git-diff", (_event, dir: string, path: string) => {
   }
 });
 
+function showMainWindow(): void {
+  if (!mainWindow) {
+    createWindow();
+    return;
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+ipcMain.on("notify", (_e, title: string, body: string) => {
+  if (!Notification.isSupported()) return;
+  const notification = new Notification({
+    title: title || "termcoder",
+    body,
+    icon: appIconImage(),
+    silent: false,
+  });
+  notification.on("click", () => showMainWindow());
+  notification.show();
+});
+
+ipcMain.handle("get-login-item", () => app.getLoginItemSettings().openAtLogin);
+ipcMain.on("set-login-item", (_e, open: boolean) => {
+  app.setLoginItemSettings({ openAtLogin: open });
+});
+
+ipcMain.handle("git-commit", (_e, dir: string, message: string) => {
+  try {
+    spawnSync("git", ["add", "-A"], { cwd: dir });
+    const out = spawnSync("git", ["commit", "-m", message || "termcoder: automated update"], {
+      cwd: dir,
+      encoding: "utf8",
+    });
+    const ok = out.status === 0;
+    return { ok, message: (out.stdout || out.stderr || "").trim() };
+  } catch (err) {
+    return { ok: false, message: String(err) };
+  }
+});
+
+ipcMain.on("set-tray", (_e, enabled: boolean) => {
+  if (enabled && !tray) {
+    const icon = appIconImage();
+    tray = new Tray(icon ?? nativeImage.createEmpty());
+    tray.setToolTip("termcoder");
+    tray.setContextMenu(
+      Menu.buildFromTemplate([
+        { label: "Show termcoder", click: () => showMainWindow() },
+        { type: "separator" },
+        { label: "Quit", click: () => app.quit() },
+      ]),
+    );
+    tray.on("click", () => showMainWindow());
+  } else if (!enabled && tray) {
+    tray.destroy();
+    tray = null;
+  }
+});
+
+ipcMain.on("set-global-shortcut", (_e, enabled: boolean, accelerator: string) => {
+  globalShortcut.unregisterAll();
+  if (enabled && accelerator) {
+    try {
+      globalShortcut.register(accelerator, () => {
+        if (mainWindow?.isVisible() && mainWindow.isFocused()) mainWindow.hide();
+        else showMainWindow();
+      });
+    } catch {
+      /* invalid accelerator — ignore */
+    }
+  }
+});
+
 ipcMain.on("window-minimize", (e) => BrowserWindow.fromWebContents(e.sender)?.minimize());
 ipcMain.on("window-maximize", (e) => {
   const w = BrowserWindow.fromWebContents(e.sender);
@@ -170,12 +351,24 @@ ipcMain.handle("git-status", (_event, dir: string) => {
 });
 
 app.whenReady().then(async () => {
+  // Dock icon on macOS (the Windows taskbar id is set at module load above).
+  const icon = appIconImage();
+  if (icon && process.platform === "darwin" && app.dock) app.dock.setIcon(icon);
+
+  // Allow the renderer to use the microphone (for voice dictation). This is a
+  // local, trusted app, so we grant media requests outright.
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => {
+    cb(permission === "media" || permission === "mediaKeySystem" || permission === "notifications");
+  });
+
   await startServer();
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
+
+app.on("will-quit", () => globalShortcut.unregisterAll());
 
 app.on("window-all-closed", () => {
   void cleanup().finally(() => {

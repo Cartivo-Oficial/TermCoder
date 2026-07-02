@@ -95,6 +95,42 @@ describe("server", () => {
     expect(res.status).toBe(404);
   });
 
+  it("deletes a single session and 404s deleting a missing one", async () => {
+    const record = store.create({ cwd: dir, model: "m" });
+
+    const del = await fetch(`${base()}/sessions/${record.id}`, { method: "DELETE" });
+    expect(del.status).toBe(200);
+    expect(store.exists(record.id)).toBe(false);
+
+    const missing = await fetch(`${base()}/sessions/does-not-exist`, { method: "DELETE" });
+    expect(missing.status).toBe(404);
+  });
+
+  it("renames a session via POST title", async () => {
+    const record = store.create({ cwd: dir, model: "m", title: "Untitled session" });
+
+    const res = await fetch(`${base()}/sessions/${record.id}/title`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title: "  My feature work  " }),
+    });
+    expect(res.status).toBe(200);
+    expect((await res.json()) as { title: string }).toMatchObject({ title: "My feature work" });
+    expect(store.load(record.id).title).toBe("My feature work");
+  });
+
+  it("clears all sessions with a collection DELETE", async () => {
+    store.create({ cwd: dir, model: "m" });
+    store.create({ cwd: dir, model: "m" });
+
+    const res = await fetch(`${base()}/sessions`, { method: "DELETE" });
+    expect(res.status).toBe(200);
+    expect((await res.json()) as { removed: number }).toMatchObject({ removed: 2 });
+
+    const list = (await (await fetch(`${base()}/sessions`)).json()) as unknown[];
+    expect(list).toHaveLength(0);
+  });
+
   it("streams a turn and handles the permission round-trip over WS", async () => {
     const record = (await (
       await fetch(`${base()}/sessions`, {

@@ -5,11 +5,18 @@ const params = new URLSearchParams(location.search);
 contextBridge.exposeInMainWorld("api", {
   serverPort: Number(params.get("port") ?? 0),
   pickFolder: (): Promise<string | null> => ipcRenderer.invoke("pick-folder"),
+  pickFile: (): Promise<string[]> => ipcRenderer.invoke("pick-file"),
+  readImage: (path: string): Promise<{ dataUrl: string; mediaType: string } | null> =>
+    ipcRenderer.invoke("read-image", path),
   listDir: (dir: string): Promise<Array<{ name: string; dir: boolean }>> =>
     ipcRenderer.invoke("list-dir", dir),
   allFiles: (dir: string): Promise<string[]> => ipcRenderer.invoke("all-files", dir),
   readFile: (path: string): Promise<{ content: string; error?: string }> =>
     ipcRenderer.invoke("read-file", path),
+  writeFile: (path: string, content: string): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke("write-file", path, content),
+  saveFile: (defaultName: string, content: string): Promise<{ ok: boolean; path?: string; error?: string }> =>
+    ipcRenderer.invoke("save-file", defaultName, content),
   gitStatus: (dir: string): Promise<{ map: Record<string, string>; count: number }> =>
     ipcRenderer.invoke("git-status", dir),
   gitDiff: (dir: string, path: string): Promise<{ diff: string }> =>
@@ -17,4 +24,12 @@ contextBridge.exposeInMainWorld("api", {
   minimize: () => ipcRenderer.send("window-minimize"),
   maximize: () => ipcRenderer.send("window-maximize"),
   closeWindow: () => ipcRenderer.send("window-close"),
+  notify: (title: string, body: string) => ipcRenderer.send("notify", title, body),
+  getLoginItem: (): Promise<boolean> => ipcRenderer.invoke("get-login-item"),
+  setLoginItem: (open: boolean) => ipcRenderer.send("set-login-item", open),
+  gitCommit: (dir: string, message: string): Promise<{ ok: boolean; message: string }> =>
+    ipcRenderer.invoke("git-commit", dir, message),
+  setTray: (enabled: boolean) => ipcRenderer.send("set-tray", enabled),
+  setGlobalShortcut: (enabled: boolean, accelerator: string) =>
+    ipcRenderer.send("set-global-shortcut", enabled, accelerator),
 });

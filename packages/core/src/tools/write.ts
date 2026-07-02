@@ -15,6 +15,9 @@ export const writeTool = defineTool({
   }),
   readOnly: false,
   permissionKind: "write",
+  target(args, ctx) {
+    return relative(ctx.cwd, resolveInside(ctx.cwd, args.path)).split("\\").join("/");
+  },
   describe(args, ctx) {
     const abs = resolveInside(ctx.cwd, args.path);
     const rel = relative(ctx.cwd, abs).split("\\").join("/");

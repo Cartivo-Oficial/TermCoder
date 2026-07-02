@@ -4,6 +4,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
@@ -18,6 +19,14 @@ export interface SessionRecord {
   updatedAt: number;
   cwd: string;
   model: string;
+  /** Agent mode: "build" = full access, "plan" = read-only (no edits/bash). */
+  mode?: "build" | "plan";
+  /** Active agent name (build/plan/general/explore/scout or a custom one). */
+  agent?: string;
+  /** Sampling temperature (0–2). Undefined uses the provider default. */
+  temperature?: number;
+  /** Max tool-execution rounds per prompt. Undefined uses the engine default. */
+  maxSteps?: number;
   messages: ModelMessage[];
 }
 
@@ -56,7 +65,15 @@ export class SessionStore {
     mkdirSync(this.baseDir, { recursive: true });
   }
 
-  create(opts: { cwd: string; model: string; title?: string }): SessionRecord {
+  create(opts: {
+    cwd: string;
+    model: string;
+    title?: string;
+    mode?: "build" | "plan";
+    agent?: string;
+    temperature?: number;
+    maxSteps?: number;
+  }): SessionRecord {
     const now = Date.now();
     const record: SessionRecord = {
       id: randomUUID(),
@@ -65,6 +82,10 @@ export class SessionStore {
       updatedAt: now,
       cwd: opts.cwd,
       model: opts.model,
+      mode: opts.mode,
+      agent: opts.agent,
+      temperature: opts.temperature,
+      maxSteps: opts.maxSteps,
       messages: [],
     };
     this.save(record);
@@ -85,6 +106,25 @@ export class SessionStore {
   load(id: string): SessionRecord {
     if (!this.exists(id)) throw new Error(`Session not found: ${id}`);
     return JSON.parse(readFileSync(this.file(id), "utf8")) as SessionRecord;
+  }
+
+  /** Delete a single session. Returns true if a file was removed. */
+  delete(id: string): boolean {
+    if (!this.exists(id)) return false;
+    rmSync(this.file(id), { force: true });
+    return true;
+  }
+
+  /** Delete every stored session. Returns the number removed. */
+  deleteAll(): number {
+    if (!existsSync(this.baseDir)) return 0;
+    let removed = 0;
+    for (const name of readdirSync(this.baseDir)) {
+      if (!name.endsWith(".json")) continue;
+      rmSync(join(this.baseDir, name), { force: true });
+      removed += 1;
+    }
+    return removed;
   }
 
   /** All sessions, newest-updated first. Skips unreadable files. */

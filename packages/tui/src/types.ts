@@ -1,7 +1,7 @@
 /** A single rendered line/block in the transcript. */
 export type ViewItem =
-  | { kind: "user"; text: string }
-  | { kind: "assistant"; text: string }
+  | { kind: "user"; text: string; time?: string }
+  | { kind: "assistant"; text: string; time?: string }
   | {
       kind: "tool";
       id: string;

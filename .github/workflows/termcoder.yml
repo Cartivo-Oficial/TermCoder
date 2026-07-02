@@ -1,0 +1,37 @@
+name: termcoder
+
+# Respond to "/termcoder …" in issue and PR comments. Only runs for repo
+# collaborators, and only when the trigger phrase is present.
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  termcoder:
+    if: >
+      contains(github.event.comment.body, '/termcoder') &&
+      contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run termcoder
+        uses: ./
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          model: termcoder/auto
+          # Set apply: true to let it edit files and push a commit.
+          apply: "false"
+        env:
+          # Provide at least one provider key as a repo secret. termcoder/auto
+          # routes to whichever is configured (local Ollama isn't available in CI).
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

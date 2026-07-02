@@ -1,13 +1,47 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { IconClose } from "./Icons";
+import { LANGS, useI18n } from "./i18n";
+import { COLOR_THEMES } from "./themes";
+import { EDITOR_THEMES } from "./editorThemes";
+import { KEYBIND_ACTIONS, comboFor, comboFromEvent, formatCombo } from "./keybinds";
+
+type PermMode = "ask" | "allow" | "deny";
+interface McpEntry {
+  type: "stdio" | "http";
+  enabled?: boolean;
+  command?: string;
+  args?: string[];
+  url?: string;
+}
+interface LiveConfig {
+  permission: { bash: PermMode; write: PermMode; edit: PermMode; mcp: PermMode };
+  providers: Record<string, { hasKey: boolean; baseURL?: string }>;
+  mcp: Record<string, McpEntry>;
+  formatter?: boolean | Record<string, unknown>;
+  github?: { hasToken: boolean };
+  context?: { maxToolOutputChars: number; keepRecentToolResults: number };
+}
+interface MicDevice {
+  deviceId: string;
+  label: string;
+}
 
 export type SettingsTab =
   | "general"
   | "appearance"
   | "shortcuts"
   | "servers"
+  | "sessions"
+  | "permissions"
+  | "voice"
+  | "files"
+  | "integrations"
+  | "automations"
   | "providers"
   | "models"
+  | "agents"
+  | "skills"
+  | "behavior"
   | "about";
 
 export interface ServerStatus {
@@ -24,6 +58,12 @@ interface Props {
   setTab: (t: SettingsTab) => void;
   theme: "dark" | "light";
   setTheme: (t: "dark" | "light") => void;
+  colorTheme: string;
+  setColorTheme: (id: string) => void;
+  studentMode: boolean;
+  setStudentMode: (v: boolean) => void;
+  keybinds: Record<string, string>;
+  setKeybinds: (k: Record<string, string>) => void;
   model: string;
   defaultModel: string;
   setDefaultModel: (m: string) => void;
@@ -39,6 +79,40 @@ interface Props {
   setProgressBar: (b: boolean) => void;
   fontSize: number;
   setFontSize: (n: number) => void;
+  accent: string;
+  setAccent: (c: string) => void;
+  density: "comfortable" | "compact";
+  setDensity: (d: "comfortable" | "compact") => void;
+  reduceMotion: boolean;
+  setReduceMotion: (b: boolean) => void;
+  autoScroll: boolean;
+  setAutoScroll: (b: boolean) => void;
+  confirmDelete: boolean;
+  setConfirmDelete: (b: boolean) => void;
+  temperature: number;
+  setTemperature: (n: number) => void;
+  maxSteps: number;
+  setMaxSteps: (n: number) => void;
+  soundOnFinish: boolean;
+  setSoundOnFinish: (b: boolean) => void;
+  micDeviceId: string;
+  setMicDeviceId: (s: string) => void;
+  wordWrap: boolean;
+  setWordWrap: (b: boolean) => void;
+  aiSuggest: boolean;
+  setAiSuggest: (b: boolean) => void;
+  codeTheme: string;
+  setCodeTheme: (id: string) => void;
+  notifyOnFinish: boolean;
+  setNotifyOnFinish: (b: boolean) => void;
+  autoCommit: boolean;
+  setAutoCommit: (b: boolean) => void;
+  openAtLogin: boolean;
+  setOpenAtLogin: (b: boolean) => void;
+  enableTray: boolean;
+  setEnableTray: (b: boolean) => void;
+  enableHotkey: boolean;
+  setEnableHotkey: (b: boolean) => void;
   cwd: string | null;
   chooseFolder: () => void;
   serverStatus: ServerStatus | null;
@@ -66,92 +140,385 @@ function Row({ title, desc, children }: { title: string; desc?: string; children
   );
 }
 
-const TABS: Array<{ group: string; items: Array<[SettingsTab, string]> }> = [
+const ACCENTS = ["#ededee", "#4f8cff", "#4ade80", "#b794f6", "#f59e0b", "#f87171"];
+
+const TABS: Array<{ groupKey: string; items: Array<[SettingsTab, string]> }> = [
   {
-    group: "Desktop",
+    groupKey: "settings.group.desktop",
     items: [
-      ["general", "General"],
-      ["appearance", "Appearance"],
-      ["shortcuts", "Shortcuts"],
-      ["servers", "Servers"],
+      ["general", "settings.general"],
+      ["appearance", "settings.appearance"],
+      ["shortcuts", "settings.shortcuts"],
+      ["servers", "settings.servers"],
     ],
   },
   {
-    group: "Model",
+    groupKey: "settings.group.workspace",
     items: [
-      ["providers", "Providers"],
-      ["models", "Models"],
+      ["sessions", "settings.sessions"],
+      ["permissions", "settings.permissions"],
+      ["voice", "settings.voice"],
+      ["files", "settings.files"],
+      ["integrations", "settings.integrations"],
+      ["automations", "settings.automations"],
+    ],
+  },
+  {
+    groupKey: "settings.group.model",
+    items: [
+      ["providers", "settings.providers"],
+      ["models", "settings.models"],
+      ["agents", "settings.agents"],
+      ["skills", "settings.skills"],
+      ["behavior", "settings.behavior"],
     ],
   },
 ];
 
-const TITLES: Record<SettingsTab, string> = {
-  general: "General",
-  appearance: "Appearance",
-  shortcuts: "Shortcuts",
-  servers: "Servers",
-  providers: "Providers",
-  models: "Models",
-  about: "About",
+const TITLE_KEYS: Record<SettingsTab, string> = {
+  general: "settings.general",
+  appearance: "settings.appearance",
+  shortcuts: "settings.shortcuts",
+  servers: "settings.servers",
+  sessions: "settings.sessions",
+  permissions: "settings.permissions",
+  voice: "settings.voice",
+  files: "settings.files",
+  integrations: "settings.integrations",
+  automations: "settings.automations",
+  providers: "settings.providers",
+  models: "settings.models",
+  agents: "settings.agents",
+  skills: "settings.skills",
+  behavior: "settings.behavior",
+  about: "settings.about",
 };
 
 export function Settings(p: Props) {
+  const { t, lang, setLang } = useI18n();
+  const httpBase = `http://localhost:${p.port}`;
+  const [cfg, setCfg] = useState<LiveConfig | null>(null);
+  const [keyDrafts, setKeyDrafts] = useState<Record<string, string>>({});
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [githubDraft, setGithubDraft] = useState("");
+  const [savingGithub, setSavingGithub] = useState(false);
+  const [recording, setRecording] = useState<string | null>(null);
+  const [mics, setMics] = useState<MicDevice[]>([]);
+  const [sessionCount, setSessionCount] = useState<number | null>(null);
+  const [retentionDays, setRetentionDays] = useState(30);
+  const [agentList, setAgentList] = useState<
+    Array<{ name: string; description?: string; builtin: boolean; readOnly: boolean }>
+  >([]);
+  const [newAgent, setNewAgent] = useState({ name: "", description: "", model: "", prompt: "", readOnly: false, editPaths: "" });
+
+  function loadAgents() {
+    fetch(`${httpBase}/agents`)
+      .then((r) => r.json())
+      .then((list) => setAgentList(Array.isArray(list) ? list : []))
+      .catch(() => {});
+  }
+  async function createAgent() {
+    if (!newAgent.name.trim()) return;
+    const editPaths = newAgent.editPaths
+      .split(",")
+      .map((g) => g.trim())
+      .filter(Boolean);
+    await fetch(`${httpBase}/agents`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ...newAgent, editPaths }),
+    }).catch(() => {});
+    setNewAgent({ name: "", description: "", model: "", prompt: "", readOnly: false, editPaths: "" });
+    loadAgents();
+  }
+  async function deleteAgent(name: string) {
+    await fetch(`${httpBase}/agents/${name}`, { method: "DELETE" }).catch(() => {});
+    loadAgents();
+  }
+
+  const [skillList, setSkillList] = useState<
+    Array<{ name: string; description: string; source: string }>
+  >([]);
+  const [newSkill, setNewSkill] = useState({ name: "", description: "", body: "" });
+  function loadSkills() {
+    fetch(`${httpBase}/skills`)
+      .then((r) => r.json())
+      .then((list) => setSkillList(Array.isArray(list) ? list : []))
+      .catch(() => {});
+  }
+  async function createSkill() {
+    if (!newSkill.name.trim() || !newSkill.body.trim()) return;
+    await fetch(`${httpBase}/skills`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(newSkill),
+    }).catch(() => {});
+    setNewSkill({ name: "", description: "", body: "" });
+    loadSkills();
+  }
+  async function deleteSkill(name: string) {
+    await fetch(`${httpBase}/skills/${name}`, { method: "DELETE" }).catch(() => {});
+    loadSkills();
+  }
+
+  const [mcpName, setMcpName] = useState("");
+  const [mcpType, setMcpType] = useState<"stdio" | "http">("stdio");
+  const [mcpCommand, setMcpCommand] = useState("");
+  const [mcpUrl, setMcpUrl] = useState("");
+
+  function loadConfig() {
+    fetch(`${httpBase}/config`)
+      .then((r) => r.json())
+      .then(setCfg)
+      .catch(() => {});
+  }
+  async function patchConfig(partial: Record<string, unknown>) {
+    try {
+      await fetch(`${httpBase}/config`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(partial),
+      });
+    } catch {
+      /* ignore */
+    }
+    loadConfig();
+    p.refreshStatus();
+  }
+
+  function setKeybind(id: string, combo: string) {
+    const next = { ...p.keybinds, [id]: combo };
+    p.setKeybinds(next);
+    void patchConfig({ keybinds: { [id]: combo } });
+  }
+
+  // While recording a shortcut, capture the next non-modifier keypress.
+  useEffect(() => {
+    if (!recording) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setRecording(null);
+        return;
+      }
+      const combo = comboFromEvent(e);
+      if (!combo) return; // bare modifier — keep waiting
+      e.preventDefault();
+      setKeybind(recording, combo);
+      setRecording(null);
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recording]);
+
   useEffect(() => {
     if (p.tab === "servers" || p.tab === "providers") p.refreshStatus();
+    if (p.tab === "permissions" || p.tab === "providers" || p.tab === "integrations" || p.tab === "files" || p.tab === "behavior") loadConfig();
+    if (p.tab === "agents") loadAgents();
+    if (p.tab === "skills") loadSkills();
+    if (p.tab === "sessions") {
+      fetch(`${httpBase}/sessions`)
+        .then((r) => r.json())
+        .then((list: unknown[]) => setSessionCount(Array.isArray(list) ? list.length : 0))
+        .catch(() => {});
+    }
+    if (p.tab === "voice") {
+      void navigator.mediaDevices
+        ?.enumerateDevices()
+        .then((ds) =>
+          setMics(
+            ds
+              .filter((d) => d.kind === "audioinput")
+              .map((d) => ({ deviceId: d.deviceId, label: d.label || "Microphone" })),
+          ),
+        )
+        .catch(() => {});
+    }
   }, [p.tab]);
+
+  async function clearOldSessions() {
+    try {
+      const list = (await (await fetch(`${httpBase}/sessions`)).json()) as Array<{
+        id: string;
+        updatedAt: number;
+      }>;
+      const cutoff = Date.now() - retentionDays * 86400_000;
+      const old = list.filter((s) => s.updatedAt < cutoff);
+      await Promise.all(
+        old.map((s) => fetch(`${httpBase}/sessions/${s.id}`, { method: "DELETE" })),
+      );
+      setSessionCount(list.length - old.length);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function addMcp() {
+    const name = mcpName.trim();
+    if (!name) return;
+    const payload =
+      mcpType === "http"
+        ? { name, type: "http", url: mcpUrl.trim() }
+        : { name, type: "stdio", command: mcpCommand.trim(), args: [] };
+    try {
+      await fetch(`${httpBase}/mcp`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      /* ignore */
+    }
+    setMcpName("");
+    setMcpCommand("");
+    setMcpUrl("");
+    loadConfig();
+  }
+  async function toggleMcp(name: string) {
+    try {
+      await fetch(`${httpBase}/mcp/${encodeURIComponent(name)}/toggle`, { method: "POST" });
+    } catch {
+      /* ignore */
+    }
+    loadConfig();
+  }
+  async function deleteMcp(name: string) {
+    try {
+      await fetch(`${httpBase}/mcp/${encodeURIComponent(name)}`, { method: "DELETE" });
+    } catch {
+      /* ignore */
+    }
+    loadConfig();
+  }
+
+  const PERM_KINDS: Array<["bash" | "write" | "edit" | "mcp", string]> = [
+    ["write", "settings.perm.write"],
+    ["edit", "settings.perm.edit"],
+    ["bash", "settings.perm.bash"],
+    ["mcp", "settings.perm.mcp"],
+  ];
+  const PROVIDER_NAMES = ["anthropic", "openai", "google"];
 
   return (
     <div className="settings" onClick={p.onClose}>
       <div className="settings-card big" onClick={(e) => e.stopPropagation()}>
         <nav className="settings-nav">
           {TABS.map((g) => (
-            <div key={g.group}>
-              <div className="sn-group">{g.group}</div>
-              {g.items.map(([id, label]) => (
+            <div key={g.groupKey}>
+              <div className="sn-group">{t(g.groupKey)}</div>
+              {g.items.map(([id, labelKey]) => (
                 <button key={id} className={p.tab === id ? "active" : ""} onClick={() => p.setTab(id)}>
-                  {label}
+                  {t(labelKey)}
                 </button>
               ))}
             </div>
           ))}
           <div className="sn-spacer" />
           <button className={p.tab === "about" ? "active" : ""} onClick={() => p.setTab("about")}>
-            About
+            {t("settings.about")}
           </button>
         </nav>
 
         <div className="settings-main">
           <div className="settings-head">
-            <span>{TITLES[p.tab]}</span>
+            <span>{t(TITLE_KEYS[p.tab])}</span>
             <button className="icon" onClick={p.onClose}><IconClose /></button>
           </div>
           <div className="settings-body">
+           <div className="tab-pane" key={p.tab}>
             {p.tab === "general" && (
               <>
-                <Row title="Auto-approve actions" desc="Run tools without asking for permission each time.">
+                <Row title={t("settings.studentMode")} desc={t("settings.studentMode.desc")}>
+                  <Switch on={p.studentMode} onChange={p.setStudentMode} />
+                </Row>
+                <Row title={t("settings.autoApprove")} desc={t("settings.autoApprove.desc")}>
                   <Switch on={p.autoApprove} onChange={p.setAutoApprove} />
                 </Row>
-                <Row title="Send on Enter" desc="Enter sends; otherwise use Ctrl/Cmd+Enter (Enter adds a newline).">
+                <Row title={t("settings.sendOnEnter")} desc={t("settings.sendOnEnter.desc")}>
                   <Switch on={p.sendOnEnter} onChange={p.setSendOnEnter} />
                 </Row>
-                <Row title="Expand tool details" desc="Show tool diffs and output expanded by default in the timeline.">
-                  <Switch on={p.expandTools} onChange={p.setExpandTools} />
-                </Row>
-                <Row title="Session progress bar" desc="Show an animated bar at the top while the agent is working.">
+                <Row title={t("settings.progress")} desc={t("settings.progress.desc")}>
                   <Switch on={p.progressBar} onChange={p.setProgressBar} />
+                </Row>
+                <Row title={t("settings.autoScroll")} desc={t("settings.autoScroll.desc")}>
+                  <Switch on={p.autoScroll} onChange={p.setAutoScroll} />
+                </Row>
+                <Row title={t("settings.confirmDelete")} desc={t("settings.confirmDelete.desc")}>
+                  <Switch on={p.confirmDelete} onChange={p.setConfirmDelete} />
                 </Row>
               </>
             )}
 
             {p.tab === "appearance" && (
               <>
-                <Row title="Theme" desc="Light or dark interface.">
-                  <div className="seg">
-                    <button className={p.theme === "dark" ? "active" : ""} onClick={() => p.setTheme("dark")}>Dark</button>
-                    <button className={p.theme === "light" ? "active" : ""} onClick={() => p.setTheme("light")}>Light</button>
+                <Row title={t("settings.colorTheme")} desc={t("settings.colorTheme.desc")}>
+                  <div className="theme-grid">
+                    {COLOR_THEMES.map((ct) => (
+                      <button
+                        key={ct.id}
+                        className={`theme-swatch ${p.colorTheme === ct.id ? "active" : ""}`}
+                        title={ct.name}
+                        onClick={() => {
+                          p.setColorTheme(ct.id);
+                          p.setAccent(ct.accent);
+                          if (ct.id !== "default") p.setTheme(ct.dark ? "dark" : "light");
+                        }}
+                        style={{
+                          background: ct.vars["--panel"] ?? (ct.dark ? "#0e0e0f" : "#f2f0ea"),
+                          borderColor: p.colorTheme === ct.id ? ct.accent : "var(--border)",
+                        }}
+                      >
+                        <span className="theme-dot" style={{ background: ct.accent }} />
+                        <span className="theme-name" style={{ color: ct.vars["--text"] ?? (ct.dark ? "#e6e6e7" : "#20201c") }}>{ct.name}</span>
+                      </button>
+                    ))}
                   </div>
                 </Row>
-                <Row title="Font size" desc={`Interface text size (${p.fontSize}px).`}>
+                {p.colorTheme === "default" ? (
+                  <Row title={t("settings.theme")} desc={t("settings.theme.desc")}>
+                    <div className="seg">
+                      <button className={p.theme === "dark" ? "active" : ""} onClick={() => p.setTheme("dark")}>{t("settings.dark")}</button>
+                      <button className={p.theme === "light" ? "active" : ""} onClick={() => p.setTheme("light")}>{t("settings.light")}</button>
+                    </div>
+                  </Row>
+                ) : null}
+                <Row title={t("settings.accent")} desc={t("settings.accent.desc")}>
+                  <div className="swatches">
+                    {ACCENTS.map((c) => (
+                      <button
+                        key={c}
+                        className={`swatch ${p.accent.toLowerCase() === c ? "active" : ""}`}
+                        style={{ background: c }}
+                        onClick={() => p.setAccent(c)}
+                        aria-label={c}
+                      />
+                    ))}
+                    <input
+                      type="color"
+                      className="swatch-pick"
+                      value={p.accent}
+                      onChange={(e) => p.setAccent(e.target.value)}
+                      title={t("settings.accent.custom")}
+                    />
+                  </div>
+                </Row>
+                <Row title={t("settings.density")} desc={t("settings.density.desc")}>
+                  <div className="seg">
+                    <button className={p.density === "comfortable" ? "active" : ""} onClick={() => p.setDensity("comfortable")}>{t("settings.comfortable")}</button>
+                    <button className={p.density === "compact" ? "active" : ""} onClick={() => p.setDensity("compact")}>{t("settings.compact")}</button>
+                  </div>
+                </Row>
+                <Row title={t("settings.reduceMotion")} desc={t("settings.reduceMotion.desc")}>
+                  <Switch on={p.reduceMotion} onChange={p.setReduceMotion} />
+                </Row>
+                <Row title={t("settings.language")} desc={t("settings.language.desc")}>
+                  <select className="lang-select" value={lang} onChange={(e) => setLang(e.target.value as typeof lang)}>
+                    {LANGS.map((l) => (
+                      <option key={l.code} value={l.code}>{l.label}</option>
+                    ))}
+                  </select>
+                </Row>
+                <Row title={t("settings.fontSize")} desc={t("settings.fontSize.desc", { n: p.fontSize })}>
                   <div className="stepper">
                     <button onClick={() => p.setFontSize(Math.max(11, p.fontSize - 1))}>−</button>
                     <span>{p.fontSize}</span>
@@ -162,73 +529,318 @@ export function Settings(p: Props) {
             )}
 
             {p.tab === "shortcuts" && (
-              <div className="shortcuts">
-                <div><kbd>Ctrl K</kbd> Command palette</div>
-                <div><kbd>Ctrl N</kbd> New session</div>
-                <div><kbd>Ctrl B</kbd> Toggle sessions</div>
-                <div><kbd>Ctrl J</kbd> Toggle files</div>
-                <div><kbd>Ctrl O</kbd> Open folder</div>
-                <div><kbd>@</kbd> Mention a file</div>
-                <div><kbd>Enter</kbd> Send message</div>
-                <div><kbd>Esc</kbd> Close overlays</div>
-              </div>
+              <>
+                <p className="hint">{t("settings.shortcuts.hint")}</p>
+                {KEYBIND_ACTIONS.map((action) => {
+                  const combo = comboFor(p.keybinds, action);
+                  const isDefault = combo === action.default;
+                  return (
+                    <Row key={action.id} title={t(action.labelKey)} desc={t("keybind.default", { combo: formatCombo(action.default) })}>
+                      <div className="keybind-edit">
+                        <button
+                          className={`kbd-btn${recording === action.id ? " recording" : ""}`}
+                          onClick={() => setRecording((r) => (r === action.id ? null : action.id))}
+                        >
+                          {recording === action.id ? t("keybind.recording") : formatCombo(combo)}
+                        </button>
+                        {!isDefault && (
+                          <button
+                            className="settings-btn ghost"
+                            title={t("keybind.reset")}
+                            onClick={() => setKeybind(action.id, action.default)}
+                          >
+                            ↺
+                          </button>
+                        )}
+                      </div>
+                    </Row>
+                  );
+                })}
+                <div className="shortcuts fixed">
+                  <div><kbd>@</kbd> {t("keybind.mention")}</div>
+                  <div><kbd>Enter</kbd> {t("keybind.send")}</div>
+                  <div><kbd>Esc</kbd> {t("keybind.close")}</div>
+                </div>
+              </>
             )}
 
             {p.tab === "servers" && (
               <>
-                <Row title="Local server" desc={`Embedded termcoder server on localhost:${p.port}.`}>
-                  <span className="badge ok">running</span>
+                <Row title={t("settings.localServer")} desc={t("settings.localServer.desc", { port: p.port })}>
+                  <span className="badge ok">{t("servers.running")}</span>
                 </Row>
-                <h4 className="sub">MCP servers</h4>
+                <h4 className="sub">{t("settings.mcpServers")}</h4>
                 {p.serverStatus?.mcp.length ? (
                   p.serverStatus.mcp.map((s) => (
                     <Row key={s.name} title={s.name} desc={s.ok ? `${s.toolCount} tools` : s.error}>
-                      <span className={`badge ${s.ok ? "ok" : "bad"}`}>{s.ok ? "ok" : "error"}</span>
+                      <span className={`badge ${s.ok ? "ok" : "bad"}`}>{s.ok ? t("badge.ok") : t("badge.error")}</span>
                     </Row>
                   ))
                 ) : (
-                  <p className="hint">No MCP servers. Add them under <code>mcp</code> in .termcoder/config.json.</p>
+                  <p className="hint">{t("settings.noMcp")}</p>
                 )}
-                <h4 className="sub">Language servers</h4>
+                <h4 className="sub">{t("settings.languageServers")}</h4>
                 {p.serverStatus?.lsp.length ? (
                   p.serverStatus.lsp.map((s) => (
-                    <Row key={s.name} title={s.name} desc={s.ok ? "running" : s.error}>
-                      <span className={`badge ${s.ok ? "ok" : "bad"}`}>{s.ok ? "ok" : "error"}</span>
+                    <Row key={s.name} title={s.name} desc={s.ok ? t("servers.running") : s.error}>
+                      <span className={`badge ${s.ok ? "ok" : "bad"}`}>{s.ok ? t("badge.ok") : t("badge.error")}</span>
                     </Row>
                   ))
                 ) : (
-                  <p className="hint">No language servers configured.</p>
+                  <p className="hint">{t("settings.noLsp")}</p>
                 )}
-                <h4 className="sub">Plugins</h4>
+                <h4 className="sub">{t("settings.plugins")}</h4>
                 {p.serverStatus?.plugins.length ? (
                   p.serverStatus.plugins.map((s) => (
                     <Row key={s.name} title={s.name} desc={s.ok ? `${s.toolCount} tools` : s.error}>
-                      <span className={`badge ${s.ok ? "ok" : "bad"}`}>{s.ok ? "ok" : "error"}</span>
+                      <span className={`badge ${s.ok ? "ok" : "bad"}`}>{s.ok ? t("badge.ok") : t("badge.error")}</span>
                     </Row>
                   ))
                 ) : (
-                  <p className="hint">No plugins loaded.</p>
+                  <p className="hint">{t("settings.noPlugins")}</p>
                 )}
+              </>
+            )}
+
+            {p.tab === "sessions" && (
+              <>
+                <Row
+                  title={t("settings.retention")}
+                  desc={t("settings.retention.desc")}
+                >
+                  <div className="stepper">
+                    <button onClick={() => setRetentionDays(Math.max(1, retentionDays - 1))}>−</button>
+                    <span>{retentionDays}</span>
+                    <button onClick={() => setRetentionDays(Math.min(365, retentionDays + 1))}>+</button>
+                  </div>
+                </Row>
+                <Row title={t("settings.retention.run")} desc={sessionCount === null ? "—" : t("settings.sessionCount", { n: sessionCount })}>
+                  <button className="settings-btn" onClick={() => void clearOldSessions()}>{t("settings.retention.btn")}</button>
+                </Row>
+                <Row title={t("settings.autoTitles")} desc={t("settings.autoTitles.desc")}>
+                  <span className="badge ok">{t("badge.on")}</span>
+                </Row>
+                <Row title={t("settings.github")} desc={t("settings.github.desc")}>
+                  <div className="provider-key">
+                    <input
+                      type="password"
+                      className="settings-input"
+                      placeholder={cfg?.github?.hasToken ? "••••••••" : "ghp_…"}
+                      value={githubDraft}
+                      onChange={(e) => setGithubDraft(e.target.value)}
+                    />
+                    <button
+                      className="settings-btn"
+                      disabled={!githubDraft.trim() || savingGithub}
+                      onClick={async () => {
+                        setSavingGithub(true);
+                        await patchConfig({ github: { token: githubDraft.trim() } });
+                        setGithubDraft("");
+                        setSavingGithub(false);
+                      }}
+                    >
+                      {savingGithub ? t("settings.saving") : t("settings.save")}
+                    </button>
+                  </div>
+                </Row>
+              </>
+            )}
+
+            {p.tab === "permissions" && (
+              <>
+                <p className="hint">{t("settings.permissions.hint")}</p>
+                {PERM_KINDS.map(([kind, labelKey]) => {
+                  const val = cfg?.permission?.[kind] ?? "ask";
+                  return (
+                    <Row key={kind} title={t(labelKey)} desc={t(`settings.perm.${kind}.desc`)}>
+                      <div className="seg">
+                        {(["ask", "allow", "deny"] as PermMode[]).map((m) => (
+                          <button
+                            key={m}
+                            className={val === m ? "active" : ""}
+                            onClick={() => void patchConfig({ permission: { [kind]: m } })}
+                          >
+                            {t(`settings.perm.${m}`)}
+                          </button>
+                        ))}
+                      </div>
+                    </Row>
+                  );
+                })}
+                <p className="hint">{t("settings.privacy.note")}</p>
+              </>
+            )}
+
+            {p.tab === "voice" && (
+              <>
+                <Row title={t("settings.micDevice")} desc={t("settings.micDevice.desc")}>
+                  <select
+                    className="lang-select"
+                    value={p.micDeviceId}
+                    onChange={(e) => p.setMicDeviceId(e.target.value)}
+                  >
+                    <option value="">{t("settings.micDefault")}</option>
+                    {mics.map((d) => (
+                      <option key={d.deviceId} value={d.deviceId}>{d.label}</option>
+                    ))}
+                  </select>
+                </Row>
+                <Row title={t("settings.soundOnFinish")} desc={t("settings.soundOnFinish.desc")}>
+                  <Switch on={p.soundOnFinish} onChange={p.setSoundOnFinish} />
+                </Row>
+                <p className="hint">{t("settings.voice.hint")}</p>
+              </>
+            )}
+
+            {p.tab === "files" && (
+              <>
+                <Row title={t("settings.formatter")} desc={t("settings.formatter.desc")}>
+                  <Switch
+                    on={cfg?.formatter === true || (typeof cfg?.formatter === "object" && cfg?.formatter !== null)}
+                    onChange={(v) => void patchConfig({ formatter: v })}
+                  />
+                </Row>
+                <Row title={t("settings.wordWrap")} desc={t("settings.wordWrap.desc")}>
+                  <Switch on={p.wordWrap} onChange={p.setWordWrap} />
+                </Row>
+                <Row title={t("settings.aiSuggest")} desc={t("settings.aiSuggest.desc")}>
+                  <Switch on={p.aiSuggest} onChange={p.setAiSuggest} />
+                </Row>
+                <Row title={t("settings.codeTheme")} desc={t("settings.codeTheme.desc")}>
+                  <select className="lang-select" value={p.codeTheme} onChange={(e) => p.setCodeTheme(e.target.value)}>
+                    {EDITOR_THEMES.map((th) => (
+                      <option key={th.id} value={th.id}>{th.name}</option>
+                    ))}
+                  </select>
+                </Row>
+                <Row title={t("settings.expandTools")} desc={t("settings.expandTools.desc")}>
+                  <Switch on={p.expandTools} onChange={p.setExpandTools} />
+                </Row>
+                <Row title={t("settings.workspace")} desc={p.cwd ?? "—"}>
+                  <button className="settings-btn" onClick={p.chooseFolder}>{t("settings.change")}</button>
+                </Row>
+              </>
+            )}
+
+            {p.tab === "integrations" && (
+              <>
+                <p className="hint">{t("settings.integrations.hint")}</p>
+                {Object.entries(cfg?.mcp ?? {}).map(([name, s]) => (
+                  <Row
+                    key={name}
+                    title={name}
+                    desc={s.type === "http" ? s.url : `${s.command ?? ""} ${(s.args ?? []).join(" ")}`.trim()}
+                  >
+                    <div className="seg-inline">
+                      <Switch on={s.enabled !== false} onChange={() => void toggleMcp(name)} />
+                      <button className="icon sm" title={t("settings.remove")} onClick={() => void deleteMcp(name)}>
+                        <IconClose />
+                      </button>
+                    </div>
+                  </Row>
+                ))}
+                {Object.keys(cfg?.mcp ?? {}).length === 0 ? <p className="hint">{t("settings.noMcpYet")}</p> : null}
+                <h4 className="sub">{t("settings.addMcp")}</h4>
+                <div className="mcp-form">
+                  <input
+                    className="settings-input"
+                    placeholder={t("settings.mcpName")}
+                    value={mcpName}
+                    onChange={(e) => setMcpName(e.target.value)}
+                  />
+                  <div className="seg">
+                    <button className={mcpType === "stdio" ? "active" : ""} onClick={() => setMcpType("stdio")}>stdio</button>
+                    <button className={mcpType === "http" ? "active" : ""} onClick={() => setMcpType("http")}>http</button>
+                  </div>
+                  {mcpType === "stdio" ? (
+                    <input
+                      className="settings-input"
+                      placeholder={t("settings.mcpCommand")}
+                      value={mcpCommand}
+                      onChange={(e) => setMcpCommand(e.target.value)}
+                    />
+                  ) : (
+                    <input
+                      className="settings-input"
+                      placeholder="https://…"
+                      value={mcpUrl}
+                      onChange={(e) => setMcpUrl(e.target.value)}
+                    />
+                  )}
+                  <button className="settings-btn" disabled={!mcpName.trim()} onClick={() => void addMcp()}>
+                    {t("settings.add")}
+                  </button>
+                </div>
+                <p className="hint">{t("settings.mcpRestart")}</p>
+              </>
+            )}
+
+            {p.tab === "automations" && (
+              <>
+                <Row title={t("settings.notify")} desc={t("settings.notify.desc")}>
+                  <Switch on={p.notifyOnFinish} onChange={p.setNotifyOnFinish} />
+                </Row>
+                <Row title={t("settings.autoCommit")} desc={t("settings.autoCommit.desc")}>
+                  <Switch on={p.autoCommit} onChange={p.setAutoCommit} />
+                </Row>
+                <Row title={t("settings.tray")} desc={t("settings.tray.desc")}>
+                  <Switch on={p.enableTray} onChange={p.setEnableTray} />
+                </Row>
+                <Row title={t("settings.hotkey")} desc={t("settings.hotkey.desc")}>
+                  <Switch on={p.enableHotkey} onChange={p.setEnableHotkey} />
+                </Row>
+                <Row title={t("settings.openAtLogin")} desc={t("settings.openAtLogin.desc")}>
+                  <Switch on={p.openAtLogin} onChange={p.setOpenAtLogin} />
+                </Row>
               </>
             )}
 
             {p.tab === "providers" && (
               <>
-                {(p.serverStatus?.providers ?? []).map((pr) => (
-                  <Row key={pr.name} title={pr.name} desc={pr.configured ? "Ready" : "No API key configured"}>
-                    <span className={`badge ${pr.configured ? "ok" : "muted"}`}>{pr.configured ? "ready" : "not set"}</span>
-                  </Row>
-                ))}
-                <p className="hint">
-                  Add API keys under <code>providers</code> in .termcoder/config.json, or set env vars
-                  (ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY). Ollama runs locally with no key.
-                </p>
+                {PROVIDER_NAMES.map((name) => {
+                  const configured = (p.serverStatus?.providers ?? []).find((x) => x.name === name)?.configured;
+                  const draft = keyDrafts[name] ?? "";
+                  return (
+                    <div className="srow provider-row" key={name}>
+                      <div className="srow-text">
+                        <div className="srow-title">
+                          {name}
+                          <span className={`badge ${configured ? "ok" : "muted"}`} style={{ marginLeft: 8 }}>
+                            {configured ? t("badge.ready") : t("badge.notSet")}
+                          </span>
+                        </div>
+                        <div className="provider-key">
+                          <input
+                            type="password"
+                            className="settings-input"
+                            placeholder={cfg?.providers?.[name]?.hasKey ? "••••••••" : t("settings.apiKey")}
+                            value={draft}
+                            onChange={(e) => setKeyDrafts((d) => ({ ...d, [name]: e.target.value }))}
+                          />
+                          <button
+                            className="settings-btn"
+                            disabled={!draft.trim() || savingKey === name}
+                            onClick={async () => {
+                              setSavingKey(name);
+                              await patchConfig({ providers: { [name]: { apiKey: draft.trim() } } });
+                              setKeyDrafts((d) => ({ ...d, [name]: "" }));
+                              setSavingKey(null);
+                            }}
+                          >
+                            {savingKey === name ? t("settings.saving") : t("settings.save")}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                <p className="hint">{t("settings.providers.hint")}</p>
               </>
             )}
 
             {p.tab === "models" && (
               <>
-                <p className="hint">Pick the model used for new sessions.</p>
+                <p className="hint">{t("settings.models.hint")}</p>
                 <div className="model-list">
                   {p.models.map((m) => (
                     <button
@@ -247,19 +859,197 @@ export function Settings(p: Props) {
               </>
             )}
 
+            {p.tab === "agents" && (
+              <>
+                <p className="hint">{t("settings.agents.hint")}</p>
+                {agentList.map((a) => (
+                  <Row key={a.name} title={a.name} desc={a.description}>
+                    <div className="seg-inline">
+                      {a.readOnly ? <span className="badge muted">{t("mode.plan")}</span> : null}
+                      {a.builtin ? (
+                        <span className="badge muted">{t("settings.builtin")}</span>
+                      ) : (
+                        <button className="icon sm" title={t("settings.remove")} onClick={() => void deleteAgent(a.name)}>
+                          <IconClose />
+                        </button>
+                      )}
+                    </div>
+                  </Row>
+                ))}
+                <h4 className="sub">{t("settings.agents.new")}</h4>
+                <div className="agent-form">
+                  <input
+                    className="settings-input"
+                    placeholder={t("settings.agents.name")}
+                    value={newAgent.name}
+                    onChange={(e) => setNewAgent((s) => ({ ...s, name: e.target.value }))}
+                  />
+                  <input
+                    className="settings-input"
+                    placeholder={t("settings.agents.desc")}
+                    value={newAgent.description}
+                    onChange={(e) => setNewAgent((s) => ({ ...s, description: e.target.value }))}
+                  />
+                  <input
+                    className="settings-input"
+                    placeholder={t("settings.agents.model")}
+                    value={newAgent.model}
+                    onChange={(e) => setNewAgent((s) => ({ ...s, model: e.target.value }))}
+                  />
+                  <textarea
+                    className="settings-input agent-prompt"
+                    placeholder={t("settings.agents.prompt")}
+                    value={newAgent.prompt}
+                    onChange={(e) => setNewAgent((s) => ({ ...s, prompt: e.target.value }))}
+                  />
+                  <label className="agent-ro">
+                    <Switch on={newAgent.readOnly} onChange={(v) => setNewAgent((s) => ({ ...s, readOnly: v }))} />
+                    <span>{t("settings.agents.readonly")}</span>
+                  </label>
+                  {!newAgent.readOnly && (
+                    <input
+                      className="settings-input"
+                      placeholder={t("settings.agents.editPaths")}
+                      value={newAgent.editPaths}
+                      onChange={(e) => setNewAgent((s) => ({ ...s, editPaths: e.target.value }))}
+                    />
+                  )}
+                  <button className="settings-btn" disabled={!newAgent.name.trim()} onClick={() => void createAgent()}>
+                    {t("settings.agents.create")}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {p.tab === "skills" && (
+              <>
+                <p className="hint">{t("settings.skills.hint")}</p>
+                {skillList.map((s) => (
+                  <Row key={`${s.source}:${s.name}`} title={s.name} desc={s.description}>
+                    <div className="seg-inline">
+                      <span className="badge muted">{s.source}</span>
+                      {s.source === "project" ? (
+                        <button className="icon sm" title={t("settings.remove")} onClick={() => void deleteSkill(s.name)}>
+                          <IconClose />
+                        </button>
+                      ) : null}
+                    </div>
+                  </Row>
+                ))}
+                {skillList.length === 0 ? <p className="hint">{t("settings.skills.empty")}</p> : null}
+                <h4 className="sub">{t("settings.skills.new")}</h4>
+                <div className="agent-form">
+                  <input
+                    className="settings-input"
+                    placeholder={t("settings.skills.name")}
+                    value={newSkill.name}
+                    onChange={(e) => setNewSkill((s) => ({ ...s, name: e.target.value }))}
+                  />
+                  <input
+                    className="settings-input"
+                    placeholder={t("settings.skills.desc")}
+                    value={newSkill.description}
+                    onChange={(e) => setNewSkill((s) => ({ ...s, description: e.target.value }))}
+                  />
+                  <textarea
+                    className="settings-input agent-prompt"
+                    placeholder={t("settings.skills.body")}
+                    value={newSkill.body}
+                    onChange={(e) => setNewSkill((s) => ({ ...s, body: e.target.value }))}
+                  />
+                  <button
+                    className="settings-btn"
+                    disabled={!newSkill.name.trim() || !newSkill.body.trim()}
+                    onClick={() => void createSkill()}
+                  >
+                    {t("settings.skills.create")}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {p.tab === "behavior" && (
+              <>
+                <Row
+                  title={t("settings.temperature")}
+                  desc={t("settings.temperature.desc", { v: p.temperature.toFixed(2) })}
+                >
+                  <div className="slider-ctl">
+                    <input
+                      type="range"
+                      min={0}
+                      max={2}
+                      step={0.05}
+                      value={p.temperature}
+                      onChange={(e) => p.setTemperature(Number(e.target.value))}
+                    />
+                    <span className="slider-val">{p.temperature.toFixed(2)}</span>
+                  </div>
+                </Row>
+                <Row title={t("settings.maxSteps")} desc={t("settings.maxSteps.desc")}>
+                  <div className="stepper">
+                    <button onClick={() => p.setMaxSteps(Math.max(1, p.maxSteps - 1))}>−</button>
+                    <span>{p.maxSteps}</span>
+                    <button onClick={() => p.setMaxSteps(Math.min(100, p.maxSteps + 1))}>+</button>
+                  </div>
+                </Row>
+                <h4 className="sub">{t("settings.tokens")}</h4>
+                <Row title={t("settings.maxToolOutput")} desc={t("settings.maxToolOutput.desc")}>
+                  <div className="stepper">
+                    <button
+                      onClick={() =>
+                        void patchConfig({ context: { maxToolOutputChars: Math.max(1000, (cfg?.context?.maxToolOutputChars ?? 8000) - 1000) } })
+                      }
+                    >
+                      −
+                    </button>
+                    <span>{((cfg?.context?.maxToolOutputChars ?? 8000) / 1000).toFixed(0)}k</span>
+                    <button
+                      onClick={() =>
+                        void patchConfig({ context: { maxToolOutputChars: Math.min(40000, (cfg?.context?.maxToolOutputChars ?? 8000) + 1000) } })
+                      }
+                    >
+                      +
+                    </button>
+                  </div>
+                </Row>
+                <Row title={t("settings.keepRecentTools")} desc={t("settings.keepRecentTools.desc")}>
+                  <div className="stepper">
+                    <button
+                      onClick={() =>
+                        void patchConfig({ context: { keepRecentToolResults: Math.max(1, (cfg?.context?.keepRecentToolResults ?? 6) - 1) } })
+                      }
+                    >
+                      −
+                    </button>
+                    <span>{cfg?.context?.keepRecentToolResults ?? 6}</span>
+                    <button
+                      onClick={() =>
+                        void patchConfig({ context: { keepRecentToolResults: Math.min(30, (cfg?.context?.keepRecentToolResults ?? 6) + 1) } })
+                      }
+                    >
+                      +
+                    </button>
+                  </div>
+                </Row>
+                <p className="hint">{t("settings.behavior.hint")}</p>
+              </>
+            )}
+
             {p.tab === "about" && (
               <>
-                <Row title="termcoder Desktop" desc="An open-source AI coding agent.">
+                <Row title={t("settings.about.title")} desc={t("settings.about.desc")}>
                   <span className="muted">v0.1.0</span>
                 </Row>
-                <Row title="Workspace" desc={p.cwd ?? "—"}>
-                  <button className="settings-btn" onClick={p.chooseFolder}>Change…</button>
+                <Row title={t("settings.workspace")} desc={p.cwd ?? "—"}>
+                  <button className="settings-btn" onClick={p.chooseFolder}>{t("settings.change")}</button>
                 </Row>
-                <Row title="Server" desc={`localhost:${p.port}`}>
-                  <span className="badge ok">connected</span>
+                <Row title={t("settings.server")} desc={`localhost:${p.port}`}>
+                  <span className="badge ok">{t("settings.connected")}</span>
                 </Row>
               </>
             )}
+           </div>
           </div>
         </div>
       </div>

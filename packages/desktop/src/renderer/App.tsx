@@ -1,11 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import hljs from "highlight.js";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { FileTree } from "./FileTree";
 import { CommandPalette, type PaletteItem } from "./CommandPalette";
 import { Settings, type ServerStatus, type SettingsTab } from "./Settings";
+import { Welcome } from "./Welcome";
+import { useI18n } from "./i18n";
+import { COLOR_THEMES, THEME_VARS } from "./themes";
+import { KEYBIND_ACTIONS, comboFor, matchCombo } from "./keybinds";
+import { IconTrash, IconStop, IconShare, IconCopy, IconEdit, IconMic, IconUndo } from "./Icons";
+import { ErrorBoundary } from "./ErrorBoundary";
+import { ModelBrowser } from "./ModelBrowser";
+import { CodeEditor } from "./CodeEditor";
+import { blobToWav, blobToBase64 } from "./audio";
 import {
   IconBack,
   IconClose,
@@ -31,14 +39,24 @@ declare global {
     api?: {
       serverPort: number;
       pickFolder: () => Promise<string | null>;
+      pickFile: () => Promise<string[]>;
+      readImage: (path: string) => Promise<{ dataUrl: string; mediaType: string } | null>;
       listDir: (dir: string) => Promise<Array<{ name: string; dir: boolean }>>;
       allFiles: (dir: string) => Promise<string[]>;
       readFile: (path: string) => Promise<{ content: string; error?: string }>;
+      writeFile: (path: string, content: string) => Promise<{ ok: boolean; error?: string }>;
+      saveFile: (defaultName: string, content: string) => Promise<{ ok: boolean; path?: string; error?: string }>;
+      notify: (title: string, body: string) => void;
       gitStatus: (dir: string) => Promise<{ map: Record<string, string>; count: number }>;
       gitDiff: (dir: string, path: string) => Promise<{ diff: string }>;
       minimize: () => void;
       maximize: () => void;
       closeWindow: () => void;
+      getLoginItem: () => Promise<boolean>;
+      setLoginItem: (open: boolean) => void;
+      gitCommit: (dir: string, message: string) => Promise<{ ok: boolean; message: string }>;
+      setTray: (enabled: boolean) => void;
+      setGlobalShortcut: (enabled: boolean, accelerator: string) => void;
     };
   }
 }
@@ -49,6 +67,7 @@ const httpBase = `http://localhost:${port}`;
 const wsBase = `ws://localhost:${port}`;
 
 const MODELS = [
+  "termcoder/auto",
   "google/gemini-2.5-flash",
   "google/gemini-2.0-flash",
   "google/gemini-2.5-pro",
@@ -69,12 +88,37 @@ interface Message {
   name?: string;
   status?: "running" | "done" | "error";
   detail?: string;
+  images?: string[];
+}
+interface PendingImage {
+  dataUrl: string;
+  mediaType: string;
+  name: string;
+}
+interface AgentInfo {
+  name: string;
+  description?: string;
+  mode: "primary" | "subagent" | "all";
+  builtin: boolean;
+  readOnly: boolean;
+  color?: string;
+}
+interface CommandInfo {
+  name: string;
+  description?: string;
+  agent?: string;
+  model?: string;
 }
 interface SessionSummary {
   id: string;
   title: string;
   messageCount: number;
+  cwd: string;
 }
+
+/** Display label: fall back to the folder name for legacy "Untitled session". */
+const sessionLabel = (s: { title: string; cwd: string }): string =>
+  !s.title || s.title === "Untitled session" ? baseName(s.cwd) : s.title;
 interface Segment {
   role: "user" | "assistant" | "tool";
   label?: string;
@@ -84,13 +128,37 @@ interface Segment {
 // deno-lint-ignore no-explicit-any
 type StreamEvent = any;
 
+const IMG_EXT = /\.(png|jpe?g|gif|webp|bmp|svg)$/i;
 const isDiff = (t: string) => /^[+-] /m.test(t);
 const baseName = (p: string) => p.split(/[\\/]/).filter(Boolean).pop() ?? "project";
 const shortPath = (p: string) => {
   const parts = p.split(/[\\/]/).filter(Boolean);
-  return parts.length > 3 ? `â€¦\\${parts.slice(-2).join("\\")}` : p;
+  return parts.length > 3 ? `…\\${parts.slice(-2).join("\\")}` : p;
 };
 const fmtTokens = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
+
+/** A soft two-note chime (Web Audio) for the "agent finished" cue. */
+function playChime() {
+  try {
+    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new Ctx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.07, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+    osc.frequency.setValueAtTime(660, ctx.currentTime);
+    osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.36);
+    osc.onended = () => void ctx.close();
+  } catch {
+    /* audio may be unavailable */
+  }
+}
 
 function DiffBlock({ text }: { text: string }) {
   return (
@@ -109,28 +177,8 @@ interface Tab {
   name: string;
   kind: "file" | "diff";
   content: string;
-}
-
-function FileBody({ name, content }: { name: string; content: string }) {
-  const ref = useRef<HTMLElement>(null);
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.removeAttribute("data-highlighted");
-      try {
-        hljs.highlightElement(ref.current);
-      } catch {
-        /* ignore */
-      }
-    }
-  }, [name, content]);
-  const ext = name.includes(".") ? name.split(".").pop()! : "";
-  return (
-    <pre className="viewer-body">
-      <code ref={ref} className={`language-${ext}`}>
-        {content}
-      </code>
-    </pre>
-  );
+  path?: string;
+  dirty?: boolean;
 }
 
 function DiffBody({ content }: { content: string }) {
@@ -158,31 +206,42 @@ function TabbedViewer({
   onActivate,
   onClose,
   onCloseTab,
+  onEdit,
+  onSave,
+  onAskAI,
+  aiSuggest,
+  codeTheme,
 }: {
   tabs: Tab[];
   activeTab: string | null;
   onActivate: (id: string) => void;
   onClose: () => void;
   onCloseTab: (id: string) => void;
+  onEdit: (id: string, content: string) => void;
+  onSave: (id: string) => void;
+  onAskAI: (tab: Tab) => void;
+  aiSuggest: boolean;
+  codeTheme: string;
 }) {
-  const tab = tabs.find((t) => t.id === activeTab) ?? tabs[0];
+  const { t } = useI18n();
+  const tab = tabs.find((tt) => tt.id === activeTab) ?? tabs[0];
   if (!tab) return null;
   return (
     <div className="viewer" onClick={onClose}>
       <div className="viewer-card" onClick={(e) => e.stopPropagation()}>
         <div className="viewer-tabs">
-          {tabs.map((t) => (
+          {tabs.map((tt) => (
             <div
-              key={t.id}
-              className={`vtab ${t.id === tab.id ? "active" : ""}`}
-              onClick={() => onActivate(t.id)}
+              key={tt.id}
+              className={`vtab ${tt.id === tab.id ? "active" : ""}`}
+              onClick={() => onActivate(tt.id)}
             >
-              <span className="vtab-name">{t.kind === "diff" ? "Â± " : ""}{t.name}</span>
+              <span className="vtab-name">{tt.kind === "diff" ? "± " : ""}{tt.name}{tt.dirty ? " •" : ""}</span>
               <button
                 className="vtab-close"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onCloseTab(t.id);
+                  onCloseTab(tt.id);
                 }}
               >
                 <IconClose />
@@ -195,7 +254,27 @@ function TabbedViewer({
           </button>
         </div>
         {tab.kind === "file" ? (
-          <FileBody name={tab.name} content={tab.content} />
+          <div className="editor-pane">
+            <div className="editor-bar">
+              <span className="editor-path">{tab.name}</span>
+              <div className="editor-actions">
+                <button className="settings-btn" onClick={() => onAskAI(tab)}>{t("editor.ask")}</button>
+                <button className="settings-btn primary" disabled={!tab.dirty} onClick={() => onSave(tab.id)}>
+                  {tab.dirty ? t("editor.save") : t("editor.saved")}
+                </button>
+              </div>
+            </div>
+            <CodeEditor
+              key={tab.id}
+              name={tab.name}
+              value={tab.content}
+              onChange={(v) => onEdit(tab.id, v)}
+              onSave={() => onSave(tab.id)}
+              port={port}
+              aiSuggest={aiSuggest}
+              theme={codeTheme}
+            />
+          </div>
         ) : (
           <DiffBody content={tab.content} />
         )}
@@ -208,7 +287,7 @@ function segToMessage(seg: Segment): Message {
   if (seg.role === "user") return { role: "user", text: seg.text };
   if (seg.role === "assistant" && !seg.label) return { role: "assistant", text: seg.text };
   if (seg.role === "assistant")
-    return { role: "tool", name: seg.label?.replace("â†’ ", ""), status: "done", text: "", detail: seg.text };
+    return { role: "tool", name: seg.label?.replace("→ ", ""), status: "done", text: "", detail: seg.text };
   return {
     role: "tool",
     name: seg.label ?? "tool",
@@ -218,15 +297,21 @@ function segToMessage(seg: Segment): Message {
 }
 
 export function App() {
+  const { t } = useI18n();
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [busy, setBusy] = useState(false);
   const [connected, setConnected] = useState(false);
   const [cwd, setCwd] = useState<string | null>(null);
   const [model, setModel] = useState<string>(MODELS[0]!);
   const [tokens, setTokens] = useState(0);
+  const [tokensIn, setTokensIn] = useState(0);
+  const [tokensOut, setTokensOut] = useState(0);
+  const [lastCtx, setLastCtx] = useState(0);
+  const [liveTokens, setLiveTokens] = useState(0);
   const [status, setStatus] = useState<Record<string, string>>({});
   const [changes, setChanges] = useState(0);
   const [perm, setPerm] = useState<{ id: string; title: string; detail?: string } | null>(null);
@@ -235,10 +320,14 @@ export function App() {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
+  const [onboarded, setOnboarded] = useState(() => localStorage.getItem("tc-onboarded") === "1");
+  const [studentMode, setStudentMode] = useState(() => localStorage.getItem("tc-student") === "1");
   const [rightTab, setRightTab] = useState<"files" | "changes">("files");
   const [theme, setTheme] = useState<"dark" | "light">(
     () => (localStorage.getItem("tc-theme") as "dark" | "light") || "dark",
   );
+  const [colorTheme, setColorTheme] = useState<string>(() => localStorage.getItem("tc-colortheme") || "default");
+  const [keybinds, setKeybinds] = useState<Record<string, string>>({});
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("general");
@@ -249,6 +338,36 @@ export function App() {
   const [expandTools, setExpandTools] = useState(() => localStorage.getItem("tc-expand") === "1");
   const [progressBar, setProgressBar] = useState(() => localStorage.getItem("tc-progress") !== "0");
   const [fontSize, setFontSize] = useState(() => Number(localStorage.getItem("tc-fs")) || 14);
+  const [accent, setAccent] = useState(() => localStorage.getItem("tc-accent") || "#ededee");
+  const [density, setDensity] = useState<"comfortable" | "compact">(
+    () => (localStorage.getItem("tc-density") as "comfortable" | "compact") || "comfortable",
+  );
+  const [reduceMotion, setReduceMotion] = useState(() => localStorage.getItem("tc-motion") === "off");
+  const [autoScroll, setAutoScroll] = useState(() => localStorage.getItem("tc-autoscroll") !== "0");
+  const [confirmDelete, setConfirmDelete] = useState(() => localStorage.getItem("tc-confirmdel") !== "0");
+  const [temperature, setTemperature] = useState(() => {
+    const v = localStorage.getItem("tc-temp");
+    return v === null ? 0.7 : Number(v);
+  });
+  const [maxSteps, setMaxSteps] = useState(() => Number(localStorage.getItem("tc-maxsteps")) || 25);
+  const [soundOnFinish, setSoundOnFinish] = useState(() => localStorage.getItem("tc-sound") === "1");
+  const [micDeviceId, setMicDeviceId] = useState(() => localStorage.getItem("tc-mic") || "");
+  const [wordWrap, setWordWrap] = useState(() => localStorage.getItem("tc-wrap") === "1");
+  const [aiSuggest, setAiSuggest] = useState(() => localStorage.getItem("tc-aisuggest") === "1");
+  const [codeTheme, setCodeTheme] = useState(() => localStorage.getItem("tc-codetheme") || "one-dark");
+  const [notifyOnFinish, setNotifyOnFinish] = useState(() => localStorage.getItem("tc-notify") === "1");
+  const [autoCommit, setAutoCommit] = useState(() => localStorage.getItem("tc-autocommit") === "1");
+  const [openAtLogin, setOpenAtLogin] = useState(false);
+  const [enableTray, setEnableTray] = useState(() => localStorage.getItem("tc-tray") === "1");
+  const [enableHotkey, setEnableHotkey] = useState(() => localStorage.getItem("tc-hotkey") === "1");
+  const soundRef = useRef(soundOnFinish);
+  const micRef = useRef(micDeviceId);
+  const notifyRef = useRef(notifyOnFinish);
+  const autoCommitRef = useRef(autoCommit);
+  const [agent, setAgent] = useState<string>(() => localStorage.getItem("tc-agent") || "build");
+  const [agents, setAgents] = useState<AgentInfo[]>([]);
+  const [agentOpen, setAgentOpen] = useState(false);
+  const [browserOpen, setBrowserOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [serversOpen, setServersOpen] = useState(false);
   const [fileList, setFileList] = useState<string[]>([]);
@@ -257,23 +376,58 @@ export function App() {
   const navPos = useRef(-1);
   const navigating = useRef(false);
   const [mention, setMention] = useState<{ query: string; items: string[]; active: number } | null>(null);
+  const [commands, setCommands] = useState<CommandInfo[]>([]);
+  const [cmdMatch, setCmdMatch] = useState<{ items: CommandInfo[]; active: number } | null>(null);
+  const [cmdPreview, setCmdPreview] = useState<string>("");
+  const cmdPreviewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const [shareOpen, setShareOpen] = useState(false);
+  const [canRevert, setCanRevert] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
-  const assistantIdx = useRef<number | null>(null);
+  // Whether the next text-delta should append to the last (assistant) message.
+  // Reset whenever a tool/error breaks the streaming run or a turn ends.
+  const appendRef = useRef(false);
+  const currentIdRef = useRef<string | null>(null);
   const started = useRef(false);
   const cwdRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("tc-theme", theme);
   }, [theme]);
+
+  // Color theme owns the palette + data-theme. "default" (mono) falls back to
+  // the dark/light toggle; named themes apply their own structural variables.
+  useEffect(() => {
+    const root = document.documentElement;
+    const ct = COLOR_THEMES.find((t) => t.id === colorTheme) ?? COLOR_THEMES[0]!;
+    for (const v of THEME_VARS) root.style.removeProperty(v);
+    if (ct.id === "default") {
+      root.setAttribute("data-theme", theme);
+    } else {
+      root.setAttribute("data-theme", ct.dark ? "dark" : "light");
+      for (const [k, val] of Object.entries(ct.vars)) root.style.setProperty(k, val);
+    }
+    localStorage.setItem("tc-colortheme", colorTheme);
+  }, [colorTheme, theme]);
 
   useEffect(() => {
     autoApproveRef.current = autoApprove;
     localStorage.setItem("tc-auto", autoApprove ? "1" : "0");
   }, [autoApprove]);
+
+  useEffect(() => {
+    currentIdRef.current = currentId;
+    refreshCheckpoint();
+  }, [currentId]);
 
   useEffect(() => {
     if (defaultModel) localStorage.setItem("tc-model", defaultModel);
@@ -292,24 +446,123 @@ export function App() {
   useEffect(() => {
     localStorage.setItem("tc-progress", progressBar ? "1" : "0");
   }, [progressBar]);
+  useEffect(() => {
+    document.documentElement.style.setProperty("--accent", accent);
+    localStorage.setItem("tc-accent", accent);
+  }, [accent]);
+  useEffect(() => {
+    document.documentElement.setAttribute("data-density", density);
+    localStorage.setItem("tc-density", density);
+  }, [density]);
+  useEffect(() => {
+    document.documentElement.setAttribute("data-motion", reduceMotion ? "off" : "on");
+    localStorage.setItem("tc-motion", reduceMotion ? "off" : "on");
+  }, [reduceMotion]);
+  useEffect(() => {
+    localStorage.setItem("tc-autoscroll", autoScroll ? "1" : "0");
+  }, [autoScroll]);
+  useEffect(() => {
+    localStorage.setItem("tc-confirmdel", confirmDelete ? "1" : "0");
+  }, [confirmDelete]);
+  useEffect(() => {
+    soundRef.current = soundOnFinish;
+    localStorage.setItem("tc-sound", soundOnFinish ? "1" : "0");
+  }, [soundOnFinish]);
+  useEffect(() => {
+    micRef.current = micDeviceId;
+    localStorage.setItem("tc-mic", micDeviceId);
+  }, [micDeviceId]);
+  useEffect(() => {
+    document.documentElement.setAttribute("data-wrap", wordWrap ? "on" : "off");
+    localStorage.setItem("tc-wrap", wordWrap ? "1" : "0");
+  }, [wordWrap]);
+  useEffect(() => {
+    localStorage.setItem("tc-aisuggest", aiSuggest ? "1" : "0");
+  }, [aiSuggest]);
+  useEffect(() => {
+    localStorage.setItem("tc-codetheme", codeTheme);
+  }, [codeTheme]);
+  useEffect(() => {
+    notifyRef.current = notifyOnFinish;
+    localStorage.setItem("tc-notify", notifyOnFinish ? "1" : "0");
+  }, [notifyOnFinish]);
+  useEffect(() => {
+    autoCommitRef.current = autoCommit;
+    localStorage.setItem("tc-autocommit", autoCommit ? "1" : "0");
+  }, [autoCommit]);
+  useEffect(() => {
+    void window.api?.getLoginItem?.().then(setOpenAtLogin);
+  }, []);
+  useEffect(() => {
+    window.api?.setLoginItem?.(openAtLogin);
+  }, [openAtLogin]);
+  useEffect(() => {
+    window.api?.setTray?.(enableTray);
+    localStorage.setItem("tc-tray", enableTray ? "1" : "0");
+  }, [enableTray]);
+  useEffect(() => {
+    window.api?.setGlobalShortcut?.(enableHotkey, "CommandOrControl+Shift+Space");
+    localStorage.setItem("tc-hotkey", enableHotkey ? "1" : "0");
+  }, [enableHotkey]);
+  useEffect(() => {
+    localStorage.setItem("tc-temp", String(temperature));
+    if (currentId) {
+      void fetch(`${httpBase}/sessions/${currentId}/settings`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ temperature }),
+      });
+    }
+  }, [temperature]);
+  useEffect(() => {
+    localStorage.setItem("tc-maxsteps", String(maxSteps));
+    if (currentId) {
+      void fetch(`${httpBase}/sessions/${currentId}/settings`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ maxSteps }),
+      });
+    }
+  }, [maxSteps]);
+  useEffect(() => {
+    localStorage.setItem("tc-agent", agent);
+    if (currentId) {
+      void fetch(`${httpBase}/sessions/${currentId}/settings`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ agent }),
+      });
+    }
+  }, [agent]);
 
   useEffect(() => {
+    fetch(`${httpBase}/agents`)
+      .then((r) => r.json())
+      .then((list: AgentInfo[]) => setAgents(Array.isArray(list) ? list : []))
+      .catch(() => {});
+    fetch(`${httpBase}/commands`)
+      .then((r) => r.json())
+      .then((list: CommandInfo[]) => setCommands(Array.isArray(list) ? list : []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const bind = (id: string) =>
+      comboFor(keybinds, KEYBIND_ACTIONS.find((a) => a.id === id)!);
     const onKey = (e: KeyboardEvent) => {
-      const mod = e.ctrlKey || e.metaKey;
-      const k = e.key.toLowerCase();
-      if (mod && k === "k") {
+      if (matchCombo(e, bind("commandPalette"))) {
         e.preventDefault();
         setPaletteOpen((v) => !v);
-      } else if (mod && k === "n") {
+      } else if (matchCombo(e, bind("newSession"))) {
         e.preventDefault();
         void newSession();
-      } else if (mod && k === "b") {
+      } else if (matchCombo(e, bind("toggleSessions"))) {
         e.preventDefault();
         setLeftOpen((v) => !v);
-      } else if (mod && k === "j") {
+      } else if (matchCombo(e, bind("toggleFiles"))) {
         e.preventDefault();
         setRightOpen((v) => !v);
-      } else if (mod && k === "o") {
+      } else if (matchCombo(e, bind("openFolder"))) {
         e.preventDefault();
         void chooseFolder();
       } else if (e.key === "Escape") {
@@ -319,7 +572,17 @@ export function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [keybinds]);
+
+  // Load configurable keybinds from the server config on mount.
+  useEffect(() => {
+    fetch(`${httpBase}/config`)
+      .then((r) => r.json())
+      .then((cfg) => {
+        if (cfg?.keybinds && typeof cfg.keybinds === "object") setKeybinds(cfg.keybinds);
+      })
+      .catch(() => {});
+  }, [httpBase]);
 
   useEffect(() => {
     if (started.current) return;
@@ -333,15 +596,15 @@ export function App() {
         if (savedSession && list.some((s) => s.id === savedSession)) await openSession(savedSession);
         else await createSession(savedCwd ?? undefined);
       } catch {
-        setMessages([{ role: "error", text: "Could not reach the termcoder server." }]);
+        setMessages([{ role: "error", text: t("app.serverUnreachable") }]);
       }
     })();
     return () => wsRef.current?.close();
   }, []);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [messages, busy]);
+    if (autoScroll) scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+  }, [messages, busy, autoScroll]);
 
   async function refreshSessions() {
     try {
@@ -395,7 +658,7 @@ export function App() {
 
   function connect(id: string) {
     wsRef.current?.close();
-    assistantIdx.current = null;
+    appendRef.current = false;
     const ws = new WebSocket(`${wsBase}/sessions/${id}/stream`);
     wsRef.current = ws;
     ws.onopen = () => setConnected(true);
@@ -411,15 +674,45 @@ export function App() {
     void window.api?.allFiles(dir).then(setFileList);
   }
 
+  function resetTokenMeters() {
+    setTokens(0);
+    setTokensIn(0);
+    setTokensOut(0);
+    setLastCtx(0);
+  }
+
+  /** Enter/leave the simplified study experience (termexplorer + chat only). */
+  function applyStudentMode(on: boolean) {
+    setStudentMode(on);
+    localStorage.setItem("tc-student", on ? "1" : "0");
+    if (on) {
+      setLeftOpen(false);
+      setRightOpen(false);
+      void changeModel("termexplorer/auto");
+    } else {
+      setLeftOpen(true);
+      setRightOpen(true);
+    }
+  }
+
+  function chooseMode(mode: "code" | "study") {
+    localStorage.setItem("tc-onboarded", "1");
+    setOnboarded(true);
+    applyStudentMode(mode === "study");
+  }
+
   async function createSession(folder?: string) {
-    const body = JSON.stringify(folder ? { cwd: folder } : {});
+    const settings = { agent, temperature, maxSteps };
+    const body = JSON.stringify(folder ? { cwd: folder, ...settings } : settings);
     const record = (await (
       await fetch(`${httpBase}/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body })
     ).json()) as { id: string; cwd: string; model: string };
     setCurrentId(record.id);
+    resetTokenMeters();
     localStorage.setItem("tc-session", record.id);
-    const dm = localStorage.getItem("tc-model");
-    if (dm && dm !== record.model) {
+    // Default new sessions to the termcoder/auto brain unless the user picked one.
+    const dm = localStorage.getItem("tc-model") || "termcoder/auto";
+    if (dm !== record.model) {
       setModel(dm);
       void fetch(`${httpBase}/sessions/${record.id}/model`, {
         method: "POST",
@@ -441,7 +734,7 @@ export function App() {
     try {
       await createSession(cwdRef.current ?? undefined);
     } catch {
-      setMessages([{ role: "error", text: "Could not reach the termcoder server." }]);
+      setMessages([{ role: "error", text: t("app.serverUnreachable") }]);
     }
   }
 
@@ -453,6 +746,7 @@ export function App() {
         fetch(`${httpBase}/sessions/${id}/transcript`).then((r) => r.json()) as Promise<Segment[]>,
       ]);
       setCurrentId(id);
+      resetTokenMeters();
       localStorage.setItem("tc-session", id);
       setModel(record.model);
       setMessages(segments.map(segToMessage));
@@ -467,6 +761,133 @@ export function App() {
   async function chooseFolder() {
     const folder = await window.api?.pickFolder();
     if (folder) await createSession(folder);
+  }
+
+  async function deleteSession(id: string) {
+    try {
+      await fetch(`${httpBase}/sessions/${id}`, { method: "DELETE" });
+    } catch {
+      /* ignore — refresh below reflects the real state */
+    }
+    const remaining = sessions.filter((s) => s.id !== id);
+    setSessions(remaining);
+    if (id === currentId) {
+      wsRef.current?.close();
+      const next = remaining[0];
+      if (next) await openSession(next.id);
+      else await createSession(cwdRef.current ?? undefined);
+    }
+    void refreshSessions();
+  }
+
+  async function clearAllSessions() {
+    try {
+      await fetch(`${httpBase}/sessions`, { method: "DELETE" });
+    } catch {
+      /* ignore */
+    }
+    wsRef.current?.close();
+    setSessions([]);
+    setCurrentId(null);
+    localStorage.removeItem("tc-session");
+    navStack.current = [];
+    navPos.current = -1;
+    await createSession(cwdRef.current ?? undefined);
+  }
+
+  function stop() {
+    wsRef.current?.send(JSON.stringify({ type: "stop" }));
+    setBusy(false);
+    setPerm(null);
+    appendRef.current = false;
+    setMessages((prev) => [...prev, { role: "notice", text: t("chat.stopped") }]);
+  }
+
+  function refreshCheckpoint() {
+    const id = currentIdRef.current;
+    if (!id) {
+      setCanRevert(false);
+      return;
+    }
+    fetch(`${httpBase}/sessions/${id}/checkpoint`)
+      .then((r) => r.json())
+      .then((d) => setCanRevert(Boolean(d.hasCheckpoint)))
+      .catch(() => {});
+  }
+
+  async function revertTurn() {
+    const id = currentIdRef.current;
+    if (!id) return;
+    try {
+      const res = await fetch(`${httpBase}/sessions/${id}/revert`, { method: "POST" });
+      const data = (await res.json()) as { restored?: string[] };
+      const n = data.restored?.length ?? 0;
+      notice(n ? t("revert.done", { n }) : t("revert.none"));
+    } catch {
+      /* ignore */
+    }
+    setCanRevert(false);
+    void refreshGit();
+  }
+
+  async function renameSession(id: string, title: string) {
+    const trimmed = title.trim();
+    if (!trimmed) return;
+    setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, title: trimmed } : s)));
+    try {
+      await fetch(`${httpBase}/sessions/${id}/title`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title: trimmed }),
+      });
+    } catch {
+      /* ignore */
+    }
+    void refreshSessions();
+  }
+
+  async function copyText(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      /* clipboard may be unavailable */
+    }
+  }
+
+  function shareSession(format: "html" | "md") {
+    if (!currentId) return;
+    const url = `${httpBase}/sessions/${currentId}/share${format === "md" ? "?format=md" : ""}`;
+    if (format === "md") void copyText(url);
+    window.open(url, "_blank");
+  }
+
+  async function exportHtml() {
+    if (!currentId) return;
+    try {
+      const html = await (await fetch(`${httpBase}/sessions/${currentId}/share`)).text();
+      const res = await window.api?.saveFile?.(`${currentTitle || "termcoder-session"}.html`, html);
+      if (res?.ok) notice(t("share.exported", { path: res.path ?? "" }));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function publishGist() {
+    if (!currentId) return;
+    notice(t("share.publishing"));
+    try {
+      const res = await fetch(`${httpBase}/sessions/${currentId}/gist`, { method: "POST" });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (data.url) {
+        void copyText(data.url);
+        notice(t("share.gistDone"));
+        window.open(data.url, "_blank");
+      } else {
+        notice(data.error?.includes("token") ? t("share.needToken") : t("share.gistError", { e: data.error ?? "" }));
+      }
+    } catch {
+      notice(t("share.gistError", { e: "network" }));
+    }
   }
 
   function addTab(tab: Tab) {
@@ -486,7 +907,30 @@ export function App() {
 
   async function openFile(path: string) {
     const res = await window.api?.readFile(path);
-    if (res) addTab({ id: `file:${path}`, name: baseName(path), kind: "file", content: res.content });
+    if (res) addTab({ id: `file:${path}`, name: baseName(path), kind: "file", content: res.content, path });
+  }
+
+  function editTab(id: string, content: string) {
+    setTabs((prev) => prev.map((t) => (t.id === id ? { ...t, content, dirty: true } : t)));
+  }
+
+  async function saveTab(id: string) {
+    const tab = tabs.find((t) => t.id === id);
+    if (!tab?.path) return;
+    const res = await window.api?.writeFile(tab.path, tab.content);
+    if (res?.ok) {
+      setTabs((prev) => prev.map((t) => (t.id === id ? { ...t, dirty: false } : t)));
+      void refreshGit();
+    }
+  }
+
+  function askAboutFile(tab: Tab) {
+    const dir = cwdRef.current;
+    const rel =
+      tab.path && dir && tab.path.startsWith(dir) ? tab.path.slice(dir.length).replace(/^[\\/]+/, "") : tab.name;
+    setInput((v) => (v.trim() ? `${v.trim()} @${rel} ` : `@${rel} `));
+    setViewerOpen(false);
+    requestAnimationFrame(() => inputRef.current?.focus());
   }
 
   async function openDiff(relPath: string) {
@@ -530,44 +974,91 @@ export function App() {
       return;
     }
     if (e.type === "usage") {
-      setTokens((t) => t + e.inputTokens + e.outputTokens);
+      setTokens((tok) => tok + e.inputTokens + e.outputTokens);
+      setTokensIn((v) => v + e.inputTokens);
+      setTokensOut((v) => v + e.outputTokens);
+      setLastCtx(e.inputTokens); // the context actually sent this turn
       return;
     }
-    setMessages((prev) => {
-      const next = [...prev];
-      switch (e.type) {
-        case "text-delta":
-          if (assistantIdx.current === null) {
-            next.push({ role: "assistant", text: e.text });
-            assistantIdx.current = next.length - 1;
-          } else {
-            const cur = next[assistantIdx.current]!;
-            next[assistantIdx.current] = { ...cur, text: cur.text + e.text };
+    if (e.type === "stopped") {
+      setBusy(false);
+      appendRef.current = false;
+      return;
+    }
+    if (e.type === "done") {
+      setBusy(false);
+      appendRef.current = false;
+      if (soundRef.current) playChime();
+      if (notifyRef.current && !document.hasFocus()) {
+        // Route through the main process so the toast carries the termcoder
+        // icon and grouping; fall back to a plain web notification.
+        if (window.api?.notify) {
+          window.api.notify("termcoder", t("notify.done"));
+        } else {
+          try {
+            new Notification("termcoder", { body: t("notify.done") });
+          } catch {
+            /* notifications unavailable */
           }
-          break;
-        case "tool-call":
-          assistantIdx.current = null;
-          next.push({ role: "tool", name: e.name, text: e.title ?? "", status: "running", detail: e.detail });
-          break;
-        case "tool-result":
-          for (let i = next.length - 1; i >= 0; i--) {
-            if (next[i]!.role === "tool" && next[i]!.status === "running") {
-              next[i] = { ...next[i]!, status: e.isError ? "error" : "done" };
-              break;
-            }
-          }
-          break;
-        case "error":
-          next.push({ role: "error", text: e.error });
-          break;
-        case "done":
-          setBusy(false);
-          void refreshSessions();
-          void refreshGit();
-          break;
+        }
       }
-      return next;
-    });
+      if (autoCommitRef.current && cwdRef.current) {
+        void window.api?.gitCommit?.(cwdRef.current, "termcoder: automated update");
+      }
+      void refreshSessions();
+      void refreshGit();
+      refreshCheckpoint();
+      return;
+    }
+
+    if (e.type === "text-delta") {
+      // Live, animated token estimate while the model streams (the real usage
+      // figure only arrives at the end of the turn).
+      setLiveTokens((v) => v + Math.max(1, Math.round((e.text?.length ?? 0) / 4)));
+      // Capture the decision BEFORE the updater so the updater stays pure
+      // (StrictMode double-invokes updaters; impurity here caused crashes).
+      const shouldAppend = appendRef.current;
+      appendRef.current = true;
+      setMessages((prev) => {
+        const next = [...prev];
+        const last = next[next.length - 1];
+        if (shouldAppend && last && last.role === "assistant") {
+          next[next.length - 1] = { ...last, text: last.text + e.text };
+        } else {
+          next.push({ role: "assistant", text: e.text });
+        }
+        return next;
+      });
+      return;
+    }
+
+    if (e.type === "tool-call") {
+      appendRef.current = false;
+      setMessages((prev) => [
+        ...prev,
+        { role: "tool", name: e.name, text: e.title ?? "", status: "running", detail: e.detail },
+      ]);
+      return;
+    }
+
+    if (e.type === "tool-result") {
+      setMessages((prev) => {
+        const next = [...prev];
+        for (let i = next.length - 1; i >= 0; i--) {
+          if (next[i]!.role === "tool" && next[i]!.status === "running") {
+            next[i] = { ...next[i]!, status: e.isError ? "error" : "done" };
+            break;
+          }
+        }
+        return next;
+      });
+      return;
+    }
+
+    if (e.type === "error") {
+      appendRef.current = false;
+      setMessages((prev) => [...prev, { role: "error", text: e.error }]);
+    }
   }
 
   function decide(decision: "allow" | "deny" | "allow-always") {
@@ -577,13 +1068,129 @@ export function App() {
 
   function send() {
     const text = input.trim();
-    if (!text || busy || !connected) return;
+    if ((!text && pendingImages.length === 0) || busy || !connected) return;
+    const cmd = parseCommand(text);
+    if (cmd && pendingImages.length === 0) {
+      void sendCommand(cmd.name, cmd.args, text);
+      return;
+    }
+    const images = pendingImages;
     setInput("");
     setMention(null);
-    assistantIdx.current = null;
-    setMessages((prev) => [...prev, { role: "user", text }]);
+    appendRef.current = false;
+    setLiveTokens(0);
+    setMessages((prev) => [...prev, { role: "user", text, images: images.map((i) => i.dataUrl) }]);
     setBusy(true);
-    wsRef.current?.send(JSON.stringify({ type: "prompt", text }));
+    wsRef.current?.send(
+      JSON.stringify({
+        type: "prompt",
+        text,
+        images: images.map((i) => ({ dataUrl: i.dataUrl, mediaType: i.mediaType })),
+      }),
+    );
+    setPendingImages([]);
+  }
+
+  async function attachFiles() {
+    const paths = (await window.api?.pickFile?.()) ?? [];
+    if (!paths.length) return;
+    const dir = cwdRef.current;
+    const fileMentions: string[] = [];
+    for (const p of paths) {
+      if (IMG_EXT.test(p)) {
+        const img = await window.api?.readImage?.(p);
+        if (img) setPendingImages((prev) => [...prev, { ...img, name: baseName(p) }]);
+      } else {
+        const rel = dir && p.startsWith(dir) ? p.slice(dir.length).replace(/^[\\/]+/, "") : p;
+        fileMentions.push(`@${rel}`);
+      }
+    }
+    if (fileMentions.length) {
+      const m = fileMentions.join(" ");
+      setInput((v) => (v.trim() ? `${v.trim()} ${m} ` : `${m} `));
+    }
+    inputRef.current?.focus();
+  }
+
+  function addImageFile(file: File) {
+    if (!file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = () =>
+      setPendingImages((prev) => [
+        ...prev,
+        { dataUrl: String(reader.result), mediaType: file.type, name: file.name || "image" },
+      ]);
+    reader.readAsDataURL(file);
+  }
+
+  function removeImage(i: number) {
+    setPendingImages((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  // Voice dictation: record audio, convert to WAV, and transcribe with the
+  // configured multimodal model (e.g. Gemini) via the server. Reliable inside
+  // Electron, unlike the Web Speech API.
+  function notice(text: string) {
+    setMessages((p) => [...p, { role: "notice", text }]);
+  }
+
+  async function transcribeRecording() {
+    const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+    audioChunksRef.current = [];
+    if (!blob.size) return;
+    setTranscribing(true);
+    try {
+      const wav = await blobToWav(blob);
+      const audio = await blobToBase64(wav);
+      const res = await fetch(`${httpBase}/transcribe`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ audio, mediaType: "audio/wav" }),
+      });
+      const data = (await res.json()) as { text?: string; error?: string };
+      if (data.text && data.text.trim()) {
+        const add = data.text.trim();
+        setInput((v) => (v.trim() ? `${v.trim()} ${add}` : add));
+        inputRef.current?.focus();
+      } else if (data.error) {
+        notice(t("voice.error", { e: data.error }));
+      }
+    } catch (err) {
+      notice(t("voice.error", { e: String(err) }));
+    } finally {
+      setTranscribing(false);
+    }
+  }
+
+  async function toggleMic() {
+    if (recording) {
+      mediaRecorderRef.current?.stop();
+      return;
+    }
+    if (transcribing) return;
+    let stream: MediaStream;
+    try {
+      const audio = micRef.current ? { deviceId: { exact: micRef.current } } : true;
+      stream = await navigator.mediaDevices.getUserMedia({ audio });
+    } catch {
+      notice(t("voice.micDenied"));
+      return;
+    }
+    streamRef.current = stream;
+    const recorder = new MediaRecorder(stream);
+    audioChunksRef.current = [];
+    recorder.ondataavailable = (e) => {
+      if (e.data.size) audioChunksRef.current.push(e.data);
+    };
+    recorder.onstop = () => {
+      streamRef.current?.getTracks().forEach((tr) => tr.stop());
+      streamRef.current = null;
+      setRecording(false);
+      void transcribeRecording();
+    };
+    mediaRecorderRef.current = recorder;
+    setRecording(true);
+    recorder.start();
   }
 
   function updateMention(value: string, caret: number) {
@@ -615,27 +1222,121 @@ export function App() {
     });
   }
 
+  // --- Slash commands ---------------------------------------------------
+  function parseCommand(text: string): { name: string; args: string } | null {
+    if (!text.startsWith("/")) return null;
+    const after = text.slice(1);
+    const sp = after.indexOf(" ");
+    const name = sp === -1 ? after : after.slice(0, sp);
+    const args = sp === -1 ? "" : after.slice(sp + 1);
+    return commands.some((c) => c.name === name) ? { name, args } : null;
+  }
+
+  function updateCommand(value: string) {
+    if (!value.startsWith("/")) {
+      setCmdMatch(null);
+      setCmdPreview("");
+      return;
+    }
+    const after = value.slice(1);
+    const sp = after.indexOf(" ");
+    if (sp === -1) {
+      const q = after.toLowerCase();
+      const items = commands.filter((c) => c.name.toLowerCase().startsWith(q));
+      setCmdMatch(items.length ? { items, active: 0 } : null);
+      setCmdPreview("");
+    } else {
+      setCmdMatch(null);
+      const name = after.slice(0, sp);
+      const args = after.slice(sp + 1);
+      if (!commands.some((c) => c.name === name)) {
+        setCmdPreview("");
+        return;
+      }
+      if (cmdPreviewTimer.current) clearTimeout(cmdPreviewTimer.current);
+      cmdPreviewTimer.current = setTimeout(() => {
+        fetch(`${httpBase}/commands/expand`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ name, args }),
+        })
+          .then((r) => r.json())
+          .then((d) => setCmdPreview(typeof d.prompt === "string" ? d.prompt : ""))
+          .catch(() => {});
+      }, 350);
+    }
+  }
+
+  function pickCommand(name: string) {
+    setInput(`/${name} `);
+    setCmdMatch(null);
+    requestAnimationFrame(() => {
+      const el = inputRef.current;
+      if (el) {
+        el.focus();
+        const pos = name.length + 2;
+        el.setSelectionRange(pos, pos);
+      }
+    });
+  }
+
+  async function sendCommand(name: string, args: string, raw: string) {
+    if (busy || !connected) return;
+    setInput("");
+    setMention(null);
+    setCmdMatch(null);
+    setCmdPreview("");
+    appendRef.current = false;
+    setLiveTokens(0);
+    let prompt = raw;
+    try {
+      const res = await fetch(`${httpBase}/commands/expand`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name, args }),
+      });
+      const data = (await res.json()) as { prompt?: string; agent?: string };
+      if (typeof data.prompt === "string" && data.prompt.trim()) prompt = data.prompt;
+      if (typeof data.agent === "string") setAgent(data.agent);
+    } catch {
+      /* fall back to the raw text */
+    }
+    setMessages((prev) => [...prev, { role: "user", text: raw }]);
+    setBusy(true);
+    wsRef.current?.send(JSON.stringify({ type: "prompt", text: prompt }));
+  }
+
   const project = cwd ? baseName(cwd) : "termcoder";
-  const currentTitle = sessions.find((s) => s.id === currentId)?.title ?? "New session";
+  const currentSession = sessions.find((s) => s.id === currentId);
+  const currentTitle = currentSession ? sessionLabel(currentSession) : t("chat.newSession");
   const changedFiles = Object.entries(status);
 
+  // Live activity for the "working" indicator: the most recent running tool, or
+  // a generic "thinking" state while the model streams a reply.
+  const runningTool = busy
+    ? [...messages].reverse().find((m) => m.role === "tool" && m.status === "running")
+    : undefined;
+  const workingLabel = runningTool?.name ?? t("chat.thinking");
+  const workingDetail = runningTool?.text ?? "";
+  const workingTokens = liveTokens || tokens;
+
   const paletteItems: PaletteItem[] = [
-    { id: "new", label: "New session", hint: "command", run: () => void newSession() },
-    { id: "folder", label: "Choose folderâ€¦", hint: "command", run: () => void chooseFolder() },
-    { id: "left", label: "Toggle sessions panel", hint: "command", run: () => setLeftOpen((v) => !v) },
-    { id: "right", label: "Toggle files panel", hint: "command", run: () => setRightOpen((v) => !v) },
+    { id: "new", label: t("nav.newSession"), hint: t("palette.hint.command"), run: () => void newSession() },
+    { id: "folder", label: t("nav.chooseFolder"), hint: t("palette.hint.command"), run: () => void chooseFolder() },
+    { id: "left", label: t("palette.toggleSessions"), hint: t("palette.hint.command"), run: () => setLeftOpen((v) => !v) },
+    { id: "right", label: t("palette.toggleFiles"), hint: t("palette.hint.command"), run: () => setRightOpen((v) => !v) },
     {
       id: "theme",
-      label: `Switch to ${theme === "dark" ? "light" : "dark"} theme`,
-      hint: "command",
-      run: () => setTheme((t) => (t === "dark" ? "light" : "dark")),
+      label: t("palette.switchTheme", { theme: t(theme === "dark" ? "theme.light" : "theme.dark") }),
+      hint: t("palette.hint.command"),
+      run: () => setTheme((th) => (th === "dark" ? "light" : "dark")),
     },
-    ...MODELS.map((m) => ({ id: `model:${m}`, label: m, hint: "model", run: () => changeModel(m) })),
-    ...sessions.map((s) => ({ id: `sess:${s.id}`, label: s.title, hint: "session", run: () => void openSession(s.id) })),
+    ...MODELS.map((m) => ({ id: `model:${m}`, label: m, hint: t("palette.hint.model"), run: () => changeModel(m) })),
+    ...sessions.map((s) => ({ id: `sess:${s.id}`, label: sessionLabel(s), hint: t("palette.hint.session"), run: () => void openSession(s.id) })),
     ...fileList.slice(0, 600).map((f) => ({
       id: `file:${f}`,
       label: f,
-      hint: "file",
+      hint: t("palette.hint.file"),
       run: () => cwd && void openFile(`${cwd}/${f}`),
     })),
   ];
@@ -645,51 +1346,51 @@ export function App() {
       <header className="toolbar">
         <div className="tb-left">
           <div className="menu-wrap">
-            <button className="icon" title="Menu" onClick={() => setMenuOpen((v) => !v)}><IconMenu /></button>
+            <button className="icon" title={t("nav.menu")} onClick={() => setMenuOpen((v) => !v)}><IconMenu /></button>
             {menuOpen ? (
               <div className="menu" onMouseLeave={() => setMenuOpen(false)}>
-                <button onClick={() => { setMenuOpen(false); void newSession(); }}>New session<span className="mk">Ctrl N</span></button>
-                <button onClick={() => { setMenuOpen(false); void chooseFolder(); }}>Open folderâ€¦<span className="mk">Ctrl O</span></button>
+                <button onClick={() => { setMenuOpen(false); void newSession(); }}>{t("nav.newSession")}<span className="mk">Ctrl N</span></button>
+                <button onClick={() => { setMenuOpen(false); void chooseFolder(); }}>{t("nav.openFolder")}<span className="mk">Ctrl O</span></button>
                 <div className="menu-sep" />
-                <button onClick={() => { setMenuOpen(false); setSettingsOpen(true); }}>Settings</button>
-                <button onClick={() => { setMenuOpen(false); setPaletteOpen(true); }}>Command palette<span className="mk">Ctrl K</span></button>
-                <button onClick={() => { setMenuOpen(false); setTheme((t) => (t === "dark" ? "light" : "dark")); }}>Toggle theme</button>
+                <button onClick={() => { setMenuOpen(false); setSettingsOpen(true); }}>{t("nav.settings")}</button>
+                <button onClick={() => { setMenuOpen(false); setPaletteOpen(true); }}>{t("nav.commandPalette")}<span className="mk">Ctrl K</span></button>
+                <button onClick={() => { setMenuOpen(false); setTheme((th) => (th === "dark" ? "light" : "dark")); }}>{t("nav.toggleTheme")}</button>
                 <div className="menu-sep" />
-                <button onClick={() => location.reload()}>Reload</button>
-                <button onClick={() => window.api?.closeWindow()}>Quit</button>
+                <button onClick={() => location.reload()}>{t("nav.reload")}</button>
+                <button onClick={() => window.api?.closeWindow()}>{t("nav.quit")}</button>
               </div>
             ) : null}
           </div>
-          <button className="icon" title="Toggle sidebar (Ctrl B)" onClick={() => setLeftOpen((v) => !v)}><IconSidebar /></button>
-          <button className="icon dim" title="Back" onClick={navBack}><IconBack /></button>
-          <button className="icon dim" title="Forward" onClick={navForward}><IconForward /></button>
+          <button className="icon" title={`${t("nav.toggleSidebar")} (Ctrl B)`} onClick={() => setLeftOpen((v) => !v)}><IconSidebar /></button>
+          <button className="icon dim" title={t("nav.back")} onClick={navBack}><IconBack /></button>
+          <button className="icon dim" title={t("nav.forward")} onClick={navForward}><IconForward /></button>
         </div>
         <div className="tb-center">
           <button className="search" onClick={() => setPaletteOpen(true)}>
             <IconSearch />
-            <span className="search-label">Search {project}</span>
+            <span className="search-label">{t("search.placeholder", { project })}</span>
             <span className="kbd">Ctrl K</span>
           </button>
         </div>
         <div className="tb-right">
           <div className="menu-wrap">
-            <button className="icon srv" title="Servers" onClick={() => { setServersOpen((v) => !v); void refreshStatus(); }}>
+            <button className="icon srv" title={t("servers.title")} onClick={() => { setServersOpen((v) => !v); void refreshStatus(); }}>
               <IconServer />
               <span className="srv-dot" />
             </button>
             {serversOpen ? (
               <div className="menu servers-pop" onMouseLeave={() => setServersOpen(false)}>
-                <div className="sp-row"><span className="dot on" /> Local server <span className="muted">running</span></div>
+                <div className="sp-row"><span className="dot on" /> {t("servers.local")} <span className="muted">{t("servers.running")}</span></div>
                 <div className="sp-line"><span>MCP</span><span className="muted">{serverStatus?.mcp.length ?? 0}</span></div>
                 <div className="sp-line"><span>LSP</span><span className="muted">{serverStatus?.lsp.length ?? 0}</span></div>
                 <div className="sp-line"><span>Plugins</span><span className="muted">{serverStatus?.plugins.length ?? 0}</span></div>
-                <button className="sp-manage" onClick={() => { setServersOpen(false); setSettingsTab("servers"); setSettingsOpen(true); }}>Manage servers</button>
+                <button className="sp-manage" onClick={() => { setServersOpen(false); setSettingsTab("servers"); setSettingsOpen(true); }}>{t("servers.manage")}</button>
               </div>
             ) : null}
           </div>
-          <button className="icon" title="New session (Ctrl N)" onClick={() => void newSession()}><IconNewChat /></button>
-          <button className="icon" title="Toggle files (Ctrl J)" onClick={() => setRightOpen((v) => !v)}><IconPanelRight /></button>
-          <button className="icon" title="Toggle theme" onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}>
+          <button className="icon" title={`${t("nav.newSession")} (Ctrl N)`} onClick={() => void newSession()}><IconNewChat /></button>
+          <button className="icon" title={`${t("nav.toggleFiles")} (Ctrl J)`} onClick={() => setRightOpen((v) => !v)}><IconPanelRight /></button>
+          <button className="icon" title={t("nav.toggleTheme")} onClick={() => setTheme((th) => (th === "dark" ? "light" : "dark"))}>
             {theme === "dark" ? <IconSun /> : <IconMoon />}
           </button>
           <div className="win-controls">
@@ -709,54 +1410,180 @@ export function App() {
                 <div className="pname">{project}</div>
                 {cwd ? <div className="ppath">{shortPath(cwd)}</div> : null}
               </div>
-              <button className="icon" title="Choose folder" onClick={() => void chooseFolder()}>â€¦</button>
+              <button className="icon" title={t("nav.chooseFolder")} onClick={() => void chooseFolder()}>…</button>
             </div>
             <button className="new-session" onClick={() => void newSession()}>
-              <IconNewChat /> New session
+              <IconNewChat /> {t("nav.newSession")}
             </button>
-            <div className="session-list">
-              {sessions.map((s) => (
+            <div className="slist-head">
+              <span>{t("session.heading")}</span>
+              {sessions.length > 1 ? (
                 <button
-                  key={s.id}
-                  className={`session ${s.id === currentId ? "active" : ""}`}
-                  onClick={() => void openSession(s.id)}
+                  className="icon sm"
+                  title={t("session.clearAll")}
+                  onClick={() => {
+                    if (!confirmDelete || window.confirm(t("session.confirmClear", { n: sessions.length }))) {
+                      void clearAllSessions();
+                    }
+                  }}
                 >
-                  {s.title}
+                  <IconTrash />
                 </button>
+              ) : null}
+            </div>
+            <div className="session-list">
+              {sessions.length === 0 ? (
+                <div className="slist-empty">{t("session.none")}</div>
+              ) : null}
+              {sessions.map((s) => (
+                <div key={s.id} className={`session-row ${s.id === currentId ? "active" : ""}`}>
+                  <button className="session" onClick={() => void openSession(s.id)}>
+                    {sessionLabel(s)}
+                  </button>
+                  <button
+                    className="session-del"
+                    title={t("session.deleteOne")}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!confirmDelete || window.confirm(t("session.confirmOne"))) void deleteSession(s.id);
+                    }}
+                  >
+                    <IconTrash />
+                  </button>
+                </div>
               ))}
             </div>
             <div className="left-footer">
-              <button className="icon" title="Settings" onClick={() => setSettingsOpen(true)}><IconGear /></button>
-              <button className="icon" title="Command palette (Ctrl K)" onClick={() => setPaletteOpen(true)}><IconHelp /></button>
+              <button className="icon" title={t("nav.settings")} onClick={() => setSettingsOpen(true)}><IconGear /></button>
+              <button className="icon" title={`${t("nav.commandPalette")} (Ctrl K)`} onClick={() => setPaletteOpen(true)}><IconHelp /></button>
             </div>
           </aside>
         ) : null}
 
         <main className="center">
           <div className="chat-head">
-            <span className="ch-title">{currentTitle}</span>
-            <span className={`dot ${connected ? "on" : "off"}`} title={connected ? "connected" : "connecting"} />
+            {editingTitle ? (
+              <input
+                className="ch-title-edit"
+                autoFocus
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onBlur={() => {
+                  if (currentId) void renameSession(currentId, titleDraft);
+                  setEditingTitle(false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    if (currentId) void renameSession(currentId, titleDraft);
+                    setEditingTitle(false);
+                  } else if (e.key === "Escape") {
+                    setEditingTitle(false);
+                  }
+                }}
+              />
+            ) : (
+              <span
+                className="ch-title"
+                title={t("session.rename")}
+                onDoubleClick={() => {
+                  setTitleDraft(currentTitle);
+                  setEditingTitle(true);
+                }}
+              >
+                {currentTitle}
+              </span>
+            )}
+            <span className={`dot ${connected ? "on" : "off"}`} title={connected ? t("chat.connected") : t("chat.connecting")} />
             <div className="ch-right">
-              {tokens > 0 ? <span className="muted">{fmtTokens(tokens)} tok</span> : null}
+              {tokens > 0 ? (
+                <span
+                  className="ctx-meter"
+                  title={t("chat.ctxTip", { in: fmtTokens(tokensIn), out: fmtTokens(tokensOut) })}
+                >
+                  {lastCtx > 0 ? (
+                    <span className={`ctx-badge${lastCtx > 24000 ? " hi" : ""}`}>
+                      {t("chat.ctx")} ~{fmtTokens(lastCtx)}
+                    </span>
+                  ) : null}
+                  <span className="muted">{fmtTokens(tokens)} {t("chat.tok")}</span>
+                </span>
+              ) : null}
+              {canRevert ? (
+                <button className="icon sm" title={t("revert.title")} onClick={() => void revertTurn()}>
+                  <IconUndo />
+                </button>
+              ) : null}
+              <button
+                className="icon sm"
+                title={t("session.rename")}
+                onClick={() => {
+                  setTitleDraft(currentTitle);
+                  setEditingTitle(true);
+                }}
+              >
+                <IconEdit />
+              </button>
+              <div className="menu-wrap">
+                <button className="icon sm" title={t("session.share")} onClick={() => setShareOpen((v) => !v)}>
+                  <IconShare />
+                </button>
+                {shareOpen ? (
+                  <div className="menu share-pop" onMouseLeave={() => setShareOpen(false)}>
+                    <button onClick={() => { setShareOpen(false); shareSession("html"); }}>{t("share.openHtml")}</button>
+                    <button onClick={() => { setShareOpen(false); void exportHtml(); }}>{t("share.exportHtml")}</button>
+                    <button onClick={() => { setShareOpen(false); void publishGist(); }}>{t("share.gist")}</button>
+                    <button onClick={() => { setShareOpen(false); shareSession("md"); }}>{t("share.copyMd")}</button>
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
           {busy && progressBar ? <div className="progress" /> : null}
 
           <div className="transcript" ref={scrollRef}>
             {messages.length === 0 ? (
-              <div className="empty">Ask termcoder to write code, run commands, or search the web.</div>
+              <div className="empty">
+                <div>{t("chat.empty")}</div>
+                {!model.startsWith("ollama/") ? (
+                  <button className="free-hint" onClick={() => changeModel("ollama/llama3.1")}>
+                    {t("chat.freeHint")}
+                  </button>
+                ) : null}
+              </div>
             ) : null}
             {messages.map((m, i) => (
               <div key={i} className={`msg ${m.role}`}>
-                {m.role === "user" ? <div className="bubble user">{m.text}</div> : null}
+                {m.role === "user" ? (
+                  <div className="bubble user">
+                    {m.images && m.images.length ? (
+                      <div className="msg-images">
+                        {m.images.map((src, k) => (
+                          <img key={k} src={src} alt="attachment" />
+                        ))}
+                      </div>
+                    ) : null}
+                    {m.text}
+                  </div>
+                ) : null}
+                {m.role === "notice" ? <div className="notice">{m.text}</div> : null}
                 {m.role === "assistant" ? (
                   busy && i === messages.length - 1 ? (
                     <div className="bubble assistant streaming">{m.text}</div>
                   ) : (
-                    <div className="bubble assistant markdown">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
-                        {m.text}
-                      </ReactMarkdown>
+                    <div className="assistant-wrap">
+                      <div className="bubble assistant markdown">
+                        <ErrorBoundary fallback={() => <pre className="md-fallback">{m.text}</pre>}>
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[[rehypeHighlight, { ignoreMissing: true, detect: true }]]}
+                          >
+                            {m.text}
+                          </ReactMarkdown>
+                        </ErrorBoundary>
+                      </div>
+                      <button className="msg-copy" title={t("msg.copy")} onClick={() => void copyText(m.text)}>
+                        <IconCopy />
+                      </button>
                     </div>
                   )
                 ) : null}
@@ -764,7 +1591,7 @@ export function App() {
                   <div className="tool-wrap">
                     <div className="tool">
                       <span className={`status ${m.status}`}>
-                        {m.status === "error" ? "âœ—" : m.status === "done" ? "âœ“" : "â€¢"}
+                        {m.status === "error" ? "✗" : m.status === "done" ? "✓" : "•"}
                       </span>
                       <span className="toolname">{m.name}</span>
                       {m.text ? <span className="muted"> {m.text}</span> : null}
@@ -772,22 +1599,34 @@ export function App() {
                     {m.detail && expandTools ? (isDiff(m.detail) ? <DiffBlock text={m.detail} /> : <pre className="detail">{m.detail}</pre>) : null}
                   </div>
                 ) : null}
-                {m.role === "error" ? <div className="bubble error">âœ— {m.text}</div> : null}
+                {m.role === "error" ? <div className="bubble error">✗ {m.text}</div> : null}
               </div>
             ))}
-            {busy ? <div className="bubble muted">â– thinkingâ€¦</div> : null}
+            {busy ? (
+              <div className="working">
+                <span className="working-orb" />
+                <span className="working-text">
+                  {workingLabel}
+                  {workingDetail ? <span className="muted"> · {workingDetail}</span> : null}
+                </span>
+                <span className="working-dots"><i /><i /><i /></span>
+                {workingTokens > 0 ? (
+                  <span className="working-tokens">{fmtTokens(workingTokens)} {t("chat.tok")}</span>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
           {perm ? (
             <div className="perm">
               <div className="perm-card">
-                <div className="perm-title">Allow this action?</div>
+                <div className="perm-title">{t("perm.title")}</div>
                 <div className="perm-detail">{perm.title}</div>
                 {perm.detail ? (isDiff(perm.detail) ? <DiffBlock text={perm.detail} /> : <pre className="detail">{perm.detail}</pre>) : null}
                 <div className="perm-actions">
-                  <button className="allow" onClick={() => decide("allow")}>Allow</button>
-                  <button className="always" onClick={() => decide("allow-always")}>Always</button>
-                  <button className="deny" onClick={() => decide("deny")}>Deny</button>
+                  <button className="allow" onClick={() => decide("allow")}>{t("perm.allow")}</button>
+                  <button className="always" onClick={() => decide("allow-always")}>{t("perm.always")}</button>
+                  <button className="deny" onClick={() => decide("deny")}>{t("perm.deny")}</button>
                 </div>
               </div>
             </div>
@@ -811,17 +1650,100 @@ export function App() {
                 ))}
               </div>
             ) : null}
-            <div className="composer">
-              <button className="attach" title="Attach"><IconPlus /></button>
+            {cmdMatch ? (
+              <div className="mention-pop cmd-pop">
+                {cmdMatch.items.map((c, i) => (
+                  <div
+                    key={c.name}
+                    className={`mention-item cmd-item ${i === cmdMatch.active ? "active" : ""}`}
+                    onMouseEnter={() => setCmdMatch((m) => (m ? { ...m, active: i } : m))}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      pickCommand(c.name);
+                    }}
+                  >
+                    <span className="cmd-name">/{c.name}</span>
+                    {c.description ? <span className="cmd-desc">{c.description}</span> : null}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {cmdPreview ? (
+              <div className="cmd-preview">
+                <div className="cmd-preview-head">{t("cmd.preview")}</div>
+                <pre>{cmdPreview}</pre>
+              </div>
+            ) : null}
+            {pendingImages.length ? (
+              <div className="img-strip">
+                {pendingImages.map((img, i) => (
+                  <div className="img-thumb" key={i}>
+                    <img src={img.dataUrl} alt={img.name} />
+                    <button className="img-remove" title="Remove" onClick={() => removeImage(i)}>
+                      <IconClose />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <div
+              className="composer"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                for (const f of Array.from(e.dataTransfer.files)) addImageFile(f);
+              }}
+              onPaste={(e) => {
+                const imgs = Array.from(e.clipboardData.items).filter((it) => it.type.startsWith("image/"));
+                if (imgs.length) {
+                  e.preventDefault();
+                  for (const it of imgs) {
+                    const f = it.getAsFile();
+                    if (f) addImageFile(f);
+                  }
+                }
+              }}
+            >
+              <button className="attach" title={t("composer.attach")} onClick={() => void attachFiles()}><IconPlus /></button>
+              <button
+                className={`attach mic ${recording ? "recording" : ""} ${transcribing ? "transcribing" : ""}`}
+                title={transcribing ? t("voice.transcribing") : recording ? t("voice.stop") : t("composer.mic")}
+                onClick={() => void toggleMic()}
+                disabled={transcribing}
+              >
+                <IconMic />
+              </button>
               <textarea
                 ref={inputRef}
                 value={input}
-                placeholder="Ask anythingâ€¦  (@ to add a file)"
+                placeholder={t("composer.placeholder")}
                 onChange={(e) => {
                   setInput(e.target.value);
                   updateMention(e.target.value, e.target.selectionStart ?? e.target.value.length);
+                  updateCommand(e.target.value);
                 }}
                 onKeyDown={(e) => {
+                  if (cmdMatch) {
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      setCmdMatch((m) => (m ? { ...m, active: Math.min(m.active + 1, m.items.length - 1) } : m));
+                      return;
+                    }
+                    if (e.key === "ArrowUp") {
+                      e.preventDefault();
+                      setCmdMatch((m) => (m ? { ...m, active: Math.max(m.active - 1, 0) } : m));
+                      return;
+                    }
+                    if (e.key === "Enter" || e.key === "Tab") {
+                      e.preventDefault();
+                      pickCommand(cmdMatch.items[cmdMatch.active]!.name);
+                      return;
+                    }
+                    if (e.key === "Escape") {
+                      setCmdMatch(null);
+                      return;
+                    }
+                  }
                   if (mention) {
                     if (e.key === "ArrowDown") {
                       e.preventDefault();
@@ -843,6 +1765,11 @@ export function App() {
                       return;
                     }
                   }
+                  if (e.key === "Escape" && busy) {
+                    e.preventDefault();
+                    stop();
+                    return;
+                  }
                   const wantSend = sendOnEnter
                     ? e.key === "Enter" && !e.shiftKey
                     : e.key === "Enter" && (e.ctrlKey || e.metaKey);
@@ -852,26 +1779,59 @@ export function App() {
                   }
                 }}
               />
-              <button className="send" onClick={send} disabled={busy || !connected}><IconSend /></button>
+              {busy ? (
+                <button className="send stop" onClick={stop} title={t("chat.stop")}><IconStop /></button>
+              ) : (
+                <button className="send" onClick={send} disabled={!connected}><IconSend /></button>
+              )}
             </div>
             <div className="selectors">
-              <button
-                className={`chip ${autoApprove ? "armed" : ""}`}
-                title="Toggle auto-approve"
-                onClick={() => setAutoApprove((v) => !v)}
-              >
-                {autoApprove ? "Auto" : "Build"} â–¾
+              {!studentMode ? (
+              <div className="menu-wrap">
+                <button
+                  className={`chip ${agents.find((a) => a.name === agent)?.readOnly ? "armed" : ""}`}
+                  title={t("mode.title")}
+                  onClick={() => setAgentOpen((v) => !v)}
+                >
+                  {agent} ▾
+                </button>
+                {agentOpen ? (
+                  <div className="menu mode-pop" onMouseLeave={() => setAgentOpen(false)}>
+                    {(agents.length ? agents : [{ name: "build", description: "", mode: "primary", builtin: true, readOnly: false } as AgentInfo])
+                      .filter((a) => a.mode !== "subagent")
+                      .map((a) => (
+                        <button
+                          key={a.name}
+                          className={agent === a.name ? "active" : ""}
+                          onClick={() => { setAgent(a.name); setAgentOpen(false); }}
+                        >
+                          <div className="mode-opt">
+                            <div className="mode-name">
+                              {a.name}
+                              {a.readOnly ? <span className="agent-ro">read-only</span> : null}
+                              {!a.builtin ? <span className="agent-custom">custom</span> : null}
+                            </div>
+                            {a.description ? <div className="mode-desc">{a.description}</div> : null}
+                          </div>
+                          {agent === a.name ? <span className="check">✓</span> : null}
+                        </button>
+                      ))}
+                    <div className="menu-sep" />
+                    <button onClick={() => setAutoApprove((v) => !v)}>
+                      {t("settings.autoApprove")}<span className="mk">{autoApprove ? "On" : "Off"}</span>
+                    </button>
+                    <button onClick={() => { setAgentOpen(false); setSettingsTab("agents"); setSettingsOpen(true); }}>
+                      {t("agents.manage")}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+              ) : null}
+              <button className="chip model" title={t("models.browse")} onClick={() => setBrowserOpen(true)}>
+                {model} ▾
               </button>
-              <span className="chip model">
-                <select value={model} onChange={(e) => changeModel(e.target.value)}>
-                  {MODELS.includes(model) ? null : <option value={model}>{model}</option>}
-                  {MODELS.map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
-              </span>
               <button className="chip" onClick={() => { setSettingsTab("general"); setSettingsOpen(true); }}>
-                Settings â–¾
+                {t("nav.settings")} ▾
               </button>
             </div>
           </div>
@@ -881,20 +1841,20 @@ export function App() {
           <aside className="right">
             <div className="right-tabs">
               <button className={rightTab === "changes" ? "active" : ""} onClick={() => setRightTab("changes")}>
-                {changes} Changes
+                {changes} {t("right.changes")}
               </button>
               <button className={rightTab === "files" ? "active" : ""} onClick={() => setRightTab("files")}>
-                All files
+                {t("right.allFiles")}
               </button>
             </div>
             {rightTab === "files" ? (
               <FileTree root={cwd} status={status} onOpen={(p) => void openFile(p)} />
             ) : changedFiles.length === 0 ? (
-              <div className="muted tree-empty">No changes.</div>
+              <div className="muted tree-empty">{t("right.noChanges")}</div>
             ) : (
               <div className="tree">
                 <button className="view-all" onClick={() => void openAllDiffs()}>
-                  View all diffs
+                  {t("right.viewAllDiffs")}
                 </button>
                 {changedFiles.map(([path, letter]) => (
                   <div key={path} className="tree-row" onClick={() => void openDiff(path)}>
@@ -920,9 +1880,19 @@ export function App() {
           onActivate={setActiveTab}
           onClose={() => setViewerOpen(false)}
           onCloseTab={closeTab}
+          onEdit={editTab}
+          onSave={saveTab}
+          onAskAI={askAboutFile}
+          aiSuggest={aiSuggest}
+          codeTheme={codeTheme}
         />
       ) : null}
       {paletteOpen ? <CommandPalette items={paletteItems} onClose={() => setPaletteOpen(false)} /> : null}
+      {!onboarded ? <Welcome onChoose={chooseMode} /> : null}
+
+      {browserOpen ? (
+        <ModelBrowser port={port} current={model} onSelect={changeModel} onClose={() => setBrowserOpen(false)} />
+      ) : null}
 
       {settingsOpen ? (
         <Settings
@@ -931,6 +1901,12 @@ export function App() {
           setTab={setSettingsTab}
           theme={theme}
           setTheme={setTheme}
+          colorTheme={colorTheme}
+          setColorTheme={setColorTheme}
+          studentMode={studentMode}
+          setStudentMode={applyStudentMode}
+          keybinds={keybinds}
+          setKeybinds={setKeybinds}
           model={model}
           defaultModel={defaultModel}
           setDefaultModel={setDefaultModel}
@@ -946,6 +1922,40 @@ export function App() {
           setProgressBar={setProgressBar}
           fontSize={fontSize}
           setFontSize={setFontSize}
+          accent={accent}
+          setAccent={setAccent}
+          density={density}
+          setDensity={setDensity}
+          reduceMotion={reduceMotion}
+          setReduceMotion={setReduceMotion}
+          autoScroll={autoScroll}
+          setAutoScroll={setAutoScroll}
+          confirmDelete={confirmDelete}
+          setConfirmDelete={setConfirmDelete}
+          temperature={temperature}
+          setTemperature={setTemperature}
+          maxSteps={maxSteps}
+          setMaxSteps={setMaxSteps}
+          soundOnFinish={soundOnFinish}
+          setSoundOnFinish={setSoundOnFinish}
+          micDeviceId={micDeviceId}
+          setMicDeviceId={setMicDeviceId}
+          wordWrap={wordWrap}
+          setWordWrap={setWordWrap}
+          aiSuggest={aiSuggest}
+          setAiSuggest={setAiSuggest}
+          codeTheme={codeTheme}
+          setCodeTheme={setCodeTheme}
+          notifyOnFinish={notifyOnFinish}
+          setNotifyOnFinish={setNotifyOnFinish}
+          autoCommit={autoCommit}
+          setAutoCommit={setAutoCommit}
+          openAtLogin={openAtLogin}
+          setOpenAtLogin={setOpenAtLogin}
+          enableTray={enableTray}
+          setEnableTray={setEnableTray}
+          enableHotkey={enableHotkey}
+          setEnableHotkey={setEnableHotkey}
           cwd={cwd}
           chooseFolder={() => void chooseFolder()}
           serverStatus={serverStatus}

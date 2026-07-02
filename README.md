@@ -5,6 +5,41 @@ Inspired by [OpenCode](https://opencode.ai), built in TypeScript.
 
 > Status: early MVP (sub-project 1 — headless core + Ink TUI).
 
+> 📚 **Studying, not coding?** termcoder ships a sister AI, **termexplorer**, tuned for
+> schoolwork — summaries, homework help, flashcards, study plans. Pick the *termexplorer*
+> model and see [docs/termexplorer.md](docs/termexplorer.md). No programming needed.
+
+## Install
+
+The terminal app installs as a global CLI. Install once, then just type **`term`** in any
+folder to open it.
+
+**Windows (PowerShell or CMD):**
+
+```powershell
+npm install -g @termcoder/tui
+```
+
+**macOS / Linux:**
+
+```bash
+npm install -g @termcoder/tui
+```
+
+Then, in any project folder:
+
+```text
+term
+```
+
+That's it — it opens the panel (`termcoder` also works as the full command). The first time
+in a folder it asks whether you trust it, then shows the home screen. Set a model key first,
+or use a free one — see [Free / no-cost setup](#free--no-cost-setup).
+
+> Not published to npm yet? Build and link it locally from a clone:
+> `pnpm install && pnpm build && npm i -g ./packages/tui` (or `pnpm --filter @termcoder/tui exec npm link`).
+> The desktop app is a separate download — see [Desktop app](#desktop-app).
+
 ## Architecture
 
 A monorepo with a clean split between the engine and the interface:
@@ -24,16 +59,21 @@ rewrite.
 
 ### Server API
 
-- `POST /sessions` — create a session (`{ "cwd": "..." }`) → session record
-- `GET /sessions` — list sessions
-- `GET /sessions/:id` — fetch one session
-- `GET /sessions/:id/share` — a shareable transcript (HTML; `?format=md` for Markdown)
-- `WS /sessions/:id/stream` — send `{ "type": "prompt", "text": "..." }`; receive the
-  core's event stream. On `{ "type": "permission-request", "id", "request" }`, reply with
-  `{ "type": "permission-decision", "id", "decision": "allow" | "deny" | "allow-always" }`.
+The server exposes ~20 HTTP endpoints (sessions, agents, commands, models, config, MCP)
+plus a WebSocket per session that streams a turn's events and carries the permission
+round-trip. The full reference is in **[docs/server-api.md](docs/server-api.md)**.
 
 In the TUI, `/share` writes the current session to a self-contained HTML file you can open
 in a browser or send to someone.
+
+## Documentation
+
+Full guides live in **[docs/](docs/)**:
+
+- **[SDK](docs/sdk.md)** — drive the engine programmatically.
+- **[Server API](docs/server-api.md)** — the HTTP + WebSocket reference.
+- **[Configuration](docs/configuration.md)** — every config key.
+- **[GitHub Action](docs/github-action.md)** — run termcoder in CI.
 
 ## Free / no-cost setup
 
