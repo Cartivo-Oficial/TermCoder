@@ -14,7 +14,7 @@ export const TUI_COMMANDS: TuiCommand[] = [
   { name: "new", desc: "Start a new session" },
   { name: "sessions", desc: "List saved sessions" },
   { name: "resume", arg: "<id>", desc: "Resume a saved session" },
-  { name: "model", arg: "[id]", desc: "Show or set the model" },
+  { name: "model", desc: "Choose a model (interactive picker)" },
   { name: "agent", arg: "[name]", desc: "Show or switch the active agent" },
   { name: "agents", desc: "List available agents" },
   { name: "commands", desc: "List custom project commands" },

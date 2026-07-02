@@ -13,6 +13,8 @@ import {
   loadDraft,
   saveDraft,
   clearDraft,
+  getModelCatalog,
+  type ModelEntry,
   PermissionManager,
   renderSessionHtml,
   Session,
@@ -31,10 +33,11 @@ import type { ViewItem } from "./types";
 import { Hero } from "./components/Hero";
 import { Composer } from "./components/Composer";
 import { PermissionModal } from "./components/PermissionModal";
+import { ModelPicker } from "./components/ModelPicker";
 import { TrustPrompt } from "./components/TrustPrompt";
 import { Transcript, TranscriptItem } from "./components/Transcript";
 
-const VERSION = "0.1.1";
+const VERSION = "0.1.2";
 
 const AGENTS_TEMPLATE = `# Project instructions for termcoder
 
@@ -121,6 +124,8 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
   const [elapsed, setElapsed] = useState(0);
   const [menuSel, setMenuSel] = useState(0);
   const [trusted, setTrusted] = useState(() => isTrusted(cwd));
+  const [catalog, setCatalog] = useState<ModelEntry[]>([]);
+  const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [permRequest, setPermRequest] = useState<PermissionRequest | null>(null);
   const permResolve = useRef<((decision: PermissionDecision) => void) | null>(null);
   const aborted = useRef(false);
@@ -168,6 +173,40 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     const id = setTimeout(() => saveDraft(cwd, input), 400);
     return () => clearTimeout(id);
   }, [input, cwd]);
+
+  // Load the model catalog once (Models.dev + local Ollama + our models).
+  useEffect(() => {
+    let alive = true;
+    getModelCatalog({ config })
+      .then((c) => alive && setCatalog(c))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  function providerHasKey(provider: string): boolean {
+    if (["ollama", "termcoder", "termexplorer"].includes(provider)) return true;
+    if (config.providers[provider]?.apiKey) return true;
+    if (provider === "anthropic") return Boolean(process.env.ANTHROPIC_API_KEY);
+    if (provider === "openai") return Boolean(process.env.OPENAI_API_KEY);
+    if (provider === "google")
+      return Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY);
+    return false;
+  }
+
+  function selectModel(id: string) {
+    session.record.model = id;
+    store.save(session.record);
+    try {
+      saveConfig({ model: id }); // remember the choice across sessions
+    } catch {
+      /* config not writable — still applies this session */
+    }
+    setModelPickerOpen(false);
+    forceRender((n) => n + 1);
+    pushHistory({ kind: "notice", text: `Model set to ${id}.` });
+  }
 
   // Whether a usable model/provider is configured (drives the readiness dot).
   const modelReady =
@@ -225,9 +264,9 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     if (key.escape && busy) {
       aborted.current = true;
       abortController.current?.abort();
-    } else if (key.tab && key.shift && !busy && !permRequest) {
+    } else if (key.tab && key.shift && !busy && !permRequest && !modelPickerOpen) {
       cycleMode();
-    } else if (key.ctrl && _input === "p" && !busy && !permRequest) {
+    } else if (key.ctrl && _input === "p" && !busy && !permRequest && !modelPickerOpen) {
       // Command palette: open the "/" menu.
       setInput("/");
       setMenuSel(0);
@@ -431,11 +470,9 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
       }
       case "model":
         if (arg) {
-          session.record.model = arg;
-          store.save(session.record);
-          pushHistory({ kind: "notice", text: `Model set to ${arg} for this session.` });
+          selectModel(arg);
         } else {
-          pushHistory({ kind: "notice", text: `Model: ${session.record.model}` });
+          setModelPickerOpen(true); // open the interactive picker
         }
         break;
       case "agent":
@@ -665,6 +702,15 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
 
       {permRequest ? (
         <PermissionModal theme={theme} request={permRequest} onDecision={onDecision} />
+      ) : modelPickerOpen ? (
+        <ModelPicker
+          theme={theme}
+          entries={catalog}
+          ready={(e) => providerHasKey(e.provider)}
+          current={session.record.model}
+          onSelect={selectModel}
+          onClose={() => setModelPickerOpen(false)}
+        />
       ) : (
         <Composer
           theme={theme}

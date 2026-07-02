@@ -16,6 +16,7 @@ import { MentionMenu } from "./MentionMenu";
 import { MultilineInput } from "./MultilineInput";
 import { Markdown } from "./Markdown";
 import { DiffView } from "./DiffView";
+import { ModelPicker } from "./ModelPicker";
 import { matchCommands } from "../commands";
 import { matchFiles } from "../files";
 import { wordLines, starfield, makeStars, renderStars } from "../logo";
@@ -248,6 +249,47 @@ describe("MentionMenu", () => {
     const { lastFrame } = render(<MentionMenu theme={theme} files={["notes.ts"]} selected={0} cwd={dir} />);
     expect(lastFrame() ?? "").toContain("export const answer = 42;");
     rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe("ModelPicker", () => {
+  const entries = [
+    { id: "termcoder/auto", provider: "termcoder", model: "auto", name: "termcoder Auto", free: true },
+    { id: "termexplorer/auto", provider: "termexplorer", model: "auto", name: "termexplorer", free: true },
+    { id: "anthropic/x", provider: "anthropic", model: "x", name: "Claude X" },
+    { id: "ollama/llama3.1", provider: "ollama", model: "llama3.1", name: "Llama 3.1", local: true },
+  ];
+  it("groups our models / cloud / local and marks readiness", () => {
+    const { lastFrame } = render(
+      <ModelPicker
+        theme={theme}
+        entries={entries}
+        ready={(e) => e.provider !== "anthropic"}
+        current="termcoder/auto"
+        onSelect={() => {}}
+        onClose={() => {}}
+      />,
+    );
+    const f = lastFrame() ?? "";
+    expect(f).toContain("termcoder AI");
+    expect(f).toContain("Cloud");
+    expect(f).toContain("Local");
+    expect(f).toContain("termexplorer");
+    expect(f).toContain("●"); // a ready model
+    expect(f).toContain("○"); // anthropic needs a key
+  });
+
+  it("filters as you type and selects on enter", async () => {
+    const onSelect = vi.fn();
+    const { stdin } = render(
+      <ModelPicker theme={theme} entries={entries} ready={() => true} current="x" onSelect={onSelect} onClose={() => {}} />,
+    );
+    await tick();
+    stdin.write("llama");
+    await tick();
+    stdin.write("\r");
+    await tick();
+    expect(onSelect).toHaveBeenCalledWith("ollama/llama3.1");
   });
 });
 
