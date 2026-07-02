@@ -158,17 +158,27 @@ describe("CommandMenu", () => {
 });
 
 describe("StatusBar", () => {
-  it("shows cwd, agent, context size, tokens and version", () => {
+  it("shows the folder, context, tokens and version (minimal footer)", () => {
     const { lastFrame } = render(
-      <StatusBar theme={theme} agent="build" cwd="/tmp/proj" tokens={1500} lastCtx={8200} autoApprove version="0.1.0" />,
+      <StatusBar theme={theme} cwd="/tmp/proj" tokens={1500} lastCtx={8200} ctxPct={3} autoApprove version="0.1.0" />,
     );
     const frame = lastFrame() ?? "";
     expect(frame).toContain("proj");
-    expect(frame).toContain("build");
-    expect(frame).toContain("ctx ~8.2k");
+    expect(frame).toContain("ctx 8.2k (3%)");
     expect(frame).toContain("1.5k tok");
     expect(frame).toContain("auto");
     expect(frame).toContain("0.1.0");
+  });
+
+  it("is bare on a fresh home — just folder and version", () => {
+    const { lastFrame } = render(
+      <StatusBar theme={theme} cwd="/tmp/proj" tokens={0} lastCtx={0} autoApprove={false} version="0.1.3" />,
+    );
+    const frame = lastFrame() ?? "";
+    expect(frame).toContain("proj");
+    expect(frame).toContain("0.1.3");
+    expect(frame).not.toContain("tok");
+    expect(frame).not.toContain("ctx");
   });
 });
 

@@ -21,6 +21,7 @@ export function CommandMenu({ theme, commands, selected }: CommandMenuProps) {
   const start = Math.max(0, Math.min(selected - MAX_VISIBLE + 1, commands.length - MAX_VISIBLE));
   const visible = commands.slice(Math.max(0, start), Math.max(0, start) + MAX_VISIBLE);
   const nameWidth = Math.max(...commands.map((c) => c.name.length + (c.arg ? c.arg.length + 1 : 0)));
+  const barWidth = Math.min(64, nameWidth + 5 + Math.max(...commands.map((c) => c.desc.length)));
 
   return (
     <Box
@@ -33,12 +34,18 @@ export function CommandMenu({ theme, commands, selected }: CommandMenuProps) {
         const idx = commands.indexOf(c);
         const active = idx === selected;
         const sig = c.arg ? `${c.name} ${c.arg}` : c.name;
+        if (active) {
+          const line = `❯ /${sig}`.padEnd(nameWidth + 4) + `  ${c.desc}`;
+          return (
+            <Text key={c.name} backgroundColor={theme.accent} color="#0b0b0d" bold>
+              {` ${line}`.padEnd(barWidth)}
+            </Text>
+          );
+        }
         return (
           <Text key={c.name}>
-            <Text color={active ? theme.accent : theme.border}>{active ? "❯ " : "  "}</Text>
-            <Text color={active ? theme.primary : theme.tool} bold={active}>
-              {`/${sig}`.padEnd(nameWidth + 2)}
-            </Text>
+            <Text color={theme.border}>{"  "}</Text>
+            <Text color={theme.tool}>{`/${sig}`.padEnd(nameWidth + 2)}</Text>
             <Text color={theme.muted}>{`  ${c.desc}`}</Text>
           </Text>
         );

@@ -29,6 +29,7 @@ interface ComposerProps {
   cwd: string;
   tokens: number;
   lastCtx?: number;
+  ctxPct?: number;
   autoApprove: boolean;
   version?: string;
   ready?: boolean;
@@ -77,7 +78,7 @@ export function Composer(props: ComposerProps) {
                   onChange={onChange}
                   onSubmit={onSubmit}
                   focus={!disabled}
-                  placeholder="Type your message… (/ commands · $ sub-agent)"
+                  placeholder="Type your message… (type / for commands)"
                   onHistory={props.onHistory}
                   menu={props.menuControl}
                 />
@@ -90,15 +91,15 @@ export function Composer(props: ComposerProps) {
                 <Text color={theme.tool}>{props.model}</Text>
               </Box>
               <Box paddingX={1}>
-                <HintKey theme={theme} k="/" label="commands" />
-                <Text color={theme.border}>{"   "}</Text>
-                <HintKey theme={theme} k="$" label="sub-agent" />
-                <Text color={theme.border}>{"   "}</Text>
                 <HintKey theme={theme} k="shift+tab" label="mode" />
                 <Text color={theme.border}>{"   "}</Text>
                 <HintKey theme={theme} k="ctrl+p" label="palette" />
                 <Text color={theme.border}>{"   "}</Text>
-                <HintKey theme={theme} k="esc" label="stop" />
+                <HintKey theme={theme} k="@" label="attach file" />
+                <Text color={theme.border}>{"   "}</Text>
+                <HintKey theme={theme} k="$" label="sub-agent" />
+                <Text color={theme.border}>{"   "}</Text>
+                <HintKey theme={theme} k="/" label="commands" />
               </Box>
             </>
           )}
@@ -107,13 +108,12 @@ export function Composer(props: ComposerProps) {
 
       <StatusBar
         theme={theme}
-        agent={props.agent}
         cwd={props.cwd}
         tokens={props.tokens}
         lastCtx={props.lastCtx}
+        ctxPct={props.ctxPct}
         autoApprove={props.autoApprove}
         version={props.version}
-        ready={props.ready}
       />
     </Box>
   );

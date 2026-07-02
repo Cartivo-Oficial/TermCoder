@@ -20,6 +20,7 @@ const GROUPS: Array<{ label: string; match: (e: ModelEntry) => boolean }> = [
 ];
 
 const MAX_VISIBLE = 12;
+const BAR_WIDTH = 60;
 
 type Row = { header: string } | { entry: ModelEntry; itemIndex: number };
 
@@ -105,13 +106,21 @@ export function ModelPicker({ theme, entries, ready, current, onSelect, onClose 
           ]
             .filter(Boolean)
             .join(" · ");
+          if (active) {
+            // Full-width accent bar on the selected row.
+            const dot = ok ? "●" : "○";
+            const line = `❯ ${dot} ${e.name}${badges ? `   ${badges}` : ""}${e.id === current ? "  ✓" : ""}`;
+            return (
+              <Text key={`i${i}`} backgroundColor={theme.accent} color="#0b0b0d" bold>
+                {` ${line}`.padEnd(BAR_WIDTH)}
+              </Text>
+            );
+          }
           return (
             <Text key={`i${i}`}>
-              <Text color={active ? theme.accent : theme.border}>{active ? "❯ " : "  "}</Text>
+              <Text color={theme.border}>{"  "}</Text>
               <Text color={ok ? theme.success : theme.running}>{ok ? "● " : "○ "}</Text>
-              <Text color={active ? theme.primary : theme.assistant} bold={active}>
-                {e.name}
-              </Text>
+              <Text color={theme.assistant}>{e.name}</Text>
               {badges ? <Text color={theme.muted}>{`   ${badges}`}</Text> : null}
               {e.id === current ? <Text color={theme.accent}>{"  ✓"}</Text> : null}
             </Text>

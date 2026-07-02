@@ -37,7 +37,7 @@ import { ModelPicker } from "./components/ModelPicker";
 import { TrustPrompt } from "./components/TrustPrompt";
 import { Transcript, TranscriptItem } from "./components/Transcript";
 
-const VERSION = "0.1.2";
+const VERSION = "0.1.3";
 
 const AGENTS_TEMPLATE = `# Project instructions for termcoder
 
@@ -101,6 +101,11 @@ function toolStatus(name: string, title?: string, detail?: string): string {
 /** Current wall-clock time as a compact HH:MM for message timestamps. */
 function now(): string {
   return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+/** A short turn duration, e.g. "48s" or "2m 48s". */
+function fmtDuration(secs: number): string {
+  return secs >= 60 ? `${Math.floor(secs / 60)}m ${secs % 60}s` : `${secs}s`;
 }
 
 export function App({ config, cwd, registry: registryProp, notices }: AppProps) {
@@ -219,6 +224,10 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     ) ||
     Object.values(config.providers).some((p) => p.apiKey);
 
+  // Percentage of the current model's context window used last turn.
+  const modelCtxK = catalog.find((e) => e.id === session.record.model)?.contextK ?? 128;
+  const ctxPct = lastCtx > 0 ? Math.min(100, Math.max(1, Math.round((lastCtx / (modelCtxK * 1000)) * 100))) : 0;
+
   // Project files for @-mention completion (scanned once per cwd).
   const projectFiles = useMemo(() => listProjectFiles(cwd), [cwd]);
   const [menuDismissed, setMenuDismissed] = useState(false);
@@ -322,6 +331,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     aborted.current = false;
     const controller = new AbortController();
     abortController.current = controller;
+    const turnStart = Date.now();
     setBusy(true);
     setStatus("Thinking…");
 
@@ -396,9 +406,10 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
       }
     } finally {
       // Commit the finished turn to the static scrollback, timestamping the
-      // assistant reply.
+      // assistant reply with the wall-clock time and how long it took.
+      const dur = fmtDuration(Math.round((Date.now() - turnStart) / 1000));
       const stamped = localLive.map((it) =>
-        it.kind === "assistant" ? { ...it, time: now() } : it,
+        it.kind === "assistant" ? { ...it, time: now(), dur } : it,
       );
       setHistory((prev) => [...prev, ...stamped]);
       setLive([]);
@@ -731,6 +742,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           cwd={cwd}
           tokens={tokens}
           lastCtx={lastCtx}
+          ctxPct={ctxPct}
           autoApprove={autoApprove}
           version={VERSION}
           ready={modelReady}

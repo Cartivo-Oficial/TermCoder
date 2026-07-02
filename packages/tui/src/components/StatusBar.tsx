@@ -3,16 +3,15 @@ import type { Theme } from "../theme";
 
 interface StatusBarProps {
   theme: Theme;
-  agent: string;
   cwd: string;
   tokens: number;
   /** Input tokens sent last turn — the live context size. */
   lastCtx?: number;
+  /** Percentage of the model's context window used last turn. */
+  ctxPct?: number;
   autoApprove: boolean;
   /** App version, shown at the far right like a footer. */
   version?: string;
-  /** Whether a usable model/provider is configured. */
-  ready?: boolean;
 }
 
 function formatTokens(n: number): string {
@@ -26,19 +25,22 @@ function shortenPath(p: string): string {
   return tail || p;
 }
 
-/** A single compact footer line: cwd · agent · ctx · tokens … version. */
-export function StatusBar({ theme, agent, cwd, tokens, lastCtx, autoApprove, version, ready }: StatusBarProps) {
+/**
+ * A minimal footer, MiMo-style: the folder at the bottom-left and the version at
+ * the bottom-right. Context/token usage only appear once a turn has run, so a
+ * fresh home screen stays clean.
+ */
+export function StatusBar({ theme, cwd, tokens, lastCtx, ctxPct, autoApprove, version }: StatusBarProps) {
   const dot = <Text color={theme.border}>{"  ·  "}</Text>;
   return (
     <Box paddingX={1}>
-      <Text color={ready === false ? theme.running : theme.success}>● </Text>
       <Text color={theme.muted}>{shortenPath(cwd)}</Text>
-      {dot}
-      <Text color={theme.muted}>{agent}</Text>
       {lastCtx && lastCtx > 0 ? (
         <>
           {dot}
-          <Text color={lastCtx > 24000 ? theme.running : theme.muted}>{`ctx ~${formatTokens(lastCtx)}`}</Text>
+          <Text color={ctxPct && ctxPct > 70 ? theme.error : ctxPct && ctxPct > 40 ? theme.running : theme.muted}>
+            {`ctx ${formatTokens(lastCtx)}${ctxPct ? ` (${ctxPct}%)` : ""}`}
+          </Text>
         </>
       ) : null}
       {tokens > 0 ? (

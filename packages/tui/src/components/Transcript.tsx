@@ -42,7 +42,9 @@ export function TranscriptItem({ theme, item }: { theme: Theme; item: ViewItem }
           <Text color={theme.accent}>{"● "}</Text>
           <Box flexDirection="column">
             <Markdown theme={theme} text={item.text} />
-            {item.time ? <Text color={theme.border}>{item.time}</Text> : null}
+            {item.time ? (
+              <Text color={theme.border}>{item.dur ? `${item.time} · ${item.dur}` : item.time}</Text>
+            ) : null}
           </Box>
         </Box>
       );
