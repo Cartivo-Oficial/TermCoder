@@ -269,16 +269,17 @@ describe("ModelPicker", () => {
     { id: "anthropic/x", provider: "anthropic", model: "x", name: "Claude X" },
     { id: "ollama/llama3.1", provider: "ollama", model: "llama3.1", name: "Llama 3.1", local: true },
   ];
+  const pickerProps = {
+    onSelect: () => {},
+    onToggleFavorite: () => {},
+    onConnectProvider: () => {},
+    onClose: () => {},
+    favorites: [] as string[],
+  };
+
   it("groups our models / cloud / local and marks readiness", () => {
     const { lastFrame } = render(
-      <ModelPicker
-        theme={theme}
-        entries={entries}
-        ready={(e) => e.provider !== "anthropic"}
-        current="termcoder/auto"
-        onSelect={() => {}}
-        onClose={() => {}}
-      />,
+      <ModelPicker theme={theme} entries={entries} ready={(e) => e.provider !== "anthropic"} current="termcoder/auto" {...pickerProps} />,
     );
     const f = lastFrame() ?? "";
     expect(f).toContain("termcoder AI");
@@ -289,10 +290,19 @@ describe("ModelPicker", () => {
     expect(f).toContain("○"); // anthropic needs a key
   });
 
+  it("pins favorites to the top", () => {
+    const { lastFrame } = render(
+      <ModelPicker theme={theme} entries={entries} ready={() => true} current="x" {...pickerProps} favorites={["ollama/llama3.1"]} />,
+    );
+    const f = lastFrame() ?? "";
+    expect(f).toContain("★ Favorites");
+    expect(f.indexOf("Favorites")).toBeLessThan(f.indexOf("termcoder AI"));
+  });
+
   it("filters as you type and selects on enter", async () => {
     const onSelect = vi.fn();
     const { stdin } = render(
-      <ModelPicker theme={theme} entries={entries} ready={() => true} current="x" onSelect={onSelect} onClose={() => {}} />,
+      <ModelPicker theme={theme} entries={entries} ready={() => true} current="x" {...pickerProps} onSelect={onSelect} />,
     );
     await tick();
     stdin.write("llama");

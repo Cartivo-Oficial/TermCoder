@@ -3,10 +3,10 @@ import { Box, Text } from "ink";
 import type { Theme } from "../theme";
 import { CodeBlock } from "./CodeBlock";
 
-/** Render inline `code`, **bold**, and [links](url) within a line of text. */
+/** Render inline `code`, **bold**, [links](url), and bare URLs within a line. */
 function renderInline(text: string, theme: Theme): ReactNode[] {
   const nodes: ReactNode[] = [];
-  const pattern = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
+  const pattern = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\)|https?:\/\/[^\s)]+)/g;
   let last = 0;
   let key = 0;
   let match: RegExpExecArray | null;
@@ -23,6 +23,13 @@ function renderInline(text: string, theme: Theme): ReactNode[] {
       nodes.push(
         <Text key={key++} color={theme.code}>
           {token.slice(1, -1)}
+        </Text>,
+      );
+    } else if (token.startsWith("http")) {
+      // Bare URL — underline it so it stands out (terminals make it clickable).
+      nodes.push(
+        <Text key={key++} color={theme.accent} underline>
+          {token}
         </Text>,
       );
     } else {

@@ -15,6 +15,8 @@ import {
   clearDraft,
   getModelCatalog,
   type ModelEntry,
+  loadFavorites,
+  toggleFavorite,
   PermissionManager,
   renderSessionHtml,
   Session,
@@ -37,7 +39,7 @@ import { ModelPicker } from "./components/ModelPicker";
 import { TrustPrompt } from "./components/TrustPrompt";
 import { Transcript, TranscriptItem } from "./components/Transcript";
 
-const VERSION = "0.1.3";
+const VERSION = "0.1.4";
 
 const AGENTS_TEMPLATE = `# Project instructions for termcoder
 
@@ -131,6 +133,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
   const [trusted, setTrusted] = useState(() => isTrusted(cwd));
   const [catalog, setCatalog] = useState<ModelEntry[]>([]);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [favorites, setFavorites] = useState<string[]>(() => loadFavorites());
   const [permRequest, setPermRequest] = useState<PermissionRequest | null>(null);
   const permResolve = useRef<((decision: PermissionDecision) => void) | null>(null);
   const aborted = useRef(false);
@@ -337,7 +340,16 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
 
     const localLive: ViewItem[] = [];
     let assistantIdx: number | null = null;
+    let thoughtShown = false;
     const sync = () => setLive([...localLive]);
+
+    // Note how long the model "thought" before its first visible output.
+    const markThought = () => {
+      if (thoughtShown) return;
+      thoughtShown = true;
+      const ms = Date.now() - turnStart;
+      localLive.push({ kind: "notice", text: `✻ Thought ${ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`}` });
+    };
 
     try {
       for await (const event of useSession.prompt(text, { signal: controller.signal })) {
@@ -349,6 +361,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           case "text-delta": {
             setStatus("Thinking…");
             if (assistantIdx === null) {
+              markThought();
               localLive.push({ kind: "assistant", text: event.text });
               assistantIdx = localLive.length - 1;
             } else {
@@ -360,6 +373,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
             break;
           }
           case "tool-call": {
+            markThought();
             assistantIdx = null;
             setStatus(toolStatus(event.name, event.title, event.detail));
             localLive.push({
@@ -719,7 +733,13 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           entries={catalog}
           ready={(e) => providerHasKey(e.provider)}
           current={session.record.model}
+          favorites={favorites}
           onSelect={selectModel}
+          onToggleFavorite={(id) => setFavorites(toggleFavorite(id))}
+          onConnectProvider={() => {
+            setModelPickerOpen(false);
+            handleCommand("/setup");
+          }}
           onClose={() => setModelPickerOpen(false)}
         />
       ) : (

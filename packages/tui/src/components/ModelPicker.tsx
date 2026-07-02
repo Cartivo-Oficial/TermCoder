@@ -9,15 +9,12 @@ interface ModelPickerProps {
   /** Whether the user can run this model now (has a key, or it's local/ours). */
   ready: (e: ModelEntry) => boolean;
   current: string;
+  favorites: string[];
   onSelect: (id: string) => void;
+  onToggleFavorite: (id: string) => void;
+  onConnectProvider: () => void;
   onClose: () => void;
 }
-
-const GROUPS: Array<{ label: string; match: (e: ModelEntry) => boolean }> = [
-  { label: "✦ termcoder AI — our models", match: (e) => e.provider === "termcoder" || e.provider === "termexplorer" },
-  { label: "☁ Cloud — needs an API key (/setup)", match: (e) => ["anthropic", "openai", "google"].includes(e.provider) },
-  { label: "▪ Local — runs on your machine (Ollama)", match: (e) => e.provider === "ollama" },
-];
 
 const MAX_VISIBLE = 12;
 const BAR_WIDTH = 60;
@@ -25,16 +22,35 @@ const BAR_WIDTH = 60;
 type Row = { header: string } | { entry: ModelEntry; itemIndex: number };
 
 /** An advanced, grouped, searchable model chooser (opened by `/model`). */
-export function ModelPicker({ theme, entries, ready, current, onSelect, onClose }: ModelPickerProps) {
+export function ModelPicker({
+  theme,
+  entries,
+  ready,
+  current,
+  favorites,
+  onSelect,
+  onToggleFavorite,
+  onConnectProvider,
+  onClose,
+}: ModelPickerProps) {
   const [query, setQuery] = useState("");
   const [sel, setSel] = useState(0);
 
   const q = query.trim().toLowerCase();
   const filtered = entries.filter((e) => !q || `${e.name} ${e.id}`.toLowerCase().includes(q));
+  const favSet = new Set(favorites);
+
+  // Favourites pinned first; every other model appears once in its category.
+  const sections: Array<{ label: string; match: (e: ModelEntry) => boolean }> = [
+    { label: "★ Favorites", match: (e) => favSet.has(e.id) },
+    { label: "✦ termcoder AI — our models", match: (e) => !favSet.has(e.id) && (e.provider === "termcoder" || e.provider === "termexplorer") },
+    { label: "☁ Cloud — needs an API key (/setup)", match: (e) => !favSet.has(e.id) && ["anthropic", "openai", "google"].includes(e.provider) },
+    { label: "▪ Local — runs on your machine (Ollama)", match: (e) => !favSet.has(e.id) && e.provider === "ollama" },
+  ];
 
   const rows: Row[] = [];
   const items: ModelEntry[] = [];
-  for (const g of GROUPS) {
+  for (const g of sections) {
     const es = filtered.filter(g.match);
     if (!es.length) continue;
     rows.push({ header: g.label });
@@ -52,6 +68,12 @@ export function ModelPicker({ theme, entries, ready, current, onSelect, onClose 
       if (chosen) onSelect(chosen.id);
       return;
     }
+    if (key.ctrl && input === "f") {
+      const chosen = items[selClamped];
+      if (chosen) onToggleFavorite(chosen.id);
+      return;
+    }
+    if (key.ctrl && input === "a") return onConnectProvider();
     if (key.upArrow) return setSel((s) => Math.max(0, Math.min(s, items.length - 1) - 1));
     if (key.downArrow) return setSel((s) => Math.min(items.length - 1, s + 1));
     if (key.backspace || key.delete) {
@@ -106,10 +128,11 @@ export function ModelPicker({ theme, entries, ready, current, onSelect, onClose 
           ]
             .filter(Boolean)
             .join(" · ");
+          const star = favSet.has(e.id) ? "★ " : "";
           if (active) {
             // Full-width accent bar on the selected row.
             const dot = ok ? "●" : "○";
-            const line = `❯ ${dot} ${e.name}${badges ? `   ${badges}` : ""}${e.id === current ? "  ✓" : ""}`;
+            const line = `❯ ${dot} ${star}${e.name}${badges ? `   ${badges}` : ""}${e.id === current ? "  ✓" : ""}`;
             return (
               <Text key={`i${i}`} backgroundColor={theme.accent} color="#0b0b0d" bold>
                 {` ${line}`.padEnd(BAR_WIDTH)}
@@ -120,6 +143,7 @@ export function ModelPicker({ theme, entries, ready, current, onSelect, onClose 
             <Text key={`i${i}`}>
               <Text color={theme.border}>{"  "}</Text>
               <Text color={ok ? theme.success : theme.running}>{ok ? "● " : "○ "}</Text>
+              {star ? <Text color={theme.running}>{star}</Text> : null}
               <Text color={theme.assistant}>{e.name}</Text>
               {badges ? <Text color={theme.muted}>{`   ${badges}`}</Text> : null}
               {e.id === current ? <Text color={theme.accent}>{"  ✓"}</Text> : null}
@@ -131,12 +155,18 @@ export function ModelPicker({ theme, entries, ready, current, onSelect, onClose 
         ) : null}
       </Box>
 
-      <Box marginTop={1}>
-        <Text color={theme.border}>↑↓ move · type to filter · enter select · esc cancel · </Text>
-        <Text color={theme.success}>●</Text>
-        <Text color={theme.border}> ready </Text>
-        <Text color={theme.running}>○</Text>
-        <Text color={theme.border}> needs a key</Text>
+      <Box marginTop={1} flexDirection="column">
+        <Text color={theme.border}>↑↓ move · enter select · esc cancel</Text>
+        <Text>
+          <Text color={theme.accent}>ctrl+f</Text>
+          <Text color={theme.border}> ★ favorite   </Text>
+          <Text color={theme.accent}>ctrl+a</Text>
+          <Text color={theme.border}> connect provider   </Text>
+          <Text color={theme.success}>●</Text>
+          <Text color={theme.border}> ready </Text>
+          <Text color={theme.running}>○</Text>
+          <Text color={theme.border}> needs a key</Text>
+        </Text>
       </Box>
     </Box>
   );

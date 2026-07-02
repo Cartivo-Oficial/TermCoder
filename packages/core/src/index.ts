@@ -73,6 +73,7 @@ export {
 
 export { isTrusted, trustFolder } from "./trust/trust";
 export { loadDraft, saveDraft, clearDraft } from "./draft/draft";
+export { loadFavorites, toggleFavorite } from "./favorites/favorites";
 
 export { CheckpointManager, checkpointDir } from "./checkpoint/checkpoint";
 
