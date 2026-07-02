@@ -34,7 +34,7 @@ import { PermissionModal } from "./components/PermissionModal";
 import { TrustPrompt } from "./components/TrustPrompt";
 import { Transcript, TranscriptItem } from "./components/Transcript";
 
-const VERSION = "0.1.0";
+const VERSION = "0.1.1";
 
 const AGENTS_TEMPLATE = `# Project instructions for termcoder
 
@@ -342,9 +342,14 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
             setTokensOut((t) => t + event.outputTokens);
             setLastCtx(event.inputTokens);
             break;
-          case "error":
+          case "error": {
             localLive.push({ kind: "error", text: event.error });
+            // Point key/quota errors at the built-in setup flow.
+            if (/api key|unauthor|401|403|invalid.*key|quota|rate.?limit|no .*credentials/i.test(event.error)) {
+              localLive.push({ kind: "notice", text: "→ Fix it with /setup (or /key <provider> <key>)." });
+            }
             break;
+          }
           case "done":
             break;
         }
