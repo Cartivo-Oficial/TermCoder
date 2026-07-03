@@ -291,7 +291,10 @@ term</pre>
 <span class="p">›</span> Windows   .exe
 <span class="p">›</span> macOS     .dmg
 <span class="p">›</span> Linux     .AppImage</pre>
-          <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn solid" href="https://github.com/Cartivo-Oficial/TermCoder/releases" target="_blank" rel="noopener">Windows</a><a class="btn" href="https://github.com/Cartivo-Oficial/TermCoder/releases" target="_blank" rel="noopener">macOS</a><a class="btn" href="https://github.com/Cartivo-Oficial/TermCoder/releases" target="_blank" rel="noopener">Linux</a></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <a class="btn solid" id="desktopDl" href="https://github.com/Cartivo-Oficial/TermCoder/releases/latest/download/TermCoder-Setup.exe">Download for Windows</a>
+            <a class="btn" href="download.html">Other systems →</a>
+          </div>
         </div>
       </div>
     </div>
@@ -340,6 +343,17 @@ term</pre>
       s.style.animationDelay = (Math.random() * 3.2) + 's';
       host.appendChild(s);
     }
+  })();
+  // Point the desktop button straight at the installer for the visitor's OS,
+  // so one click starts the download — no trip to GitHub.
+  (function () {
+    var el = document.getElementById('desktopDl');
+    if (!el) return;
+    var p = navigator.platform.toLowerCase() + ' ' + (navigator.userAgent || '').toLowerCase();
+    var R = 'https://github.com/Cartivo-Oficial/TermCoder/releases/latest/download/';
+    if (p.indexOf('mac') > -1) { el.href = R + 'TermCoder-arm64.dmg'; el.textContent = 'Download for macOS'; }
+    else if (p.indexOf('linux') > -1 || p.indexOf('x11') > -1) { el.href = R + 'TermCoder-x64.AppImage'; el.textContent = 'Download for Linux'; }
+    else { el.href = R + 'TermCoder-Setup.exe'; el.textContent = 'Download for Windows'; }
   })();
 </script>
 </body>
