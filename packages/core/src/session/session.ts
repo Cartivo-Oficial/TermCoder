@@ -215,9 +215,13 @@ function friendlyError(raw: string): string {
     s.includes("fetch failed") ||
     s.includes("enotfound") ||
     s.includes("econnrefused") ||
+    s.includes("connection refused") ||
+    s.includes("cannot connect") ||
+    s.includes("connect to api") ||
+    s.includes("connect error") ||
     s.includes("network")
   ) {
-    return "Network error — check your connection and try again.";
+    return "Couldn't reach the model. If you're using a local model, make sure Ollama is installed and running (https://ollama.com) and the model is pulled (e.g. `ollama pull llama3.1`). Otherwise connect a provider key in Settings → Providers (or run /setup) and pick a model.";
   }
   return raw;
 }

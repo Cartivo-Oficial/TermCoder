@@ -391,6 +391,8 @@ export function App() {
   const streamRef = useRef<MediaStream | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
+  // Set while tearing down so the socket's auto-reconnect doesn't fight unmount.
+  const stopReconnect = useRef(false);
   // Whether the next text-delta should append to the last (assistant) message.
   // Reset whenever a tool/error breaks the streaming run or a turn ends.
   const appendRef = useRef(false);
@@ -599,7 +601,10 @@ export function App() {
         setMessages([{ role: "error", text: t("app.serverUnreachable") }]);
       }
     })();
-    return () => wsRef.current?.close();
+    return () => {
+      stopReconnect.current = true;
+      wsRef.current?.close();
+    };
   }, []);
 
   useEffect(() => {
@@ -657,13 +662,41 @@ export function App() {
   }
 
   function connect(id: string) {
+    stopReconnect.current = false;
     wsRef.current?.close();
     appendRef.current = false;
+    openSocket(id);
+  }
+
+  /**
+   * Open the streaming socket for a session and keep it alive. If the socket
+   * drops (or never opened — e.g. the server wasn't quite ready on first launch)
+   * it reconnects itself, so the chat no longer needs an app restart to work.
+   */
+  function openSocket(id: string) {
     const ws = new WebSocket(`${wsBase}/sessions/${id}/stream`);
     wsRef.current = ws;
     ws.onopen = () => setConnected(true);
-    ws.onclose = () => setConnected(false);
     ws.onmessage = (ev) => onEvent(JSON.parse(ev.data) as StreamEvent);
+    ws.onerror = () => {
+      try {
+        ws.close();
+      } catch {
+        /* already closing */
+      }
+    };
+    ws.onclose = () => {
+      setConnected(false);
+      // Reconnect only if this is still the live socket for the current session
+      // and we aren't tearing down (a newer connect() replaces wsRef.current).
+      if (!stopReconnect.current && wsRef.current === ws && currentIdRef.current === id) {
+        setTimeout(() => {
+          if (!stopReconnect.current && wsRef.current === ws && currentIdRef.current === id) {
+            openSocket(id);
+          }
+        }, 500);
+      }
+    };
   }
 
   function setWorkingDir(dir: string) {
