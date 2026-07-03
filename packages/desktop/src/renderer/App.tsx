@@ -335,6 +335,7 @@ export function App() {
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("general");
   const [serverStatus, setServerStatus] = useState<ServerStatus | null>(null);
   const [autoApprove, setAutoApprove] = useState(() => localStorage.getItem("tc-auto") === "1");
+  const [autonomous, setAutonomous] = useState(false);
   const [defaultModel, setDefaultModel] = useState(() => localStorage.getItem("tc-model") || "");
   const [sendOnEnter, setSendOnEnter] = useState(() => localStorage.getItem("tc-enter") !== "0");
   const [expandTools, setExpandTools] = useState(() => localStorage.getItem("tc-expand") === "1");
@@ -1046,6 +1047,43 @@ export function App() {
       return;
     }
 
+    // ---- Autonomous ("background") mode status lines ----
+    if (e.type === "background-start") {
+      appendRef.current = false;
+      const v = e.verify ? `, verifying with \`${e.verify}\`` : " (no check found — single pass)";
+      setMessages((prev) => [...prev, { role: "assistant", text: `🤖 Autonomous mode — auto-approving changes${v}.` }]);
+      return;
+    }
+    if (e.type === "background-round") {
+      appendRef.current = false;
+      setMessages((prev) => [...prev, { role: "assistant", text: `▶ Round ${e.round}` }]);
+      return;
+    }
+    if (e.type === "background-verify") {
+      appendRef.current = false;
+      setMessages((prev) => [...prev, { role: "assistant", text: e.ok ? "✓ Check passed." : "✗ Check failed — fixing…" }]);
+      return;
+    }
+    if (e.type === "background-done") {
+      appendRef.current = false;
+      const msg =
+        e.status === "verified"
+          ? "✓ Done — the check passes."
+          : e.status === "done"
+            ? "✓ Done."
+            : e.status === "maxed"
+              ? `✗ Still failing after ${e.rounds} rounds — stopping so you can take a look.`
+              : e.status === "error"
+                ? "⛔ Stopped on an error."
+                : "⛔ Stopped.";
+      setMessages((prev) => [...prev, { role: "assistant", text: msg }]);
+      setBusy(false);
+      void refreshSessions();
+      void refreshGit();
+      refreshCheckpoint();
+      return;
+    }
+
     if (e.type === "text-delta") {
       // Live, animated token estimate while the model streams (the real usage
       // figure only arrives at the end of the turn).
@@ -1116,6 +1154,12 @@ export function App() {
     setLiveTokens(0);
     setMessages((prev) => [...prev, { role: "user", text, images: images.map((i) => i.dataUrl) }]);
     setBusy(true);
+    // Autonomous mode (no images): run to the goal, verify, and keep fixing.
+    if (autonomous && images.length === 0) {
+      wsRef.current?.send(JSON.stringify({ type: "background", goal: text }));
+      setPendingImages([]);
+      return;
+    }
     wsRef.current?.send(
       JSON.stringify({
         type: "prompt",
@@ -1748,6 +1792,14 @@ export function App() {
               }}
             >
               <button className="attach" title={t("composer.attach")} onClick={() => void attachFiles()}><IconPlus /></button>
+              <button
+                className="attach"
+                title={autonomous ? "Autonomous mode: ON — runs to the goal, verifies, and keeps fixing" : "Autonomous mode: OFF"}
+                onClick={() => setAutonomous((v) => !v)}
+                style={autonomous ? { color: "var(--accent)", fontSize: 16 } : { fontSize: 16, opacity: 0.6 }}
+              >
+                🤖
+              </button>
               <button
                 className={`attach mic ${recording ? "recording" : ""} ${transcribing ? "transcribing" : ""}`}
                 title={transcribing ? t("voice.transcribing") : recording ? t("voice.stop") : t("composer.mic")}

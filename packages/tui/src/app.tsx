@@ -34,6 +34,8 @@ import {
   recordReview,
   loadProgress,
   type Card,
+  runVerify,
+  detectVerifyCommand,
   PermissionManager,
   renderSessionHtml,
   Session,
@@ -58,7 +60,7 @@ import { TrustPrompt } from "./components/TrustPrompt";
 import { ReviewMode } from "./components/ReviewMode";
 import { Transcript, TranscriptItem } from "./components/Transcript";
 
-const VERSION = "0.3.0";
+const VERSION = "0.4.0";
 
 const AGENTS_TEMPLATE = `# Project instructions for termcoder
 
@@ -351,6 +353,51 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     permResolve.current = null;
   }
 
+  /**
+   * Autonomous mode: work toward a goal without stopping to ask, then run the
+   * project's check (tests/build). If it fails, feed the failure back and keep
+   * fixing — up to a round budget. Reuses runPrompt for the streaming turns.
+   */
+  async function runBackground(goal: string) {
+    const verify = detectVerifyCommand(cwd);
+    const maxRounds = 5;
+    const prevAuto = autoApprove;
+    setAutoApprove(true);
+    permission.setAutoApprove(true);
+    pushHistory({
+      kind: "notice",
+      text: `🤖 Autonomous mode — auto-approving changes${verify ? `, verifying with: ${verify}` : " (no check found; single pass)"}.`,
+    });
+    let instruction = goal;
+    try {
+      for (let round = 1; round <= maxRounds; round++) {
+        if (aborted.current) break;
+        if (round > 1) pushHistory({ kind: "notice", text: `▶ Round ${round} of ${maxRounds}` });
+        await runPrompt(instruction);
+        if (aborted.current) {
+          pushHistory({ kind: "notice", text: "⛔ Autonomous run stopped." });
+          break;
+        }
+        if (!verify) break;
+        pushHistory({ kind: "notice", text: `🔎 Running check: ${verify}…` });
+        const { ok, output } = await runVerify(verify, cwd);
+        if (ok) {
+          pushHistory({ kind: "notice", text: "✓ Check passed — goal reached." });
+          break;
+        }
+        if (round === maxRounds) {
+          pushHistory({ kind: "notice", text: `✗ Still failing after ${maxRounds} rounds — stopping so you can take a look.` });
+          break;
+        }
+        pushHistory({ kind: "notice", text: "✗ Check failed — fixing…" });
+        instruction = `The check \`${verify}\` failed:\n\n${output.slice(-3000)}\n\nFind the cause and fix it so the command passes. Make only the changes needed.`;
+      }
+    } finally {
+      setAutoApprove(prevAuto);
+      permission.setAutoApprove(prevAuto);
+    }
+  }
+
   async function runPrompt(text: string, useSession: Session = session) {
     aborted.current = false;
     const controller = new AbortController();
@@ -634,6 +681,22 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         } catch (err) {
           pushHistory({ kind: "error", text: `Could not write transcript: ${String(err)}` });
         }
+        break;
+      }
+      case "background": {
+        if (!arg) {
+          pushHistory({
+            kind: "notice",
+            text: "Usage: /background <goal>\nRuns autonomously (auto-approving) and keeps fixing until the project's tests/build pass.",
+          });
+          break;
+        }
+        if (busy) {
+          pushHistory({ kind: "notice", text: "Busy — wait for the current turn to finish, then try again." });
+          break;
+        }
+        lastPrompt.current = arg;
+        void runBackground(arg);
         break;
       }
       case "flashcards": {

@@ -24,6 +24,7 @@ export const TUI_COMMANDS: TuiCommand[] = [
   { name: "tools", desc: "List available tools" },
   { name: "auto", desc: "Toggle auto-approve (run tools without asking)" },
   { name: "retry", desc: "Re-run your last message" },
+  { name: "background", arg: "<goal>", desc: "Work autonomously until tests/build pass" },
   { name: "suggest", desc: "Suggest a next step (fills the composer)" },
   { name: "flashcards", arg: "<topic>", desc: "Make study flashcards about a topic" },
   { name: "decks", desc: "List your flashcard decks (and what's due)" },

@@ -50,6 +50,19 @@ of silently breaking later. The desktop **Settings** panel writes the same globa
 - **Unlimited & private:** install [Ollama](https://ollama.com), `ollama pull llama3.1`,
   then `/model ollama/llama3.1` — runs locally, no key, no quota, ever.
 
+## Autonomous mode
+
+Hand termcoder a goal and let it work unattended: it auto-approves its changes, then runs
+the project's check (tests/build) and keeps fixing until the check passes or a round budget
+(5) runs out. The check is detected from the project — an npm `test`/`typecheck`/`build`
+script, `go build`, `cargo check`, or `pytest`.
+
+- **CLI:** `/background <goal>` — e.g. `/background add input validation and make the tests pass`.
+- **Desktop:** toggle the **🤖** button in the composer, then send your goal.
+
+It stops on your interrupt (esc / Stop), on an error, or once the check is green. Because it
+auto-approves, run it on work you can review afterward (checkpoints let you revert).
+
 ## Permissions
 
 Each mutating class — `bash`, `write`, `edit`, `mcp` — is `"ask"` (default), `"allow"`, or

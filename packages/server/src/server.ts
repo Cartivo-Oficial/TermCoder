@@ -43,6 +43,8 @@ import {
   loadProgress,
   reviewsToday,
   type Grade,
+  runAutonomous,
+  detectVerifyCommand,
   Session,
   SessionStore,
   ToolRegistry,
@@ -782,10 +784,44 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
     }
   }
 
+  // Autonomous mode: run to the goal without asking, then verify (tests/build)
+  // and keep fixing until it passes or the round budget runs out.
+  async function runBackground(goal: string): Promise<void> {
+    if (running) {
+      ws.send(JSON.stringify({ type: "error", error: "a prompt is already running" }));
+      return;
+    }
+    running = true;
+    controller = new AbortController();
+    const signal = controller.signal;
+    permission.setAutoApprove(true);
+    try {
+      const session = Session.resume({ ...ctx, registry, permission }, sessionId);
+      const verifyCommand = detectVerifyCommand(session.record.cwd);
+      ws.send(JSON.stringify({ type: "background-start", verify: verifyCommand ?? null }));
+      for await (const ae of runAutonomous({ session, goal, verifyCommand, signal })) {
+        if (ae.type === "session") ws.send(JSON.stringify(ae.event));
+        else if (ae.type === "round") ws.send(JSON.stringify({ type: "background-round", round: ae.round }));
+        else if (ae.type === "verify")
+          ws.send(JSON.stringify({ type: "background-verify", ok: ae.ok, output: ae.output.slice(-2000) }));
+        else if (ae.type === "finished")
+          ws.send(JSON.stringify({ type: "background-done", status: ae.status, rounds: ae.rounds }));
+      }
+      if (signal.aborted) ws.send(JSON.stringify({ type: "stopped" }));
+    } catch (err) {
+      ws.send(JSON.stringify({ type: "error", error: String(err) }));
+    } finally {
+      permission.setAutoApprove(false);
+      running = false;
+      controller = null;
+    }
+  }
+
   ws.on("message", (raw) => {
     let msg: {
       type?: string;
       text?: string;
+      goal?: string;
       id?: string;
       decision?: PermissionDecision;
       images?: Array<{ dataUrl: string; mediaType: string }>;
@@ -798,6 +834,8 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
     }
     if (msg.type === "prompt" && typeof msg.text === "string") {
       void runPrompt(msg.text, Array.isArray(msg.images) ? msg.images : undefined);
+    } else if (msg.type === "background" && typeof msg.goal === "string") {
+      void runBackground(msg.goal);
     } else if (msg.type === "stop") {
       // Abort any in-flight turn; also release a pending permission prompt.
       controller?.abort();

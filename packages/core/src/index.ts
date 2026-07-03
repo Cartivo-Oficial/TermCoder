@@ -79,6 +79,16 @@ export {
 export { generateFlashcards, parseCards } from "./study/generate";
 
 export {
+  runAutonomous,
+  runVerify,
+  detectVerifyCommand,
+  type AutonomousSession,
+  type AutonomousEvent,
+  type AutonomousStatus,
+  type RunAutonomousOptions,
+} from "./background/runner";
+
+export {
   CONNECTABLE_PROVIDERS,
   providerAuthMethods,
   type AuthMethod,
