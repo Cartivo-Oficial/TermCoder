@@ -5,7 +5,6 @@ import type { TuiCommand } from "../commands";
 import { CommandMenu } from "./CommandMenu";
 import { MentionMenu } from "./MentionMenu";
 import { MultilineInput, type MenuControl } from "./MultilineInput";
-import { StatusBar } from "./StatusBar";
 
 interface ComposerProps {
   theme: Theme;
@@ -23,19 +22,12 @@ interface ComposerProps {
   mentionMenu?: string[];
   menuSelected?: number;
   menuControl?: MenuControl;
-  // Status bar meta.
   model: string;
   agent: string;
   cwd: string;
-  tokens: number;
-  lastCtx?: number;
-  ctxPct?: number;
-  autoApprove: boolean;
-  version?: string;
-  ready?: boolean;
 }
 
-/** Bottom UI: dropdowns, the multi-line prompt (or busy line), and status bar. */
+/** The input area: dropdowns, the multi-line prompt (or busy line), mode + hints. */
 export function Composer(props: ComposerProps) {
   const { theme, value, onChange, onSubmit, busy, disabled, status, elapsed } = props;
   const showCommands = !busy && (props.commandMenu?.length ?? 0) > 0;
@@ -105,16 +97,6 @@ export function Composer(props: ComposerProps) {
           )}
         </Box>
       </Box>
-
-      <StatusBar
-        theme={theme}
-        cwd={props.cwd}
-        tokens={props.tokens}
-        lastCtx={props.lastCtx}
-        ctxPct={props.ctxPct}
-        autoApprove={props.autoApprove}
-        version={props.version}
-      />
     </Box>
   );
 }

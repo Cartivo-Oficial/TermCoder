@@ -1,7 +1,7 @@
 import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Box, Static, Text, useApp, useInput } from "ink";
+import { Box, Static, Text, useApp, useInput, useStdout } from "ink";
 import {
   createSubagentTool,
   discoverAgents,
@@ -37,10 +37,11 @@ import { Hero } from "./components/Hero";
 import { Composer } from "./components/Composer";
 import { PermissionModal } from "./components/PermissionModal";
 import { ModelPicker } from "./components/ModelPicker";
+import { StatusBar } from "./components/StatusBar";
 import { TrustPrompt } from "./components/TrustPrompt";
 import { Transcript, TranscriptItem } from "./components/Transcript";
 
-const VERSION = "0.1.5";
+const VERSION = "0.1.6";
 
 const AGENTS_TEMPLATE = `# Project instructions for termcoder
 
@@ -115,6 +116,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
   const [themeName, setThemeName] = useState(config.theme);
   const theme = getTheme(themeName);
   const { exit } = useApp();
+  const termRows = useStdout().stdout?.rows;
 
   const [history, setHistory] = useState<ViewItem[]>(() =>
     (notices ?? []).map((text): ViewItem => ({ kind: "notice", text })),
@@ -719,69 +721,91 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     );
   }
 
+  const setupHint =
+    conversationEmpty && !modelReady ? (
+      <Box justifyContent="center" marginTop={1}>
+        <Text color={theme.running}>{"⚠  No model set — type "}</Text>
+        <Text color={theme.accent} bold>
+          /setup
+        </Text>
+        <Text color={theme.running}>{" to get started (free options)"}</Text>
+      </Box>
+    ) : null;
+
+  const inputArea = permRequest ? (
+    <PermissionModal theme={theme} request={permRequest} onDecision={onDecision} />
+  ) : modelPickerOpen ? (
+    <ModelPicker
+      theme={theme}
+      entries={catalog}
+      ready={(e) => providerHasKey(e.provider)}
+      current={session.record.model}
+      favorites={favorites}
+      onSelect={selectModel}
+      onToggleFavorite={(id) => setFavorites(toggleFavorite(id))}
+      onConnectProvider={() => {
+        setModelPickerOpen(false);
+        handleCommand("/setup");
+      }}
+      onClose={() => setModelPickerOpen(false)}
+    />
+  ) : (
+    <Composer
+      theme={theme}
+      value={input}
+      onChange={handleChange}
+      onSubmit={onSubmit}
+      busy={busy}
+      disabled={busy}
+      status={status}
+      elapsed={elapsed}
+      onHistory={onHistory}
+      commandMenu={commandMatches}
+      mentionMenu={mentionMatches}
+      menuSelected={menuSelClamped}
+      menuControl={menuControl}
+      model={session.record.model}
+      agent={session.record.agent ?? session.record.mode ?? "build"}
+      cwd={cwd}
+    />
+  );
+
+  const footer = (
+    <StatusBar
+      theme={theme}
+      cwd={cwd}
+      tokens={tokens}
+      lastCtx={lastCtx}
+      ctxPct={ctxPct}
+      autoApprove={autoApprove}
+      version={VERSION}
+    />
+  );
+
+  // MiMo-style layout: on a fresh home the logo + composer are centred and the
+  // footer is pinned to the very bottom; once chatting, the transcript scrolls
+  // and the composer sits just above the footer.
   return (
-    <Box flexDirection="column" key={`${session.record.id}:${clearEpoch}`}>
+    <Box flexDirection="column" minHeight={termRows} key={`${session.record.id}:${clearEpoch}`}>
       <Static items={history}>
         {(item, index) => <TranscriptItem key={index} theme={theme} item={item} />}
       </Static>
 
-      {conversationEmpty ? <Hero theme={theme} /> : null}
-
-      {conversationEmpty && !modelReady ? (
-        <Box justifyContent="center" marginBottom={1}>
-          <Text color={theme.running}>{"⚠  No model set — type "}</Text>
-          <Text color={theme.accent} bold>
-            /setup
-          </Text>
-          <Text color={theme.running}>{" to get started (free options)"}</Text>
+      {conversationEmpty ? (
+        <Box flexGrow={1} flexDirection="column" justifyContent="center">
+          <Hero theme={theme} />
+          {setupHint}
+          {inputArea}
         </Box>
-      ) : null}
-
-      {live.length > 0 ? <Transcript theme={theme} items={live} /> : null}
-
-      {permRequest ? (
-        <PermissionModal theme={theme} request={permRequest} onDecision={onDecision} />
-      ) : modelPickerOpen ? (
-        <ModelPicker
-          theme={theme}
-          entries={catalog}
-          ready={(e) => providerHasKey(e.provider)}
-          current={session.record.model}
-          favorites={favorites}
-          onSelect={selectModel}
-          onToggleFavorite={(id) => setFavorites(toggleFavorite(id))}
-          onConnectProvider={() => {
-            setModelPickerOpen(false);
-            handleCommand("/setup");
-          }}
-          onClose={() => setModelPickerOpen(false)}
-        />
       ) : (
-        <Composer
-          theme={theme}
-          value={input}
-          onChange={handleChange}
-          onSubmit={onSubmit}
-          busy={busy}
-          disabled={busy}
-          status={status}
-          elapsed={elapsed}
-          onHistory={onHistory}
-          commandMenu={commandMatches}
-          mentionMenu={mentionMatches}
-          menuSelected={menuSelClamped}
-          menuControl={menuControl}
-          model={session.record.model}
-          agent={session.record.agent ?? session.record.mode ?? "build"}
-          cwd={cwd}
-          tokens={tokens}
-          lastCtx={lastCtx}
-          ctxPct={ctxPct}
-          autoApprove={autoApprove}
-          version={VERSION}
-          ready={modelReady}
-        />
+        <>
+          {live.length > 0 ? <Transcript theme={theme} items={live} /> : null}
+          <Box flexGrow={1} />
+          {inputArea}
+        </>
       )}
+
+      {footer}
     </Box>
   );
 }
