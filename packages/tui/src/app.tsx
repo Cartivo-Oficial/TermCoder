@@ -26,6 +26,14 @@ import {
   installPack,
   readPack,
   syncAll,
+  dueCards,
+  gradeCard,
+  deckSummaries,
+  addCards,
+  generateFlashcards,
+  recordReview,
+  loadProgress,
+  type Card,
   PermissionManager,
   renderSessionHtml,
   Session,
@@ -47,6 +55,7 @@ import { PermissionModal } from "./components/PermissionModal";
 import { ModelPicker } from "./components/ModelPicker";
 import { StatusBar } from "./components/StatusBar";
 import { TrustPrompt } from "./components/TrustPrompt";
+import { ReviewMode } from "./components/ReviewMode";
 import { Transcript, TranscriptItem } from "./components/Transcript";
 
 const VERSION = "0.2.0";
@@ -144,6 +153,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
   const [trusted, setTrusted] = useState(() => isTrusted(cwd));
   const [catalog, setCatalog] = useState<ModelEntry[]>([]);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [review, setReview] = useState<{ deck: string; cards: Card[] } | null>(null);
   const [favorites, setFavorites] = useState<string[]>(() => loadFavorites());
   const [permRequest, setPermRequest] = useState<PermissionRequest | null>(null);
   const permResolve = useRef<((decision: PermissionDecision) => void) | null>(null);
@@ -287,9 +297,9 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     if (key.escape && busy) {
       aborted.current = true;
       abortController.current?.abort();
-    } else if (key.tab && key.shift && !busy && !permRequest && !modelPickerOpen) {
+    } else if (key.tab && key.shift && !busy && !permRequest && !modelPickerOpen && !review) {
       cycleMode();
-    } else if (key.ctrl && _input === "p" && !busy && !permRequest && !modelPickerOpen) {
+    } else if (key.ctrl && _input === "p" && !busy && !permRequest && !modelPickerOpen && !review) {
       // Command palette: open the "/" menu.
       setInput("/");
       setMenuSel(0);
@@ -626,6 +636,65 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         }
         break;
       }
+      case "flashcards": {
+        if (!arg) {
+          pushHistory({ kind: "notice", text: "Usage: /flashcards <topic>   (e.g. /flashcards the water cycle)" });
+          break;
+        }
+        const deck = arg.length > 40 ? arg.slice(0, 40) : arg;
+        pushHistory({ kind: "notice", text: `Writing flashcards about “${arg}”…` });
+        generateFlashcards({ topic: arg, config })
+          .then((cards) => {
+            if (!cards.length) {
+              pushHistory({
+                kind: "error",
+                text: "The free model didn't return usable cards — try again, or connect a key (/key google …) for faster, more reliable generation.",
+              });
+              return;
+            }
+            addCards(deck, cards);
+            pushHistory({
+              kind: "notice",
+              text: `✓ Added ${cards.length} cards to “${deck}”. Study them with:  /review ${deck}`,
+            });
+          })
+          .catch(() =>
+            pushHistory({
+              kind: "error",
+              text: "Couldn't reach the model to write cards (the free service can be busy). Try again in a moment, or connect a key with /key google …",
+            }),
+          );
+        break;
+      }
+      case "decks": {
+        const decks = deckSummaries();
+        if (!decks.length) {
+          pushHistory({ kind: "notice", text: "No decks yet. Make some with:  /flashcards <topic>" });
+          break;
+        }
+        const p = loadProgress();
+        const lines = decks.map((d) => `  ${d.name.padEnd(24)} ${d.due} due / ${d.total} cards`);
+        pushHistory({
+          kind: "notice",
+          text: `Decks (streak: ${p.streak} 🔥):\n${lines.join("\n")}\n\nReview with:  /review [deck]`,
+        });
+        break;
+      }
+      case "review": {
+        const decks = deckSummaries();
+        if (!decks.length) {
+          pushHistory({ kind: "notice", text: "No decks yet. Make some with:  /flashcards <topic>" });
+          break;
+        }
+        const deckName = arg || (decks.find((d) => d.due > 0) ?? decks[0]!).name;
+        const cards = dueCards(deckName);
+        if (!cards.length) {
+          pushHistory({ kind: "notice", text: `Nothing due in “${deckName}”. 🎉  (/decks to see all)` });
+          break;
+        }
+        setReview({ deck: deckName, cards });
+        break;
+      }
       case "login": {
         if (!arg) {
           pushHistory({
@@ -885,6 +954,31 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     !busy &&
     live.length === 0 &&
     !history.some((h) => h.kind === "user" || h.kind === "assistant");
+
+  // Flashcard review takes over the screen until you finish or press esc.
+  if (review) {
+    return (
+      <ReviewMode
+        theme={theme}
+        deck={review.deck}
+        cards={review.cards}
+        onGrade={(id, grade) => {
+          gradeCard(review.deck, id, grade as 0 | 1 | 2 | 3 | 4 | 5);
+          recordReview();
+        }}
+        onExit={(reviewed) => {
+          setReview(null);
+          const streak = loadProgress().streak;
+          pushHistory({
+            kind: "notice",
+            text: reviewed
+              ? `Reviewed ${reviewed} card${reviewed === 1 ? "" : "s"}. Streak: ${streak} 🔥`
+              : "Review stopped.",
+          });
+        }}
+      />
+    );
+  }
 
   // Gate the whole interface behind the trust decision — the "do you trust this
   // folder?" question appears on its own, before the splash and composer.

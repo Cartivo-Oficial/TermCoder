@@ -17,6 +17,7 @@ import { MultilineInput } from "./MultilineInput";
 import { Markdown } from "./Markdown";
 import { DiffView } from "./DiffView";
 import { ModelPicker } from "./ModelPicker";
+import { ReviewMode } from "./ReviewMode";
 import { matchCommands } from "../commands";
 import { matchFiles } from "../files";
 import { wordLines, starfield, makeStars, renderStars } from "../logo";
@@ -381,5 +382,37 @@ describe("MultilineInput", () => {
     const frame = lastFrame() ?? "";
     expect(frame).toContain("a");
     expect(frame).toContain("b");
+  });
+});
+
+describe("ReviewMode", () => {
+  const theme = getTheme("mono");
+  const card = { id: "c1", front: "Capital of France?", back: "Paris", ease: 2.5, interval: 0, reps: 0, due: 0, createdAt: 0 };
+
+  it("shows the front and hides the back until revealed", async () => {
+    const { stdin, lastFrame } = render(
+      <ReviewMode theme={theme} deck="geo" cards={[card]} onGrade={() => {}} onExit={() => {}} />,
+    );
+    await tick();
+    expect(lastFrame()).toContain("Capital of France?");
+    expect(lastFrame()).not.toContain("Paris");
+    stdin.write("\r"); // enter → reveal
+    await tick();
+    expect(lastFrame()).toContain("Paris");
+  });
+
+  it("grades a revealed card and exits after the last one", async () => {
+    const onGrade = vi.fn();
+    const onExit = vi.fn();
+    const { stdin } = render(
+      <ReviewMode theme={theme} deck="geo" cards={[card]} onGrade={onGrade} onExit={onExit} />,
+    );
+    await tick();
+    stdin.write("\r"); // reveal
+    await tick();
+    stdin.write("5"); // grade
+    await tick();
+    expect(onGrade).toHaveBeenCalledWith("c1", 5);
+    expect(onExit).toHaveBeenCalledWith(1);
   });
 });

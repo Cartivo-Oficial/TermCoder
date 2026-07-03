@@ -55,6 +55,30 @@ export {
 export { configDir, configFile } from "./util/paths";
 
 export {
+  loadDecks,
+  saveDecks,
+  addCards,
+  dueCards,
+  gradeCard,
+  schedule,
+  newCard,
+  deckSummaries,
+  type Card,
+  type Deck,
+  type DeckMap,
+  type Grade,
+} from "./study/decks";
+
+export {
+  loadProgress,
+  recordReview,
+  reviewsToday,
+  type Progress,
+} from "./study/progress";
+
+export { generateFlashcards, parseCards } from "./study/generate";
+
+export {
   CONNECTABLE_PROVIDERS,
   providerAuthMethods,
   type AuthMethod,

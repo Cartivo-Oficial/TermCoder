@@ -17,8 +17,8 @@ import type { GitHubClient } from "../github/github";
 const SYNC_DESCRIPTION = "termcoder:sync — private synced settings";
 const META_FILE = "sync.json";
 
-/** Stores synced by default. Phase 2 appends "decks" and "progress". */
-export const DEFAULT_SYNC_STORES = ["favorites", "drafts"] as const;
+/** Stores synced by default (favorites, drafts, and study decks/progress). */
+export const DEFAULT_SYNC_STORES = ["favorites", "drafts", "decks", "progress"] as const;
 
 interface SyncMeta {
   gistId?: string;
