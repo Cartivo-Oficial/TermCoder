@@ -36,6 +36,26 @@ termexplorer shows the **reasoning and worked steps**, points out mistakes kindl
 encourages you to try things yourself — so you understand the material and can do your own
 best work. It's a tutor, not an answer machine.
 
+## Flashcards & spaced repetition
+
+termexplorer can turn any topic into flashcards and quiz you on them over time using
+spaced repetition (the SM-2 algorithm), so you review each card right before you'd
+forget it. Decks and your streak sync across devices via GitHub (`/sync`).
+
+In the CLI:
+
+- `/flashcards <topic>` — write a deck of cards about a topic (or paste your notes).
+- `/decks` — list your decks, how many are due, and your day streak.
+- `/review [deck]` — study the due cards: read the front, press enter to reveal the
+  answer, then rate how well you knew it (0 = blackout … 5 = easy).
+
+In the desktop app, click **📚 Study** (top-right of the chat) for the same with buttons:
+generate a deck, see what's due, and review.
+
+> Generating cards uses the model; on the free model it can be slow or busy — try again,
+> or connect a free Gemini key (`/key google …`) for fast, reliable generation. Reviewing
+> existing cards is fully local and always works.
+
 ## Share it with friends
 
 Anyone can install termcoder (see the main [README](../README.md)) and switch to the

@@ -12,6 +12,7 @@ import { KEYBIND_ACTIONS, comboFor, matchCombo } from "./keybinds";
 import { IconTrash, IconStop, IconShare, IconCopy, IconEdit, IconMic, IconUndo } from "./Icons";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { ModelBrowser } from "./ModelBrowser";
+import { Study } from "./Study";
 import { CodeEditor } from "./CodeEditor";
 import { blobToWav, blobToBase64 } from "./audio";
 import {
@@ -330,6 +331,7 @@ export function App() {
   const [keybinds, setKeybinds] = useState<Record<string, string>>({});
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [studyOpen, setStudyOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("general");
   const [serverStatus, setServerStatus] = useState<ServerStatus | null>(null);
   const [autoApprove, setAutoApprove] = useState(() => localStorage.getItem("tc-auto") === "1");
@@ -1528,6 +1530,14 @@ export function App() {
             )}
             <span className={`dot ${connected ? "on" : "off"}`} title={connected ? t("chat.connected") : t("chat.connecting")} />
             <div className="ch-right">
+              <button
+                className="icon sm"
+                title="Study — flashcards"
+                onClick={() => setStudyOpen(true)}
+                style={{ fontSize: 15 }}
+              >
+                📚
+              </button>
               {tokens > 0 ? (
                 <span
                   className="ctx-meter"
@@ -1926,6 +1936,8 @@ export function App() {
       {browserOpen ? (
         <ModelBrowser port={port} current={model} onSelect={changeModel} onClose={() => setBrowserOpen(false)} />
       ) : null}
+
+      {studyOpen ? <Study port={port} onClose={() => setStudyOpen(false)} /> : null}
 
       {settingsOpen ? (
         <Settings

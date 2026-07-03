@@ -128,6 +128,31 @@ describe("server", () => {
     expect(res.status).toBe(400);
   });
 
+  it("serves the study overview and validates generation input", async () => {
+    const overview = (await (await fetch(`${base()}/study`)).json()) as {
+      decks: unknown[];
+      streak: number;
+    };
+    expect(Array.isArray(overview.decks)).toBe(true);
+    expect(typeof overview.streak).toBe("number");
+
+    const bad = await fetch(`${base()}/study/generate`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    expect(bad.status).toBe(400); // missing topic
+  });
+
+  it("lists connectable providers with their login methods", async () => {
+    const list = (await (await fetch(`${base()}/providers`)).json()) as Array<{
+      provider: string;
+      methods: Array<{ id: string; available: boolean }>;
+    }>;
+    const openai = list.find((p) => p.provider === "openai");
+    expect(openai?.methods.some((m) => m.id === "api-key" && m.available)).toBe(true);
+  });
+
   it("deletes a single session and 404s deleting a missing one", async () => {
     const record = store.create({ cwd: dir, model: "m" });
 

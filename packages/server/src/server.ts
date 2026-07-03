@@ -34,6 +34,15 @@ import {
   installPack,
   syncAll,
   CONNECTABLE_PROVIDERS,
+  deckSummaries,
+  dueCards,
+  gradeCard,
+  addCards,
+  generateFlashcards,
+  recordReview,
+  loadProgress,
+  reviewsToday,
+  type Grade,
   Session,
   SessionStore,
   ToolRegistry,
@@ -311,6 +320,45 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
           : hasKey(ctx.config, env, e.provider),
     }));
     return sendJson(res, 200, withConfigured);
+  }
+
+  // ---- Study (flashcards) ----
+  // Overview: every deck (with due counts) + the study streak.
+  if (req.method === "GET" && parts.length === 1 && parts[0] === "study") {
+    const p = loadProgress();
+    return sendJson(res, 200, { decks: deckSummaries(), streak: p.streak, reviewsToday: reviewsToday() });
+  }
+  // Cards due for review in a deck.
+  if (req.method === "GET" && parts.length === 2 && parts[0] === "study" && parts[1] === "due") {
+    const deck = url.searchParams.get("deck") ?? "";
+    return sendJson(res, 200, dueCards(deck));
+  }
+  // Grade a reviewed card (also records a review for the streak).
+  if (req.method === "POST" && parts.length === 2 && parts[0] === "study" && parts[1] === "grade") {
+    const body = await readJson(req);
+    const deck = typeof body.deck === "string" ? body.deck : "";
+    const cardId = typeof body.cardId === "string" ? body.cardId : "";
+    const grade = Math.max(0, Math.min(5, Number(body.grade) || 0)) as Grade;
+    const card = gradeCard(deck, cardId, grade);
+    if (card) recordReview();
+    return sendJson(res, 200, { ok: Boolean(card), card });
+  }
+  // Generate flashcards about a topic and add them to a deck.
+  if (req.method === "POST" && parts.length === 2 && parts[0] === "study" && parts[1] === "generate") {
+    const body = await readJson(req);
+    const topic = typeof body.topic === "string" ? body.topic.trim() : "";
+    if (!topic) return sendJson(res, 400, { error: "missing 'topic'" });
+    const deck = typeof body.deck === "string" && body.deck.trim() ? body.deck.trim() : topic.slice(0, 40);
+    try {
+      const cards = await generateFlashcards({ topic, config: ctx.config });
+      if (!cards.length) {
+        return sendJson(res, 502, { error: "The free model didn't return cards — try again, or connect a key." });
+      }
+      addCards(deck, cards);
+      return sendJson(res, 200, { deck, added: cards.length });
+    } catch {
+      return sendJson(res, 502, { error: "Couldn't reach the model (the free service can be busy). Try again." });
+    }
   }
 
   // Connectable providers + their login methods (for the "Connect" UI).
