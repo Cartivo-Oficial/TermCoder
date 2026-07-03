@@ -120,6 +120,7 @@ export {
   classifyTaskComplexity,
   transcribeAudio,
   completeCode,
+  suggestFollowup,
   type ResolveModelOptions,
   type TranscribeOptions,
   type CompleteCodeOptions,

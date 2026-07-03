@@ -59,6 +59,21 @@ export function ModelPicker({
       items.push(e);
     }
   }
+
+  // "+ Add model": typing a full "provider/model" id offers it as a custom pick.
+  const customId = query.trim();
+  if (/^[a-z0-9._-]+\/.+/i.test(customId) && !items.some((e) => e.id === customId)) {
+    const custom: ModelEntry = {
+      id: customId,
+      provider: customId.split("/")[0]!,
+      model: customId.split("/").slice(1).join("/"),
+      name: `Use "${customId}"`,
+    };
+    rows.push({ header: "＋ Add model" });
+    rows.push({ entry: custom, itemIndex: items.length });
+    items.push(custom);
+  }
+
   const selClamped = Math.max(0, Math.min(sel, items.length - 1));
 
   useInput((input, key) => {

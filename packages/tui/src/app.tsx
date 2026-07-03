@@ -17,6 +17,7 @@ import {
   type ModelEntry,
   loadFavorites,
   toggleFavorite,
+  suggestFollowup,
   PermissionManager,
   renderSessionHtml,
   Session,
@@ -39,7 +40,7 @@ import { ModelPicker } from "./components/ModelPicker";
 import { TrustPrompt } from "./components/TrustPrompt";
 import { Transcript, TranscriptItem } from "./components/Transcript";
 
-const VERSION = "0.1.4";
+const VERSION = "0.1.5";
 
 const AGENTS_TEMPLATE = `# Project instructions for termcoder
 
@@ -622,6 +623,19 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           text: `Tokens — input: ${tokensIn}, output: ${tokensOut}, total: ${tokensIn + tokensOut}`,
         });
         break;
+      case "suggest": {
+        const lastAssistant = [...history].reverse().find((h) => h.kind === "assistant");
+        if (!lastAssistant || lastAssistant.kind !== "assistant") {
+          pushHistory({ kind: "notice", text: "Ask something first — then /suggest proposes a next step." });
+          break;
+        }
+        pushHistory({ kind: "notice", text: "💡 thinking of a next step…" });
+        void suggestFollowup({ config, env: process.env, context: lastAssistant.text }).then((s) => {
+          if (s) setInput(s); // fill the composer with the suggestion (editable)
+          else pushHistory({ kind: "notice", text: "(no suggestion — needs a working model)" });
+        });
+        break;
+      }
       case "init": {
         const file = join(cwd, "AGENTS.md");
         if (existsSync(file)) {

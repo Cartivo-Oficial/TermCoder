@@ -156,6 +156,34 @@ export function resolveModel(
   }
 }
 
+export interface SuggestOptions extends ResolveModelOptions {
+  /** The recent exchange to base the suggestion on. */
+  context: string;
+  model?: string;
+}
+
+/**
+ * Suggest the single most useful next request the user might make, based on the
+ * latest exchange. On-demand (one cheap call) so it never runs unless asked.
+ * Best-effort — returns "" on any failure.
+ */
+export async function suggestFollowup(opts: SuggestOptions): Promise<string> {
+  try {
+    const model = resolveModel(opts.model ?? pickAutoModel(opts.config, opts.env), opts);
+    const { text } = await generateText({
+      model,
+      system:
+        "Given the exchange below, suggest the single most useful next request the user " +
+        "might make. Reply with ONLY that request as a short imperative (max 12 words), no " +
+        "quotes, no preamble.",
+      messages: [{ role: "user", content: opts.context.slice(0, 2000) }],
+    });
+    return text.trim().replace(/^["']|["']$/g, "").split("\n")[0]!.slice(0, 120);
+  } catch {
+    return "";
+  }
+}
+
 export interface TranscribeOptions extends ResolveModelOptions {
   /** Raw audio bytes (WAV/PCM recommended for broad provider support). */
   audio: Uint8Array;
