@@ -47,7 +47,7 @@ export function pruneMessagesForModel(
   const cutoff = toolIndices[toolIndices.length - keepRecent]!;
   return messages.map((m, i) => {
     if (m.role !== "tool" || i >= cutoff || !Array.isArray(m.content)) return m;
-    const content = (m.content as Array<Record<string, unknown>>).map((part) => {
+    const content = (m.content as unknown as Array<Record<string, unknown>>).map((part) => {
       if (part?.type === "tool-result" && isTextOutput(part.output)) {
         const len = part.output.value.length;
         if (len <= 160) return part;
@@ -59,6 +59,6 @@ export function pruneMessagesForModel(
       }
       return part;
     });
-    return { ...m, content } as ModelMessage;
+    return { ...m, content } as unknown as ModelMessage;
   });
 }
