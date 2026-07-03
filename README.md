@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/hero.svg" alt="TermCoder" width="820" />
+  <img src="assets/hero.png" alt="TermCoder" width="820" />
 </p>
 
 <h1 align="center">TermCoder</h1>
