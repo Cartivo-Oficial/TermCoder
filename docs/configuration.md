@@ -34,15 +34,21 @@ of silently breaking later. The desktop **Settings** panel writes the same globa
 
 - `model` — a provider-qualified id, `"provider/model"`, e.g. `"anthropic/claude-sonnet-4-6"`,
   `"google/gemini-2.0-flash"`, `"ollama/llama3.1"`.
-- `"termcoder/auto"` — a virtual model that routes to the best **configured** provider,
-  preferring free/local (google → anthropic → openai → ollama). Override the order with
+- **Works free with no API key.** Out of the box `termcoder/auto` and `termexplorer/auto`
+  use `pollinations/openai` — a free, keyless, community-hosted model (GPT-OSS 20B) that
+  supports chat *and* tool-calling. Nothing to install, no account. It's rate-limited at
+  peak and prompts go to that public service, so for heavy or private work connect a key
+  or a local model (below).
+- `"termcoder/auto"` — a virtual model that routes to the best **available** provider:
+  a configured key (google → anthropic → openai), then a locally-configured Ollama, then
+  the free keyless service as the universal fallback. Override with
   `termcoder.route: ["ollama/qwen2.5", "anthropic/claude-sonnet-4-6"]`.
 - `providers.<name>.apiKey` — falls back to the usual env vars (`ANTHROPIC_API_KEY`,
   `OPENAI_API_KEY`, `GEMINI_API_KEY`, …).
 - `providers.<name>.baseURL` — point an OpenAI-compatible provider (Groq, OpenRouter, a
   local server) at its endpoint.
-
-See the root README for a no-cost setup with Ollama or a free tier.
+- **Unlimited & private:** install [Ollama](https://ollama.com), `ollama pull llama3.1`,
+  then `/model ollama/llama3.1` — runs locally, no key, no quota, ever.
 
 ## Permissions
 

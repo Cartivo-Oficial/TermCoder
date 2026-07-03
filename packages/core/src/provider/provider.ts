@@ -15,7 +15,14 @@ const ENV_KEY: Record<string, string> = {
   google: "GOOGLE_GENERATIVE_AI_API_KEY",
 };
 
+/** Providers that never need an API key (local, or a free keyless service). */
+export const KEYLESS_PROVIDERS = new Set(["ollama", "pollinations"]);
+
+/** The free, keyless model everyone can use out of the box — no setup. */
+export const FREE_MODEL = "pollinations/openai";
+
 function providerHasKey(config: Config, env: NodeJS.ProcessEnv, provider: string): boolean {
+  if (KEYLESS_PROVIDERS.has(provider)) return true;
   if (config.providers[provider]?.apiKey) return true;
   if (provider === "anthropic") return Boolean(env.ANTHROPIC_API_KEY);
   if (provider === "openai") return Boolean(env.OPENAI_API_KEY);
@@ -50,6 +57,7 @@ const TIERS: Record<string, { fast: string; strong: string }> = {
   anthropic: { fast: "anthropic/claude-haiku-4-5-20251001", strong: "anthropic/claude-sonnet-4-6" },
   openai: { fast: "openai/gpt-4o-mini", strong: "openai/gpt-4o" },
   ollama: { fast: "ollama/llama3.1", strong: "ollama/llama3.1" },
+  pollinations: { fast: FREE_MODEL, strong: FREE_MODEL },
 };
 
 /**
@@ -69,11 +77,16 @@ export function pickAutoModel(
     // With two+ entries, treat [fast, strong, …]; pick by complexity.
     if (ids.length) return complexity === "complex" ? (ids[1] ?? ids[0]!) : ids[0]!;
   }
+  // Prefer a real key if the user set one (better quality + higher limits).
+  // Then a local Ollama if they opted into it. Otherwise the free, keyless
+  // service — so termcoder works with zero setup and never hits "no model".
+  const hasApiKey = (p: string) => Boolean(config.providers[p]?.apiKey) || Boolean(env[ENV_KEY[p] ?? ""]) || (p === "google" && Boolean(env.GEMINI_API_KEY));
   const provider =
-    (providerHasKey(config, env, "google") && "google") ||
-    (providerHasKey(config, env, "anthropic") && "anthropic") ||
-    (providerHasKey(config, env, "openai") && "openai") ||
-    "ollama"; // free + local fallback
+    (hasApiKey("google") && "google") ||
+    (hasApiKey("anthropic") && "anthropic") ||
+    (hasApiKey("openai") && "openai") ||
+    (config.providers.ollama && "ollama") || // only if explicitly configured
+    "pollinations"; // free, keyless — the universal zero-setup default
   const tier = TIERS[provider]!;
   return complexity === "complex" ? tier.strong : tier.fast;
 }
@@ -142,15 +155,25 @@ export function resolveModel(
       })(model);
 
     case "ollama":
-      // Local, free, no key. Ollama exposes an OpenAI-compatible API.
+      // Local, free, no key. Ollama exposes an OpenAI-compatible API. Use the
+      // Chat Completions API (.chat) — these servers don't implement the newer
+      // Responses API the SDK would otherwise default to.
       return createOpenAI({
         baseURL: cfg.baseURL ?? "http://localhost:11434/v1",
         apiKey: cfg.apiKey ?? "ollama",
-      })(model);
+      }).chat(model);
+
+    case "pollinations":
+      // Free, keyless, community-hosted OpenAI-compatible service. This is the
+      // zero-setup default so anyone can use termcoder without an API key.
+      return createOpenAI({
+        baseURL: cfg.baseURL ?? "https://text.pollinations.ai/openai",
+        apiKey: cfg.apiKey ?? "free",
+      }).chat(model);
 
     default:
       throw new Error(
-        `Unknown provider "${provider}". Supported: anthropic, openai, google, ollama ` +
+        `Unknown provider "${provider}". Supported: anthropic, openai, google, ollama, pollinations ` +
           `(or any OpenAI-compatible server via providers.openai.baseURL).`,
       );
   }

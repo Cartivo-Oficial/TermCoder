@@ -7,8 +7,8 @@ function baseConfig(): Config {
 }
 
 describe("pickAutoModel (termcoder/auto router)", () => {
-  it("falls back to local Ollama when no keys are configured", () => {
-    expect(pickAutoModel(baseConfig(), {})).toBe("ollama/llama3.1");
+  it("falls back to the free keyless model when no keys are configured", () => {
+    expect(pickAutoModel(baseConfig(), {})).toBe("pollinations/openai");
   });
 
   it("prefers Google's free tier when its key is present", () => {

@@ -102,6 +102,7 @@ const CORS = {
 };
 
 function hasKey(config: Config, env: NodeJS.ProcessEnv, provider: string): boolean {
+  if (provider === "ollama" || provider === "pollinations") return true; // keyless
   if (config.providers[provider]?.apiKey) return true;
   if (provider === "anthropic") return Boolean(env.ANTHROPIC_API_KEY);
   if (provider === "openai") return Boolean(env.OPENAI_API_KEY);
@@ -149,6 +150,7 @@ function providerStatus(ctx: Ctx): Array<{ name: string; configured: boolean }> 
     { name: "openai", configured: hasKey(ctx.config, env, "openai") },
     { name: "google", configured: hasKey(ctx.config, env, "google") },
     { name: "ollama", configured: true },
+    { name: "pollinations", configured: true },
   ];
 }
 

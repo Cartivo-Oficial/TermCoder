@@ -204,7 +204,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
   }, []);
 
   function providerHasKey(provider: string): boolean {
-    if (["ollama", "termcoder", "termexplorer"].includes(provider)) return true;
+    if (["ollama", "pollinations", "termcoder", "termexplorer"].includes(provider)) return true;
     if (config.providers[provider]?.apiKey) return true;
     if (provider === "anthropic") return Boolean(process.env.ANTHROPIC_API_KEY);
     if (provider === "openai") return Boolean(process.env.OPENAI_API_KEY);
@@ -465,11 +465,12 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         pushHistory({
           kind: "notice",
           text: [
-            "Set up a model — pick one (the first two are free):",
+            "You're already set — termcoder runs on a FREE model with no API key. Just start typing.",
             "",
+            "Want more power or higher limits? Optionally connect a model:",
             "  • Google Gemini (free tier): get a key at https://aistudio.google.com/apikey",
             "      then run:  /key google YOUR_KEY",
-            "  • Ollama (local, no key, no account): install from https://ollama.com,",
+            "  • Ollama (local, unlimited, no key): install from https://ollama.com,",
             "      run 'ollama pull llama3.1', then:  /model ollama/llama3.1",
             "  • Anthropic:  /key anthropic sk-ant-…       • OpenAI:  /key openai sk-…",
             "",
