@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 440" width="1120" height="440" role="img" aria-label="TermCoder — your terminal coding agent">
+  <defs>
+    <linearGradient id="gTerm" x1="155" y1="0" x2="500" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffb066"/>
+      <stop offset="1" stop-color="#ff6a2b"/>
+    </linearGradient>
+    <linearGradient id="gCoder" x1="530" y1="0" x2="965" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#eceef2"/>
+      <stop offset="1" stop-color="#9a9ba2"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="1119" height="439" rx="16" fill="#0b0b0c" stroke="#232327"/>
+  <text x="240" y="96" fill="#2f2f37" font-family="monospace" font-size="14">+</text>
+<text x="300" y="150" fill="#2f2f37" font-family="monospace" font-size="14">·</text>
+<text x="392" y="118" fill="#2f2f37" font-family="monospace" font-size="14">*</text>
+<text x="470" y="170" fill="#2f2f37" font-family="monospace" font-size="14">✦</text>
+<text x="150" y="140" fill="#2f2f37" font-family="monospace" font-size="14">·</text>
+<text x="820" y="96" fill="#2f2f37" font-family="monospace" font-size="14">·</text>
+<text x="884" y="150" fill="#2f2f37" font-family="monospace" font-size="14">+</text>
+<text x="700" y="112" fill="#2f2f37" font-family="monospace" font-size="14">✦</text>
+<text x="760" y="168" fill="#2f2f37" font-family="monospace" font-size="14">·</text>
+<text x="960" y="130" fill="#2f2f37" font-family="monospace" font-size="14">*</text>
+<text x="560" y="92" fill="#2f2f37" font-family="monospace" font-size="14">·</text>
+<text x="620" y="176" fill="#2f2f37" font-family="monospace" font-size="14">+</text>
+<text x="200" y="300" fill="#2f2f37" font-family="monospace" font-size="14">·</text>
+<text x="300" y="330" fill="#2f2f37" font-family="monospace" font-size="14">✦</text>
+<text x="420" y="316" fill="#2f2f37" font-family="monospace" font-size="14">·</text>
+<text x="500" y="346" fill="#2f2f37" font-family="monospace" font-size="14">+</text>
+<text x="640" y="320" fill="#2f2f37" font-family="monospace" font-size="14">·</text>
+<text x="720" y="348" fill="#2f2f37" font-family="monospace" font-size="14">*</text>
+<text x="820" y="312" fill="#2f2f37" font-family="monospace" font-size="14">·</text>
+<text x="900" y="336" fill="#2f2f37" font-family="monospace" font-size="14">✦</text>
+<text x="140" y="250" fill="#2f2f37" font-family="monospace" font-size="14">·</text>
+<text x="980" y="262" fill="#2f2f37" font-family="monospace" font-size="14">+</text>
+<text x="360" y="360" fill="#2f2f37" font-family="monospace" font-size="14">·</text>
+<text x="700" y="300" fill="#2f2f37" font-family="monospace" font-size="14">·</text>
+
+  <g>
+<rect x="155" y="118" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="170" y="118" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="185" y="118" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="200" y="118" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="215" y="118" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="245" y="118" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="260" y="118" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="275" y="118" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="290" y="118" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="305" y="118" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="335" y="118" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="350" y="118" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="365" y="118" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="380" y="118" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="425" y="118" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="485" y="118" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="185" y="133" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="245" y="133" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="335" y="133" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="395" y="133" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="425" y="133" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="440" y="133" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="470" y="133" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="485" y="133" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="185" y="148" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="245" y="148" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="260" y="148" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="275" y="148" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="290" y="148" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="335" y="148" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="350" y="148" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="365" y="148" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="380" y="148" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="425" y="148" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="455" y="148" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="485" y="148" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="185" y="163" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="245" y="163" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="335" y="163" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="380" y="163" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="425" y="163" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="485" y="163" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="185" y="178" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="245" y="178" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="260" y="178" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="275" y="178" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="290" y="178" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="305" y="178" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="335" y="178" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="395" y="178" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="425" y="178" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="485" y="178" width="15" height="15" fill="url(#gTerm)"/>
+<rect x="545" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="560" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="575" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="590" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="635" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="650" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="665" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="710" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="725" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="740" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="755" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="800" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="815" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="830" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="845" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="860" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="890" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="905" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="920" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="935" y="118" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="530" y="133" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="620" y="133" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="680" y="133" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="710" y="133" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="770" y="133" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="800" y="133" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="890" y="133" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="950" y="133" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="530" y="148" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="620" y="148" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="680" y="148" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="710" y="148" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="770" y="148" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="800" y="148" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="815" y="148" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="830" y="148" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="845" y="148" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="890" y="148" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="905" y="148" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="920" y="148" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="935" y="148" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="530" y="163" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="620" y="163" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="680" y="163" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="710" y="163" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="770" y="163" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="800" y="163" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="890" y="163" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="935" y="163" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="545" y="178" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="560" y="178" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="575" y="178" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="590" y="178" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="635" y="178" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="650" y="178" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="665" y="178" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="710" y="178" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="725" y="178" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="740" y="178" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="755" y="178" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="800" y="178" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="815" y="178" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="830" y="178" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="845" y="178" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="860" y="178" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="890" y="178" width="15" height="15" fill="url(#gCoder)"/>
+<rect x="950" y="178" width="15" height="15" fill="url(#gCoder)"/>
+  </g>
+
+  <text x="560" y="239" text-anchor="middle" fill="#9a9aa3" font-family="monospace" font-size="17" letter-spacing="1">your terminal coding agent</text>
+
+  <text x="560" y="269" text-anchor="middle" font-family="monospace" font-size="15">
+    <tspan fill="#ff7a45">/</tspan><tspan fill="#7d7d86"> commands</tspan><tspan fill="#3a3a42">     </tspan><tspan fill="#ff7a45">@</tspan><tspan fill="#7d7d86"> files</tspan><tspan fill="#3a3a42">     </tspan><tspan fill="#7aa2f7" font-weight="bold">shift+tab</tspan><tspan fill="#7d7d86"> mode</tspan>
+  </text>
+
+  <text x="34" y="414" fill="#7d7d86" font-family="monospace" font-size="14"><tspan fill="#7aa2f7" font-weight="bold">Build</tspan> · termcoder/auto</text>
+  <text x="1086" y="414" text-anchor="end" fill="#4a4a52" font-family="monospace" font-size="14">v0.1.7</text>
+</svg>
