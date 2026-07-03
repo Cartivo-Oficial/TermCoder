@@ -41,7 +41,7 @@ import { StatusBar } from "./components/StatusBar";
 import { TrustPrompt } from "./components/TrustPrompt";
 import { Transcript, TranscriptItem } from "./components/Transcript";
 
-const VERSION = "0.1.6";
+const VERSION = "0.1.7";
 
 const AGENTS_TEMPLATE = `# Project instructions for termcoder
 
@@ -782,29 +782,35 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     />
   );
 
-  // MiMo-style layout: on a fresh home the logo + composer are centred and the
-  // footer is pinned to the very bottom; once chatting, the transcript scrolls
-  // and the composer sits just above the footer.
-  return (
-    <Box flexDirection="column" minHeight={termRows} key={`${session.record.id}:${clearEpoch}`}>
-      <Static items={history}>
-        {(item, index) => <TranscriptItem key={index} theme={theme} item={item} />}
-      </Static>
-
-      {conversationEmpty ? (
+  // MiMo-style layout: on a fresh home the logo + composer are vertically
+  // centred (fill the terminal height) with the footer pinned to the bottom.
+  // Once chatting, content flows naturally — the composer sits right below the
+  // last message, not pushed to the bottom — so there's no awkward gap.
+  if (conversationEmpty) {
+    return (
+      <Box flexDirection="column" minHeight={termRows} key={`${session.record.id}:${clearEpoch}`}>
+        <Static items={history}>
+          {(item, index) => <TranscriptItem key={index} theme={theme} item={item} />}
+        </Static>
         <Box flexGrow={1} flexDirection="column" justifyContent="center">
           <Hero theme={theme} />
           {setupHint}
           {inputArea}
         </Box>
-      ) : (
-        <>
-          {live.length > 0 ? <Transcript theme={theme} items={live} /> : null}
-          <Box flexGrow={1} />
-          {inputArea}
-        </>
-      )}
+        {footer}
+      </Box>
+    );
+  }
 
+  return (
+    <Box flexDirection="column" key={`${session.record.id}:${clearEpoch}`}>
+      <Static items={history}>
+        {(item, index) => <TranscriptItem key={index} theme={theme} item={item} />}
+      </Static>
+
+      {live.length > 0 ? <Transcript theme={theme} items={live} /> : null}
+
+      {inputArea}
       {footer}
     </Box>
   );
