@@ -913,11 +913,12 @@ export function App() {
     notice(t("share.publishing"));
     try {
       const res = await fetch(`${httpBase}/sessions/${currentId}/gist`, { method: "POST" });
-      const data = (await res.json()) as { url?: string; error?: string };
-      if (data.url) {
-        void copyText(data.url);
+      const data = (await res.json()) as { url?: string; viewer?: string; error?: string };
+      const link = data.viewer ?? data.url;
+      if (link) {
+        void copyText(link); // a clean, in-browser viewer link (falls back to the gist)
         notice(t("share.gistDone"));
-        window.open(data.url, "_blank");
+        window.open(link, "_blank");
       } else {
         notice(data.error?.includes("token") ? t("share.needToken") : t("share.gistError", { e: data.error ?? "" }));
       }

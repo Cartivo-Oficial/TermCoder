@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" type="image/png" href="favicon.png" />
+<title>Session viewer — TermCoder</title>
+<meta name="description" content="Open a shared TermCoder session from a link — a read-only transcript, no install." />
+<style>
+  :root {
+    --bg: #0b0b0c; --panel: #0f0f11; --line: #232327;
+    --fg: #e7e7ea; --muted: #9a9aa3; --faint: #5c5c64; --accent: #ff7a45;
+    --mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 0 24px; }
+  .mono { font-family: var(--mono); }
+
+  .nav { border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20; background: rgba(11,11,12,.86); backdrop-filter: blur(8px); }
+  .nav-in { display: flex; align-items: center; height: 58px; gap: 26px; max-width: 940px; margin: 0 auto; padding: 0 24px; }
+  .brand { font-family: var(--mono); font-weight: 700; font-size: 16px; }
+  .brand .t { color: var(--accent); } .brand .c { color: var(--fg); }
+  .brand .mk { width: 18px; height: 18px; margin-right: 8px; vertical-align: -4px; }
+  .nav-links { display: flex; gap: 22px; margin-left: auto; font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .nav-links a:hover { color: var(--fg); }
+
+  .head { padding: 40px 0 8px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--faint); }
+  h1 { font-size: clamp(24px, 4vw, 34px); letter-spacing: -1px; margin: 10px 0 0; }
+  .sub { color: var(--muted); margin: 10px 0 0; }
+
+  .open-row { display: flex; gap: 10px; margin: 22px 0 6px; flex-wrap: wrap; }
+  .open-row input { flex: 1; min-width: 240px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    color: var(--fg); font-family: var(--mono); font-size: 14px; padding: 11px 13px; }
+  .open-row input:focus { outline: none; border-color: var(--accent); }
+  .btn { font-family: var(--mono); font-size: 14px; font-weight: 600; padding: 11px 18px; border-radius: 8px; border: 1px solid transparent;
+    background: var(--accent); color: #180a03; cursor: pointer; }
+  .btn:hover { filter: brightness(1.08); }
+  .note { font-family: var(--mono); font-size: 12.5px; color: var(--faint); margin-top: 8px; }
+
+  .status { font-family: var(--mono); font-size: 13.5px; margin: 26px 0; color: var(--muted); }
+  .status.err { color: #ff7a7a; }
+  .meta { font-family: var(--mono); font-size: 12.5px; color: var(--faint); margin: 20px 0 8px; }
+  .frame-wrap { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; margin-bottom: 60px; }
+  iframe.viewer { width: 100%; border: 0; display: block; min-height: 60vh; background: #fff; }
+
+  footer { border-top: 1px solid var(--line); padding: 34px 0; font-family: var(--mono); font-size: 13px; color: var(--faint); }
+  footer a { color: var(--muted); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (max-width: 640px) { .nav-links { display: none; } }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="index.html"><img class="mk" src="logo.png" alt="" /><span class="t">Term</span><span class="c">Coder</span></a>
+    <nav class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="features.html">Features</a>
+      <a href="download.html">Download</a>
+      <a href="docs.html">Docs</a>
+      <a href="https://github.com/Cartivo-Oficial/TermCoder" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="head">
+    <div class="eyebrow">Shared session</div>
+    <h1 id="title">Session viewer</h1>
+    <p class="sub" id="sub">Open a TermCoder session someone shared with you — a read-only transcript, right here in the browser.</p>
+
+    <div class="open-row">
+      <input id="ref" placeholder="Paste a gist link or id…" spellcheck="false" />
+      <button class="btn" id="openBtn">Open</button>
+    </div>
+    <p class="note">In termcoder, run <b class="mono">/publish</b> (or Share → Gist) to get a link. Secret gists open with the link — nothing is public.</p>
+  </div>
+
+  <div class="status" id="status"></div>
+  <div class="meta" id="meta" hidden></div>
+  <div class="frame-wrap" id="frameWrap" hidden>
+    <iframe class="viewer" id="frame" sandbox="allow-same-origin" title="Session transcript"></iframe>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span class="brand"><span class="t">Term</span><span class="c">Coder</span></span> · MIT ·
+    <a href="index.html">termcoder</a>
+  </div>
+</footer>
+
+<script>
+  var statusEl = document.getElementById("status");
+  var meta = document.getElementById("meta");
+  var frameWrap = document.getElementById("frameWrap");
+  var frame = document.getElementById("frame");
+  var refInput = document.getElementById("ref");
+
+  function setStatus(text, isErr) {
+    statusEl.textContent = text || "";
+    statusEl.className = "status" + (isErr ? " err" : "");
+  }
+
+  function parseGistId(ref) {
+    var m = ref.match(/gist\.github\.com\/(?:[^/]+\/)?([0-9a-fA-F]+)/);
+    if (m) return m[1];
+    return ref.trim().split(/[/?#]/).filter(Boolean).pop() || "";
+  }
+
+  function sizeFrame() {
+    try {
+      var doc = frame.contentWindow.document;
+      frame.style.height = Math.max(doc.body.scrollHeight + 24, window.innerHeight * 0.6) + "px";
+    } catch (e) { /* ignore */ }
+  }
+
+  async function open(ref) {
+    var id = parseGistId(ref);
+    if (!id) { setStatus("Paste a gist link or id above.", true); return; }
+    setStatus("Loading…");
+    meta.hidden = true; frameWrap.hidden = true;
+    try {
+      var res = await fetch("https://api.github.com/gists/" + id, { headers: { accept: "application/vnd.github+json" } });
+      if (!res.ok) {
+        setStatus(res.status === 404 ? "Couldn't find that session (check the link)." :
+          res.status === 403 ? "GitHub rate-limited this browser — try again in a minute." :
+          "Couldn't load that gist (" + res.status + ").", true);
+        return;
+      }
+      var gist = await res.json();
+      var file = gist.files && gist.files["termcoder-session.html"];
+      if (!file) { setStatus("That gist isn't a TermCoder session.", true); return; }
+      var html = file.content;
+      if (file.truncated && file.raw_url) html = await (await fetch(file.raw_url)).text();
+
+      document.getElementById("title").textContent = (gist.description || "Shared session").replace(/^termcoder session — /, "");
+      document.getElementById("sub").textContent = "Read-only transcript. Shared via GitHub gist.";
+      var when = gist.updated_at ? new Date(gist.updated_at).toLocaleString() : "";
+      meta.textContent = "Updated " + when + " · " + (gist.owner ? "by " + gist.owner.login : "anonymous");
+      meta.hidden = false;
+      frame.srcdoc = html;
+      frameWrap.hidden = false;
+      frame.addEventListener("load", sizeFrame, { once: true });
+      setStatus("");
+    } catch (e) {
+      setStatus("Something went wrong loading that session.", true);
+    }
+  }
+
+  document.getElementById("openBtn").addEventListener("click", function () { open(refInput.value); });
+  refInput.addEventListener("keydown", function (e) { if (e.key === "Enter") open(refInput.value); });
+  window.addEventListener("resize", sizeFrame);
+
+  // Auto-open from ?gist= or ?url=
+  var params = new URLSearchParams(location.search);
+  var initial = params.get("gist") || params.get("url");
+  if (initial) { refInput.value = initial; open(initial); }
+</script>
+</body>
+</html>

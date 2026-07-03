@@ -822,7 +822,9 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           .then((g) =>
             pushHistory({
               kind: "notice",
-              text: `✓ Published: ${g.html_url}\n  Import it elsewhere with:  /import ${g.html_url}`,
+              text:
+                `✓ Published. Share this link (opens in any browser):\n  https://cartivo-oficial.github.io/TermCoder/viewer.html?gist=${g.id}\n\n` +
+                `  Gist: ${g.html_url}\n  Import it elsewhere with:  /import ${g.html_url}`,
             }),
           )
           .catch((err) => pushHistory({ kind: "error", text: ghErr(err) }));

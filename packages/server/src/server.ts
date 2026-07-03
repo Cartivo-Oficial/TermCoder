@@ -635,7 +635,11 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
         public: body.public === true,
         files: sessionGistFiles(record),
       });
-      return { url: gist.html_url };
+      return {
+        url: gist.html_url,
+        id: gist.id,
+        viewer: `https://cartivo-oficial.github.io/TermCoder/viewer.html?gist=${gist.id}`,
+      };
     });
   }
 
