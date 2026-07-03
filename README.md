@@ -126,7 +126,7 @@ and study plans — in your language, no programming required. See
 React UI — the same engine as the CLI, with tabs, inline diffs, and a simplified study layout.
 
 Download an installer for your system from
-[**Releases**](https://github.com/TermCoder/TermCoder/releases): Windows (`.exe`),
+[**Releases**](https://github.com/Cartivo-Oficial/TermCoder/releases): Windows (`.exe`),
 macOS (`.dmg`), Linux (`.AppImage` / `.deb`). Build it yourself with:
 
 ```sh

@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: TermCoder/TermCoder@main          # or a pinned tag
+      - uses: Cartivo-Oficial/TermCoder@main          # or a pinned tag
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           model: termcoder/auto
