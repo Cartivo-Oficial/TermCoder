@@ -1,8 +1,9 @@
 {
   "name": "@termcoder/desktop",
-  "version": "0.0.0",
+  "version": "0.1.7",
   "description": "Desktop app for termcoder — Electron shell around the local server with a React UI.",
   "license": "MIT",
+  "author": "termcoder <eduardo.wankax@gmail.com>",
   "private": true,
   "main": "out/main/index.js",
   "scripts": {
