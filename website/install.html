@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="stylesheet" href="style.css" />
+<title>Install — TermCoder</title>
+<meta name="description" content="Install TermCoder in a minute: one npm command, run term in any folder, connect a model or run locally with Ollama, and ask your first task." />
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="index.html"><img class="mk" src="logo.png" alt="" /><span class="t">Term</span><span class="c">Coder</span></a>
+    <nav class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="features.html">Features</a>
+      <a href="study.html">Study</a>
+      <a href="install.html" class="on">Install</a>
+      <a href="download.html">Download</a>
+      <a href="docs.html">Docs</a>
+      <a href="https://github.com/EduardoxDev/TermCoder" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+    <a class="btn solid" href="#step1">Install now</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="head">
+    <div class="eyebrow">Install</div>
+    <h1>Up and running in a minute.</h1>
+    <p>The CLI installs from npm and works the same on Windows, macOS, and Linux. Prefer a window?
+      <a class="mono" style="color:var(--accent)" href="download.html">Download the desktop app →</a></p>
+  </div>
+
+  <section>
+    <div class="steps">
+      <div class="step" id="step1">
+        <div class="n">1</div>
+        <div>
+          <h3>Install from npm</h3>
+          <p>One command, on any system:</p>
+          <div class="cmd">
+            <span class="p">$</span>
+            <code id="cmd">npm install -g @termcoder/tui</code>
+            <button class="copy" onclick="copyCmd()" id="copyBtn">Copy</button>
+          </div>
+          <div class="tabs">
+            <button class="tab on" data-os="win">Windows</button>
+            <button class="tab" data-os="mac">macOS</button>
+            <button class="tab" data-os="linux">Linux</button>
+          </div>
+          <pre class="block" id="osBlock"><span class="c"># PowerShell or CMD</span>
+npm install <span class="p">-g</span> @termcoder/tui</pre>
+          <p class="req">Requires <b>Node.js 18 or newer</b>. Verify with <b>node --version</b>.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="n">2</div>
+        <div>
+          <h3>Run it in your project</h3>
+          <p>Open a terminal in any folder and type:</p>
+          <pre class="block">term</pre>
+          <p class="req">Two commands are installed — <b>term</b> and <b>termcoder</b> — they do the same thing.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="n">3</div>
+        <div>
+          <h3>Trust the folder</h3>
+          <p>On first open, TermCoder asks whether you trust the current folder before it reads or runs
+            anything in it. Answer once and it remembers per folder.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="n">4</div>
+        <div>
+          <h3>Connect a model</h3>
+          <p>Run <code class="mono">/setup</code> for a guided walkthrough, or set a key directly:</p>
+          <pre class="block"><span class="p">❯</span> /setup                         <span class="c"># guided — including a no-cost option</span>
+<span class="p">❯</span> /key anthropic sk-ant-...       <span class="c"># or set a key yourself</span></pre>
+          <p>No key? Install <a class="mono" style="color:var(--accent)" href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>,
+            pull a model, and pick it under "Local" in <code class="mono">/model</code>.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="n">5</div>
+        <div>
+          <h3>Ask your first task</h3>
+          <p>Describe what you want in plain language. TermCoder reads the code, proposes edits, and runs
+            commands — asking before anything that changes your machine.</p>
+          <pre class="block"><span class="p">❯</span> add input validation to the signup form and run the tests</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="cta">
+    <h2>That's it.</h2>
+    <p>Learn the commands, modes, and shortcuts in the docs — or grab the desktop app.</p>
+    <div class="row">
+      <a class="btn solid" href="docs.html">Read the docs</a>
+      <a class="btn" href="download.html">Download the app</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <div><span class="brand"><span class="t">Term</span><span class="c">Coder</span></span> &nbsp; MIT licensed</div>
+    <div>
+      <a href="docs.html">Docs</a> ·
+      <a href="https://www.npmjs.com/package/@termcoder/tui" target="_blank" rel="noopener">npm</a> ·
+      <a href="https://github.com/EduardoxDev/TermCoder" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  function copyCmd() {
+    var b = document.getElementById('copyBtn');
+    navigator.clipboard && navigator.clipboard.writeText('npm install -g @termcoder/tui').then(function () {
+      b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1400);
+    });
+  }
+  var blocks = {
+    win: '<span class="c"># PowerShell or CMD</span>\nnpm install <span class="p">-g</span> @termcoder/tui',
+    mac: '<span class="c"># Terminal</span>\nnpm install <span class="p">-g</span> @termcoder/tui',
+    linux: '<span class="c"># bash / zsh</span>\nnpm install <span class="p">-g</span> @termcoder/tui'
+  };
+  document.querySelectorAll('.tab').forEach(function (t) {
+    t.addEventListener('click', function () {
+      document.querySelectorAll('.tab').forEach(function (x) { x.classList.remove('on'); });
+      t.classList.add('on');
+      document.getElementById('osBlock').innerHTML = blocks[t.dataset.os];
+    });
+  });
+</script>
+</body>
+</html>

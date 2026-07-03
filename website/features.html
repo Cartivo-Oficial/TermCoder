@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="stylesheet" href="style.css" />
+<title>Features — TermCoder</title>
+<meta name="description" content="What TermCoder does: a terminal agent with real tools, any model or fully local, Build and Plan modes, self-reviewing termcoder/auto, sub-agents, skills, and a token-aware context." />
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="index.html"><img class="mk" src="logo.png" alt="" /><span class="t">Term</span><span class="c">Coder</span></a>
+    <nav class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="features.html" class="on">Features</a>
+      <a href="study.html">Study</a>
+      <a href="install.html">Install</a>
+      <a href="download.html">Download</a>
+      <a href="docs.html">Docs</a>
+      <a href="https://github.com/EduardoxDev/TermCoder" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+    <a class="btn solid" href="install.html">Get started</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="head">
+    <div class="eyebrow">Features</div>
+    <h1>A terminal agent with real tools.</h1>
+    <p>Everything the terminal-first crowd wants, wrapped in a keyboard-driven interface
+      that stays out of the way — and a study mode for everyone else.</p>
+  </div>
+
+  <section>
+    <div class="frow">
+      <div class="k">// terminal-first</div>
+      <div>
+        <h3>Built for the terminal</h3>
+        <p>Slash commands, @file mentions to pull code into context, a live model picker, multi-line input
+          with word-jump editing, and a trust prompt the first time you open a folder. Nothing leaves the keyboard.</p>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="k">// any model</div>
+      <div>
+        <h3>Any model, or fully local</h3>
+        <p>Bring Anthropic, OpenAI, or Google Gemini with your own key, or point it at a local model through
+          Ollama and run with no account and no data leaving your machine. Switch models mid-session with <code class="mono">/model</code>.</p>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="k">// modes</div>
+      <div>
+        <h3>Build and Plan modes</h3>
+        <p>Plan mode reads the code and proposes an approach without touching a single file; Build mode carries
+          the change out, asking permission before anything that writes or runs. Toggle with <code class="mono">shift+tab</code>.</p>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="k">// termcoder/auto</div>
+      <div>
+        <h3>A brain that reviews itself</h3>
+        <p>The default <code class="mono">termcoder/auto</code> routes each task by difficulty — a fast model for
+          simple edits, a stronger one for hard work — then reviews its own diff before finishing and fixes what it flags.</p>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="k">// specialists</div>
+      <div>
+        <h3>Sub-agents and skills</h3>
+        <p>Hand focused work to specialist sub-agents — reviewer, tester, debugger, architect — with the
+          <code class="mono">$</code> key. Reusable skill playbooks load on demand, so idle skills cost nothing.</p>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="k">// token economy</div>
+      <div>
+        <h3>Kind to your context</h3>
+        <p>Old tool output is elided from the model's context and long results are capped, so a long session
+          stops re-billing everything it has already read. A context meter shows you how full the window is.</p>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="k">// study mode</div>
+      <div>
+        <h3>A study companion inside</h3>
+        <p>Switch to the termexplorer model and the same tool becomes a patient tutor for schoolwork — explaining,
+          summarizing, and building flashcards. <a class="mono" style="color:var(--accent)" href="study.html">See study mode →</a></p>
+      </div>
+    </div>
+  </section>
+
+  <div class="cta">
+    <h2>Ready to try it?</h2>
+    <p>Install the CLI in one line, or download the desktop app.</p>
+    <div class="row">
+      <a class="btn solid" href="install.html">Install the CLI</a>
+      <a class="btn" href="download.html">Download the app</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <div><span class="brand"><span class="t">Term</span><span class="c">Coder</span></span> &nbsp; MIT licensed</div>
+    <div>
+      <a href="docs.html">Docs</a> ·
+      <a href="https://www.npmjs.com/package/@termcoder/tui" target="_blank" rel="noopener">npm</a> ·
+      <a href="https://github.com/EduardoxDev/TermCoder" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

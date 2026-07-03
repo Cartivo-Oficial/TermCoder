@@ -38,7 +38,7 @@
   .brand .t { color: var(--accent); } .brand .c { color: var(--fg); }
   .brand .mk { width: 18px; height: 18px; margin-right: 8px; vertical-align: -4px; }
   .nav-links { display: flex; gap: 22px; margin-left: auto; font-family: var(--mono); font-size: 13px; color: var(--muted); }
-  .nav-links a:hover { color: var(--fg); }
+  .nav-links a:hover, .nav-links a.on { color: var(--fg); }
   .btn { font-family: var(--mono); font-size: 13px; padding: 7px 14px; border: 1px solid var(--line);
     color: var(--fg); background: transparent; cursor: pointer; border-radius: 6px; display: inline-flex; align-items: center; gap: 7px; }
   .btn:hover { border-color: var(--muted); }
@@ -148,14 +148,15 @@
   <div class="wrap nav-in">
     <a class="brand" href="#"><img class="mk" src="logo.png" alt="" /><span class="t">Term</span><span class="c">Coder</span></a>
     <nav class="nav-links">
-      <a href="#features">Features</a>
-      <a href="#study">Study mode</a>
-      <a href="#install">Install</a>
+      <a href="index.html" class="on">Home</a>
+      <a href="features.html">Features</a>
+      <a href="study.html">Study</a>
+      <a href="install.html">Install</a>
       <a href="download.html">Download</a>
       <a href="docs.html">Docs</a>
-      <a href="https://github.com/EduardoxDev/termcoder" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/EduardoxDev/TermCoder" target="_blank" rel="noopener">GitHub</a>
     </nav>
-    <a class="btn solid" href="#install">Get started</a>
+    <a class="btn solid" href="install.html">Get started</a>
   </div>
 </header>
 
@@ -173,7 +174,7 @@
       <button class="copy" onclick="copyCmd()" id="copyBtn">Copy</button>
     </div>
     <div class="hero-cta">
-      <a class="btn solid" href="#install">Install the CLI</a>
+      <a class="btn solid" href="install.html">Install the CLI</a>
       <a class="btn" href="docs.html">Read the docs</a>
     </div>
     <p class="runline">Then type <b class="mono">term</b> in any folder. Runs locally with Ollama, or with your own provider key.</p>
@@ -290,7 +291,7 @@ term</pre>
 <span class="p">›</span> Windows   .exe
 <span class="p">›</span> macOS     .dmg
 <span class="p">›</span> Linux     .AppImage</pre>
-          <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn solid" href="https://github.com/EduardoxDev/termcoder/releases" target="_blank" rel="noopener">Windows</a><a class="btn" href="https://github.com/EduardoxDev/termcoder/releases" target="_blank" rel="noopener">macOS</a><a class="btn" href="https://github.com/EduardoxDev/termcoder/releases" target="_blank" rel="noopener">Linux</a></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn solid" href="https://github.com/EduardoxDev/TermCoder/releases" target="_blank" rel="noopener">Windows</a><a class="btn" href="https://github.com/EduardoxDev/TermCoder/releases" target="_blank" rel="noopener">macOS</a><a class="btn" href="https://github.com/EduardoxDev/TermCoder/releases" target="_blank" rel="noopener">Linux</a></div>
         </div>
       </div>
     </div>
@@ -303,7 +304,7 @@ term</pre>
     <div>
       <a href="docs.html">Docs</a> ·
       <a href="https://www.npmjs.com/package/@termcoder/tui" target="_blank" rel="noopener">npm</a> ·
-      <a href="https://github.com/EduardoxDev/termcoder" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/EduardoxDev/TermCoder" target="_blank" rel="noopener">GitHub</a>
     </div>
   </div>
 </footer>
