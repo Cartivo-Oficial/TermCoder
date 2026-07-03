@@ -1,13 +1,13 @@
-<p align="center">
-  <img src="assets/hero.png" alt="TermCoder" width="820" />
-</p>
-
 <h1 align="center">TermCoder</h1>
 
 <p align="center">
   <b>The open-source AI coding agent that lives in your terminal.</b><br/>
   Bring any model — Anthropic, OpenAI, or Gemini — or run it locally with Ollama.<br/>
   A study mode is built in.
+</p>
+
+<p align="center">
+  <img src="assets/hero.png" alt="TermCoder" width="820" />
 </p>
 
 <p align="center">
