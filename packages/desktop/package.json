@@ -15,6 +15,7 @@
     "build": "electron-vite build",
     "start": "electron-vite preview",
     "package": "electron-vite build && electron-builder",
+    "package:ci": "electron-vite build && electron-builder --publish never",
     "package:dir": "electron-vite build && electron-builder --dir",
     "typecheck": "tsc --noEmit"
   },

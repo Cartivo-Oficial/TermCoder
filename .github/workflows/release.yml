@@ -37,7 +37,7 @@ jobs:
       # purpose: electron-builder should only BUILD the installers — the upload to
       # the GitHub Release is handled by the softprops step below.
       - name: Package desktop app
-        run: pnpm --filter @termcoder/desktop package
+        run: pnpm --filter @termcoder/desktop package:ci
 
       - name: Upload installers as build artifacts
         uses: actions/upload-artifact@v4
