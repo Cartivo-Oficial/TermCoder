@@ -33,6 +33,7 @@ import {
   publishPack,
   installPack,
   syncAll,
+  CONNECTABLE_PROVIDERS,
   Session,
   SessionStore,
   ToolRegistry,
@@ -310,6 +311,16 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
           : hasKey(ctx.config, env, e.provider),
     }));
     return sendJson(res, 200, withConfigured);
+  }
+
+  // Connectable providers + their login methods (for the "Connect" UI).
+  if (req.method === "GET" && parts.length === 1 && parts[0] === "providers") {
+    const env = process.env;
+    return sendJson(
+      res,
+      200,
+      CONNECTABLE_PROVIDERS.map((p) => ({ ...p, configured: hasKey(ctx.config, env, p.provider) })),
+    );
   }
 
   // Inline editor autocomplete (Copilot-style ghost text).

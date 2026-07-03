@@ -26,6 +26,19 @@ interface MicDevice {
   label: string;
 }
 
+interface AuthMethodInfo {
+  id: string;
+  label: string;
+  available: boolean;
+  hint?: string;
+}
+interface ProviderAuthInfo {
+  provider: string;
+  label: string;
+  configured: boolean;
+  methods: AuthMethodInfo[];
+}
+
 export type SettingsTab =
   | "general"
   | "appearance"
@@ -200,6 +213,16 @@ export function Settings(p: Props) {
   const [cfg, setCfg] = useState<LiveConfig | null>(null);
   const [keyDrafts, setKeyDrafts] = useState<Record<string, string>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  // The "Connect <provider>" modal (OpenCode-style login-method picker).
+  const [connectFor, setConnectFor] = useState<string | null>(null);
+  const [providerAuth, setProviderAuth] = useState<ProviderAuthInfo[]>([]);
+
+  function loadProviderAuth() {
+    fetch(`${httpBase}/providers`)
+      .then((r) => r.json())
+      .then((d) => setProviderAuth(Array.isArray(d) ? (d as ProviderAuthInfo[]) : []))
+      .catch(() => {});
+  }
   const [githubDraft, setGithubDraft] = useState("");
   const [savingGithub, setSavingGithub] = useState(false);
   const [ghStatus, setGhStatus] = useState<string>("");
@@ -344,6 +367,7 @@ export function Settings(p: Props) {
 
   useEffect(() => {
     if (p.tab === "servers" || p.tab === "providers") p.refreshStatus();
+    if (p.tab === "providers") loadProviderAuth();
     if (p.tab === "permissions" || p.tab === "providers" || p.tab === "integrations" || p.tab === "files" || p.tab === "behavior") loadConfig();
     if (p.tab === "agents") loadAgents();
     if (p.tab === "skills") loadSkills();
@@ -872,32 +896,17 @@ export function Settings(p: Props) {
                             {configured ? t("badge.ready") : t("badge.notSet")}
                           </span>
                         </div>
-                        <div className="provider-key">
-                          <input
-                            type="password"
-                            className="settings-input"
-                            placeholder={cfg?.providers?.[name]?.hasKey ? "••••••••" : t("settings.apiKey")}
-                            value={draft}
-                            onChange={(e) => setKeyDrafts((d) => ({ ...d, [name]: e.target.value }))}
-                          />
-                          <button
-                            className="settings-btn"
-                            disabled={!draft.trim() || savingKey === name}
-                            onClick={async () => {
-                              setSavingKey(name);
-                              await patchConfig({ providers: { [name]: { apiKey: draft.trim() } } });
-                              setKeyDrafts((d) => ({ ...d, [name]: "" }));
-                              setSavingKey(null);
-                            }}
-                          >
-                            {savingKey === name ? t("settings.saving") : t("settings.save")}
-                          </button>
-                        </div>
                       </div>
+                      <button className="settings-btn" onClick={() => setConnectFor(name)}>
+                        {configured ? "Manage" : "Connect"}
+                      </button>
                     </div>
                   );
                 })}
-                <p className="hint">{t("settings.providers.hint")}</p>
+                <p className="hint">
+                  You don't need a provider — termcoder runs on a free model out of the box. Connect one for
+                  more power or higher limits.
+                </p>
               </>
             )}
 
@@ -1116,6 +1125,68 @@ export function Settings(p: Props) {
           </div>
         </div>
       </div>
+
+      {connectFor &&
+        (() => {
+          const pa = providerAuth.find((x) => x.provider === connectFor);
+          const methods = pa?.methods ?? [{ id: "api-key", label: "API key", available: true }];
+          const draft = keyDrafts[connectFor] ?? "";
+          return (
+            <div className="settings" style={{ zIndex: 60 }} onClick={() => setConnectFor(null)}>
+              <div
+                className="settings-card"
+                style={{ maxWidth: 440, width: "90%", minHeight: 0 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px 0" }}>
+                  <h3 style={{ margin: 0 }}>Connect {pa?.label ?? connectFor}</h3>
+                  <button className="settings-btn" onClick={() => setConnectFor(null)}>✕</button>
+                </div>
+                <div style={{ padding: "6px 20px 20px" }}>
+                  <p className="hint" style={{ marginTop: 6 }}>Choose how to sign in to {pa?.label ?? connectFor}.</p>
+                  {methods.map((m) => (
+                    <div key={m.id} style={{ borderTop: "1px solid var(--line)", padding: "12px 0" }}>
+                      <div className="srow-title">
+                        {m.label}
+                        {!m.available && (
+                          <span className="badge muted" style={{ marginLeft: 8 }}>coming soon</span>
+                        )}
+                      </div>
+                      {m.id === "api-key" && m.available ? (
+                        <div className="provider-key" style={{ marginTop: 8 }}>
+                          <input
+                            type="password"
+                            className="settings-input"
+                            placeholder={cfg?.providers?.[connectFor]?.hasKey ? "••••••••" : t("settings.apiKey")}
+                            value={draft}
+                            onChange={(e) => setKeyDrafts((d) => ({ ...d, [connectFor]: e.target.value }))}
+                          />
+                          <button
+                            className="settings-btn"
+                            disabled={!draft.trim() || savingKey === connectFor}
+                            onClick={async () => {
+                              setSavingKey(connectFor);
+                              await patchConfig({ providers: { [connectFor]: { apiKey: draft.trim() } } });
+                              setKeyDrafts((d) => ({ ...d, [connectFor]: "" }));
+                              setSavingKey(null);
+                              loadProviderAuth();
+                              p.refreshStatus();
+                              setConnectFor(null);
+                            }}
+                          >
+                            {savingKey === connectFor ? t("settings.saving") : t("settings.save")}
+                          </button>
+                        </div>
+                      ) : m.hint ? (
+                        <p className="hint" style={{ margin: "4px 0 0" }}>{m.hint}</p>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
     </div>
   );
 }

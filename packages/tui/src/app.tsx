@@ -18,6 +18,7 @@ import {
   loadFavorites,
   toggleFavorite,
   suggestFollowup,
+  CONNECTABLE_PROVIDERS,
   GitHubClient,
   sessionGistFiles,
   importSessionFromGist,
@@ -478,6 +479,35 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           ].join("\n"),
         });
         break;
+      case "connect": {
+        if (arg) {
+          const p = CONNECTABLE_PROVIDERS.find((x) => x.provider === arg);
+          if (!p) {
+            pushHistory({
+              kind: "notice",
+              text: `Unknown provider "${arg}". Try: ${CONNECTABLE_PROVIDERS.map((x) => x.provider).join(", ")}`,
+            });
+            break;
+          }
+          const lines = p.methods.map(
+            (m) => `  ${m.available ? "●" : "○"} ${m.label}${m.available ? "" : "  (coming soon)"}`,
+          );
+          pushHistory({
+            kind: "notice",
+            text: `Connect ${p.label}:\n${lines.join("\n")}\n\nUse the API key now:  /key ${arg} <your-key>\n(Subscription login — ChatGPT/Claude — is coming.)`,
+          });
+        } else {
+          const lines = CONNECTABLE_PROVIDERS.map((p) => {
+            const soon = p.methods.some((m) => !m.available) ? "  (+ subscription login soon)" : "";
+            return `  ${p.provider.padEnd(10)} ${p.label}${soon}`;
+          });
+          pushHistory({
+            kind: "notice",
+            text: `Connect a provider — /connect <name> for methods:\n${lines.join("\n")}\n\nYou don't need any of these — termcoder already runs on a free model.`,
+          });
+        }
+        break;
+      }
       case "key": {
         const [rawProv, ...rest] = arg.split(/\s+/);
         const provider = rawProv === "gemini" ? "google" : (rawProv ?? "");

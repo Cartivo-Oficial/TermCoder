@@ -55,6 +55,14 @@ export {
 export { configDir, configFile } from "./util/paths";
 
 export {
+  CONNECTABLE_PROVIDERS,
+  providerAuthMethods,
+  type AuthMethod,
+  type AuthMethodId,
+  type ProviderAuth,
+} from "./auth/auth";
+
+export {
   GitHubClient,
   GitHubError,
   gitHubToken,
