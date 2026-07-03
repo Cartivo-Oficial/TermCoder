@@ -33,11 +33,11 @@ jobs:
       # Build the workspace packages the desktop app depends on.
       - run: pnpm -r build
 
-      # Package the Electron app for the current runner's OS.
+      # Package the Electron app for the current runner's OS. No GH_TOKEN here on
+      # purpose: electron-builder should only BUILD the installers — the upload to
+      # the GitHub Release is handled by the softprops step below.
       - name: Package desktop app
         run: pnpm --filter @termcoder/desktop package
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload installers as build artifacts
         uses: actions/upload-artifact@v4

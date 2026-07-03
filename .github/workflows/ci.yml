@@ -20,8 +20,10 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Build first so each package's dist/*.d.ts exists — cross-package type
+      # imports (e.g. @termcoder/core in the server) resolve during typecheck.
+      - run: pnpm -r build
+
       - run: pnpm -r typecheck
 
       - run: pnpm test
-
-      - run: pnpm build

@@ -4,6 +4,10 @@
   "description": "Desktop app for termcoder — Electron shell around the local server with a React UI.",
   "license": "MIT",
   "author": "termcoder <eduardo.wankax@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Cartivo-Oficial/TermCoder.git"
+  },
   "private": true,
   "main": "out/main/index.js",
   "scripts": {
