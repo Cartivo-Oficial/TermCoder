@@ -1,0 +1,68 @@
+name: Release
+
+# Build the desktop app for Windows, macOS, and Linux and attach the installers
+# to the GitHub Release. Fires when you push a version tag (e.g. v0.1.7), or run
+# it by hand from the Actions tab.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Build the workspace packages the desktop app depends on.
+      - run: pnpm -r build
+
+      # Package the Electron app for the current runner's OS.
+      - name: Package desktop app
+        run: pnpm --filter @termcoder/desktop package
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload installers as build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: termcoder-${{ matrix.os }}
+          path: |
+            packages/desktop/release/*.exe
+            packages/desktop/release/*.dmg
+            packages/desktop/release/*.zip
+            packages/desktop/release/*.AppImage
+            packages/desktop/release/*.deb
+            packages/desktop/release/*.tar.gz
+          if-no-files-found: ignore
+
+      - name: Attach installers to the release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            packages/desktop/release/*.exe
+            packages/desktop/release/*.dmg
+            packages/desktop/release/*.zip
+            packages/desktop/release/*.AppImage
+            packages/desktop/release/*.deb
+            packages/desktop/release/*.tar.gz
+          fail_on_unmatched_files: false
