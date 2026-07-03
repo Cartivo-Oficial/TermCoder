@@ -352,7 +352,7 @@ term</pre>
     var p = navigator.platform.toLowerCase() + ' ' + (navigator.userAgent || '').toLowerCase();
     var R = 'https://github.com/Cartivo-Oficial/TermCoder/releases/latest/download/';
     if (p.indexOf('mac') > -1) { el.href = R + 'TermCoder-arm64.dmg'; el.textContent = 'Download for macOS'; }
-    else if (p.indexOf('linux') > -1 || p.indexOf('x11') > -1) { el.href = R + 'TermCoder-x64.AppImage'; el.textContent = 'Download for Linux'; }
+    else if (p.indexOf('linux') > -1 || p.indexOf('x11') > -1) { el.href = R + 'TermCoder-x86_64.AppImage'; el.textContent = 'Download for Linux'; }
     else { el.href = R + 'TermCoder-Setup.exe'; el.textContent = 'Download for Windows'; }
   })();
 </script>
