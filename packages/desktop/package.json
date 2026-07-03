@@ -17,6 +17,7 @@
   "build": {
     "appId": "ai.termcoder.app",
     "productName": "termcoder",
+    "artifactName": "TermCoder-${arch}.${ext}",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -42,9 +43,13 @@
       ]
     },
     "nsis": {
+      "artifactName": "TermCoder-Setup.${ext}",
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true
+    },
+    "portable": {
+      "artifactName": "TermCoder-Portable.${ext}"
     },
     "mac": {
       "icon": "build/icon.png",
