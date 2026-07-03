@@ -18,6 +18,13 @@ import {
   loadFavorites,
   toggleFavorite,
   suggestFollowup,
+  GitHubClient,
+  sessionGistFiles,
+  importSessionFromGist,
+  publishPack,
+  installPack,
+  readPack,
+  syncAll,
   PermissionManager,
   renderSessionHtml,
   Session,
@@ -41,7 +48,7 @@ import { StatusBar } from "./components/StatusBar";
 import { TrustPrompt } from "./components/TrustPrompt";
 import { Transcript, TranscriptItem } from "./components/Transcript";
 
-const VERSION = "0.1.7";
+const VERSION = "0.2.0";
 
 const AGENTS_TEMPLATE = `# Project instructions for termcoder
 
@@ -434,6 +441,19 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     }
   }
 
+  /** A GitHub client from the saved token, or null (with an error notice). */
+  function ghClient(): GitHubClient | null {
+    try {
+      return GitHubClient.fromConfig(config);
+    } catch (err) {
+      pushHistory({ kind: "error", text: err instanceof Error ? err.message : String(err) });
+      return null;
+    }
+  }
+  function ghErr(err: unknown): string {
+    return err instanceof Error ? err.message : String(err);
+  }
+
   function handleCommand(text: string) {
     const [cmd, ...rest] = text.slice(1).split(/\s+/);
     const arg = rest.join(" ").trim();
@@ -572,6 +592,139 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           pushHistory({ kind: "notice", text: `Saved transcript to ${file}` });
         } catch (err) {
           pushHistory({ kind: "error", text: `Could not write transcript: ${String(err)}` });
+        }
+        break;
+      }
+      case "login": {
+        if (!arg) {
+          pushHistory({
+            kind: "notice",
+            text: [
+              "Connect GitHub to sync settings, share sessions, and install packs.",
+              "  1. Create a token: https://github.com/settings/tokens/new  (scope: gist)",
+              "  2. Run:  /login <your-token>",
+            ].join("\n"),
+          });
+          break;
+        }
+        try {
+          saveConfig({ github: { token: arg } });
+          config.github = { ...config.github, token: arg };
+        } catch (err) {
+          pushHistory({ kind: "error", text: `Could not save the token: ${String(err)}` });
+          break;
+        }
+        pushHistory({ kind: "notice", text: "Connecting to GitHub…" });
+        new GitHubClient(arg)
+          .whoami()
+          .then((u) => pushHistory({ kind: "notice", text: `✓ Connected to GitHub as ${u.login}.` }))
+          .catch((err) =>
+            pushHistory({ kind: "error", text: `Token saved, but validation failed: ${ghErr(err)}` }),
+          );
+        break;
+      }
+      case "logout":
+        try {
+          saveConfig({ github: { token: "" } });
+          config.github = { ...config.github, token: "" };
+          pushHistory({ kind: "notice", text: "Disconnected GitHub." });
+        } catch (err) {
+          pushHistory({ kind: "error", text: String(err) });
+        }
+        break;
+      case "sync": {
+        const client = ghClient();
+        if (!client) break;
+        pushHistory({ kind: "notice", text: "Syncing favorites & drafts via GitHub…" });
+        syncAll(client)
+          .then(({ pulled, pushed }) =>
+            pushHistory({
+              kind: "notice",
+              text: `✓ Synced — pulled: ${pulled.join(", ") || "none"} · pushed: ${pushed.join(", ") || "none"}`,
+            }),
+          )
+          .catch((err) => pushHistory({ kind: "error", text: ghErr(err) }));
+        break;
+      }
+      case "publish": {
+        const client = ghClient();
+        if (!client) break;
+        pushHistory({ kind: "notice", text: "Publishing session as a private gist…" });
+        client
+          .createGist({
+            description: `termcoder session — ${session.record.title}`,
+            public: false,
+            files: sessionGistFiles(session.record),
+          })
+          .then((g) =>
+            pushHistory({
+              kind: "notice",
+              text: `✓ Published: ${g.html_url}\n  Import it elsewhere with:  /import ${g.html_url}`,
+            }),
+          )
+          .catch((err) => pushHistory({ kind: "error", text: ghErr(err) }));
+        break;
+      }
+      case "import": {
+        if (!arg) {
+          pushHistory({ kind: "notice", text: "Usage: /import <gist-id-or-url>" });
+          break;
+        }
+        const client = ghClient();
+        if (!client) break;
+        pushHistory({ kind: "notice", text: "Importing shared session…" });
+        importSessionFromGist(arg, client, store)
+          .then((record) => {
+            const resumed = Session.resume({ store, registry, config, permission }, record.id);
+            setSession(resumed);
+            setHistory([
+              { kind: "notice", text: `✓ Imported "${record.title}".` },
+              ...recordToItems(resumed.record),
+            ]);
+            setLive([]);
+            setClearEpoch((n) => n + 1);
+          })
+          .catch((err) => pushHistory({ kind: "error", text: ghErr(err) }));
+        break;
+      }
+      case "pack": {
+        const [sub, ...more] = arg.split(/\s+/).filter(Boolean);
+        if (sub === "list" || !sub) {
+          const items = readPack(join(cwd, ".termcoder"));
+          const text = items.length
+            ? items.map((i) => `  ${i.kind.padEnd(9)} ${i.filename}`).join("\n")
+            : "  (nothing to pack — add .termcoder/{agents,skills,commands}/*.md)";
+          pushHistory({ kind: "notice", text: `Pack contents (this project):\n${text}` });
+          break;
+        }
+        const client = ghClient();
+        if (!client) break;
+        if (sub === "publish") {
+          const name = more.join(" ").trim() || "my-termcoder-pack";
+          pushHistory({ kind: "notice", text: `Publishing pack "${name}"…` });
+          publishPack({ name }, join(cwd, ".termcoder"), client)
+            .then((url) =>
+              pushHistory({ kind: "notice", text: `✓ Pack published: ${url}\n  Install with:  /pack install ${url}` }),
+            )
+            .catch((err) => pushHistory({ kind: "error", text: ghErr(err) }));
+        } else if (sub === "install") {
+          const ref = more.find((m) => m !== "--global") ?? "";
+          if (!ref) {
+            pushHistory({ kind: "notice", text: "Usage: /pack install <gist|owner/repo> [--global]" });
+            break;
+          }
+          const target = more.includes("--global") ? "global" : "project";
+          pushHistory({ kind: "notice", text: `Installing pack from ${ref}…` });
+          installPack(ref, client, { target, cwd })
+            .then(({ manifest, written }) =>
+              pushHistory({
+                kind: "notice",
+                text: `✓ Installed "${manifest.name}" (${written.length} files) into ${target} .termcoder:\n  ${written.join("\n  ")}`,
+              }),
+            )
+            .catch((err) => pushHistory({ kind: "error", text: ghErr(err) }));
+        } else {
+          pushHistory({ kind: "notice", text: "Usage: /pack <publish [name] | install <ref> [--global] | list>" });
         }
         break;
       }

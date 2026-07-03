@@ -1,4 +1,7 @@
+import { randomUUID } from "node:crypto";
 import type { SessionRecord } from "../storage/storage";
+import { SessionStore } from "../storage/storage";
+import { GitHubClient, parseGistId } from "../github/github";
 
 /** A flattened, render-ready piece of the conversation. */
 export interface TranscriptSegment {
@@ -114,6 +117,42 @@ ${blocks}
 </body>
 </html>
 `;
+}
+
+/**
+ * The files that make up a shared-session gist: a human-readable Markdown and
+ * HTML transcript, plus the raw record JSON so it can be re-imported elsewhere.
+ */
+export function sessionGistFiles(record: SessionRecord): Record<string, { content: string }> {
+  return {
+    "termcoder-session.md": { content: renderSessionMarkdown(record) },
+    "termcoder-session.html": { content: renderSessionHtml(record) },
+    "termcoder-session.json": { content: JSON.stringify(record, null, 2) },
+  };
+}
+
+/**
+ * Import a session shared as a gist (by id or URL) into the local store. The
+ * imported record gets a fresh id and an "(imported)" title so it never
+ * clobbers an existing session.
+ */
+export async function importSessionFromGist(
+  ref: string,
+  client: GitHubClient,
+  store: SessionStore,
+): Promise<SessionRecord> {
+  const gist = await client.getGist(parseGistId(ref));
+  const raw = await client.gistFileContent(gist, "termcoder-session.json");
+  if (!raw) {
+    throw new Error("That gist has no termcoder-session.json — was it shared by termcoder?");
+  }
+  const record = JSON.parse(raw) as SessionRecord;
+  record.id = randomUUID();
+  if (!record.title?.startsWith("(imported)")) {
+    record.title = `(imported) ${record.title ?? "session"}`;
+  }
+  store.save(record);
+  return record;
 }
 
 /** Render a session as a Markdown transcript. */

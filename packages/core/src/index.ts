@@ -47,8 +47,44 @@ export {
   renderSessionHtml,
   renderSessionMarkdown,
   transcriptSegments,
+  sessionGistFiles,
+  importSessionFromGist,
   type TranscriptSegment,
 } from "./share/share";
+
+export { configDir, configFile } from "./util/paths";
+
+export {
+  GitHubClient,
+  GitHubError,
+  gitHubToken,
+  parseGistId,
+  type Gist,
+  type GistFile,
+  type GitHubUser,
+} from "./github/github";
+
+export {
+  pushSync,
+  pullSync,
+  syncAll,
+  isSyncConfigured,
+  DEFAULT_SYNC_STORES,
+  type SyncEnvelope,
+} from "./sync/sync";
+
+export {
+  publishPack,
+  fetchPack,
+  installPack,
+  writePack,
+  readPack,
+  PACK_KINDS,
+  type Pack,
+  type PackItem,
+  type PackKind,
+  type PackManifest,
+} from "./pack/pack";
 
 export { createSubagentTool, type SubagentDeps } from "./agent/subagent";
 

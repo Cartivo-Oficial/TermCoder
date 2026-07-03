@@ -202,3 +202,24 @@ Each is documented with examples in the root [README](../README.md). Tools dropp
 Used to publish a session transcript as a secret Gist (`POST /sessions/:id/gist`). A
 classic token with the `gist` scope is enough; it's stored locally and the server only
 ever exposes whether a token exists, never its value. Falls back to `GITHUB_TOKEN`.
+
+### GitHub as a backend — sync, share, and packs
+
+With a token connected, termcoder uses GitHub (no server of ours) for three things:
+
+- **Sync** — your favorites and unsent drafts mirror to one **private** gist, so they
+  follow you across machines. Conflict policy is last-write-wins by timestamp; secrets
+  (API keys in `config.json`) never sync.
+  - CLI: `/sync` · Server: `POST /sync/push`, `POST /sync/pull`
+- **Share & import sessions** — publish a session as a gist (Markdown + HTML + a raw
+  `session.json`) and re-open it anywhere.
+  - CLI: `/publish` then `/import <gist>` · Server: `POST /sessions/:id/gist`, `POST /sessions/import`
+- **Packs** — bundle a project's `.termcoder/{agents,skills,commands}` into a gist so a
+  classmate can install your whole setup in one step. Install from a gist or a public
+  `owner/repo`.
+  - CLI: `/pack publish`, `/pack install <ref> [--global]`, `/pack list` · Server: `POST /packs`
+
+Connect a token with `/login <token>` (create one at
+<https://github.com/settings/tokens/new> with the `gist` scope), check it with the
+authenticated handle, and disconnect with `/logout`. In the desktop app, use
+Settings → Integrations → GitHub (**Test connection** and **Packs**).

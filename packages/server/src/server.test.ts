@@ -95,6 +95,39 @@ describe("server", () => {
     expect(res.status).toBe(404);
   });
 
+  it("GitHub-backed routes report a missing token instead of crashing", async () => {
+    // No token configured (env: {}), so each should 401 with a clear message.
+    const who = await fetch(`${base()}/github`);
+    expect(who.status).toBe(401);
+    expect(((await who.json()) as { error: string }).error).toMatch(/token/i);
+
+    const imp = await fetch(`${base()}/sessions/import`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ref: "abc123" }),
+    });
+    expect(imp.status).toBe(401);
+
+    const push = await fetch(`${base()}/sync/push`, { method: "POST" });
+    expect(push.status).toBe(401);
+
+    const pack = await fetch(`${base()}/packs`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "install", ref: "abc123" }),
+    });
+    expect(pack.status).toBe(401);
+  });
+
+  it("import without a ref is a 400 (bad request), not a 401", async () => {
+    const res = await fetch(`${base()}/sessions/import`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    expect(res.status).toBe(400);
+  });
+
   it("deletes a single session and 404s deleting a missing one", async () => {
     const record = store.create({ cwd: dir, model: "m" });
 

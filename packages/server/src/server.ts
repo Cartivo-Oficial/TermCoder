@@ -26,6 +26,13 @@ import {
   PermissionManager,
   renderSessionHtml,
   renderSessionMarkdown,
+  sessionGistFiles,
+  importSessionFromGist,
+  GitHubClient,
+  GitHubError,
+  publishPack,
+  installPack,
+  syncAll,
   Session,
   SessionStore,
   ToolRegistry,
@@ -189,6 +196,30 @@ function readJson(req: IncomingMessage): Promise<Record<string, unknown>> {
 /** A permission manager used only for resource calls that never prompt. */
 function inertPermission(config: Config): PermissionManager {
   return new PermissionManager(config.permission, async () => "deny");
+}
+
+/**
+ * Build a GitHub client from config and run a call, turning a missing token or
+ * a GitHub API error into the right JSON status instead of a 500.
+ */
+async function withGitHub(
+  res: ServerResponse,
+  ctx: Ctx,
+  fn: (client: GitHubClient) => Promise<unknown>,
+): Promise<void> {
+  let client: GitHubClient;
+  try {
+    client = GitHubClient.fromConfig(ctx.config);
+  } catch (err) {
+    const status = err instanceof GitHubError ? err.status : 400;
+    return sendJson(res, status, { error: err instanceof Error ? err.message : String(err) });
+  }
+  try {
+    return sendJson(res, 200, await fn(client));
+  } catch (err) {
+    const status = err instanceof GitHubError ? err.status : 400;
+    return sendJson(res, status, { error: err instanceof Error ? err.message : String(err) });
+  }
 }
 
 async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): Promise<void> {
@@ -533,33 +564,71 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
   if (req.method === "POST" && parts.length === 3 && parts[0] === "sessions" && parts[2] === "gist") {
     const id = parts[1]!;
     if (!ctx.store.exists(id)) return sendJson(res, 404, { error: "session not found" });
-    const token = ctx.config.github?.token || process.env.GITHUB_TOKEN;
-    if (!token) return sendJson(res, 400, { error: "no GitHub token — add one in Settings" });
+    const body = await readJson(req);
     const record = ctx.store.load(id);
-    try {
-      const gh = await fetch("https://api.github.com/gists", {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${token}`,
-          accept: "application/vnd.github+json",
-          "content-type": "application/json",
-          "user-agent": "termcoder",
-        },
-        body: JSON.stringify({
-          description: `termcoder session — ${record.title}`,
-          public: false,
-          files: { "termcoder-session.md": { content: renderSessionMarkdown(record) } },
-        }),
+    return withGitHub(res, ctx, async (client) => {
+      const gist = await client.createGist({
+        description: `termcoder session — ${record.title}`,
+        public: body.public === true,
+        files: sessionGistFiles(record),
       });
-      if (!gh.ok) {
-        const detail = await gh.text();
-        return sendJson(res, 400, { error: `GitHub API ${gh.status}: ${detail.slice(0, 200)}` });
+      return { url: gist.html_url };
+    });
+  }
+
+  // Who is the configured GitHub token? (validates the token.)
+  if (req.method === "GET" && parts.length === 1 && parts[0] === "github") {
+    return withGitHub(res, ctx, async (client) => ({ user: await client.whoami() }));
+  }
+
+  // Import a session shared as a gist (by id or URL) into the local store.
+  if (req.method === "POST" && parts.length === 2 && parts[0] === "sessions" && parts[1] === "import") {
+    const body = await readJson(req);
+    const ref = typeof body.ref === "string" ? body.ref : "";
+    if (!ref) return sendJson(res, 400, { error: "missing 'ref' (a gist id or URL)" });
+    return withGitHub(res, ctx, async (client) => {
+      const record = await importSessionFromGist(ref, client, ctx.store);
+      return record;
+    });
+  }
+
+  // Publish or install a pack of custom agents/skills/commands.
+  if (req.method === "POST" && parts.length === 1 && parts[0] === "packs") {
+    const body = await readJson(req);
+    const action = body.action;
+    return withGitHub(res, ctx, async (client) => {
+      if (action === "publish") {
+        const cwd = typeof body.cwd === "string" ? body.cwd : ctx.cwd;
+        const manifest = {
+          name: typeof body.name === "string" ? body.name : "pack",
+          description: typeof body.description === "string" ? body.description : undefined,
+          author: typeof body.author === "string" ? body.author : undefined,
+        };
+        const url = await publishPack(manifest, join(cwd, ".termcoder"), client, { public: body.public === true });
+        return { url };
       }
-      const gist = (await gh.json()) as { html_url?: string };
-      return sendJson(res, 200, { url: gist.html_url });
-    } catch (err) {
-      return sendJson(res, 400, { error: String(err instanceof Error ? err.message : err) });
-    }
+      if (action === "install") {
+        const ref = typeof body.ref === "string" ? body.ref : "";
+        if (!ref) throw new GitHubError(400, "missing 'ref'");
+        const target = body.target === "global" ? "global" : "project";
+        const cwd = typeof body.cwd === "string" ? body.cwd : ctx.cwd;
+        return await installPack(ref, client, { target, cwd });
+      }
+      throw new GitHubError(400, "unknown pack action (expected publish|install)");
+    });
+  }
+
+  // Push/pull/sync per-user stores (favorites, drafts, …) via the sync gist.
+  if (req.method === "POST" && parts.length === 2 && parts[0] === "sync") {
+    const op = parts[1];
+    return withGitHub(res, ctx, async (client) => {
+      if (op === "push") return await syncAll(client).then(() => ({ ok: true }));
+      if (op === "pull") {
+        const { pulled } = await syncAll(client);
+        return { pulled };
+      }
+      throw new GitHubError(400, "unknown sync op (expected push|pull)");
+    });
   }
 
   // Shareable transcript: HTML by default, Markdown with ?format=md.

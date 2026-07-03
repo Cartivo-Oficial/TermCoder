@@ -202,6 +202,37 @@ export function Settings(p: Props) {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [githubDraft, setGithubDraft] = useState("");
   const [savingGithub, setSavingGithub] = useState(false);
+  const [ghStatus, setGhStatus] = useState<string>("");
+  const [packRef, setPackRef] = useState("");
+  const [packMsg, setPackMsg] = useState<string>("");
+
+  async function testGitHub() {
+    setGhStatus("Checking…");
+    try {
+      const res = await fetch(`${httpBase}/github`);
+      const data = (await res.json()) as { user?: { login: string }; error?: string };
+      setGhStatus(res.ok && data.user ? `Connected as ${data.user.login}` : data.error ?? "Not connected");
+    } catch (err) {
+      setGhStatus(String(err));
+    }
+  }
+
+  async function packAction(body: Record<string, unknown>) {
+    setPackMsg("Working…");
+    try {
+      const res = await fetch(`${httpBase}/packs`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = (await res.json()) as { url?: string; manifest?: { name: string }; written?: string[]; error?: string };
+      if (!res.ok) setPackMsg(data.error ?? "Failed");
+      else if (data.url) setPackMsg(`Published: ${data.url}`);
+      else setPackMsg(`Installed "${data.manifest?.name}" (${data.written?.length ?? 0} files)`);
+    } catch (err) {
+      setPackMsg(String(err));
+    }
+  }
   const [recording, setRecording] = useState<string | null>(null);
   const [mics, setMics] = useState<MicDevice[]>([]);
   const [sessionCount, setSessionCount] = useState<number | null>(null);
@@ -637,10 +668,42 @@ export function Settings(p: Props) {
                         await patchConfig({ github: { token: githubDraft.trim() } });
                         setGithubDraft("");
                         setSavingGithub(false);
+                        void testGitHub();
                       }}
                     >
                       {savingGithub ? t("settings.saving") : t("settings.save")}
                     </button>
+                    <button className="settings-btn" onClick={() => void testGitHub()}>
+                      Test connection
+                    </button>
+                  </div>
+                </Row>
+                {ghStatus && (
+                  <Row title="GitHub status" desc="Whether your token works (needs the gist scope).">
+                    <span className={`badge ${ghStatus.startsWith("Connected") ? "ok" : ""}`}>{ghStatus}</span>
+                  </Row>
+                )}
+                <Row title="Packs" desc="Share this project's agents, skills, and commands — or install someone's.">
+                  <div className="provider-key" style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
+                    <div className="provider-key">
+                      <input
+                        className="settings-input"
+                        placeholder="gist id/URL or owner/repo"
+                        value={packRef}
+                        onChange={(e) => setPackRef(e.target.value)}
+                      />
+                      <button
+                        className="settings-btn"
+                        disabled={!packRef.trim()}
+                        onClick={() => void packAction({ action: "install", ref: packRef.trim() })}
+                      >
+                        Install
+                      </button>
+                    </div>
+                    <button className="settings-btn" onClick={() => void packAction({ action: "publish", name: "my-termcoder-pack" })}>
+                      Publish this project as a pack
+                    </button>
+                    {packMsg && <span className="hint">{packMsg}</span>}
                   </div>
                 </Row>
               </>

@@ -1,15 +1,13 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
+import { configDir, configFile } from "../util/paths";
 
 /** Favourite model ids, pinned to the top of the model picker. Global. */
 
 function dir(env: NodeJS.ProcessEnv = process.env): string {
-  const xdg = env.XDG_CONFIG_HOME;
-  return xdg ? join(xdg, "termcoder") : join(homedir(), ".config", "termcoder");
+  return configDir(env);
 }
 function file(env: NodeJS.ProcessEnv = process.env): string {
-  return join(dir(env), "favorites.json");
+  return configFile("favorites.json", env);
 }
 
 export function loadFavorites(env: NodeJS.ProcessEnv = process.env): string[] {

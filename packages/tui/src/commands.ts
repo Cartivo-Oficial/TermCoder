@@ -27,6 +27,12 @@ export const TUI_COMMANDS: TuiCommand[] = [
   { name: "tokens", desc: "Show token usage for this session" },
   { name: "init", desc: "Create an AGENTS.md in this project" },
   { name: "share", desc: "Export this session to an HTML file" },
+  { name: "login", arg: "[token]", desc: "Connect GitHub (sync, share, packs)" },
+  { name: "logout", desc: "Disconnect GitHub" },
+  { name: "sync", desc: "Sync favorites & drafts via GitHub" },
+  { name: "publish", desc: "Publish this session as a GitHub gist" },
+  { name: "import", arg: "<gist>", desc: "Import a shared session from a gist" },
+  { name: "pack", arg: "<publish|install|list> …", desc: "Share/install agent+skill packs" },
   { name: "clear", desc: "Clear the screen" },
   { name: "exit", desc: "Quit termcoder" },
 ];
