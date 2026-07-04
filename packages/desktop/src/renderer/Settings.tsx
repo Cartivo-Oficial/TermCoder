@@ -54,6 +54,7 @@ export type SettingsTab =
   | "models"
   | "agents"
   | "skills"
+  | "memory"
   | "behavior"
   | "about";
 
@@ -153,6 +154,57 @@ function Row({ title, desc, children }: { title: string; desc?: string; children
   );
 }
 
+function MemoryAdd({
+  onAdd,
+  t,
+}: {
+  onAdd: (scope: string, name: string, description: string, body: string) => void;
+  t: (key: string, vars?: Record<string, string | number>) => string;
+}) {
+  const [scope, setScope] = useState<"project" | "user">("project");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [body, setBody] = useState("");
+  return (
+    <div className="agent-form">
+      <select className="lang-select" value={scope} onChange={(e) => setScope(e.target.value as "project" | "user")}>
+        <option value="project">{t("settings.memory.scopeProject")}</option>
+        <option value="user">{t("settings.memory.scopeUser")}</option>
+      </select>
+      <input
+        className="settings-input"
+        placeholder={t("settings.memory.name")}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <input
+        className="settings-input"
+        placeholder={t("settings.memory.desc")}
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+      />
+      <textarea
+        className="settings-input agent-prompt"
+        placeholder={t("settings.memory.body")}
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+      />
+      <button
+        className="settings-btn"
+        disabled={!name.trim() || !body.trim()}
+        onClick={() => {
+          onAdd(scope, name.trim(), description.trim(), body.trim());
+          setName("");
+          setDescription("");
+          setBody("");
+        }}
+      >
+        {t("settings.memory.create")}
+      </button>
+    </div>
+  );
+}
+
 const ACCENTS = ["#ededee", "#4f8cff", "#4ade80", "#b794f6", "#f59e0b", "#f87171"];
 
 const TABS: Array<{ groupKey: string; items: Array<[SettingsTab, string]> }> = [
@@ -183,6 +235,7 @@ const TABS: Array<{ groupKey: string; items: Array<[SettingsTab, string]> }> = [
       ["models", "settings.models"],
       ["agents", "settings.agents"],
       ["skills", "settings.skills"],
+      ["memory", "settings.memory"],
       ["behavior", "settings.behavior"],
     ],
   },
@@ -203,6 +256,7 @@ const TITLE_KEYS: Record<SettingsTab, string> = {
   models: "settings.models",
   agents: "settings.agents",
   skills: "settings.skills",
+  memory: "settings.memory",
   behavior: "settings.behavior",
   about: "settings.about",
 };
@@ -315,6 +369,28 @@ export function Settings(p: Props) {
     loadSkills();
   }
 
+  const [memories, setMemories] = useState<
+    Array<{ name: string; description: string; type: string; scope: string; body: string }>
+  >([]);
+  function loadMemories() {
+    fetch(`${httpBase}/memory`)
+      .then((r) => r.json())
+      .then((d) => setMemories(Array.isArray(d?.memories) ? d.memories : []))
+      .catch(() => {});
+  }
+  async function addMemory(scope: string, name: string, description: string, body: string) {
+    await fetch(`${httpBase}/memory`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ scope, name, description, body, type: scope === "user" ? "preference" : "project" }),
+    }).catch(() => {});
+    loadMemories();
+  }
+  async function delMemory(name: string) {
+    await fetch(`${httpBase}/memory/${encodeURIComponent(name)}`, { method: "DELETE" }).catch(() => {});
+    loadMemories();
+  }
+
   const [mcpName, setMcpName] = useState("");
   const [mcpType, setMcpType] = useState<"stdio" | "http">("stdio");
   const [mcpCommand, setMcpCommand] = useState("");
@@ -371,6 +447,7 @@ export function Settings(p: Props) {
     if (p.tab === "permissions" || p.tab === "providers" || p.tab === "integrations" || p.tab === "files" || p.tab === "behavior") loadConfig();
     if (p.tab === "agents") loadAgents();
     if (p.tab === "skills") loadSkills();
+    if (p.tab === "memory") loadMemories();
     if (p.tab === "sessions") {
       fetch(`${httpBase}/sessions`)
         .then((r) => r.json())
@@ -1037,6 +1114,26 @@ export function Settings(p: Props) {
                     {t("settings.skills.create")}
                   </button>
                 </div>
+              </>
+            )}
+
+            {p.tab === "memory" && (
+              <>
+                <p className="hint">{t("settings.memoryDesc")}</p>
+                {memories.map((m) => (
+                  <Row key={`${m.scope}:${m.name}`} title={m.name} desc={m.description}>
+                    <div className="seg-inline">
+                      <span className="badge muted">{m.scope}</span>
+                      <span className="badge muted">{m.type}</span>
+                      <button className="icon sm" title={t("settings.remove")} onClick={() => void delMemory(m.name)}>
+                        <IconClose />
+                      </button>
+                    </div>
+                  </Row>
+                ))}
+                {memories.length === 0 ? <p className="hint">{t("settings.memory.empty")}</p> : null}
+                <h4 className="sub">{t("settings.memory.new")}</h4>
+                <MemoryAdd onAdd={addMemory} t={t} />
               </>
             )}
 
