@@ -133,6 +133,8 @@ function systemPrompt(cwd: string, agent: AgentDef, persona?: Persona): string {
       "Use the provided tools to read and modify files and run shell commands.",
       "Inspect the project before making changes, and keep explanations concise.",
       "When you change files, briefly state what you did.",
+      "Work in a tight loop: PLAN briefly, ACT with minimal diffs, then VERIFY (run the build/tests).",
+      "Prefer small, correct changes. If unsure, read the relevant file before editing. Don't invent APIs — check first.",
     );
   }
   lines.push(

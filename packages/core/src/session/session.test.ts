@@ -125,6 +125,25 @@ describe("Session agent loop", () => {
     expect(captured).not.toContain("Read the diff carefully."); // body stays out of the prompt
   });
 
+  it("the editing system prompt states a plan->act->verify protocol", async () => {
+    let captured = "";
+    const runner: ModelRunner = (opts) => {
+      captured = opts.system;
+      async function* stream() {
+        yield { type: "text-delta", text: "ok" };
+      }
+      return {
+        fullStream: stream(),
+        response: Promise.resolve({ messages: [] }),
+        finishReason: Promise.resolve("stop"),
+        toolCalls: Promise.resolve([]),
+      };
+    };
+    await collect(makeSession(runner), "help me");
+    expect(captured).toMatch(/PLAN/);
+    expect(captured).toMatch(/VERIFY/);
+  });
+
   it("uses the termexplorer study persona (not the coding brain) for termexplorer/auto", async () => {
     const studyConfig = loadConfig({ cwd: dir, configDir: join(dir, "cfg"), env: {} });
     studyConfig.model = "termexplorer/auto";
