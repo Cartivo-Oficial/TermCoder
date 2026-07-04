@@ -272,6 +272,32 @@ ipcMain.on("notify", (_e, title: string, body: string) => {
   notification.show();
 });
 
+/** True if `latest` is a higher semver than `current` (major.minor.patch). */
+function isNewerVersion(latest: string, current: string): boolean {
+  const a = latest.split(".").map((n) => parseInt(n, 10) || 0);
+  const b = current.split(".").map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < 3; i++) {
+    if ((a[i] ?? 0) > (b[i] ?? 0)) return true;
+    if ((a[i] ?? 0) < (b[i] ?? 0)) return false;
+  }
+  return false;
+}
+
+// Check npm for a newer termcoder release (the renderer shows a banner if so).
+ipcMain.handle("check-update", async () => {
+  const current = app.getVersion();
+  try {
+    const res = await fetch("https://registry.npmjs.org/@termcoder/tui/latest", {
+      headers: { accept: "application/json" },
+    });
+    const data = (await res.json()) as { version?: string };
+    const latest = typeof data.version === "string" ? data.version : current;
+    return { current, latest, hasUpdate: isNewerVersion(latest, current) };
+  } catch {
+    return { current, latest: current, hasUpdate: false };
+  }
+});
+
 ipcMain.handle("get-login-item", () => app.getLoginItemSettings().openAtLogin);
 ipcMain.on("set-login-item", (_e, open: boolean) => {
   app.setLoginItemSettings({ openAtLogin: open });

@@ -661,3 +661,36 @@ button.chip { cursor: pointer; }
   --bad: #dc2626;
   --accent: #18181b;
 }
+
+/* Update-available toast (bottom-right, dismissable) */
+.update-toast {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: 380px;
+  padding: 14px 16px;
+  background: var(--panel, #16161b);
+  border: 1px solid var(--line, #26262d);
+  border-left: 3px solid var(--accent, #ff7a45);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  animation: update-in 0.25s ease;
+}
+@keyframes update-in { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
+.update-text { display: flex; flex-direction: column; gap: 3px; }
+.update-text b { font-size: 13.5px; }
+.update-text span { font-size: 12.5px; color: var(--muted, #9a9aa3); }
+.update-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.update-later {
+  background: transparent;
+  border: 0;
+  color: var(--muted, #9a9aa3);
+  font-size: 12.5px;
+  cursor: pointer;
+  padding: 6px 4px;
+}
+.update-later:hover { color: var(--fg, #e7e7ea); }

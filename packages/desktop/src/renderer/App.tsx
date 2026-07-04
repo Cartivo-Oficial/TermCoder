@@ -48,6 +48,7 @@ declare global {
       writeFile: (path: string, content: string) => Promise<{ ok: boolean; error?: string }>;
       saveFile: (defaultName: string, content: string) => Promise<{ ok: boolean; path?: string; error?: string }>;
       notify: (title: string, body: string) => void;
+      checkUpdate: () => Promise<{ current: string; latest: string; hasUpdate: boolean }>;
       gitStatus: (dir: string) => Promise<{ map: Record<string, string>; count: number }>;
       gitDiff: (dir: string, path: string) => Promise<{ diff: string }>;
       minimize: () => void;
@@ -345,6 +346,19 @@ export function App() {
   const [serverStatus, setServerStatus] = useState<ServerStatus | null>(null);
   const [autoApprove, setAutoApprove] = useState(() => localStorage.getItem("tc-auto") === "1");
   const [autonomous, setAutonomous] = useState(false);
+  const [update, setUpdate] = useState<{ latest: string } | null>(null);
+
+  // Once on launch, check npm for a newer release and offer a discreet banner
+  // (dismissable per-version). The desktop app is installer-based, so we point
+  // to the download page rather than auto-updating.
+  useEffect(() => {
+    window.api
+      ?.checkUpdate?.()
+      .then((r) => {
+        if (r?.hasUpdate && localStorage.getItem("tc-skip-update") !== r.latest) setUpdate({ latest: r.latest });
+      })
+      .catch(() => {});
+  }, []);
   const [defaultModel, setDefaultModel] = useState(() => localStorage.getItem("tc-model") || "");
   const [sendOnEnter, setSendOnEnter] = useState(() => localStorage.getItem("tc-enter") !== "0");
   const [expandTools, setExpandTools] = useState(() => localStorage.getItem("tc-expand") === "1");
@@ -2000,6 +2014,34 @@ export function App() {
       ) : null}
 
       {studyOpen ? <Study port={port} onClose={() => setStudyOpen(false)} /> : null}
+
+      {update ? (
+        <div className="update-toast">
+          <div className="update-text">
+            <b>Update available</b>
+            <span>termcoder {update.latest} is out — you have an older version.</span>
+          </div>
+          <div className="update-actions">
+            <button
+              className="settings-btn"
+              onClick={() =>
+                window.open("https://cartivo-oficial.github.io/TermCoder/download.html", "_blank")
+              }
+            >
+              Get it
+            </button>
+            <button
+              className="update-later"
+              onClick={() => {
+                localStorage.setItem("tc-skip-update", update.latest);
+                setUpdate(null);
+              }}
+            >
+              Later
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {settingsOpen ? (
         <Settings

@@ -25,6 +25,8 @@ contextBridge.exposeInMainWorld("api", {
   maximize: () => ipcRenderer.send("window-maximize"),
   closeWindow: () => ipcRenderer.send("window-close"),
   notify: (title: string, body: string) => ipcRenderer.send("notify", title, body),
+  checkUpdate: (): Promise<{ current: string; latest: string; hasUpdate: boolean }> =>
+    ipcRenderer.invoke("check-update"),
   getLoginItem: (): Promise<boolean> => ipcRenderer.invoke("get-login-item"),
   setLoginItem: (open: boolean) => ipcRenderer.send("set-login-item", open),
   gitCommit: (dir: string, message: string): Promise<{ ok: boolean; message: string }> =>
