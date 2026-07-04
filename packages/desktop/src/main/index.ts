@@ -35,10 +35,17 @@ let tray: Tray | null = null;
 
 /** Start an in-process termcoder server and capture its port. */
 async function startServer(): Promise<void> {
-  // Default to the user's home, not the install directory (a packaged app's
-  // process.cwd() is where termcoder.exe lives — the user shouldn't land there).
-  // In dev, pnpm sets INIT_CWD to the project, so that still wins.
-  const cwd = process.env.INIT_CWD ?? app.getPath("home");
+  // Default to Documents — a clean, neutral folder — rather than the install dir
+  // (process.cwd() for a packaged app) or the home dir (full of Windows system
+  // files/junctions). In dev, pnpm sets INIT_CWD to the project, so that wins.
+  let cwd = process.env.INIT_CWD ?? "";
+  if (!cwd) {
+    try {
+      cwd = app.getPath("documents");
+    } catch {
+      cwd = app.getPath("home");
+    }
+  }
   const config = loadConfig({ cwd });
 
   const mcp = await connectMcpServers(config);
@@ -187,12 +194,23 @@ ipcMain.handle("read-image", (_event, path: string) => {
   }
 });
 
+const HIDE_NAMES = new Set(["node_modules", "desktop.ini", "thumbs.db", "$recycle.bin"]);
+
 ipcMain.handle("list-dir", (_event, dir: string) => {
   try {
     return readdirSync(dir, { withFileTypes: true })
-      // Hide dotfiles/dotfolders (incl. termcoder's own .termcoder) and the
-      // usual noise so the tree stays clean — even in a home directory.
-      .filter((d) => !d.name.startsWith(".") && d.name !== "node_modules")
+      // Keep the tree clean, even in the home directory: hide dotfiles/dotfolders
+      // (incl. termcoder's own .termcoder), noise dirs, Windows system files
+      // (NTUSER.*, desktop.ini…), and reparse-point junctions (My Documents,
+      // Cookies, "Ambiente de Rede", …).
+      .filter((d) => {
+        const n = d.name.toLowerCase();
+        if (d.name.startsWith(".")) return false;
+        if (n.startsWith("ntuser.")) return false;
+        if (HIDE_NAMES.has(n)) return false;
+        if (d.isSymbolicLink()) return false;
+        return true;
+      })
       .map((d) => ({ name: d.name, dir: d.isDirectory() }))
       .sort((a, b) =>
         a.dir === b.dir ? a.name.localeCompare(b.name) : a.dir ? -1 : 1,

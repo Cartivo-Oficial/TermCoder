@@ -8,7 +8,7 @@ function baseConfig(): Config {
 
 describe("pickAutoModel (termcoder/auto router)", () => {
   it("falls back to the free keyless model when no keys are configured", () => {
-    expect(pickAutoModel(baseConfig(), {})).toBe("pollinations/openai");
+    expect(pickAutoModel(baseConfig(), {})).toBe("termcoderfree/auto");
   });
 
   it("prefers Google's free tier when its key is present", () => {

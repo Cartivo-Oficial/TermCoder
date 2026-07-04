@@ -256,7 +256,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
   }, []);
 
   function providerHasKey(provider: string): boolean {
-    if (["ollama", "pollinations", "termcoder", "termexplorer"].includes(provider)) return true;
+    if (["ollama", "pollinations", "termcoderfree", "termcoder", "termexplorer"].includes(provider)) return true;
     if (config.providers[provider]?.apiKey) return true;
     if (provider === "anthropic") return Boolean(process.env.ANTHROPIC_API_KEY);
     if (provider === "openai") return Boolean(process.env.OPENAI_API_KEY);

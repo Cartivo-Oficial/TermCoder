@@ -21,7 +21,7 @@ const SUPPORTED = new Set(["anthropic", "openai", "google"]);
 const FALLBACK: ModelEntry[] = [
   { id: "termcoder/auto", provider: "termcoder", model: "auto", name: "termcoder Auto — best available (recommended)", vision: true, free: true },
   { id: "termexplorer/auto", provider: "termexplorer", model: "auto", name: "termexplorer — study & schoolwork tutor", vision: true, free: true },
-  { id: "pollinations/openai", provider: "pollinations", model: "openai", name: "Free — no API key needed (GPT-OSS 20B)", contextK: 128, free: true },
+  { id: "termcoderfree/auto", provider: "termcoderfree", model: "auto", name: "termcoderfree — free, no API key needed", contextK: 128, free: true },
   { id: "anthropic/claude-opus-4-8", provider: "anthropic", model: "claude-opus-4-8", name: "Claude Opus 4.8", contextK: 200, vision: true },
   { id: "anthropic/claude-sonnet-4-6", provider: "anthropic", model: "claude-sonnet-4-6", name: "Claude Sonnet 4.6", contextK: 200, vision: true },
   { id: "anthropic/claude-haiku-4-5", provider: "anthropic", model: "claude-haiku-4-5", name: "Claude Haiku 4.5", contextK: 200, vision: true },

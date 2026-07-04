@@ -32,8 +32,8 @@ describe("pickAutoModel tiering", () => {
   });
 
   it("falls back to the free keyless model when no key is set", () => {
-    expect(pickAutoModel(google, {}, "complex")).toBe("pollinations/openai");
-    expect(pickAutoModel(google, {}, "simple")).toBe("pollinations/openai");
+    expect(pickAutoModel(google, {}, "complex")).toBe("termcoderfree/auto");
+    expect(pickAutoModel(google, {}, "simple")).toBe("termcoderfree/auto");
   });
 
   it("prefers a locally-configured Ollama over the keyless service", () => {
@@ -50,6 +50,7 @@ describe("pickAutoModel tiering", () => {
   it("resolves the free keyless model (and auto → free) without any key", () => {
     const cfg = ConfigSchema.parse({});
     expect(() => resolveModel("pollinations/openai", { config: cfg, env: {} })).not.toThrow();
+    expect(() => resolveModel("termcoderfree/auto", { config: cfg, env: {} })).not.toThrow();
     expect(() => resolveModel("termcoder/auto", { config: cfg, env: {} })).not.toThrow();
     expect(() => resolveModel("termexplorer/auto", { config: cfg, env: {} })).not.toThrow();
   });

@@ -16,10 +16,11 @@ const ENV_KEY: Record<string, string> = {
 };
 
 /** Providers that never need an API key (local, or a free keyless service). */
-export const KEYLESS_PROVIDERS = new Set(["ollama", "pollinations"]);
+export const KEYLESS_PROVIDERS = new Set(["ollama", "pollinations", "termcoderfree"]);
 
-/** The free, keyless model everyone can use out of the box — no setup. */
-export const FREE_MODEL = "pollinations/openai";
+/** The free, keyless model everyone can use out of the box — no setup. Branded
+ * as "termcoderfree"; it resolves to the keyless service under the hood. */
+export const FREE_MODEL = "termcoderfree/auto";
 
 function providerHasKey(config: Config, env: NodeJS.ProcessEnv, provider: string): boolean {
   if (KEYLESS_PROVIDERS.has(provider)) return true;
@@ -117,6 +118,11 @@ export function resolveModel(
   modelId: string,
   { config, env = process.env }: ResolveModelOptions,
 ): LanguageModel {
+  // "termcoderfree" is our branding for the free, keyless service — always
+  // resolve it there, regardless of any keys the user has.
+  if (modelId.startsWith("termcoderfree/")) {
+    return resolveModel("pollinations/openai", { config, env });
+  }
   // Our virtual brains ("termcoder/auto", "termexplorer/auto") route to a
   // concrete provider model; the persona is decided by the session, not here.
   if (isVirtualModel(modelId)) {

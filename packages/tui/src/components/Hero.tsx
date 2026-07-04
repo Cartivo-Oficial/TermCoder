@@ -46,7 +46,14 @@ export function Hero({ theme, animate = true }: HeroProps) {
 
   useEffect(() => {
     if (!animate) return;
-    const id = setInterval(() => setFrame((f) => (f + 1) % 1024), 720);
+    // Animate the starfield for a short while, then settle. Continuous repaints
+    // fight the terminal's own scrollback (scrolling up snaps back on redraw),
+    // so we stop after the intro to keep scrolling smooth.
+    let ticks = 0;
+    const id = setInterval(() => {
+      setFrame((f) => (f + 1) % 1024);
+      if (++ticks >= 14) clearInterval(id);
+    }, 720);
     return () => clearInterval(id);
   }, [animate]);
 

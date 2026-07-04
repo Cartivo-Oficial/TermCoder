@@ -1655,8 +1655,8 @@ export function App() {
             {messages.length === 0 ? (
               <div className="empty">
                 <div>{t("chat.empty")}</div>
-                {!model.startsWith("ollama/") ? (
-                  <button className="free-hint" onClick={() => changeModel("ollama/llama3.1")}>
+                {!/^(termcoderfree|termcoder\/|termexplorer|ollama\/)/.test(model) ? (
+                  <button className="free-hint" onClick={() => changeModel("termcoderfree/auto")}>
                     {t("chat.freeHint")}
                   </button>
                 ) : null}
