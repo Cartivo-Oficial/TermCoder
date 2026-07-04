@@ -81,6 +81,19 @@ export { generateFlashcards, parseCards } from "./study/generate";
 export { firstKeyedModel, nextModelOnError, MODEL_RETRIES, type RetryState } from "./provider/reliability";
 
 export {
+  discoverMemories,
+  saveMemory,
+  deleteMemory,
+  memoryIndex,
+  recallMemories,
+  slugifyMemoryName,
+  looksLikeSecret,
+  type MemoryEntry,
+  type MemoryScope,
+  type MemoryType,
+} from "./memory/memory";
+
+export {
   runAutonomous,
   runVerify,
   detectVerifyCommand,
