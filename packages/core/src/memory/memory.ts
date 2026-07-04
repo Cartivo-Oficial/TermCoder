@@ -35,12 +35,17 @@ export function slugifyMemoryName(raw: string): string {
 /** Cheap guard so an API key never lands in a committed memory file. */
 export function looksLikeSecret(text: string): boolean {
   return (
-    /sk-[A-Za-z0-9-]{15,}/.test(text) ||
+    /\bsk-[A-Za-z0-9-]{15,}/.test(text) ||
     /\bAIza[0-9A-Za-z_-]{10,}/.test(text) ||
     /\bghp_[A-Za-z0-9]{10,}/.test(text) ||
     /\bxox[baprs]-[A-Za-z0-9-]{10,}/.test(text) ||
     /-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(text)
   );
+}
+
+export interface DiscoverMemoriesOptions {
+  cwd: string;
+  env?: NodeJS.ProcessEnv;
 }
 
 function projectDir(cwd: string): string {
@@ -70,7 +75,7 @@ function readMemoryDir(dir: string, scope: MemoryScope): MemoryEntry[] {
 }
 
 /** Project memory (`.termcoder/memory`) overrides user memory (`<config>/memory`) by name. */
-export function discoverMemories(opts: { cwd: string; env?: NodeJS.ProcessEnv }): MemoryEntry[] {
+export function discoverMemories(opts: DiscoverMemoriesOptions): MemoryEntry[] {
   const byName = new Map<string, MemoryEntry>();
   for (const m of readMemoryDir(userDir(opts.env), "user")) byName.set(m.name, m);
   for (const m of readMemoryDir(projectDir(opts.cwd), "project")) byName.set(m.name, m);
@@ -94,7 +99,7 @@ export function saveMemory(opts: {
   return { name, description: opts.description, type, body: opts.body.trim(), scope: opts.scope, file, updatedAt: Date.now() };
 }
 
-/** Delete a memory from either scope (project checked first). Returns whether one existed. */
+/** Delete a memory by name from both scopes (project and user). Returns whether one existed. */
 export function deleteMemory(opts: { name: string; cwd: string; env?: NodeJS.ProcessEnv }): boolean {
   const name = slugifyMemoryName(opts.name);
   let removed = false;

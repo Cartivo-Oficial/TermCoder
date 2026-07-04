@@ -91,6 +91,7 @@ export {
   type MemoryEntry,
   type MemoryScope,
   type MemoryType,
+  type DiscoverMemoriesOptions,
 } from "./memory/memory";
 
 export {

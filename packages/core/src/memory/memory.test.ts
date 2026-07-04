@@ -89,5 +89,7 @@ describe("helpers", () => {
     expect(looksLikeSecret("AIzaSyA1234567890abcdef")).toBe(true);
     expect(looksLikeSecret("ghp_abcdef1234567890")).toBe(true);
     expect(looksLikeSecret("just a normal note about pnpm")).toBe(false);
+    expect(looksLikeSecret("risk-mitigation-strategy-for-the-project")).toBe(false);
+    expect(looksLikeSecret("sk-ant-abc123def456ghi789")).toBe(true);
   });
 });
