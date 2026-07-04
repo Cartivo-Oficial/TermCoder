@@ -49,6 +49,10 @@ of silently breaking later. The desktop **Settings** panel writes the same globa
   local server) at its endpoint.
 - **Unlimited & private:** install [Ollama](https://ollama.com), `ollama pull llama3.1`,
   then `/model ollama/llama3.1` — runs locally, no key, no quota, ever.
+- **Better answers, still free:** the keyless tier is small. For much better replies connect a
+  free Gemini key (`/key google …` or `/upgrade`); `termcoder/auto` then uses it automatically.
+  The free tier also retries and falls back to your key on its own if it hiccups, so a flaky
+  moment no longer kills a turn.
 
 ## Autonomous mode
 
