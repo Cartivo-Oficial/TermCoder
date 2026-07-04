@@ -134,6 +134,8 @@ export const ConfigSchema = z.object({
       maxToolOutputChars: z.number().int().positive().default(8000),
       /** Keep this many most-recent tool results in full; older ones are elided. */
       keepRecentToolResults: z.number().int().positive().default(6),
+      /** Max characters of remembered facts injected into the prompt (index always fits). */
+      memoryChars: z.number().int().positive().default(4000),
     })
     .default({}),
 });

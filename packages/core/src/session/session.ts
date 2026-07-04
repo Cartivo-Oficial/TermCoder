@@ -15,6 +15,7 @@ import type { ToolRegistry } from "../tools";
 import { loadProjectContext } from "../util/context";
 import { capText, pruneMessagesForModel } from "../util/tokens";
 import { discoverSkills, skillsMenu } from "../skill/skills";
+import { discoverMemories, recallMemories } from "../memory/memory";
 
 /** Events emitted while a turn runs. The client renders these; the core stays UI-agnostic. */
 export type SessionEvent =
@@ -135,6 +136,7 @@ function systemPrompt(cwd: string, agent: AgentDef, persona?: Persona): string {
       "When you change files, briefly state what you did.",
       "Work in a tight loop: PLAN briefly, ACT with minimal diffs, then VERIFY (run the build/tests).",
       "Prefer small, correct changes. If unsure, read the relevant file before editing. Don't invent APIs — check first.",
+      "Save a durable, high-value fact you learn (a convention, an architectural truth, a stated preference, a decision) with the memory tool — few and specific, never secrets.",
     );
   }
   lines.push(
@@ -382,6 +384,13 @@ export class Session {
     // A short, always-on grounding block so the agent starts with real knowledge
     // of the project's shape (the repomap tool gives the full detail on demand).
     const repoSummary = projectSummary(ctx.cwd);
+    // What the agent has remembered about this project and user — injected as an
+    // always-on index plus full bodies within a budget, so even the small free
+    // model starts with the right context.
+    const memoryRecall = recallMemories(
+      discoverMemories({ cwd: ctx.cwd, env: this.deps.env }),
+      this.deps.config.context?.memoryChars ?? 4000,
+    );
 
     // Derive a human title from the first prompt so the sidebar isn't a wall
     // of "Untitled session".
@@ -428,6 +437,7 @@ export class Session {
             system:
               systemPrompt(ctx.cwd, agent, persona) +
               (persona !== "study" && repoSummary ? `\n\n${repoSummary}` : "") +
+              (memoryRecall ? `\n\n${memoryRecall}` : "") +
               (skillMenu ? `\n\n${skillMenu}` : ""),
             // Send a token-frugal view: full record, but older tool outputs elided.
             messages: pruneMessagesForModel(

@@ -5,6 +5,7 @@ import type { ModelMessage } from "ai";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { loadConfig, type Config } from "../config/config";
+import { saveMemory } from "../memory/memory";
 import { PermissionManager } from "../permission/permission";
 import { SessionStore } from "../storage/storage";
 import { ToolRegistry } from "../tools";
@@ -123,6 +124,31 @@ describe("Session agent loop", () => {
     expect(captured).toContain("pr-review");
     expect(captured).toContain("Review a pull request");
     expect(captured).not.toContain("Read the diff carefully."); // body stays out of the prompt
+  });
+
+  it("injects saved memories into the system prompt, and nothing when there are none", async () => {
+    const prevXdg = process.env.XDG_CONFIG_HOME;
+    process.env.XDG_CONFIG_HOME = join(dir, "xdg"); // isolate user memory from the real machine
+    try {
+      let captured = "";
+      const runner: ModelRunner = (opts) => {
+        captured = opts.system;
+        async function* stream() { yield { type: "text-delta", text: "ok" }; }
+        return { fullStream: stream(), response: Promise.resolve({ messages: [] }), finishReason: Promise.resolve("stop"), toolCalls: Promise.resolve([]) };
+      };
+      // no memories yet → no recall header
+      await collect(makeSession(runner), "hi");
+      expect(captured).not.toMatch(/What you remember/);
+
+      // add a project memory, then a fresh session sees it
+      saveMemory({ scope: "project", name: "arch", description: "monorepo of four packages", type: "project", body: "core, server, tui, desktop", cwd: dir });
+      await collect(makeSession(runner), "hi again");
+      expect(captured).toMatch(/What you remember/);
+      expect(captured).toContain("- arch: monorepo of four packages");
+    } finally {
+      if (prevXdg === undefined) delete process.env.XDG_CONFIG_HOME;
+      else process.env.XDG_CONFIG_HOME = prevXdg;
+    }
   });
 
   it("the editing system prompt states a plan->act->verify protocol", async () => {
