@@ -67,6 +67,15 @@ script, `go build`, `cargo check`, or `pytest`.
 It stops on your interrupt (esc / Stop), on an error, or once the check is green. Because it
 auto-approves, run it on work you can review afterward (checkpoints let you revert).
 
+## Memory
+
+termcoder remembers durable facts across sessions and recalls them automatically.
+
+- **Project memory** lives in `.termcoder/memory/*.md` and is committed with your repo, so collaborators (and classmates) inherit what the agent learned about the project.
+- **User memory** lives in your config dir and stays private — your global preferences.
+
+The agent saves high-value facts on its own, and you can manage them with `/remember [project] <text>`, `/memories`, and `/forget <name>` (or the Memory tab in the desktop app). Only a compact index plus the most recent facts (up to `context.memoryChars`, default 4000) are sent to the model each turn; the rest load on demand. Secrets are never stored.
+
 ## Web app (use it from a browser)
 
 Prefer a browser to the desktop app? Run the server and open it — the full UI, served
