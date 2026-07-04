@@ -628,12 +628,12 @@ export function App() {
       try {
         const list = (await (await fetch(`${httpBase}/sessions`)).json()) as SessionSummary[];
         setSessions(list);
-        const savedSession = localStorage.getItem("tc-session");
         const savedCwd = cleanDir(localStorage.getItem("tc-cwd"));
-        const saved = savedSession ? list.find((s) => s.id === savedSession) : undefined;
-        // Don't reopen a session rooted in the home directory — start fresh in a
-        // clean folder (Documents) so the tree isn't the messy home dir.
-        if (saved && !(HOME_DIR && saved.cwd === HOME_DIR)) await openSession(savedSession!);
+        // Always start fresh — never auto-reopen a previous conversation. Reuse
+        // an existing blank session if there is one (so empties don't pile up),
+        // otherwise begin a new one. Past chats stay in the sidebar, on demand.
+        const blank = list.find((s) => s.messageCount === 0 && !(HOME_DIR && s.cwd === HOME_DIR));
+        if (blank) await openSession(blank.id);
         else await createSession(savedCwd ?? DEFAULT_DIR ?? undefined);
       } catch {
         setMessages([{ role: "error", text: t("app.serverUnreachable") }]);
@@ -1548,10 +1548,12 @@ export function App() {
               ) : null}
             </div>
             <div className="session-list">
-              {sessions.length === 0 ? (
+              {sessions.filter((s) => s.messageCount > 0).length === 0 ? (
                 <div className="slist-empty">{t("session.none")}</div>
               ) : null}
-              {sessions.map((s) => (
+              {sessions
+                .filter((s) => s.messageCount > 0)
+                .map((s) => (
                 <div key={s.id} className={`session-row ${s.id === currentId ? "active" : ""}`}>
                   <button className="session" onClick={() => void openSession(s.id)}>
                     {sessionLabel(s)}
