@@ -1670,6 +1670,21 @@ export function App() {
                     {t("chat.freeHint")}
                   </button>
                 ) : null}
+                {!(serverStatus?.providers ?? []).some((p) => p.configured && p.name !== "ollama") &&
+                 localStorage.getItem("tc-skip-upgrade") !== "1" ? (
+                  <div className="upgrade-card">
+                    <b>{t("upgrade.title")}</b>
+                    <span>{t("upgrade.body")}</span>
+                    <div className="upgrade-actions">
+                      <button className="settings-btn" onClick={() => { setSettingsTab("providers"); setSettingsOpen(true); }}>
+                        {t("upgrade.cta")}
+                      </button>
+                      <button className="update-later" onClick={(e) => { localStorage.setItem("tc-skip-upgrade", "1"); (e.currentTarget.closest(".upgrade-card") as HTMLElement).style.display = "none"; }}>
+                        {t("upgrade.later")}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : null}
             {messages.map((m, i) => (

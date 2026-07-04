@@ -694,3 +694,10 @@ button.chip { cursor: pointer; }
   padding: 6px 4px;
 }
 .update-later:hover { color: var(--fg, #e7e7ea); }
+
+.upgrade-card { margin: 14px auto 0; max-width: 420px; display: flex; flex-direction: column; gap: 6px;
+  padding: 14px 16px; background: var(--panel); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+  border-radius: 12px; text-align: left; }
+.upgrade-card b { font-size: 13.5px; }
+.upgrade-card span { font-size: 12.5px; color: var(--muted); }
+.upgrade-actions { display: flex; gap: 8px; margin-top: 6px; }
