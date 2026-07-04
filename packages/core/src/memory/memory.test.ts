@@ -35,10 +35,10 @@ describe("saveMemory + discoverMemories", () => {
 
     const mems = discoverMemories({ cwd: dir, env });
     const byName = Object.fromEntries(mems.map((m) => [m.name, m]));
-    expect(byName["uses-pnpm"].scope).toBe("user");           // slugified
-    expect(byName["uses-pnpm"].description).toBe("prefers pnpm");
-    expect(byName["arch"].scope).toBe("project");             // project overrode user
-    expect(byName["arch"].body).toBe("four packages");
+    expect(byName["uses-pnpm"]!.scope).toBe("user");           // slugified
+    expect(byName["uses-pnpm"]!.description).toBe("prefers pnpm");
+    expect(byName["arch"]!.scope).toBe("project");             // project overrode user
+    expect(byName["arch"]!.body).toBe("four packages");
     expect(existsSync(join(dir, ".termcoder", "memory", "arch.md"))).toBe(true);
     expect(existsSync(join(cfg, "termcoder", "memory", "uses-pnpm.md"))).toBe(true);
   });
