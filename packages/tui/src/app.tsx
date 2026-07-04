@@ -36,6 +36,14 @@ import {
   type Card,
   runVerify,
   detectVerifyCommand,
+  createClassroom,
+  joinClassroom,
+  fetchClassroom,
+  addAssignment,
+  submitAssignment,
+  listSubmissions,
+  listRoster,
+  loadClassrooms,
   PermissionManager,
   renderSessionHtml,
   Session,
@@ -60,7 +68,7 @@ import { TrustPrompt } from "./components/TrustPrompt";
 import { ReviewMode } from "./components/ReviewMode";
 import { Transcript, TranscriptItem } from "./components/Transcript";
 
-const VERSION = "0.4.0";
+const VERSION = "0.5.0";
 
 const AGENTS_TEMPLATE = `# Project instructions for termcoder
 
@@ -891,6 +899,148 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         } else {
           pushHistory({ kind: "notice", text: "Usage: /pack <publish [name] | install <ref> [--global] | list>" });
         }
+        break;
+      }
+      case "class": {
+        const [sub, ...more] = arg.split(/\s+/).filter(Boolean);
+        const joined = loadClassrooms();
+        const def = joined[joined.length - 1];
+        const rest = more.join(" ").trim();
+
+        if (!sub || sub === "list") {
+          if (!joined.length) {
+            pushHistory({
+              kind: "notice",
+              text: "No classes yet.\n  Teacher:  /class create <name>\n  Student:  /class join <code>",
+            });
+            break;
+          }
+          const lines = joined.map(
+            (c) => `  ${c.role === "teacher" ? "★" : "•"} ${c.name.padEnd(20)} ${c.code}  (${c.role})`,
+          );
+          pushHistory({
+            kind: "notice",
+            text: `Your classes${def ? ` (default: ${def.name})` : ""}:\n${lines.join("\n")}\n\n/class <create|join|assign|submit|submissions|roster|assignments>`,
+          });
+          break;
+        }
+        const client = ghClient();
+        if (!client) break;
+
+        if (sub === "create") {
+          if (!rest) {
+            pushHistory({ kind: "notice", text: "Usage: /class create <name>" });
+            break;
+          }
+          pushHistory({ kind: "notice", text: `Creating class “${rest}”…` });
+          createClassroom(rest, client)
+            .then((c) =>
+              pushHistory({
+                kind: "notice",
+                text: `✓ Class created. Share this code with students:\n  ${c.code}\n\nThey run:  /class join ${c.code}`,
+              }),
+            )
+            .catch((e) => pushHistory({ kind: "error", text: ghErr(e) }));
+          break;
+        }
+        if (sub === "join") {
+          const code = more[0];
+          if (!code) {
+            pushHistory({ kind: "notice", text: "Usage: /class join <code>" });
+            break;
+          }
+          pushHistory({ kind: "notice", text: "Joining class…" });
+          joinClassroom(code, client, { cwd })
+            .then(({ classroom, installed }) => {
+              const aLines = classroom.assignments.length
+                ? classroom.assignments.map((a) => `    • ${a.title} (${a.id})${a.due ? ` — due ${a.due}` : ""}`).join("\n")
+                : "    (none yet)";
+              pushHistory({
+                kind: "notice",
+                text: `✓ Joined “${classroom.name}”. Installed ${installed.length} shared file(s).\nAssignments:\n${aLines}`,
+              });
+            })
+            .catch((e) => pushHistory({ kind: "error", text: ghErr(e) }));
+          break;
+        }
+        if (!def) {
+          pushHistory({ kind: "notice", text: "No class yet — /class create <name> or /class join <code> first." });
+          break;
+        }
+        if (sub === "assignments") {
+          fetchClassroom(def.code, client)
+            .then((c) => {
+              const lines = c.assignments.length
+                ? c.assignments.map((a) => `  • ${a.title} (${a.id})${a.due ? ` — due ${a.due}` : ""}`).join("\n")
+                : "  (none yet)";
+              pushHistory({ kind: "notice", text: `Assignments in “${c.name}”:\n${lines}\n\nSubmit with:  /class submit <id>` });
+            })
+            .catch((e) => pushHistory({ kind: "error", text: ghErr(e) }));
+          break;
+        }
+        if (sub === "assign") {
+          if (def.role !== "teacher") {
+            pushHistory({ kind: "notice", text: "Only the class creator can post assignments." });
+            break;
+          }
+          if (!rest) {
+            pushHistory({ kind: "notice", text: "Usage: /class assign <title>" });
+            break;
+          }
+          pushHistory({ kind: "notice", text: `Posting to “${def.name}”…` });
+          addAssignment(def.code, { title: rest }, client)
+            .then((a) => pushHistory({ kind: "notice", text: `✓ Posted “${a.title}” (${a.id}).` }))
+            .catch((e) => pushHistory({ kind: "error", text: ghErr(e) }));
+          break;
+        }
+        if (sub === "submit") {
+          const aid = more[0];
+          if (!aid) {
+            pushHistory({ kind: "notice", text: "Usage: /class submit <assignment-id>   (see ids with /class assignments)" });
+            break;
+          }
+          pushHistory({ kind: "notice", text: "Publishing your session and submitting…" });
+          client
+            .createGist({
+              description: `termcoder session — ${session.record.title}`,
+              public: false,
+              files: sessionGistFiles(session.record),
+            })
+            .then((g) =>
+              submitAssignment(
+                def.code,
+                { assignmentId: aid, link: `https://cartivo-oficial.github.io/TermCoder/viewer.html?gist=${g.id}` },
+                client,
+              ),
+            )
+            .then(() => pushHistory({ kind: "notice", text: `✓ Submitted to “${def.name}”.` }))
+            .catch((e) => pushHistory({ kind: "error", text: ghErr(e) }));
+          break;
+        }
+        if (sub === "submissions") {
+          listSubmissions(def.code, client)
+            .then((subs) => {
+              const lines = subs.length
+                ? subs.map((s) => `  @${s.user}  a=${s.assignmentId}  ${s.link}${s.note ? `  — ${s.note}` : ""}`).join("\n")
+                : "  (no submissions yet)";
+              pushHistory({ kind: "notice", text: `Submissions for “${def.name}”:\n${lines}` });
+            })
+            .catch((e) => pushHistory({ kind: "error", text: ghErr(e) }));
+          break;
+        }
+        if (sub === "roster") {
+          listRoster(def.code, client)
+            .then((r) => {
+              const lines = r.length ? r.map((x) => `  @${x.user}`).join("\n") : "  (nobody yet)";
+              pushHistory({ kind: "notice", text: `Roster for “${def.name}”:\n${lines}` });
+            })
+            .catch((e) => pushHistory({ kind: "error", text: ghErr(e) }));
+          break;
+        }
+        pushHistory({
+          kind: "notice",
+          text: "Usage: /class <create <name> | join <code> | assignments | assign <title> | submit <id> | submissions | roster>",
+        });
         break;
       }
       case "theme":

@@ -38,6 +38,7 @@ export const TUI_COMMANDS: TuiCommand[] = [
   { name: "publish", desc: "Publish this session as a GitHub gist" },
   { name: "import", arg: "<gist>", desc: "Import a shared session from a gist" },
   { name: "pack", arg: "<publish|install|list> …", desc: "Share/install agent+skill packs" },
+  { name: "class", arg: "<create|join|assign|submit> …", desc: "Classrooms: share packs, assignments, submissions" },
   { name: "clear", desc: "Clear the screen" },
   { name: "exit", desc: "Quit termcoder" },
 ];

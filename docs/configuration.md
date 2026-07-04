@@ -258,3 +258,18 @@ Connect a token with `/login <token>` (create one at
 <https://github.com/settings/tokens/new> with the `gist` scope), check it with the
 authenticated handle, and disconnect with `/logout`. In the desktop app, use
 Settings → Integrations → GitHub (**Test connection** and **Packs**).
+
+### Classrooms
+
+A class is a shared space for a teacher and their students — GitHub-native and async, no
+server. A class is one secret gist holding shared packs and assignments; students join,
+submit, and appear on the roster through gist comments.
+
+- `/class create <name>` — make a class; share the printed code.
+- `/class join <code>` — join (installs the class's shared packs) and sign the roster.
+- `/class assignments` — list assignments and their ids.
+- `/class assign <title>` — post an assignment (creator only).
+- `/class submit <assignment-id>` — publish your current session and submit its viewer link.
+- `/class submissions` / `/class roster` — the creator reviews who submitted / joined.
+
+Everything rides your GitHub token; nothing is public (secret gists open only with the link).

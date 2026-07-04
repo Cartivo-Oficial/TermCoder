@@ -104,7 +104,24 @@ export {
   type Gist,
   type GistFile,
   type GitHubUser,
+  type GistComment,
 } from "./github/github";
+
+export {
+  createClassroom,
+  joinClassroom,
+  fetchClassroom,
+  addAssignment,
+  submitAssignment,
+  listSubmissions,
+  listRoster,
+  loadClassrooms,
+  rememberClass,
+  type Classroom,
+  type Assignment,
+  type JoinedClass,
+  type Submission,
+} from "./classroom/classroom";
 
 export {
   pushSync,

@@ -21,6 +21,13 @@ export interface GitHubUser {
   html_url?: string;
 }
 
+export interface GistComment {
+  id: number;
+  body: string;
+  created_at: string;
+  user: { login: string } | null;
+}
+
 /** The GitHub token from config (or the GITHUB_TOKEN env), if any. */
 export function gitHubToken(config?: Config, env: NodeJS.ProcessEnv = process.env): string | undefined {
   return config?.github?.token || env.GITHUB_TOKEN || undefined;
@@ -107,6 +114,16 @@ export class GitHubClient {
   /** The authenticated user's gists (newest first, up to 100). */
   listGists(): Promise<Gist[]> {
     return this.req<Gist[]>("/gists?per_page=100");
+  }
+
+  /** Post a comment on a gist (used for classroom joins & submissions). */
+  createGistComment(gistId: string, body: string): Promise<GistComment> {
+    return this.req<GistComment>(`/gists/${gistId}/comments`, { method: "POST", body: JSON.stringify({ body }) });
+  }
+
+  /** All comments on a gist (up to 100). */
+  listGistComments(gistId: string): Promise<GistComment[]> {
+    return this.req<GistComment[]>(`/gists/${gistId}/comments?per_page=100`);
   }
 
   /** A gist file's text, fetching the raw URL when the inline content is truncated. */

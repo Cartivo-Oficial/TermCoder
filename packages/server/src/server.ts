@@ -45,6 +45,14 @@ import {
   type Grade,
   runAutonomous,
   detectVerifyCommand,
+  createClassroom,
+  joinClassroom,
+  fetchClassroom,
+  addAssignment,
+  submitAssignment,
+  listSubmissions,
+  listRoster,
+  loadClassrooms,
   Session,
   SessionStore,
   ToolRegistry,
@@ -397,6 +405,39 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     } catch {
       return sendJson(res, 502, { error: "Couldn't reach the model (the free service can be busy). Try again." });
     }
+  }
+
+  // ---- Classrooms (GitHub-native, async) ----
+  // The classes this machine has joined (local list; no network).
+  if (req.method === "GET" && parts.length === 1 && parts[0] === "classrooms") {
+    return sendJson(res, 200, loadClassrooms());
+  }
+  // GitHub-backed classroom actions.
+  if (req.method === "POST" && parts.length === 1 && parts[0] === "classroom") {
+    const body = await readJson(req);
+    const action = body.action;
+    const code = typeof body.code === "string" ? body.code : "";
+    return withGitHub(res, ctx, async (client) => {
+      if (action === "create") {
+        if (!body.name) throw new GitHubError(400, "missing 'name'");
+        return await createClassroom(String(body.name), client);
+      }
+      if (action === "join") {
+        if (!code) throw new GitHubError(400, "missing 'code'");
+        return await joinClassroom(code, client, { cwd: ctx.cwd });
+      }
+      if (action === "fetch") return await fetchClassroom(code, client);
+      if (action === "assign") {
+        if (!body.title) throw new GitHubError(400, "missing 'title'");
+        return await addAssignment(code, { title: String(body.title), description: body.description as string | undefined, due: body.due as string | undefined }, client);
+      }
+      if (action === "submit") {
+        return await submitAssignment(code, { assignmentId: String(body.assignmentId ?? ""), link: String(body.link ?? ""), note: body.note as string | undefined }, client).then(() => ({ ok: true }));
+      }
+      if (action === "submissions") return await listSubmissions(code, client, body.assignmentId as string | undefined);
+      if (action === "roster") return await listRoster(code, client);
+      throw new GitHubError(400, "unknown classroom action");
+    });
   }
 
   // Connectable providers + their login methods (for the "Connect" UI).

@@ -119,6 +119,18 @@ describe("server", () => {
     expect(pack.status).toBe(401);
   });
 
+  it("exposes classrooms locally and gates GitHub actions on a token", async () => {
+    const list = await (await fetch(`${base()}/classrooms`)).json();
+    expect(Array.isArray(list)).toBe(true); // local join list, no network
+
+    const create = await fetch(`${base()}/classroom`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "create", name: "Math 101" }),
+    });
+    expect(create.status).toBe(401); // no token configured (env: {})
+  });
+
   it("import without a ref is a 400 (bad request), not a 401", async () => {
     const res = await fetch(`${base()}/sessions/import`, {
       method: "POST",
