@@ -78,6 +78,8 @@ export {
 
 export { generateFlashcards, parseCards } from "./study/generate";
 
+export { firstKeyedModel, nextModelOnError, MODEL_RETRIES, type RetryState } from "./provider/reliability";
+
 export {
   runAutonomous,
   runVerify,
