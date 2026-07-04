@@ -91,5 +91,27 @@ describe("helpers", () => {
     expect(looksLikeSecret("just a normal note about pnpm")).toBe(false);
     expect(looksLikeSecret("risk-mitigation-strategy-for-the-project")).toBe(false);
     expect(looksLikeSecret("sk-ant-abc123def456ghi789")).toBe(true);
+    // additional high-confidence shapes
+    expect(looksLikeSecret("AKIAIOSFODNN7EXAMPLE")).toBe(true);
+    expect(looksLikeSecret("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abc")).toBe(true);
+    expect(looksLikeSecret("postgres://user:hunter2@db.example.com/app")).toBe(true);
+    expect(looksLikeSecret("api_key = sk_live_supersecretvalue")).toBe(true);
+    expect(looksLikeSecret("password: hunter2longvalue")).toBe(true);
+    // must NOT flag legit memory content: a 40-char git commit SHA, or plain prose
+    expect(looksLikeSecret("the baseline is commit a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0")).toBe(false);
+    expect(looksLikeSecret("remember to run the tests before merging")).toBe(false);
+  });
+
+  it("stores a description shaped like YAML as a plain string (round-trips)", () => {
+    const d = mkdtempSync(join(tmpdir(), "tc-mem-desc-"));
+    const c = mkdtempSync(join(tmpdir(), "tc-cfg-desc-"));
+    try {
+      saveMemory({ scope: "project", name: "yaml-desc", description: "[a, b] and true", type: "project", body: "x", cwd: d, env: { XDG_CONFIG_HOME: c } });
+      const got = discoverMemories({ cwd: d, env: { XDG_CONFIG_HOME: c } }).find((m) => m.name === "yaml-desc");
+      expect(got?.description).toBe("[a, b] and true");
+    } finally {
+      rmSync(d, { recursive: true, force: true });
+      rmSync(c, { recursive: true, force: true });
+    }
   });
 });

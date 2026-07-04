@@ -289,4 +289,13 @@ describe("server", () => {
     const del = await fetch(`${base()}/memory/arch`, { method: "DELETE" });
     expect(del.status).toBe(200);
   });
+
+  it("rejects a secret-shaped memory body with 400", async () => {
+    const res = await fetch(`${base()}/memory`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ scope: "project", name: "leak", description: "d", type: "project", body: "my key is AKIAIOSFODNN7EXAMPLE" }),
+    });
+    expect(res.status).toBe(400);
+  });
 });

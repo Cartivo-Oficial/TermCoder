@@ -39,7 +39,13 @@ export function looksLikeSecret(text: string): boolean {
     /\bAIza[0-9A-Za-z_-]{10,}/.test(text) ||
     /\bghp_[A-Za-z0-9]{10,}/.test(text) ||
     /\bxox[baprs]-[A-Za-z0-9-]{10,}/.test(text) ||
-    /-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(text)
+    /-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(text) ||
+    /\bAKIA[0-9A-Z]{16}\b/.test(text) || // AWS access key id
+    /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\./.test(text) || // JWT
+    /:\/\/[^\s:@/]+:[^\s:@/]+@/.test(text) || // URL with inline credentials
+    // a secret-named field being assigned a value (never a high-entropy heuristic,
+    // which would false-positive on legit content like a git commit SHA)
+    /\b(secret|token|password|passwd|api[_-]?key|access[_-]?key|private[_-]?key)\b\s*[:=]\s*['"]?\S{6,}/i.test(text)
   );
 }
 
@@ -94,9 +100,12 @@ export function saveMemory(opts: {
   mkdirSync(dir, { recursive: true });
   const file = join(dir, `${name}.md`);
   const type: MemoryType = MEMORY_TYPES.includes(opts.type) ? opts.type : "project";
-  const md = `---\nname: ${name}\ndescription: ${opts.description.replace(/\n/g, " ").trim()}\ntype: ${type}\n---\n${opts.body.trim()}\n`;
+  // JSON.stringify quotes the description so a value shaped like [a, b], true, or 42
+  // round-trips as a string instead of being parsed as an array/bool/number and dropped.
+  const description = opts.description.replace(/\n/g, " ").trim();
+  const md = `---\nname: ${name}\ndescription: ${JSON.stringify(description)}\ntype: ${type}\n---\n${opts.body.trim()}\n`;
   writeFileSync(file, md, "utf8");
-  return { name, description: opts.description, type, body: opts.body.trim(), scope: opts.scope, file, updatedAt: Date.now() };
+  return { name, description, type, body: opts.body.trim(), scope: opts.scope, file, updatedAt: Date.now() };
 }
 
 /** Delete a memory by name from both scopes (project and user). Returns whether one existed. */
