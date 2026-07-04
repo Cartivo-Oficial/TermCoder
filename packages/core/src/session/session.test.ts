@@ -9,7 +9,7 @@ import { PermissionManager } from "../permission/permission";
 import { SessionStore } from "../storage/storage";
 import { ToolRegistry } from "../tools";
 import type { TermTool } from "../tools/types";
-import { Session, type ModelRunner, type SessionEvent } from "./session";
+import { Session, friendlyError, type ModelRunner, type SessionEvent } from "./session";
 
 interface ScriptedStep {
   chunks: Array<{ type: string; text?: string; error?: unknown }>;
@@ -410,6 +410,12 @@ describe("Session agent loop", () => {
     expect(result).toMatchObject({ isError: true });
     expect(result && "output" in result ? result.output : "").toMatch(/Permission denied/);
     expect(existsSync(join(dir, "blocked.txt"))).toBe(false);
+  });
+
+  it("connection errors suggest retry or connecting a better model", () => {
+    const msg = friendlyError("Cannot connect to API");
+    expect(msg).toMatch(/busy|try again/i);
+    expect(msg).toMatch(/connect|key|Gemini/i);
   });
 
   it("surfaces a stream error after retries are exhausted", async () => {

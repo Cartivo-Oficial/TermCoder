@@ -183,7 +183,7 @@ function stringifyError(error: unknown): string {
 }
 
 /** Turn a raw provider error into something actionable for the user. */
-function friendlyError(raw: string): string {
+export function friendlyError(raw: string): string {
   const s = raw.toLowerCase();
   if (
     s.includes("credit balance") ||
@@ -222,7 +222,7 @@ function friendlyError(raw: string): string {
     s.includes("connect error") ||
     s.includes("network")
   ) {
-    return "Couldn't reach the model. If you're using a local model, make sure Ollama is installed and running (https://ollama.com) and the model is pulled (e.g. `ollama pull llama3.1`). Otherwise connect a provider key in Settings → Providers (or run /setup) and pick a model.";
+    return "The free model is busy or unreachable right now. Try again in a moment — or connect a better model for fast, reliable answers: a free Gemini key (/upgrade), a local Ollama (https://ollama.com), or paste a provider key in Settings → Providers.";
   }
   return raw;
 }
