@@ -13,6 +13,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
+    "build:web": "vite build --config vite.web.config.ts",
     "start": "electron-vite preview",
     "package": "electron-vite build && electron-builder",
     "package:ci": "electron-vite build && electron-builder --publish never",

@@ -62,10 +62,19 @@ declare global {
   }
 }
 
+// In Electron the server port comes from the preload / query string. In the web
+// build (served by `termcoder serve`) we talk to the same origin the page came
+// from — so it also works over the LAN, not just localhost.
 const port =
-  window.api?.serverPort || Number(new URLSearchParams(location.search).get("port")) || 4096;
-const httpBase = `http://localhost:${port}`;
-const wsBase = `ws://localhost:${port}`;
+  window.api?.serverPort ||
+  Number(new URLSearchParams(location.search).get("port")) ||
+  Number(location.port) ||
+  4096;
+const host = location.hostname || "localhost";
+const scheme = location.protocol === "https:" ? "https:" : "http:";
+const wsScheme = location.protocol === "https:" ? "wss:" : "ws:";
+const httpBase = `${scheme}//${host}:${port}`;
+const wsBase = `${wsScheme}//${host}:${port}`;
 
 const MODELS = [
   "termcoder/auto",

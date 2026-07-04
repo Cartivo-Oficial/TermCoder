@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { extname, join, normalize } from "node:path";
 import {
   createServer as createHttpServer,
   type IncomingMessage,
@@ -71,6 +71,8 @@ export interface ServerDeps {
   cwd?: string;
   /** MCP/LSP/plugin connection status to expose at GET /status. */
   status?: ServerStatus;
+  /** Directory of a built web UI to serve (the browser app). */
+  webDir?: string;
 }
 
 interface Ctx {
@@ -80,6 +82,7 @@ interface Ctx {
   runner?: ModelRunner;
   cwd: string;
   status: ServerStatus;
+  webDir?: string;
 }
 
 /**
@@ -95,6 +98,7 @@ export function createServer(deps: ServerDeps = {}): Server {
     runner: deps.runner,
     cwd: deps.cwd ?? process.cwd(),
     status: deps.status ?? { mcp: [], lsp: [], plugins: [] },
+    webDir: deps.webDir,
   };
 
   const http = createHttpServer((req, res) => {
@@ -184,6 +188,38 @@ function redactConfig(config: Config) {
     github: { hasToken: Boolean(config.github?.token) },
     context: config.context,
   };
+}
+
+const MIME: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".ico": "image/x-icon",
+  ".woff2": "font/woff2",
+  ".map": "application/json; charset=utf-8",
+};
+
+/**
+ * Serve a file from the web-UI directory (the browser app). Falls back to
+ * index.html for extension-less routes (SPA). Returns false if nothing matched.
+ */
+function serveStatic(res: ServerResponse, webDir: string, pathname: string): boolean {
+  const rel = normalize(decodeURIComponent(pathname)).replace(/^([/\\]|\.\.[/\\])+/, "");
+  let file = join(webDir, rel || "index.html");
+  if (!file.startsWith(webDir)) return false; // path-traversal guard
+  if (!existsSync(file) || !statSync(file).isFile()) {
+    if (extname(rel)) return false; // a missing asset — not an SPA route
+    file = join(webDir, "index.html"); // SPA fallback
+    if (!existsSync(file)) return false;
+  }
+  res.writeHead(200, { "content-type": MIME[extname(file)] ?? "application/octet-stream", ...CORS });
+  res.end(readFileSync(file));
+  return true;
 }
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
@@ -715,6 +751,11 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     }
     res.writeHead(200, { "content-type": "text/html; charset=utf-8", ...CORS });
     return void res.end(renderSessionHtml(record));
+  }
+
+  // Fall through to the web UI (browser app) for GET requests, if one is built.
+  if ((req.method === "GET" || req.method === "HEAD") && ctx.webDir && serveStatic(res, ctx.webDir, url.pathname)) {
+    return;
   }
 
   sendJson(res, 404, { error: "not found" });

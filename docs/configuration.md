@@ -63,6 +63,22 @@ script, `go build`, `cargo check`, or `pytest`.
 It stops on your interrupt (esc / Stop), on an error, or once the check is green. Because it
 auto-approves, run it on work you can review afterward (checkpoints let you revert).
 
+## Web app (use it from a browser)
+
+Prefer a browser to the desktop app? Run the server and open it — the full UI, served
+locally, talking to the same origin (so it works over your LAN too, not just localhost).
+
+```bash
+pnpm --filter @termcoder/desktop build:web   # once — builds the web bundle
+pnpm --filter @termcoder/server dev          # or: termcoder-server
+# → 🌐 Web app: open http://localhost:4096 in your browser
+```
+
+The agent still runs on your machine (your keys stay local); the browser is just the UI.
+Point `TERMCODER_WEB_DIR` at the built `dist-web` to serve it from anywhere. Native-only
+touches (OS file picker, git buttons) quietly no-op in the browser; chat, tools, models,
+study, and autonomous mode all work.
+
 ## Permissions
 
 Each mutating class — `bash`, `write`, `edit`, `mcp` — is `"ask"` (default), `"allow"`, or

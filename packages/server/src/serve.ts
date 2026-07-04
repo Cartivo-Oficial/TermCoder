@@ -1,3 +1,6 @@
+import { existsSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   builtinTools,
   connectLspServers,
@@ -9,6 +12,17 @@ import {
 import { createServer } from "./server";
 
 const port = Number(process.env.PORT ?? 4096);
+
+/** Find a built web UI to serve (env override, a sibling desktop build, or ./web). */
+function findWebDir(): string | undefined {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    process.env.TERMCODER_WEB_DIR,
+    resolve(here, "../../desktop/dist-web"),
+    resolve(here, "web"),
+  ].filter((d): d is string => Boolean(d));
+  return candidates.find((d) => existsSync(d));
+}
 
 async function main() {
   const config = loadConfig();
@@ -38,12 +52,18 @@ async function main() {
     ...plugins.tools,
   ]);
 
-  const server = createServer({ config, registry, cwd });
+  const webDir = findWebDir();
+  const server = createServer({ config, registry, cwd, webDir });
   server.listen(port, () => {
     process.stdout.write(`termcoder server listening on http://localhost:${port}\n`);
-    process.stdout.write(
-      "  POST /sessions · GET /sessions · GET /sessions/:id · WS /sessions/:id/stream\n",
-    );
+    if (webDir) {
+      process.stdout.write(`  🌐 Web app: open http://localhost:${port} in your browser\n`);
+    } else {
+      process.stdout.write(
+        "  POST /sessions · GET /sessions · GET /sessions/:id · WS /sessions/:id/stream\n" +
+          "  (build the web app with `pnpm --filter @termcoder/desktop build:web` to serve it here)\n",
+      );
+    }
   });
 
   const shutdown = () => {

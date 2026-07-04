@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -151,6 +151,27 @@ describe("server", () => {
     }>;
     const openai = list.find((p) => p.provider === "openai");
     expect(openai?.methods.some((m) => m.id === "api-key" && m.available)).toBe(true);
+  });
+
+  it("serves a web UI directory with an SPA fallback", async () => {
+    const webDir = mkdtempSync(join(tmpdir(), "tc-web-"));
+    writeFileSync(join(webDir, "index.html"), "<!doctype html><div id=root></div>");
+    const s = createServer({ config, store, registry: new ToolRegistry(), cwd: dir, webDir });
+    await new Promise<void>((r) => s.listen(0, r));
+    const p = (s.address() as AddressInfo).port;
+    try {
+      const root = await fetch(`http://localhost:${p}/`);
+      expect(root.status).toBe(200);
+      expect(await root.text()).toContain("id=root");
+      // An extension-less route falls back to index.html (SPA); a missing asset 404s.
+      expect((await fetch(`http://localhost:${p}/some/route`)).status).toBe(200);
+      expect((await fetch(`http://localhost:${p}/missing.js`)).status).toBe(404);
+      // API routes still win over static.
+      expect((await fetch(`http://localhost:${p}/study`)).status).toBe(200);
+    } finally {
+      await new Promise<void>((r) => s.close(() => r()));
+      rmSync(webDir, { recursive: true, force: true });
+    }
   });
 
   it("deletes a single session and 404s deleting a missing one", async () => {
