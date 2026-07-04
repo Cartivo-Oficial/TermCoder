@@ -7,6 +7,7 @@ import { formatFile } from "../format/formatters";
 import type { Config } from "../config/config";
 import type { PermissionManager } from "../permission/permission";
 import { classifyTaskComplexity, pickAutoModel, resolveModel } from "../provider/provider";
+import { firstKeyedModel, nextModelOnError, MODEL_RETRIES, type RetryState } from "../provider/reliability";
 import { projectSummary } from "../knowledge/repomap";
 import type { SessionStore, SessionRecord } from "../storage/storage";
 import type { ToolContext } from "../tools/types";
@@ -362,12 +363,11 @@ export class Session {
         ? pickAutoModel(this.deps.config, this.deps.env, classifyTaskComplexity(text))
         : undefined;
     let activeRunner = this.deps.runner ?? this.buildRunner(agent, routedModel);
+    // The model a step runs on. On a transient failure we retry it, then fall
+    // back to a configured key, sticking with whatever ends up working.
+    let modelToUse = routedModel ?? this.record.model;
     const maxSteps = agent.steps ?? this.record.maxSteps ?? this.deps.maxSteps ?? 25;
     const { signal } = opts;
-    // Auto-escalation: if a fast-tier termcoder/auto turn errors, retry once on
-    // the strongest available model before giving up.
-    const canEscalate = brain && !agent.model;
-    let escalated = false;
 
     // termcoder/auto adds a grounded review pass after it edits files (coding
     // only). One review-fix cycle per turn.
@@ -410,44 +410,62 @@ export class Session {
     try {
       for (let step = 0; step < maxSteps; step++) {
         if (signal?.aborted) return;
-        const result = activeRunner({
-          system:
-            systemPrompt(ctx.cwd, agent, persona) +
-            (persona !== "study" && repoSummary ? `\n\n${repoSummary}` : "") +
-            (skillMenu ? `\n\n${skillMenu}` : ""),
-          // Send a token-frugal view: full record, but older tool outputs elided.
-          messages: pruneMessagesForModel(
-            this.record.messages,
-            this.deps.config.context?.keepRecentToolResults ?? 6,
-          ),
-          tools,
-          signal,
-        });
+        // Try this step's model; on a transient failure (before any text is
+        // shown), retry it, then fall back to a configured key, before giving
+        // up. Retries do not consume the maxSteps budget.
+        let attempt: RetryState = {
+          model: modelToUse,
+          retriesLeft: MODEL_RETRIES,
+          fallback: firstKeyedModel(this.deps.config, this.deps.env ?? process.env),
+        };
+        let result!: ModelStreamResult;
+        let stepFailed = false;
 
-        let streamError: string | null = null;
-        for await (const chunk of result.fullStream) {
-          if (chunk.type === "text-delta") {
-            yield { type: "text-delta", text: chunk.text ?? "" };
-          } else if (chunk.type === "error") {
-            if (signal?.aborted) return;
-            streamError = friendlyError(stringifyError(chunk.error));
-            break;
-          }
-        }
-        if (streamError) {
-          // Retry once on a stronger model before surfacing the error.
-          if (canEscalate && !escalated) {
-            const strong = pickAutoModel(this.deps.config, this.deps.env, "complex");
-            if (strong !== routedModel) {
-              escalated = true;
-              activeRunner = this.deps.runner ?? this.buildRunner(agent, strong);
-              yield { type: "text-delta", text: `\n\n⚠️ That model struggled — retrying with ${strong}…\n\n` };
-              continue; // redo this step on the escalated model
+        while (true) {
+          result = activeRunner({
+            system:
+              systemPrompt(ctx.cwd, agent, persona) +
+              (persona !== "study" && repoSummary ? `\n\n${repoSummary}` : "") +
+              (skillMenu ? `\n\n${skillMenu}` : ""),
+            // Send a token-frugal view: full record, but older tool outputs elided.
+            messages: pruneMessagesForModel(
+              this.record.messages,
+              this.deps.config.context?.keepRecentToolResults ?? 6,
+            ),
+            tools,
+            signal,
+          });
+
+          let streamError: string | null = null;
+          let emittedText = false;
+          for await (const chunk of result.fullStream) {
+            if (chunk.type === "text-delta") {
+              emittedText = true;
+              yield { type: "text-delta", text: chunk.text ?? "" };
+            } else if (chunk.type === "error") {
+              if (signal?.aborted) return;
+              streamError = friendlyError(stringifyError(chunk.error));
+              break;
             }
           }
-          yield { type: "error", error: streamError };
-          return;
+
+          if (!streamError) break; // success
+
+          // Once text has streamed we can't cleanly retry — surface the error.
+          const next = emittedText ? null : nextModelOnError(attempt);
+          if (!next) {
+            yield { type: "error", error: streamError };
+            stepFailed = true;
+            break;
+          }
+          attempt = next;
+          if (attempt.model !== modelToUse) {
+            activeRunner = this.deps.runner ?? this.buildRunner(agent, attempt.model);
+            modelToUse = attempt.model;
+            yield { type: "text-delta", text: `\n\n⚠️ Switching to ${attempt.model}…\n\n` };
+          }
         }
+        if (stepFailed) return;
 
         const response = await result.response;
         this.record.messages.push(...response.messages);

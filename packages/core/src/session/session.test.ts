@@ -76,6 +76,30 @@ describe("Session agent loop", () => {
     );
   }
 
+  it("retries the model on a transient stream error and recovers", async () => {
+    let calls = 0;
+    const flakyRunner: ModelRunner = () => {
+      calls += 1;
+      const failing = calls === 1;
+      async function* stream() {
+        if (failing) yield { type: "error" as const, error: new Error("Cannot connect to API") };
+        else yield { type: "text-delta" as const, text: "Recovered." };
+      }
+      return {
+        fullStream: stream(),
+        response: Promise.resolve({ messages: [{ role: "assistant", content: "Recovered." }] as ModelMessage[] }),
+        finishReason: Promise.resolve("stop"),
+        toolCalls: Promise.resolve([]),
+      };
+    };
+    const session = makeSession(flakyRunner);
+    const events: string[] = [];
+    for await (const e of session.prompt("hi")) events.push(e.type);
+    expect(calls).toBe(2); // failed once, retried once
+    expect(events).toContain("done");
+    expect(events).not.toContain("error");
+  });
+
   it("injects a discovered skill's name+description (not its body) into the system prompt", async () => {
     mkdirSync(join(dir, ".termcoder", "skills"), { recursive: true });
     writeFileSync(
@@ -149,16 +173,16 @@ describe("Session agent loop", () => {
     expect(captured).toContain("TypeScript");
   });
 
-  it("auto-escalates to a stronger model once when a termcoder/auto turn errors", async () => {
+  it("retries and recovers when a termcoder/auto turn errors", async () => {
     const env = { GEMINI_API_KEY: "x" };
     const brainConfig = loadConfig({ cwd: dir, configDir: join(dir, "cfg"), env });
     brainConfig.model = "termcoder/auto";
     const runner = scriptedRunner([
       { chunks: [{ type: "error", error: "model overloaded" }], finishReason: "error" },
       {
-        chunks: [{ type: "text-delta", text: "recovered on the strong model" }],
+        chunks: [{ type: "text-delta", text: "recovered after a retry" }],
         finishReason: "stop",
-        responseMessages: [{ role: "assistant", content: "recovered on the strong model" }],
+        responseMessages: [{ role: "assistant", content: "recovered after a retry" }],
       },
     ]);
     const permission = new PermissionManager(brainConfig.permission, async () => "deny");
@@ -168,8 +192,7 @@ describe("Session agent loop", () => {
     );
     const events = await collect(session, "add a small helper function");
     const text = events.filter((e) => e.type === "text-delta").map((e) => (e as { text: string }).text).join("");
-    expect(text).toContain("retrying with google/gemini-2.5-pro");
-    expect(text).toContain("recovered on the strong model");
+    expect(text).toContain("recovered after a retry");
     expect(events.filter((e) => e.type === "error")).toHaveLength(0); // recovered, no surfaced error
   });
 
@@ -389,12 +412,12 @@ describe("Session agent loop", () => {
     expect(existsSync(join(dir, "blocked.txt"))).toBe(false);
   });
 
-  it("surfaces a stream error", async () => {
+  it("surfaces a stream error after retries are exhausted", async () => {
+    // Both the initial call and the retry fail; with no key to fall back to,
+    // the error surfaces.
     const runner = scriptedRunner([
-      {
-        chunks: [{ type: "error", error: new Error("boom") }],
-        finishReason: "error",
-      },
+      { chunks: [{ type: "error", error: new Error("boom") }], finishReason: "error" },
+      { chunks: [{ type: "error", error: new Error("boom") }], finishReason: "error" },
     ]);
     const session = makeSession(runner);
     const events = await collect(session, "fail please");
