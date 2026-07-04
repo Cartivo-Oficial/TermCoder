@@ -35,7 +35,10 @@ let tray: Tray | null = null;
 
 /** Start an in-process termcoder server and capture its port. */
 async function startServer(): Promise<void> {
-  const cwd = process.env.INIT_CWD ?? process.cwd();
+  // Default to the user's home, not the install directory (a packaged app's
+  // process.cwd() is where termcoder.exe lives — the user shouldn't land there).
+  // In dev, pnpm sets INIT_CWD to the project, so that still wins.
+  const cwd = process.env.INIT_CWD ?? app.getPath("home");
   const config = loadConfig({ cwd });
 
   const mcp = await connectMcpServers(config);
@@ -187,6 +190,9 @@ ipcMain.handle("read-image", (_event, path: string) => {
 ipcMain.handle("list-dir", (_event, dir: string) => {
   try {
     return readdirSync(dir, { withFileTypes: true })
+      // Hide dotfiles/dotfolders (incl. termcoder's own .termcoder) and the
+      // usual noise so the tree stays clean — even in a home directory.
+      .filter((d) => !d.name.startsWith(".") && d.name !== "node_modules")
       .map((d) => ({ name: d.name, dir: d.isDirectory() }))
       .sort((a, b) =>
         a.dir === b.dir ? a.name.localeCompare(b.name) : a.dir ? -1 : 1,
