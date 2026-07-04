@@ -1,0 +1,6 @@
+# Shows the "Sponsor" button on the repo.
+# Each line only goes live once you set that account up:
+#   - github: the handle must be enrolled in GitHub Sponsors (confirm/adjust it).
+#   - open_collective: create the collective first, then uncomment the line.
+github: [EduardoxDev]
+# open_collective: termcoder
