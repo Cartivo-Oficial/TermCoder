@@ -14,7 +14,10 @@ import {
   createSubagentTool,
   discoverAgents,
   discoverCommands,
+  discoverMemories,
   discoverSkills,
+  saveMemory,
+  deleteMemory,
   expandCommand,
   getModelCatalog,
   completeCode,
@@ -539,6 +542,36 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     if (!existsSync(file)) return sendJson(res, 404, { error: "skill not found" });
     rmSync(file, { force: true });
     return sendJson(res, 200, { name });
+  }
+
+  // GET /memory — remembered facts (project + user)
+  if (req.method === "GET" && parts.length === 1 && parts[0] === "memory") {
+    const memories = discoverMemories({ cwd: ctx.cwd }).map((m) => ({
+      name: m.name, description: m.description, type: m.type, scope: m.scope, body: m.body,
+    }));
+    return sendJson(res, 200, { memories });
+  }
+  // POST /memory — save a fact
+  if (req.method === "POST" && parts.length === 1 && parts[0] === "memory") {
+    const body = await readJson(req);
+    try {
+      const m = saveMemory({
+        scope: body.scope === "user" ? "user" : "project",
+        name: String(body.name ?? ""),
+        description: String(body.description ?? ""),
+        type: ["project", "preference", "decision"].includes(body.type as string) ? (body.type as "project" | "preference" | "decision") : "project",
+        body: String(body.body ?? ""),
+        cwd: ctx.cwd,
+      });
+      return sendJson(res, 200, { ok: true, name: m.name });
+    } catch (err) {
+      return sendJson(res, 400, { ok: false, error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+  // DELETE /memory/:name
+  if (req.method === "DELETE" && parts.length === 2 && parts[0] === "memory") {
+    const removed = deleteMemory({ name: parts[1]!, cwd: ctx.cwd });
+    return sendJson(res, 200, { ok: removed });
   }
 
   // Read the live config (without secrets) for the settings UI.

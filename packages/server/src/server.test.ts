@@ -274,4 +274,19 @@ describe("server", () => {
     expect(md.headers.get("content-type")).toMatch(/text\/markdown/);
     expect(await md.text()).toContain("# Shared");
   });
+
+  it("lists, saves, and deletes memories", async () => {
+    const save = await fetch(`${base()}/memory`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ scope: "project", name: "arch", description: "monorepo", type: "project", body: "four packages" }),
+    });
+    expect(save.status).toBe(200);
+
+    const list = (await (await fetch(`${base()}/memory`)).json()) as { memories: Array<{ name: string }> };
+    expect(list.memories.some((m) => m.name === "arch")).toBe(true);
+
+    const del = await fetch(`${base()}/memory/arch`, { method: "DELETE" });
+    expect(del.status).toBe(200);
+  });
 });
