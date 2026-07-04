@@ -129,13 +129,22 @@ function createWindow(): void {
   const icon = appIconImage();
   if (icon) win.setIcon(icon);
 
+  // Pass the home + a clean default (Documents) so the renderer can avoid
+  // rooting the file tree in the messy home directory.
+  const home = app.getPath("home");
+  let docs = home;
+  try {
+    docs = app.getPath("documents");
+  } catch {
+    /* no Documents — fall back to home */
+  }
+  const params = `port=${serverPort}&home=${encodeURIComponent(home)}&docs=${encodeURIComponent(docs)}`;
+
   const devUrl = process.env.ELECTRON_RENDERER_URL;
   if (devUrl) {
-    void win.loadURL(`${devUrl}?port=${serverPort}`);
+    void win.loadURL(`${devUrl}?${params}`);
   } else {
-    void win.loadFile(join(__dirname, "../renderer/index.html"), {
-      search: `port=${serverPort}`,
-    });
+    void win.loadFile(join(__dirname, "../renderer/index.html"), { search: params });
   }
 }
 

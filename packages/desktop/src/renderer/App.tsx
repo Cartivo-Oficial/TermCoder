@@ -77,6 +77,15 @@ const wsScheme = location.protocol === "https:" ? "wss:" : "ws:";
 const httpBase = `${scheme}//${host}:${port}`;
 const wsBase = `${wsScheme}//${host}:${port}`;
 
+// The home dir and a clean default (Documents) come from the main process. We
+// avoid rooting the file tree in the home directory — it's full of system junk.
+const HOME_DIR = decodeURIComponent(new URLSearchParams(location.search).get("home") || "");
+const DEFAULT_DIR = decodeURIComponent(new URLSearchParams(location.search).get("docs") || "") || HOME_DIR;
+function cleanDir(dir?: string | null): string | undefined {
+  if (!dir) return undefined;
+  return HOME_DIR && dir === HOME_DIR ? DEFAULT_DIR || undefined : dir;
+}
+
 const MODELS = [
   "termcoder/auto",
   "google/gemini-2.5-flash",
@@ -620,9 +629,12 @@ export function App() {
         const list = (await (await fetch(`${httpBase}/sessions`)).json()) as SessionSummary[];
         setSessions(list);
         const savedSession = localStorage.getItem("tc-session");
-        const savedCwd = localStorage.getItem("tc-cwd");
-        if (savedSession && list.some((s) => s.id === savedSession)) await openSession(savedSession);
-        else await createSession(savedCwd ?? undefined);
+        const savedCwd = cleanDir(localStorage.getItem("tc-cwd"));
+        const saved = savedSession ? list.find((s) => s.id === savedSession) : undefined;
+        // Don't reopen a session rooted in the home directory — start fresh in a
+        // clean folder (Documents) so the tree isn't the messy home dir.
+        if (saved && !(HOME_DIR && saved.cwd === HOME_DIR)) await openSession(savedSession!);
+        else await createSession(savedCwd ?? DEFAULT_DIR ?? undefined);
       } catch {
         setMessages([{ role: "error", text: t("app.serverUnreachable") }]);
       }
@@ -725,7 +737,8 @@ export function App() {
     };
   }
 
-  function setWorkingDir(dir: string) {
+  function setWorkingDir(rawDir: string) {
+    const dir = cleanDir(rawDir) ?? rawDir; // never root the tree in the home dir
     setCwd(dir);
     cwdRef.current = dir;
     localStorage.setItem("tc-cwd", dir);
