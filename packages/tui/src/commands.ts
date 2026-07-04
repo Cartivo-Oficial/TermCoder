@@ -10,6 +10,7 @@ export interface TuiCommand {
 export const TUI_COMMANDS: TuiCommand[] = [
   { name: "help", desc: "Show all commands" },
   { name: "setup", desc: "Set up a model (free options available)" },
+  { name: "upgrade", desc: "Connect a better model (free Gemini key) for much better answers" },
   { name: "connect", arg: "[provider]", desc: "Connect a provider (API key now; subscription login soon)" },
   { name: "key", arg: "<provider> <key>", desc: "Save an API key (google/anthropic/openai)" },
   { name: "new", desc: "Start a new session" },

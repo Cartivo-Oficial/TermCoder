@@ -575,6 +575,21 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           ].join("\n"),
         });
         break;
+      case "upgrade": {
+        const onKey = providerHasKey("google") || providerHasKey("anthropic") || providerHasKey("openai");
+        pushHistory({
+          kind: "notice",
+          text: onKey
+            ? "You're already connected to a provider — you're on the good stuff. /model to pick one."
+            : [
+                "termcoderfree is free but small. For MUCH better answers — also free — connect Google Gemini:",
+                "  1. Get a free key: https://aistudio.google.com/apikey",
+                "  2. Run:  /key google YOUR_KEY",
+                "That's it — termcoder/auto uses Gemini automatically. (Or install Ollama for unlimited local.)",
+              ].join("\n"),
+        });
+        break;
+      }
       case "connect": {
         if (arg) {
           const p = CONNECTABLE_PROVIDERS.find((x) => x.provider === arg);
