@@ -9,7 +9,7 @@ import { Welcome } from "./Welcome";
 import { useI18n } from "./i18n";
 import { COLOR_THEMES, THEME_VARS } from "./themes";
 import { KEYBIND_ACTIONS, comboFor, matchCombo } from "./keybinds";
-import { IconTrash, IconStop, IconShare, IconCopy, IconEdit, IconMic, IconUndo } from "./Icons";
+import { IconTrash, IconStop, IconShare, IconCopy, IconEdit, IconMic, IconUndo, IconBolt, IconStudy } from "./Icons";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { ModelBrowser } from "./ModelBrowser";
 import { Study } from "./Study";
@@ -1611,13 +1611,8 @@ export function App() {
             )}
             <span className={`dot ${connected ? "on" : "off"}`} title={connected ? t("chat.connected") : t("chat.connecting")} />
             <div className="ch-right">
-              <button
-                className="icon sm"
-                title="Study — flashcards"
-                onClick={() => setStudyOpen(true)}
-                style={{ fontSize: 15 }}
-              >
-                📚
+              <button className="icon sm" title="Study — flashcards" onClick={() => setStudyOpen(true)}>
+                <IconStudy />
               </button>
               {tokens > 0 ? (
                 <span
@@ -1833,9 +1828,9 @@ export function App() {
                 className="attach"
                 title={autonomous ? "Autonomous mode: ON — runs to the goal, verifies, and keeps fixing" : "Autonomous mode: OFF"}
                 onClick={() => setAutonomous((v) => !v)}
-                style={autonomous ? { color: "var(--accent)", fontSize: 16 } : { fontSize: 16, opacity: 0.6 }}
+                style={autonomous ? { color: "var(--accent)" } : undefined}
               >
-                🤖
+                <IconBolt />
               </button>
               <button
                 className={`attach mic ${recording ? "recording" : ""} ${transcribing ? "transcribing" : ""}`}

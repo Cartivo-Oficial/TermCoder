@@ -146,7 +146,7 @@ export function Study({ port, onClose }: StudyProps) {
     <div className="settings" onClick={onClose}>
       <div className="settings-card" style={{ maxWidth: 560, width: "92%" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px 0" }}>
-          <h3 style={{ margin: 0 }}>📚 Study</h3>
+          <h3 style={{ margin: 0 }}>Study</h3>
           <button className="settings-btn" onClick={onClose}>✕</button>
         </div>
         <div style={{ padding: "8px 24px 24px" }}>

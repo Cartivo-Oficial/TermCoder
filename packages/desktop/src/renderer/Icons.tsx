@@ -194,3 +194,17 @@ export const IconHelp = (p: SVGProps<SVGSVGElement>) => (
     <path d="M12 17h.01" />
   </svg>
 );
+
+export const IconBolt = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...p}>
+    <path d="M13 2 4.5 13.5a.6.6 0 0 0 .5 1h5l-1 7.5L19.5 10a.6.6 0 0 0-.5-1h-5l1-6z" />
+  </svg>
+);
+
+export const IconStudy = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...p}>
+    <path d="M22 9.5 12 5 2 9.5l10 4.5 10-4.5z" />
+    <path d="M6 11.5v4.2c0 1 2.7 2.3 6 2.3s6-1.3 6-2.3v-4.2" />
+    <path d="M22 9.5v5" />
+  </svg>
+);
