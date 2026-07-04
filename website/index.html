@@ -166,7 +166,7 @@
     <div class="eyebrow">Open source · MIT</div>
     <h1>The AI coding agent for your <span class="a">terminal</span>.</h1>
     <p class="sub">TermCoder reads your code, runs commands, and ships changes from a fast terminal
-      interface. Bring any model, or run it locally. A study mode is built in.</p>
+      interface. It works free with no API key and no account — or bring your own model. A study mode is built in.</p>
 
     <div class="cmd">
       <span class="p">$</span>
@@ -178,7 +178,7 @@
       <a class="btn" href="install.html">Install the CLI</a>
       <a class="btn" href="docs.html">Read the docs</a>
     </div>
-    <p class="runline">Then type <b class="mono">term</b> in any folder. Runs locally with Ollama, or with your own provider key.<br>
+    <p class="runline">Then type <b class="mono">term</b> in any folder. It runs free with no API key — add a provider key or a local Ollama model only if you want more.<br>
       The command line needs <a class="link" href="https://nodejs.org" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">Node.js 18+</a> — no Node? <a href="download.html" style="color:inherit;text-decoration:underline">get the desktop app</a> instead, nothing to install.</p>
 
     <!-- signature: the CLI itself -->
@@ -200,7 +200,7 @@
         </div>
         <div class="art-tag">your terminal coding agent · type / for commands</div>
         <div class="term-in"><span class="p">❯</span> refactor the auth module and run the tests<span class="cur">▋</span></div>
-        <div class="term-foot"><span class="b">Build · termcoder/auto</span><span>~/my-project · v0.1.7</span></div>
+        <div class="term-foot"><span class="b">Build · termcoder/auto</span><span>~/my-project · v0.6.0</span></div>
       </div>
     </div>
   </section>
@@ -208,7 +208,7 @@
   <!-- PROVIDERS -->
   <section class="providers">
     <div class="wrap">
-      <div class="lbl">Bring any model — or run it on your machine</div>
+      <div class="lbl">Free out of the box — or bring any model you like</div>
       <div class="logos">
         <span class="logo" title="Anthropic">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.6 3h-3.1l5.6 18h3.2L15.6 3zM7.9 3 2 21h3.3l1.2-3.9h5.9L13.6 21H17L11.1 3H7.9zm-.4 11.3L9.5 8l2 6.3H7.5z"/></svg>
@@ -237,12 +237,14 @@
       <h2 class="sec-t">A terminal agent with real tools, and nothing in your way.</h2>
       <p class="sec-p">An agent loop that reads, edits, and runs — wrapped in a keyboard-driven interface that stays out of the way.</p>
       <div class="feats">
-        <div class="feat"><h3>Built for the terminal</h3><p>Slash commands, @file mentions, a live model picker, multi-line input, and a trust prompt on first run.</p></div>
-        <div class="feat"><h3>Any model, or local</h3><p>Anthropic, OpenAI, or Gemini with your key — or point it at a local Ollama model. No account, no lock-in.</p></div>
-        <div class="feat"><h3>Build and Plan modes</h3><p>Plan mode reads and proposes without touching files; Build mode carries the change out. Switch with shift+tab.</p></div>
-        <div class="feat"><h3>Sub-agents and skills</h3><p>Delegate focused work to specialist sub-agents. Reusable skill playbooks load on demand, only when needed.</p></div>
-        <div class="feat"><h3>Kind to your context</h3><p>Old tool output is elided and long results are capped, so a long session stops re-billing everything it has read.</p></div>
-        <div class="feat"><h3>A study mode inside</h3><p>Switch to TermExplorer and the same tool becomes a patient tutor for schoolwork. No programming required.</p></div>
+        <div class="feat"><h3>Free, no API key</h3><p>Start immediately on a free, keyless model. No sign-up, no card, no quota to set up — open a folder and type. If it hiccups, it retries and falls back on its own.</p></div>
+        <div class="feat"><h3>Any model, or fully local</h3><p>Bring Anthropic, OpenAI, or Gemini with your own key — or run a local Ollama model with nothing leaving your machine. Switch mid-session with /model.</p></div>
+        <div class="feat"><h3>Build and Plan modes</h3><p>Plan mode reads and proposes without touching files; Build mode carries the change out and asks before it writes or runs. Toggle with shift+tab.</p></div>
+        <div class="feat"><h3>Works unattended</h3><p>Hand it a goal and it plans, edits, runs your tests, and keeps fixing until they pass — checkpointing each round so you can revert.</p></div>
+        <div class="feat"><h3>Sub-agents and skills</h3><p>Delegate focused work to reviewer, tester, debugger, and architect sub-agents. Reusable skill playbooks load on demand, only when needed.</p></div>
+        <div class="feat"><h3>Sync, share, and packs</h3><p>Sync your setup across machines, share a session as a link, and install agents, skills, and commands as packs — all through GitHub, no server.</p></div>
+        <div class="feat"><h3>Classrooms</h3><p>A teacher opens a class, students join with a link, and assignments and submissions ride GitHub. Async by design, nothing to host.</p></div>
+        <div class="feat"><h3>A study mode inside</h3><p>Switch to TermExplorer and the same tool tutors schoolwork — explanations, summaries, and spaced-repetition flashcards. No coding required.</p></div>
       </div>
     </div>
   </section>
@@ -254,8 +256,9 @@
         <div class="sec-h">TermExplorer</div>
         <h2 class="sec-t">A study companion in the same tool.</h2>
         <p class="sec-p">Pick the TermExplorer model and TermCoder explains step by step, summarizes your
-          notes, and builds flashcards, practice quizzes, and study plans — in your language.</p>
-        <div class="chips"><span class="chip">explain</span><span class="chip">summarize</span><span class="chip">flashcards</span><span class="chip">practice quiz</span><span class="chip">study plan</span></div>
+          notes, and turns them into spaced-repetition flashcards you review with <code class="mono">/review</code> — plus
+          practice quizzes and study plans, in your language.</p>
+        <div class="chips"><span class="chip">explain</span><span class="chip">summarize</span><span class="chip">flashcards</span><span class="chip">spaced repetition</span><span class="chip">practice quiz</span><span class="chip">study plan</span></div>
       </div>
       <div class="study-code">
         <div><span class="p">❯</span> summarize these notes into key points</div>

@@ -119,6 +119,11 @@
     <a href="#agents">Custom agents</a>
     <a href="#skills">Skills</a>
     <a href="#study">Study mode</a>
+    <div class="grp">Do more</div>
+    <a href="#autonomous">Autonomous mode</a>
+    <a href="#sync">Sync, share, packs</a>
+    <a href="#classrooms">Classrooms</a>
+    <a href="#web">Run in the browser</a>
     <div class="grp">Reference</div>
     <a href="#config">Configuration</a>
     <a href="#shortcuts">Keyboard shortcuts</a>
@@ -136,9 +141,10 @@
       <p>TermCoder is an open source AI coding agent that runs in your terminal. You describe a task in
         plain language; it reads the relevant files, proposes and applies edits, runs commands, and reports
         back — asking permission before anything that changes your machine.</p>
-      <p>It ships one binary, <code class="i">term</code>, and works with any model: Anthropic, OpenAI, or
-        Google Gemini with your own key, or a local model through Ollama. A second persona, <b>TermExplorer</b>,
-        turns the same tool into a study assistant.</p>
+      <p>It ships one binary, <code class="i">term</code>, and runs on a <b>free, keyless model out of the box</b> —
+        nothing to sign up for or configure. Bring your own Anthropic, OpenAI, or Google Gemini key when you want
+        more, or run a local model through Ollama. A second persona, <b>TermExplorer</b>, turns the same tool into
+        a study assistant.</p>
     </section>
 
     <!-- INSTALL -->
@@ -162,10 +168,11 @@ npm install <span class="p">-g</span> @termcoder/tui</pre>
       <ol>
         <li><b>Trust prompt.</b> TermCoder asks whether you trust the current folder before it reads or runs
           anything in it. It remembers your answer per folder.</li>
-        <li><b>Model setup.</b> If no provider is configured, run <code class="i">/setup</code> — it walks you
-          through connecting a key, or points you at a local Ollama model so you can start without one.</li>
+        <li><b>Nothing to set up.</b> TermCoder starts on the free, keyless model right away — just type. Want a
+          faster or stronger model? Run <code class="i">/upgrade</code> to connect a free Gemini key in two steps,
+          <code class="i">/setup</code> for the full guide, or pick a local Ollama model.</li>
       </ol>
-      <p>Once a model is ready, type your request at the prompt and press Enter.</p>
+      <p>Type your request at the prompt and press Enter.</p>
     </section>
 
     <!-- QUICKSTART -->
@@ -209,8 +216,10 @@ term
         <tbody>
           <tr><td><code>/help</code></td><td>Show all commands and keyboard shortcuts.</td></tr>
           <tr><td><code>/setup</code></td><td>Guided model setup — connect a provider or pick a local model.</td></tr>
+          <tr><td><code>/upgrade</code></td><td>Connect a free Gemini key in two steps for faster, stronger answers.</td></tr>
           <tr><td><code>/key</code></td><td><code>/key &lt;provider&gt; &lt;key&gt;</code> — save an API key for a provider.</td></tr>
           <tr><td><code>/model</code></td><td>Open the model picker (search, favorites, connect a provider).</td></tr>
+          <tr><td><code>/background</code></td><td><code>/background &lt;goal&gt;</code> — work unattended until the tests pass.</td></tr>
           <tr><td><code>/agent</code></td><td>Switch the active agent for this session.</td></tr>
           <tr><td><code>/agents</code></td><td>List the agents available in this project.</td></tr>
           <tr><td><code>/commands</code></td><td>List custom project commands.</td></tr>
@@ -225,7 +234,16 @@ term
           <tr><td><code>/suggest</code></td><td>Suggest a useful follow-up for the current context.</td></tr>
           <tr><td><code>/tokens</code></td><td>Show token usage for the session.</td></tr>
           <tr><td><code>/init</code></td><td>Create an <code>AGENTS.md</code> with project instructions.</td></tr>
+          <tr><td><code>/flashcards</code></td><td><code>/flashcards &lt;topic&gt;</code> — generate study cards into a deck.</td></tr>
+          <tr><td><code>/decks</code></td><td>List your study decks, due counts, and streak.</td></tr>
+          <tr><td><code>/review</code></td><td>Review the cards due today, one at a time.</td></tr>
+          <tr><td><code>/login</code></td><td>Connect a GitHub token for sync, share, packs, and classrooms.</td></tr>
+          <tr><td><code>/sync</code></td><td>Sync settings, drafts, and decks across machines.</td></tr>
           <tr><td><code>/share</code></td><td>Export the session as HTML you can share.</td></tr>
+          <tr><td><code>/publish</code></td><td>Publish the session to a link anyone can open.</td></tr>
+          <tr><td><code>/import</code></td><td><code>/import &lt;link&gt;</code> — open a shared session.</td></tr>
+          <tr><td><code>/pack</code></td><td>Publish, install, or list packs of agents, skills, and commands.</td></tr>
+          <tr><td><code>/class</code></td><td>Create or join a classroom; manage assignments and submissions.</td></tr>
           <tr><td><code>/clear</code></td><td>Clear the screen.</td></tr>
           <tr><td><code>/exit</code></td><td>Quit termcoder.</td></tr>
         </tbody>
@@ -273,7 +291,12 @@ term
         full <code class="i">provider/model</code> id to add one that is not in the list.</p>
       <h3>termcoder/auto</h3>
       <p>The default. It routes each task by difficulty — a quick model for simple edits, a stronger one for
-        harder work — and reviews its own changes before finishing.</p>
+        harder work — and reviews its own changes before finishing. With no key it runs on the free, keyless
+        model; connect a key and it routes to that automatically.</p>
+      <h3>A reliable free tier</h3>
+      <p>The free model is community-hosted and can get busy. When a request fails, TermCoder retries it and — if
+        you have connected a key — falls back to it, so a hiccup does not kill your turn. Run
+        <code class="i">/upgrade</code> to connect a free Gemini key in two steps for faster, steadier answers.</p>
     </section>
 
     <!-- KEYS -->
@@ -356,6 +379,77 @@ Steps to cut a release in this repo:
         <li>Works through homework by showing the reasoning, not just the answer.</li>
       </ul>
       <p>No programming knowledge is needed — just ask.</p>
+      <h3>Spaced repetition</h3>
+      <p>Flashcards go into decks and come back on a spaced-repetition schedule, so you review each card right
+        before you'd forget it. Reviewing builds a daily streak.</p>
+      <pre class="block"><span class="p">❯</span> /flashcards the water cycle   <span class="c"># make cards, add to a deck</span>
+<span class="p">❯</span> /decks                         <span class="c"># decks, due counts, and streak</span>
+<span class="p">❯</span> /review                        <span class="c"># reveal each card, then grade it 0–5</span></pre>
+      <p>In the desktop app the same decks live under the <b>Study</b> button.</p>
+    </section>
+
+    <!-- AUTONOMOUS -->
+    <section class="doc" id="autonomous">
+      <h2>Autonomous mode</h2>
+      <p>Hand TermCoder a goal and let it work unattended. It plans, edits, and runs your project's check,
+        feeds any failure back into the next round, and keeps going until the check passes or it runs out of
+        rounds.</p>
+      <pre class="block"><span class="p">❯</span> /background add input validation to the signup form and make the tests pass</pre>
+      <p>It auto-approves its own changes while it runs and checkpoints each round, so you can revert. TermCoder
+        detects the check from your project — an npm <code class="i">test</code>, <code class="i">typecheck</code>,
+        or <code class="i">build</code> script, <code class="i">go build</code>, <code class="i">cargo check</code>,
+        or <code class="i">pytest</code>. In the desktop app, toggle the autonomous button in the composer and send
+        your goal.</p>
+    </section>
+
+    <!-- SYNC & PACKS -->
+    <section class="doc" id="sync">
+      <h2>Sync, share, and packs</h2>
+      <p>TermCoder uses GitHub as its backend — no server to run. Connect a token once with
+        <code class="i">/login</code> (it needs the <b>gist</b> scope); it is stored in your user config, never in
+        the project.</p>
+      <table>
+        <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>/sync</code></td><td>Mirror your settings, drafts, and study decks to a private gist, and pull them on another machine. Last write wins.</td></tr>
+          <tr><td><code>/publish</code></td><td>Publish the current session; you get a link that opens in a hosted viewer.</td></tr>
+          <tr><td><code>/import</code></td><td>Open a shared session from its link into a fresh session.</td></tr>
+          <tr><td><code>/pack publish</code></td><td>Bundle this project's agents, skills, and commands into a pack.</td></tr>
+          <tr><td><code>/pack install</code></td><td>Install a pack from a gist or a <code>owner/repo</code> into your project.</td></tr>
+        </tbody>
+      </table>
+      <div class="note"><p><b>Secrets never sync.</b> API keys stay on your machine — sync and share use private
+        gists and carry settings and content only, never your keys.</p></div>
+    </section>
+
+    <!-- CLASSROOMS -->
+    <section class="doc" id="classrooms">
+      <h2>Classrooms</h2>
+      <p>A classroom lets a teacher share packs and assignments with students, all through GitHub. A class is a
+        private gist; joins, submissions, and the roster ride gist comments — async, with nothing to host.</p>
+      <pre class="block"><span class="c"># teacher</span>
+<span class="p">❯</span> /class create "Algorithms 101"
+<span class="p">❯</span> /class assign "Sorting exercise"
+
+<span class="c"># student</span>
+<span class="p">❯</span> /class join &lt;link&gt;        <span class="c"># installs the class's shared packs</span>
+<span class="p">❯</span> /class submit             <span class="c"># publishes your session and posts the link</span>
+
+<span class="c"># teacher</span>
+<span class="p">❯</span> /class submissions        <span class="c"># see who submitted what</span></pre>
+      <p>Joining installs the class's shared packs, so every student starts with the same agents and skills.</p>
+    </section>
+
+    <!-- WEB -->
+    <section class="doc" id="web">
+      <h2>Run in the browser</h2>
+      <p>The same engine runs three ways: the <code class="i">term</code> CLI, the desktop app, and a browser.
+        Start the local server and open the full interface in any browser on your network:</p>
+      <pre class="block"><span class="c"># serve the web app from your machine</span>
+termcoder-server
+<span class="c"># then open the printed http://localhost:PORT</span></pre>
+      <p>Shared sessions also open on their own — a <code class="i">/publish</code> link renders in a hosted
+        viewer with nothing installed.</p>
     </section>
 
     <!-- CONFIG -->
