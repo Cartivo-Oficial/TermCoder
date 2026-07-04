@@ -50,6 +50,10 @@ import {
   SessionStore,
   ToolRegistry,
   transcriptSegments,
+  saveMemory,
+  discoverMemories,
+  deleteMemory,
+  slugifyMemoryName,
   type Config,
   type PermissionDecision,
   type PermissionRequest,
@@ -1164,6 +1168,44 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         } catch (err) {
           pushHistory({ kind: "error", text: String(err) });
         }
+        break;
+      }
+      case "remember": {
+        const text = arg.trim();
+        if (!text) { pushHistory({ kind: "notice", text: "Usage: /remember [project] <text>" }); break; }
+        const isProject = /^project\s+/i.test(text);
+        const bodyText = isProject ? text.replace(/^project\s+/i, "") : text;
+        const description = bodyText.length > 60 ? `${bodyText.slice(0, 57)}…` : bodyText;
+        try {
+          const m = saveMemory({
+            scope: isProject ? "project" : "user",
+            name: slugifyMemoryName(bodyText.split(/\s+/).slice(0, 5).join(" ")),
+            description,
+            type: isProject ? "project" : "preference",
+            body: bodyText,
+            cwd,
+          });
+          pushHistory({ kind: "notice", text: `✓ Remembered (${m.scope}): ${m.name}` });
+        } catch (err) {
+          pushHistory({ kind: "error", text: err instanceof Error ? err.message : String(err) });
+        }
+        break;
+      }
+      case "memories": {
+        const mems = discoverMemories({ cwd });
+        pushHistory({
+          kind: "notice",
+          text: mems.length
+            ? `Memory:\n${mems.map((m) => `  • [${m.scope}] ${m.name} — ${m.description}`).join("\n")}`
+            : "No memories yet. Save one with /remember, or just tell me something worth keeping.",
+        });
+        break;
+      }
+      case "forget": {
+        const name = arg.trim();
+        if (!name) { pushHistory({ kind: "notice", text: "Usage: /forget <name>" }); break; }
+        const removed = deleteMemory({ name, cwd });
+        pushHistory({ kind: removed ? "notice" : "error", text: removed ? `Forgot "${slugifyMemoryName(name)}".` : `No memory named "${name}".` });
         break;
       }
       case "exit":
