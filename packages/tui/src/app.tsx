@@ -68,7 +68,7 @@ import { TrustPrompt } from "./components/TrustPrompt";
 import { ReviewMode } from "./components/ReviewMode";
 import { Transcript, TranscriptItem } from "./components/Transcript";
 
-const VERSION = "0.5.0";
+const VERSION = "0.5.1";
 
 const AGENTS_TEMPLATE = `# Project instructions for termcoder
 
@@ -221,6 +221,37 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
       .catch(() => {});
     return () => {
       alive = false;
+    };
+  }, []);
+
+  // Best-effort: let the user know when a newer termcoder is on npm.
+  useEffect(() => {
+    const isNewer = (a: string, b: string): boolean => {
+      const x = a.split(".").map((n) => parseInt(n, 10) || 0);
+      const y = b.split(".").map((n) => parseInt(n, 10) || 0);
+      for (let i = 0; i < 3; i++) {
+        if ((x[i] ?? 0) > (y[i] ?? 0)) return true;
+        if ((x[i] ?? 0) < (y[i] ?? 0)) return false;
+      }
+      return false;
+    };
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 4000);
+    fetch("https://registry.npmjs.org/@termcoder/tui/latest", { signal: ctrl.signal })
+      .then((r) => r.json() as Promise<{ version?: string }>)
+      .then((d) => {
+        if (d.version && isNewer(d.version, VERSION)) {
+          pushHistory({
+            kind: "notice",
+            text: `✨ termcoder ${d.version} is available (you have ${VERSION}).  Update:  npm i -g @termcoder/tui@latest`,
+          });
+        }
+      })
+      .catch(() => {})
+      .finally(() => clearTimeout(timer));
+    return () => {
+      clearTimeout(timer);
+      ctrl.abort();
     };
   }, []);
 
