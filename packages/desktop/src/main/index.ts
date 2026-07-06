@@ -11,6 +11,7 @@ import {
   nativeImage,
   Notification,
   session,
+  shell,
   Tray,
 } from "electron";
 import {
@@ -117,6 +118,11 @@ function createWindow(): void {
       contextIsolation: true,
       preload: join(__dirname, "../preload/index.js"),
     },
+  });
+
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: "deny" };
   });
 
   mainWindow = win;
