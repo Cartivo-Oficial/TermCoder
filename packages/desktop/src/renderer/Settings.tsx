@@ -37,6 +37,9 @@ interface ProviderAuthInfo {
   label: string;
   configured: boolean;
   methods: AuthMethodInfo[];
+  keyUrl?: string;
+  freeTier?: string;
+  health?: "ok" | "bad" | "unknown";
 }
 
 export type SettingsTab =
@@ -270,12 +273,27 @@ export function Settings(p: Props) {
   // The "Connect <provider>" modal (OpenCode-style login-method picker).
   const [connectFor, setConnectFor] = useState<string | null>(null);
   const [providerAuth, setProviderAuth] = useState<ProviderAuthInfo[]>([]);
+  const [probeState, setProbeState] = useState<Record<string, { busy?: boolean; ok?: boolean; error?: string }>>({});
 
   function loadProviderAuth() {
     fetch(`${httpBase}/providers`)
       .then((r) => r.json())
       .then((d) => setProviderAuth(Array.isArray(d) ? (d as ProviderAuthInfo[]) : []))
       .catch(() => {});
+  }
+
+  async function testProvider(name: string) {
+    setProbeState((s) => ({ ...s, [name]: { busy: true } }));
+    try {
+      const r = await fetch(`${httpBase}/providers/probe`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ provider: name }),
+      }).then((x) => x.json() as Promise<{ ok: boolean; error?: string }>);
+      setProbeState((s) => ({ ...s, [name]: { ok: r.ok, error: r.error } }));
+    } catch {
+      setProbeState((s) => ({ ...s, [name]: { ok: false, error: "server unreachable" } }));
+    }
   }
   const [githubDraft, setGithubDraft] = useState("");
   const [savingGithub, setSavingGithub] = useState(false);
@@ -529,8 +547,6 @@ export function Settings(p: Props) {
     ["bash", "settings.perm.bash"],
     ["mcp", "settings.perm.mcp"],
   ];
-  const PROVIDER_NAMES = ["anthropic", "openai", "google"];
-
   return (
     <div className="settings" onClick={p.onClose}>
       <div className="settings-card big" onClick={(e) => e.stopPropagation()}>
@@ -961,22 +977,42 @@ export function Settings(p: Props) {
 
             {p.tab === "providers" && (
               <>
-                {PROVIDER_NAMES.map((name) => {
-                  const configured = (p.serverStatus?.providers ?? []).find((x) => x.name === name)?.configured;
-                  const draft = keyDrafts[name] ?? "";
+                {providerAuth.map((pa) => {
+                  const probe = probeState[pa.provider];
                   return (
-                    <div className="srow provider-row" key={name}>
+                    <div className="srow provider-row" key={pa.provider}>
                       <div className="srow-text">
                         <div className="srow-title">
-                          {name}
-                          <span className={`badge ${configured ? "ok" : "muted"}`} style={{ marginLeft: 8 }}>
-                            {configured ? t("badge.ready") : t("badge.notSet")}
+                          {pa.label}
+                          <span className={`badge ${pa.configured ? "ok" : "muted"}`} style={{ marginLeft: 8 }}>
+                            {pa.configured ? t("badge.ready") : t("badge.notSet")}
                           </span>
                         </div>
+                        {pa.freeTier ? <div className="srow-desc">{pa.freeTier}</div> : null}
+                        {pa.keyUrl ? (
+                          <a
+                            className="srow-desc"
+                            href={pa.keyUrl}
+                            target="_blank"
+                            rel="noreferrer noopener"
+                          >
+                            {t("providers.getKey")}
+                          </a>
+                        ) : null}
+                        {probe && probe.ok === true ? (
+                          <div className="srow-desc" style={{ color: "var(--ok)" }}>{t("providers.works")}</div>
+                        ) : probe && probe.ok === false ? (
+                          <div className="srow-desc" style={{ color: "var(--bad)" }}>{probe.error ?? t("badge.error")}</div>
+                        ) : null}
                       </div>
-                      <button className="settings-btn" onClick={() => setConnectFor(name)}>
-                        {configured ? "Manage" : "Connect"}
-                      </button>
+                      <div className="seg-inline">
+                        <button className="settings-btn ghost" disabled={probe?.busy} onClick={() => void testProvider(pa.provider)}>
+                          {probe?.busy ? t("providers.testing") : t("providers.test")}
+                        </button>
+                        <button className="settings-btn" onClick={() => setConnectFor(pa.provider)}>
+                          {pa.configured ? "Manage" : "Connect"}
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -1268,6 +1304,7 @@ export function Settings(p: Props) {
                               setSavingKey(null);
                               loadProviderAuth();
                               p.refreshStatus();
+                              void testProvider(connectFor);
                               setConnectFor(null);
                             }}
                           >

@@ -313,6 +313,10 @@ const en: Dict = {
   "settings.providers.noKey": "No API key configured",
   "settings.providers.hint":
     "Add API keys under providers in .termcoder/config.json, or set env vars (ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY). Ollama runs locally with no key.",
+  "providers.test": "Test connection",
+  "providers.testing": "Testing…",
+  "providers.works": "Works!",
+  "providers.getKey": "Get a key",
   "settings.models.hint": "Pick the model used for new sessions.",
   "settings.about.title": "termcoder Desktop",
   "settings.about.desc": "An open-source AI coding agent.",
@@ -605,6 +609,10 @@ const pt: Dict = {
   "settings.providers.noKey": "Nenhuma chave de API configurada",
   "settings.providers.hint":
     "Adicione chaves de API em providers no .termcoder/config.json, ou defina variáveis de ambiente (ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY). O Ollama roda localmente sem chave.",
+  "providers.test": "Testar conexão",
+  "providers.testing": "Testando…",
+  "providers.works": "Funciona!",
+  "providers.getKey": "Pegar uma chave",
   "settings.models.hint": "Escolha o modelo usado para novas sessões.",
   "settings.about.title": "termcoder Desktop",
   "settings.about.desc": "Um agente de codificação por IA de código aberto.",
@@ -897,6 +905,10 @@ const es: Dict = {
   "settings.providers.noKey": "No hay clave de API configurada",
   "settings.providers.hint":
     "Añade claves de API en providers en .termcoder/config.json, o define variables de entorno (ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY). Ollama corre localmente sin clave.",
+  "providers.test": "Probar conexión",
+  "providers.testing": "Probando…",
+  "providers.works": "¡Funciona!",
+  "providers.getKey": "Obtener una clave",
   "settings.models.hint": "Elige el modelo usado para nuevas sesiones.",
   "settings.about.title": "termcoder Desktop",
   "settings.about.desc": "Un agente de codificación con IA de código abierto.",

@@ -14,6 +14,24 @@ interface ModelItem {
   configured?: boolean;
 }
 
+interface ProviderHealth {
+  provider: string;
+  health?: "ok" | "bad" | "unknown";
+  error?: string;
+}
+
+const ALWAYS_ON_PROVIDERS = new Set(["ollama", "termcoderfree", "termcoder", "termexplorer"]);
+
+function stateFor(m: ModelItem, health: Record<string, ProviderHealth>): { dot: string; color: string; title?: string } {
+  const h = health[m.provider];
+  if (h?.health === "bad") return { dot: "◐", color: "var(--warn)", title: h.error };
+  if (h?.health === "ok" || ALWAYS_ON_PROVIDERS.has(m.provider) || m.local) {
+    return { dot: "●", color: "var(--ok)" };
+  }
+  if (m.configured) return { dot: "◐", color: "var(--warn)" };
+  return { dot: "○", color: "var(--muted)" };
+}
+
 export function ModelBrowser({
   port,
   current,
@@ -27,6 +45,7 @@ export function ModelBrowser({
 }) {
   const { t } = useI18n();
   const [items, setItems] = useState<ModelItem[]>([]);
+  const [health, setHealth] = useState<Record<string, ProviderHealth>>({});
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "free" | "vision">("all");
   const [loading, setLoading] = useState(true);
@@ -37,6 +56,15 @@ export function ModelBrowser({
       .then((list) => setItems(Array.isArray(list) ? list : []))
       .catch(() => {})
       .finally(() => setLoading(false));
+    fetch(`http://localhost:${port}/providers`)
+      .then((r) => r.json())
+      .then((list) => {
+        if (!Array.isArray(list)) return;
+        const byProvider: Record<string, ProviderHealth> = {};
+        for (const p of list as ProviderHealth[]) byProvider[p.provider] = p;
+        setHealth(byProvider);
+      })
+      .catch(() => {});
   }, [port]);
 
   const filtered = useMemo(() => {
@@ -65,32 +93,36 @@ export function ModelBrowser({
         </div>
         <div className="mb-list">
           {loading ? <div className="mb-empty">…</div> : null}
-          {filtered.map((m) => (
-            <button
-              key={m.id}
-              className={`mb-item ${m.id === current ? "active" : ""}`}
-              onClick={() => {
-                onSelect(m.id);
-                onClose();
-              }}
-            >
-              <div className="mb-main">
-                <span className="mb-name">{m.name}</span>
-                <span className="mb-id">{m.id}</span>
-              </div>
-              <div className="mb-badges">
-                {m.local ? (
-                  <span className="badge ok">local</span>
-                ) : m.free ? (
-                  <span className="badge ok">free</span>
-                ) : null}
-                {m.vision ? <span className="badge muted">vision</span> : null}
-                {m.contextK ? <span className="badge muted">{m.contextK}k</span> : null}
-                {!m.configured && m.provider !== "ollama" ? <span className="badge muted">{t("models.noKey")}</span> : null}
-                {m.id === current ? <span className="check">✓</span> : null}
-              </div>
-            </button>
-          ))}
+          {filtered.map((m) => {
+            const state = stateFor(m, health);
+            return (
+              <button
+                key={m.id}
+                className={`mb-item ${m.id === current ? "active" : ""}`}
+                onClick={() => {
+                  onSelect(m.id);
+                  onClose();
+                }}
+              >
+                <div className="mb-main">
+                  <span style={{ color: state.color }} title={state.title}>{state.dot}</span>
+                  <span className="mb-name">{m.name}</span>
+                  <span className="mb-id">{m.id}</span>
+                </div>
+                <div className="mb-badges">
+                  {m.local ? (
+                    <span className="badge ok">local</span>
+                  ) : m.free ? (
+                    <span className="badge ok">free</span>
+                  ) : null}
+                  {m.vision ? <span className="badge muted">vision</span> : null}
+                  {m.contextK ? <span className="badge muted">{m.contextK}k</span> : null}
+                  {state.dot === "○" ? <span className="badge muted">{t("models.noKey")}</span> : null}
+                  {m.id === current ? <span className="check">✓</span> : null}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
