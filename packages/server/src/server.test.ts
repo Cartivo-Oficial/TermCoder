@@ -165,6 +165,33 @@ describe("server", () => {
     expect(openai?.methods.some((m) => m.id === "api-key" && m.available)).toBe(true);
   });
 
+  it("probes a provider and reports health", async () => {
+    const bad = await fetch(`${base()}/providers/probe`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ provider: "nope" }),
+    });
+    expect(bad.status).toBe(400);
+
+    const res = await fetch(`${base()}/providers/probe`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ provider: "groq" }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { ok: boolean; error?: string };
+    expect(body.ok).toBe(false);
+
+    const list = (await (await fetch(`${base()}/providers`)).json()) as Array<{
+      provider: string;
+      keyUrl?: string;
+      health?: string;
+    }>;
+    const groq = list.find((p) => p.provider === "groq");
+    expect(groq?.health).toBe("bad");
+    expect(groq?.keyUrl).toContain("groq");
+  });
+
   it("serves a web UI directory with an SPA fallback", async () => {
     const webDir = mkdtempSync(join(tmpdir(), "tc-web-"));
     writeFileSync(join(webDir, "index.html"), "<!doctype html><div id=root></div>");

@@ -37,6 +37,10 @@ import {
   installPack,
   syncAll,
   CONNECTABLE_PROVIDERS,
+  probeProvider,
+  providerHealthSnapshot,
+  providerInfo,
+  friendlyError,
   deckSummaries,
   dueCards,
   gradeCard,
@@ -449,8 +453,26 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(
       res,
       200,
-      CONNECTABLE_PROVIDERS.map((p) => ({ ...p, configured: hasKey(ctx.config, env, p.provider) })),
+      CONNECTABLE_PROVIDERS.map((p) => ({
+        ...p,
+        configured: hasKey(ctx.config, env, p.provider),
+        keyUrl: providerInfo(p.provider)?.keyUrl,
+        freeTier: providerInfo(p.provider)?.freeTier,
+        health: (() => {
+          const h = providerHealthSnapshot()[p.provider];
+          if (!h || Date.now() > h.until) return "unknown";
+          return h.ok ? "ok" : "bad";
+        })(),
+      })),
     );
+  }
+
+  if (req.method === "POST" && parts.length === 2 && parts[0] === "providers" && parts[1] === "probe") {
+    const body = await readJson(req);
+    const provider = typeof body.provider === "string" ? body.provider : "";
+    if (!provider || !providerInfo(provider)) return sendJson(res, 400, { error: "unknown provider" });
+    const result = await probeProvider(provider, { config: ctx.config });
+    return sendJson(res, 200, result.ok ? result : { ok: false, error: friendlyError(result.error ?? "no response") });
   }
 
   // Inline editor autocomplete (Copilot-style ghost text).
