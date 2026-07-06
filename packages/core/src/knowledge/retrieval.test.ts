@@ -44,6 +44,29 @@ describe("buildRetrievalIndex + rankFiles", () => {
     expect(rankFiles(index, "")).toEqual([]);
     expect(rankFiles(index, "the and")).toEqual([]);
   });
+  it("does not let raw repetition in a long file bury a short focused file", () => {
+    const fillerWords = [
+      "alpha", "bravo", "charlie", "echo", "foxtrot", "golf", "hotel", "india",
+      "juliet", "kilo", "lima", "mike", "november", "oscar", "papa", "quebec",
+      "romeo", "sierra", "tango", "uniform", "victor", "whiskey", "xray", "yankee", "zulu",
+    ];
+    const longLines: string[] = [];
+    for (let i = 0; i < 200; i++) {
+      const w1 = fillerWords[i % fillerWords.length];
+      const w2 = fillerWords[(i + 7) % fillerWords.length];
+      const w3 = fillerWords[(i + 13) % fillerWords.length];
+      longLines.push(i % 7 === 0 ? `${w1} delta ${w2} ${w3}` : `${w1} ${w2} ${w3}`);
+    }
+    writeFileSync(join(dir, "src", "delta-long.ts"), longLines.join("\n"));
+    writeFileSync(join(dir, "src", "delta-short.ts"), "delta refactor plan for module cleanup\n");
+    const index = buildRetrievalIndex(dir);
+    const ranked = rankFiles(index, "delta refactor");
+    const short = ranked.find((r) => r.file === "src/delta-short.ts");
+    const long = ranked.find((r) => r.file === "src/delta-long.ts");
+    expect(short).toBeDefined();
+    expect(long).toBeDefined();
+    expect(short!.score).toBeGreaterThan(long!.score);
+  });
 });
 
 describe("retrievalContext", () => {

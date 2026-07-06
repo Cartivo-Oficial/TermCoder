@@ -92,7 +92,8 @@ On every coding turn termcoder ranks your repo's files against your request (lex
 nothing leaves your machine) and hands the model a short list of likely-relevant files and
 symbols. Pointers only, never file bodies, and only when the match is confident — so the
 model reads the right code instead of guessing, without bloating your context. Tune the
-list length with `context.retrievalFiles` (default 8).
+list length with `context.retrievalFiles` (default 8). The file list is indexed when a
+session starts — files created mid-session show up in the next session.
 
 ## Web app (use it from a browser)
 

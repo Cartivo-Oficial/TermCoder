@@ -110,9 +110,15 @@ export function retrievalContext(
   const kept = ranked.filter((r) => r.score >= top * 0.25);
   if (kept.length === 0) return "";
   const qTokens = new Set(tokenize(query));
+  const symbolsByFile = new Map<string, SymbolEntry[]>();
+  for (const s of symbols) {
+    const bucket = symbolsByFile.get(s.file);
+    if (bucket) bucket.push(s);
+    else symbolsByFile.set(s.file, [s]);
+  }
   const lines = kept.map((r) => {
-    const matches = symbols
-      .filter((s) => s.file === r.file && tokenize(s.name).some((t) => qTokens.has(t)))
+    const matches = (symbolsByFile.get(r.file) ?? [])
+      .filter((s) => tokenize(s.name).some((t) => qTokens.has(t)))
       .slice(0, 4)
       .map((s) => `${s.name}:${s.line}`);
     return `- ${r.file}${matches.length ? ` (${matches.join(", ")})` : ""}`;
