@@ -83,6 +83,15 @@ export { firstKeyedModel, nextModelOnError, MODEL_RETRIES, type RetryState } fro
 export { PROVIDERS, providerInfo, type ProviderInfo } from "./provider/registry";
 
 export {
+  markProvider,
+  providerMarkedBad,
+  providerHealthSnapshot,
+  clearProviderHealth,
+  HEALTH_TTL_MS,
+  type ProviderHealth,
+} from "./provider/health";
+
+export {
   discoverMemories,
   saveMemory,
   deleteMemory,
