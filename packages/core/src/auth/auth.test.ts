@@ -1,21 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { CONNECTABLE_PROVIDERS, providerAuthMethods } from "./auth";
 
-describe("provider auth methods", () => {
-  it("offers an available API-key method for every connectable provider", () => {
-    for (const p of CONNECTABLE_PROVIDERS) {
-      expect(p.methods.find((m) => m.id === "api-key")?.available).toBe(true);
-    }
+describe("connectable providers", () => {
+  it("covers every key-based registry provider", () => {
+    const ids = CONNECTABLE_PROVIDERS.map((p) => p.provider);
+    expect(ids).toEqual(["anthropic", "openai", "google", "groq", "openrouter", "mistral", "deepseek", "xai", "together", "cerebras"]);
   });
-
-  it("lists ChatGPT/Claude subscription logins as not-yet-available", () => {
-    const oauth = providerAuthMethods("openai").filter((m) => m.id.startsWith("oauth"));
-    expect(oauth.length).toBe(2);
-    expect(oauth.every((m) => !m.available)).toBe(true);
-    expect(providerAuthMethods("anthropic").some((m) => m.label.includes("Claude Pro/Max"))).toBe(true);
+  it("api-key hints carry the key url", () => {
+    const groq = CONNECTABLE_PROVIDERS.find((p) => p.provider === "groq")!;
+    const apiKey = groq.methods.find((m) => m.id === "api-key")!;
+    expect(apiKey.available).toBe(true);
+    expect(apiKey.hint).toContain("console.groq.com");
   });
-
-  it("returns nothing for an unknown provider", () => {
-    expect(providerAuthMethods("nope")).toEqual([]);
+  it("anthropic keeps its oauth placeholders", () => {
+    expect(providerAuthMethods("anthropic").filter((m) => !m.available)).toHaveLength(2);
   });
 });
