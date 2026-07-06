@@ -450,20 +450,22 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
   // Connectable providers + their login methods (for the "Connect" UI).
   if (req.method === "GET" && parts.length === 1 && parts[0] === "providers") {
     const env = process.env;
+    const snapshot = providerHealthSnapshot();
     return sendJson(
       res,
       200,
-      CONNECTABLE_PROVIDERS.map((p) => ({
-        ...p,
-        configured: hasKey(ctx.config, env, p.provider),
-        keyUrl: providerInfo(p.provider)?.keyUrl,
-        freeTier: providerInfo(p.provider)?.freeTier,
-        health: (() => {
-          const h = providerHealthSnapshot()[p.provider];
-          if (!h || Date.now() > h.until) return "unknown";
-          return h.ok ? "ok" : "bad";
-        })(),
-      })),
+      CONNECTABLE_PROVIDERS.map((p) => {
+        const h = snapshot[p.provider];
+        const fresh = h && Date.now() <= h.until;
+        return {
+          ...p,
+          configured: hasKey(ctx.config, env, p.provider),
+          keyUrl: providerInfo(p.provider)?.keyUrl,
+          freeTier: providerInfo(p.provider)?.freeTier,
+          health: !fresh ? "unknown" : h.ok ? "ok" : "bad",
+          error: fresh && !h.ok && h.error ? friendlyError(h.error) : undefined,
+        };
+      }),
     );
   }
 
