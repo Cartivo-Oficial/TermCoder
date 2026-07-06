@@ -1,4 +1,5 @@
 import type { Config } from "../config/config";
+import { providerMarkedBad } from "./health";
 
 /** How many times to retry the SAME model on a transient error before falling back. */
 export const MODEL_RETRIES = 1;
@@ -6,7 +7,8 @@ export const MODEL_RETRIES = 1;
 /** The best fast model the user has a key for — better and more reliable than keyless. */
 export function firstKeyedModel(config: Config, env: NodeJS.ProcessEnv): string | undefined {
   const has = (provider: string, ...vars: string[]) =>
-    Boolean(config.providers[provider]?.apiKey) || vars.some((v) => Boolean(env[v]));
+    !providerMarkedBad(provider) &&
+    (Boolean(config.providers[provider]?.apiKey) || vars.some((v) => Boolean(env[v])));
   if (has("google", "GOOGLE_GENERATIVE_AI_API_KEY", "GEMINI_API_KEY")) return "google/gemini-2.5-flash";
   if (has("anthropic", "ANTHROPIC_API_KEY")) return "anthropic/claude-haiku-4-5-20251001";
   if (has("openai", "OPENAI_API_KEY")) return "openai/gpt-4o-mini";

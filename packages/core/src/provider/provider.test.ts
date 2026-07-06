@@ -1,10 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { ConfigSchema, loadConfig, type Config } from "../config/config";
-import { pickAutoModel, resolveModel } from "./provider";
+import { clearProviderHealth, markProvider, providerMarkedBad } from "./health";
+import { pickAutoModel, probeProvider, resolveModel } from "./provider";
 
 function baseConfig(): Config {
   return loadConfig({ cwd: "/", configDir: "/none", env: {} });
 }
+
+afterEach(() => clearProviderHealth());
 
 describe("pickAutoModel (termcoder/auto router)", () => {
   it("falls back to the free keyless model when no keys are configured", () => {
@@ -93,5 +96,35 @@ describe("resolveModel openai-compat registry branch", () => {
   it("still rejects unknown providers", () => {
     const config = ConfigSchema.parse({});
     expect(() => resolveModel("wat/nope", { config, env: {} })).toThrow(/unknown provider/i);
+  });
+});
+
+describe("probeProvider", () => {
+  it("marks a provider good on success", async () => {
+    const config = ConfigSchema.parse({ providers: { groq: { apiKey: "x" } } });
+    const r = await probeProvider("groq", { config, env: {}, probe: async () => "ok" });
+    expect(r.ok).toBe(true);
+    expect(providerMarkedBad("groq")).toBe(false);
+  });
+  it("marks a provider bad on failure with the error", async () => {
+    const config = ConfigSchema.parse({ providers: { groq: { apiKey: "x" } } });
+    const r = await probeProvider("groq", { config, env: {}, probe: async () => { throw new Error("credit balance too low"); } });
+    expect(r.ok).toBe(false);
+    expect(r.error).toMatch(/credit/i);
+    expect(providerMarkedBad("groq")).toBe(true);
+  });
+  it("fails fast when the provider has no key", async () => {
+    const config = ConfigSchema.parse({});
+    const r = await probeProvider("groq", { config, env: {} });
+    expect(r.ok).toBe(false);
+  });
+});
+
+describe("health-aware routing", () => {
+  it("pickAutoModel skips a provider marked bad", () => {
+    const config = ConfigSchema.parse({ providers: { google: { apiKey: "g" }, anthropic: { apiKey: "a" } } });
+    expect(pickAutoModel(config, {})).toBe("google/gemini-2.5-flash");
+    markProvider("google", false, "down");
+    expect(pickAutoModel(config, {})).toBe("anthropic/claude-haiku-4-5-20251001");
   });
 });

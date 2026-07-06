@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { loadConfig, type Config } from "../config/config";
 import { saveMemory } from "../memory/memory";
+import { clearProviderHealth } from "../provider/health";
 import { PermissionManager } from "../permission/permission";
 import { SessionStore } from "../storage/storage";
 import { ToolRegistry } from "../tools";
@@ -59,6 +60,7 @@ describe("Session agent loop", () => {
 
   afterEach(() => {
     rmSync(dir, { recursive: true, force: true });
+    clearProviderHealth();
   });
 
   function makeSession(runner: ModelRunner): Session {

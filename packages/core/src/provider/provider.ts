@@ -3,6 +3,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText, type LanguageModel } from "ai";
 import type { Config } from "../config/config";
+import { markProvider, providerMarkedBad } from "./health";
 import { providerInfo } from "./registry";
 
 export interface ResolveModelOptions {
@@ -80,11 +81,12 @@ export function pickAutoModel(
   // Then a local Ollama if they opted into it. Otherwise the free, keyless
   // service — so termcoder works with zero setup and never hits "no model".
   const hasApiKey = (p: string) => Boolean(config.providers[p]?.apiKey) || Boolean(env[ENV_KEY[p] ?? ""]) || (p === "google" && Boolean(env.GEMINI_API_KEY));
+  const usable = (p: string) => hasApiKey(p) && !providerMarkedBad(p);
   const provider =
-    (hasApiKey("google") && "google") ||
-    (hasApiKey("anthropic") && "anthropic") ||
-    (hasApiKey("openai") && "openai") ||
-    (config.providers.ollama && "ollama") || // only if explicitly configured
+    (usable("google") && "google") ||
+    (usable("anthropic") && "anthropic") ||
+    (usable("openai") && "openai") ||
+    (config.providers.ollama && !providerMarkedBad("ollama") && "ollama") || // only if explicitly configured
     "pollinations"; // free, keyless — the universal zero-setup default
   const tier = TIERS[provider]!;
   return complexity === "complex" ? tier.strong : tier.fast;
@@ -193,6 +195,29 @@ export function resolveModel(
       }
       throw new Error(`Unknown provider "${provider}". Connectable providers: anthropic, openai, google, groq, openrouter, mistral, deepseek, xai, together, cerebras, ollama, termcoderfree.`);
     }
+  }
+}
+
+export interface ProbeOptions extends ResolveModelOptions {
+  probe?: (model: LanguageModel) => Promise<unknown>;
+}
+
+export async function probeProvider(id: string, opts: ProbeOptions): Promise<{ ok: boolean; error?: string }> {
+  const info = providerInfo(id);
+  if (!info) return { ok: false, error: `Unknown provider "${id}".` };
+  try {
+    const model = resolveModel(info.fastModel, opts);
+    const run =
+      opts.probe ??
+      (async (m: LanguageModel) =>
+        generateText({ model: m, prompt: "Reply with exactly: ok", abortSignal: AbortSignal.timeout(10_000) }));
+    await run(model);
+    markProvider(id, true);
+    return { ok: true };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : String(err);
+    markProvider(id, false, error);
+    return { ok: false, error };
   }
 }
 

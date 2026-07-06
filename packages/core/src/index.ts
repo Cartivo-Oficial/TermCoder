@@ -243,11 +243,14 @@ export {
   transcribeAudio,
   completeCode,
   suggestFollowup,
+  probeProvider,
   type ResolveModelOptions,
   type TranscribeOptions,
   type CompleteCodeOptions,
   type TaskComplexity,
+  type ProbeOptions,
 } from "./provider/provider";
+export { friendlyError } from "./session/session";
 
 export { projectSummary, repoDetail } from "./knowledge/repomap";
 export { buildSymbolIndex, findSymbols, type SymbolEntry } from "./knowledge/symbols";

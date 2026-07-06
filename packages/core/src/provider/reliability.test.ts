@@ -1,6 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { ConfigSchema } from "../config/config";
+import { clearProviderHealth, markProvider } from "./health";
 import { firstKeyedModel, nextModelOnError, streamWithIdleTimeout } from "./reliability";
+
+afterEach(() => clearProviderHealth());
 
 describe("firstKeyedModel", () => {
   it("prefers Google, then Anthropic, then OpenAI, else undefined", () => {
@@ -11,6 +14,13 @@ describe("firstKeyedModel", () => {
     expect(firstKeyedModel(anth, {})).toBe("anthropic/claude-haiku-4-5-20251001");
     const oai = ConfigSchema.parse({ providers: { openai: { apiKey: "o" } } });
     expect(firstKeyedModel(oai, {})).toBe("openai/gpt-4o-mini");
+  });
+
+  it("firstKeyedModel skips a provider marked bad", () => {
+    const cfg = ConfigSchema.parse({ providers: { google: { apiKey: "g" }, openai: { apiKey: "o" } } });
+    markProvider("google", false, "down");
+    expect(firstKeyedModel(cfg, {})).toBe("openai/gpt-4o-mini");
+    clearProviderHealth();
   });
 });
 
