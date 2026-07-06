@@ -316,6 +316,14 @@ function segToMessage(seg: Segment): Message {
   };
 }
 
+function accentDim(hex: string): string {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, 0.14)`;
+}
+
 export function App() {
   const { t } = useI18n();
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
@@ -453,6 +461,8 @@ export function App() {
       root.setAttribute("data-theme", ct.dark ? "dark" : "light");
       for (const [k, val] of Object.entries(ct.vars)) root.style.setProperty(k, val);
     }
+    root.style.setProperty("--accent", ct.accent);
+    root.style.setProperty("--accent-dim", accentDim(ct.accent));
     localStorage.setItem("tc-colortheme", colorTheme);
   }, [colorTheme, theme]);
 
@@ -485,6 +495,7 @@ export function App() {
   }, [progressBar]);
   useEffect(() => {
     document.documentElement.style.setProperty("--accent", accent);
+    document.documentElement.style.setProperty("--accent-dim", accentDim(accent));
     localStorage.setItem("tc-accent", accent);
   }, [accent]);
   useEffect(() => {

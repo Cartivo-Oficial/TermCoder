@@ -11,7 +11,14 @@ export interface ColorTheme {
 export const THEME_VARS = ["--bg", "--panel", "--panel2", "--elev", "--elev2", "--border", "--text", "--muted", "--faint"];
 
 export const COLOR_THEMES: ColorTheme[] = [
-  { id: "default", name: "Mono", dark: true, accent: "#e6e6e7", vars: {} },
+  { id: "default", name: "Ember", dark: true, accent: "#FF7A45", vars: {} },
+  {
+    id: "mono",
+    name: "Mono",
+    dark: true,
+    accent: "#e6e6e7",
+    vars: { "--bg": "#0b0b0c", "--panel": "#0e0e0f", "--panel2": "#0c0c0d", "--elev": "#161617", "--elev2": "#1d1d1f", "--border": "#1c1c1f", "--text": "#e6e6e7", "--muted": "#8a8a90", "--faint": "#57575d" },
+  },
   {
     id: "midnight",
     name: "Midnight",
@@ -58,7 +65,7 @@ export const COLOR_THEMES: ColorTheme[] = [
     id: "paper",
     name: "Paper",
     dark: false,
-    accent: "#2563eb",
+    accent: "#E8632C",
     vars: { "--bg": "#faf9f6", "--panel": "#f2f0ea", "--panel2": "#f7f5f0", "--elev": "#eceae3", "--elev2": "#e2dfd6", "--border": "#e2dfd6", "--text": "#20201c", "--muted": "#6b6a63", "--faint": "#a2a096" },
   },
 ];

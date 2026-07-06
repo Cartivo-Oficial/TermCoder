@@ -1,19 +1,19 @@
 :root {
-  /* Clean, neutral charcoal — even elevation steps and hairline borders. */
-  --bg: #0b0b0c;
-  --panel: #0e0e0f;
-  --panel2: #0c0c0d;
-  --elev: #161617;
-  --elev2: #1d1d1f;
-  --border: #1c1c1f;
-  --text: #e6e6e7;
-  --muted: #8a8a90;
-  --faint: #57575d;
-  /* Softer, desaturated status colors — present but never loud. */
+  --bg: #0C0B0A;
+  --panel: #100F0D;
+  --panel2: #0E0D0B;
+  --elev: #1A1816;
+  --elev2: #232019;
+  --border: #232019;
+  --text: #ECEAE6;
+  --muted: #948F86;
+  --faint: #5C5850;
   --ok: #6fb892;
   --warn: #d3aa66;
   --bad: #e08c8c;
-  --accent: #e6e6e7;
+  --accent: #FF7A45;
+  --accent-dim: rgba(255, 122, 69, 0.14);
+  --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
   --radius: 10px;
   --ease: cubic-bezier(0.2, 0, 0, 1);
 }
