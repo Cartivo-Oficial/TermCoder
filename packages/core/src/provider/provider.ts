@@ -3,6 +3,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText, type LanguageModel } from "ai";
 import type { Config } from "../config/config";
+import { providerInfo } from "./registry";
 
 export interface ResolveModelOptions {
   config: Config;
@@ -25,10 +26,7 @@ export const FREE_MODEL = "termcoderfree/auto";
 function providerHasKey(config: Config, env: NodeJS.ProcessEnv, provider: string): boolean {
   if (KEYLESS_PROVIDERS.has(provider)) return true;
   if (config.providers[provider]?.apiKey) return true;
-  if (provider === "anthropic") return Boolean(env.ANTHROPIC_API_KEY);
-  if (provider === "openai") return Boolean(env.OPENAI_API_KEY);
-  if (provider === "google") return Boolean(env.GOOGLE_GENERATIVE_AI_API_KEY || env.GEMINI_API_KEY);
-  return false;
+  return Boolean(keyFromEnv(provider, env));
 }
 
 /** How hard a task looks — drives which model tier the router picks. */
@@ -98,6 +96,13 @@ function requireKey(provider: string, apiKey: string | undefined): string {
   throw new Error(
     `No API key configured for provider "${provider}".${envVar ? ` Set ${envVar}.` : ""}`,
   );
+}
+
+function keyFromEnv(provider: string, env: NodeJS.ProcessEnv): string | undefined {
+  for (const name of providerInfo(provider)?.keyEnv ?? []) {
+    if (env[name]) return env[name];
+  }
+  return undefined;
 }
 
 /**
@@ -177,11 +182,17 @@ export function resolveModel(
         apiKey: cfg.apiKey ?? "free",
       }).chat(model);
 
-    default:
-      throw new Error(
-        `Unknown provider "${provider}". Supported: anthropic, openai, google, ollama, pollinations ` +
-          `(or any OpenAI-compatible server via providers.openai.baseURL).`,
-      );
+    default: {
+      const info = providerInfo(provider);
+      if (info?.kind === "openai-compat") {
+        const apiKey = cfg.apiKey ?? keyFromEnv(provider, env);
+        if (!apiKey) {
+          throw new Error(`No API key for "${provider}". Set ${info.keyEnv?.[0] ?? "an API key"} or run /key ${provider} <key>.`);
+        }
+        return createOpenAI({ baseURL: cfg.baseURL ?? info.baseURL, apiKey }).chat(model);
+      }
+      throw new Error(`Unknown provider "${provider}". Connectable providers: anthropic, openai, google, groq, openrouter, mistral, deepseek, xai, together, cerebras, ollama, termcoderfree.`);
+    }
   }
 }
 

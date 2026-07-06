@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadConfig, type Config } from "../config/config";
+import { ConfigSchema, loadConfig, type Config } from "../config/config";
 import { pickAutoModel, resolveModel } from "./provider";
 
 function baseConfig(): Config {
@@ -70,5 +70,28 @@ describe("resolveModel", () => {
     expect(() => resolveModel("acme/x", { config: baseConfig(), env: {} })).toThrow(
       /Unknown provider/,
     );
+  });
+});
+
+describe("resolveModel openai-compat registry branch", () => {
+  it("resolves a registry compat provider with a config key", () => {
+    const config = ConfigSchema.parse({ providers: { groq: { apiKey: "gsk_x" } } });
+    expect(resolveModel("groq/llama-3.3-70b-versatile", { config, env: {} })).toBeTruthy();
+  });
+  it("resolves via the registry env var", () => {
+    const config = ConfigSchema.parse({});
+    expect(resolveModel("mistral/mistral-small-latest", { config, env: { MISTRAL_API_KEY: "x" } })).toBeTruthy();
+  });
+  it("keeps model ids containing slashes intact", () => {
+    const config = ConfigSchema.parse({ providers: { openrouter: { apiKey: "x" } } });
+    expect(resolveModel("openrouter/meta-llama/llama-3.3-70b-instruct:free", { config, env: {} })).toBeTruthy();
+  });
+  it("throws a key error for a compat provider without a key", () => {
+    const config = ConfigSchema.parse({});
+    expect(() => resolveModel("groq/llama-3.3-70b-versatile", { config, env: {} })).toThrow(/GROQ_API_KEY|key/i);
+  });
+  it("still rejects unknown providers", () => {
+    const config = ConfigSchema.parse({});
+    expect(() => resolveModel("wat/nope", { config, env: {} })).toThrow(/unknown provider/i);
   });
 });
