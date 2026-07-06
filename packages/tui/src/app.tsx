@@ -23,6 +23,7 @@ import {
   providerInfo,
   friendlyError,
   providerHealthSnapshot,
+  providerMarkedBad,
   GitHubClient,
   sessionGistFiles,
   importSessionFromGist,
@@ -1335,6 +1336,12 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
       theme={theme}
       entries={catalog}
       readiness={(e) => {
+        const info = providerInfo(e.provider);
+        const alwaysOn = info?.kind === "local" || info?.kind === "keyless" || e.provider === "termcoder" || e.provider === "termexplorer";
+        if (alwaysOn) {
+          const healthId = e.provider === "termcoderfree" ? "pollinations" : e.provider;
+          return providerMarkedBad(healthId) ? "unverified" : "ready";
+        }
         const hasKey = providerHasKey(e.provider);
         const h = providerHealthSnapshot()[e.provider];
         if (h && Date.now() < h.until && h.ok) return "ready";
