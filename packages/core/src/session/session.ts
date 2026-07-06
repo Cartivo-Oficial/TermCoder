@@ -10,6 +10,8 @@ import { classifyTaskComplexity, pickAutoModel, resolveModel } from "../provider
 import { firstKeyedModel, nextModelOnError, streamWithIdleTimeout, MODEL_RETRIES, type RetryState } from "../provider/reliability";
 import { markProvider } from "../provider/health";
 import { projectSummary } from "../knowledge/repomap";
+import { buildRetrievalIndex, retrievalContext, type RetrievalIndex } from "../knowledge/retrieval";
+import { buildSymbolIndex, type SymbolEntry } from "../knowledge/symbols";
 import type { SessionStore, SessionRecord } from "../storage/storage";
 import type { ToolContext } from "../tools/types";
 import type { ToolRegistry } from "../tools";
@@ -247,6 +249,8 @@ function healthIdOf(modelId: string): string {
  */
 export class Session {
   private _checkpoint?: CheckpointManager;
+  private _retrievalIndex?: RetrievalIndex;
+  private _symbolIndex?: SymbolEntry[];
 
   constructor(
     public readonly record: SessionRecord,
@@ -401,6 +405,18 @@ export class Session {
       this.deps.config.context?.memoryChars ?? 4000,
     );
 
+    let retrievalHints = "";
+    if (persona !== "study") {
+      this._retrievalIndex ??= buildRetrievalIndex(ctx.cwd);
+      this._symbolIndex ??= buildSymbolIndex(ctx.cwd);
+      retrievalHints = retrievalContext(
+        this._retrievalIndex,
+        this._symbolIndex,
+        text,
+        this.deps.config.context?.retrievalFiles ?? 8,
+      );
+    }
+
     // Derive a human title from the first prompt so the sidebar isn't a wall
     // of "Untitled session".
     if (this.record.messages.length === 0 && isDefaultTitle(this.record.title)) {
@@ -449,6 +465,7 @@ export class Session {
               systemPrompt(ctx.cwd, agent, persona) +
               (persona !== "study" && repoSummary ? `\n\n${repoSummary}` : "") +
               (memoryRecall ? `\n\n${memoryRecall}` : "") +
+              (retrievalHints ? `\n\n${retrievalHints}` : "") +
               (skillMenu ? `\n\n${skillMenu}` : ""),
             // Send a token-frugal view: full record, but older tool outputs elided.
             messages: pruneMessagesForModel(

@@ -136,6 +136,7 @@ export const ConfigSchema = z.object({
       keepRecentToolResults: z.number().int().positive().default(6),
       /** Max characters of remembered facts injected into the prompt (index always fits). */
       memoryChars: z.number().int().positive().default(4000),
+      retrievalFiles: z.number().int().positive().default(8),
     })
     .default({}),
   reliability: z

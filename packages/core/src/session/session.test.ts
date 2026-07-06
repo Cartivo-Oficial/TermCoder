@@ -225,6 +225,27 @@ describe("Session agent loop", () => {
     expect(captured).toContain("study assistant");
     expect(captured).toContain("flashcards");
     expect(captured).not.toContain("senior engineer"); // not the coding brain
+    expect(captured).not.toContain("Files likely relevant");
+  });
+
+  it("injects retrieval file pointers for a matching prompt, and nothing otherwise", async () => {
+    mkdirSync(join(dir, "src"), { recursive: true });
+    writeFileSync(
+      join(dir, "src", "billing.ts"),
+      "export function processInvoice(customerId: string) {\n  return customerId;\n}\n",
+    );
+    let captured = "";
+    const runner: ModelRunner = (opts) => {
+      captured = opts.system;
+      async function* stream() { yield { type: "text-delta", text: "ok" }; }
+      return { fullStream: stream(), response: Promise.resolve({ messages: [] }), finishReason: Promise.resolve("stop"), toolCalls: Promise.resolve([]) };
+    };
+    await collect(makeSession(runner), "update the processInvoice billing logic");
+    expect(captured).toContain("Files likely relevant");
+    expect(captured).toContain("src/billing.ts");
+
+    await collect(makeSession(runner), "qwzx vbnm asdf");
+    expect(captured).not.toContain("Files likely relevant");
   });
 
   it("injects an auto-detected project map into the system prompt", async () => {
