@@ -717,7 +717,7 @@ export function Settings(p: Props) {
                 <Row title={t("settings.localServer")} desc={t("settings.localServer.desc", { port: p.port })}>
                   <span className="badge ok">{t("servers.running")}</span>
                 </Row>
-                <h4 className="sub">{t("settings.mcpServers")}</h4>
+                <h4 className="sub eyebrow">{t("settings.mcpServers")}</h4>
                 {p.serverStatus?.mcp.length ? (
                   p.serverStatus.mcp.map((s) => (
                     <Row key={s.name} title={s.name} desc={s.ok ? `${s.toolCount} tools` : s.error}>
@@ -727,7 +727,7 @@ export function Settings(p: Props) {
                 ) : (
                   <p className="hint">{t("settings.noMcp")}</p>
                 )}
-                <h4 className="sub">{t("settings.languageServers")}</h4>
+                <h4 className="sub eyebrow">{t("settings.languageServers")}</h4>
                 {p.serverStatus?.lsp.length ? (
                   p.serverStatus.lsp.map((s) => (
                     <Row key={s.name} title={s.name} desc={s.ok ? t("servers.running") : s.error}>
@@ -737,7 +737,7 @@ export function Settings(p: Props) {
                 ) : (
                   <p className="hint">{t("settings.noLsp")}</p>
                 )}
-                <h4 className="sub">{t("settings.plugins")}</h4>
+                <h4 className="sub eyebrow">{t("settings.plugins")}</h4>
                 {p.serverStatus?.plugins.length ? (
                   p.serverStatus.plugins.map((s) => (
                     <Row key={s.name} title={s.name} desc={s.ok ? `${s.toolCount} tools` : s.error}>
@@ -920,7 +920,7 @@ export function Settings(p: Props) {
                   </Row>
                 ))}
                 {Object.keys(cfg?.mcp ?? {}).length === 0 ? <p className="hint">{t("settings.noMcpYet")}</p> : null}
-                <h4 className="sub">{t("settings.addMcp")}</h4>
+                <h4 className="sub eyebrow">{t("settings.addMcp")}</h4>
                 <div className="mcp-form">
                   <input
                     className="settings-input"
@@ -1061,7 +1061,7 @@ export function Settings(p: Props) {
                     </div>
                   </Row>
                 ))}
-                <h4 className="sub">{t("settings.agents.new")}</h4>
+                <h4 className="sub eyebrow">{t("settings.agents.new")}</h4>
                 <div className="agent-form">
                   <input
                     className="settings-input"
@@ -1122,7 +1122,7 @@ export function Settings(p: Props) {
                   </Row>
                 ))}
                 {skillList.length === 0 ? <p className="hint">{t("settings.skills.empty")}</p> : null}
-                <h4 className="sub">{t("settings.skills.new")}</h4>
+                <h4 className="sub eyebrow">{t("settings.skills.new")}</h4>
                 <div className="agent-form">
                   <input
                     className="settings-input"
@@ -1168,7 +1168,7 @@ export function Settings(p: Props) {
                   </Row>
                 ))}
                 {memories.length === 0 ? <p className="hint">{t("settings.memory.empty")}</p> : null}
-                <h4 className="sub">{t("settings.memory.new")}</h4>
+                <h4 className="sub eyebrow">{t("settings.memory.new")}</h4>
                 <MemoryAdd onAdd={addMemory} t={t} />
               </>
             )}
@@ -1198,7 +1198,7 @@ export function Settings(p: Props) {
                     <button onClick={() => p.setMaxSteps(Math.min(100, p.maxSteps + 1))}>+</button>
                   </div>
                 </Row>
-                <h4 className="sub">{t("settings.tokens")}</h4>
+                <h4 className="sub eyebrow">{t("settings.tokens")}</h4>
                 <Row title={t("settings.maxToolOutput")} desc={t("settings.maxToolOutput.desc")}>
                   <div className="stepper">
                     <button

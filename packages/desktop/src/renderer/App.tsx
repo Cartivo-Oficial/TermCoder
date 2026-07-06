@@ -1554,7 +1554,7 @@ export function App() {
               <IconNewChat /> {t("nav.newSession")}
             </button>
             <div className="slist-head">
-              <span>{t("session.heading")}</span>
+              <span className="eyebrow">{t("session.heading")}</span>
               {sessions.length > 1 ? (
                 <button
                   className="icon sm"
