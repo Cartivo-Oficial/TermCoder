@@ -3,11 +3,13 @@ import { Box, Text, useInput } from "ink";
 import type { ModelEntry } from "@termcoder/core";
 import type { Theme } from "../theme";
 
+type Readiness = "ready" | "unverified" | "needs-key";
+
 interface ModelPickerProps {
   theme: Theme;
   entries: ModelEntry[];
-  /** Whether the user can run this model now (has a key, or it's local/ours). */
-  ready: (e: ModelEntry) => boolean;
+  /** Whether the user can run this model now: health-checked, key saved but unverified, or missing a key. */
+  readiness: (e: ModelEntry) => Readiness;
   current: string;
   favorites: string[];
   onSelect: (id: string) => void;
@@ -25,7 +27,7 @@ type Row = { header: string } | { entry: ModelEntry; itemIndex: number };
 export function ModelPicker({
   theme,
   entries,
-  ready,
+  readiness,
   current,
   favorites,
   onSelect,
@@ -133,7 +135,9 @@ export function ModelPicker({
           }
           const e = r.entry;
           const active = r.itemIndex === selClamped;
-          const ok = ready(e);
+          const state = readiness(e);
+          const dotFor = state === "ready" ? "●" : state === "unverified" ? "◐" : "○";
+          const colorFor = state === "ready" ? theme.success : state === "unverified" ? theme.running : theme.muted;
           const badges = [
             e.free ? "free" : "",
             e.local ? "local" : "",
@@ -146,8 +150,7 @@ export function ModelPicker({
           const star = favSet.has(e.id) ? "★ " : "";
           if (active) {
             // Full-width accent bar on the selected row.
-            const dot = ok ? "●" : "○";
-            const line = `❯ ${dot} ${star}${e.name}${badges ? `   ${badges}` : ""}${e.id === current ? "  ✓" : ""}`;
+            const line = `❯ ${dotFor} ${star}${e.name}${badges ? `   ${badges}` : ""}${e.id === current ? "  ✓" : ""}`;
             return (
               <Text key={`i${i}`} backgroundColor={theme.accent} color="#0b0b0d" bold>
                 {` ${line}`.padEnd(BAR_WIDTH)}
@@ -157,7 +160,7 @@ export function ModelPicker({
           return (
             <Text key={`i${i}`}>
               <Text color={theme.border}>{"  "}</Text>
-              <Text color={ok ? theme.success : theme.running}>{ok ? "● " : "○ "}</Text>
+              <Text color={colorFor}>{`${dotFor} `}</Text>
               {star ? <Text color={theme.running}>{star}</Text> : null}
               <Text color={theme.assistant}>{e.name}</Text>
               {badges ? <Text color={theme.muted}>{`   ${badges}`}</Text> : null}
@@ -179,7 +182,9 @@ export function ModelPicker({
           <Text color={theme.border}> connect provider   </Text>
           <Text color={theme.success}>●</Text>
           <Text color={theme.border}> ready </Text>
-          <Text color={theme.running}>○</Text>
+          <Text color={theme.running}>◐</Text>
+          <Text color={theme.border}> unverified </Text>
+          <Text color={theme.muted}>○</Text>
           <Text color={theme.border}> needs a key</Text>
         </Text>
       </Box>

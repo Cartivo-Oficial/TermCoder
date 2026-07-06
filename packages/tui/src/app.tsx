@@ -19,6 +19,10 @@ import {
   toggleFavorite,
   suggestFollowup,
   CONNECTABLE_PROVIDERS,
+  probeProvider,
+  providerInfo,
+  friendlyError,
+  providerHealthSnapshot,
   GitHubClient,
   sessionGistFiles,
   importSessionFromGist,
@@ -614,7 +618,8 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         } else {
           const lines = CONNECTABLE_PROVIDERS.map((p) => {
             const soon = p.methods.some((m) => !m.available) ? "  (+ subscription login soon)" : "";
-            return `  ${p.provider.padEnd(10)} ${p.label}${soon}`;
+            const keyUrl = providerInfo(p.provider)?.keyUrl;
+            return `  ${p.provider.padEnd(10)} ${p.label}${soon}${keyUrl ? `  ${keyUrl}` : ""}`;
           });
           pushHistory({
             kind: "notice",
@@ -627,15 +632,25 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         const [rawProv, ...rest] = arg.split(/\s+/);
         const provider = rawProv === "gemini" ? "google" : (rawProv ?? "");
         const value = rest.join(" ").trim();
-        if (!["google", "anthropic", "openai"].includes(provider) || !value) {
-          pushHistory({ kind: "notice", text: "Usage: /key <google|anthropic|openai> <api-key>" });
+        const info = providerInfo(provider);
+        const validProvider = Boolean(info && (info.kind === "native" || info.kind === "openai-compat"));
+        if (!validProvider || !value) {
+          pushHistory({ kind: "notice", text: "Usage: /key <provider> <api-key> — /connect lists providers" });
           break;
         }
         try {
           saveConfig({ providers: { [provider]: { apiKey: value } } });
           config.providers[provider] = { ...config.providers[provider], apiKey: value };
           forceRender((n) => n + 1);
-          pushHistory({ kind: "notice", text: `✓ Saved your ${provider} API key — you're ready to go!` });
+          pushHistory({ kind: "notice", text: `✓ Saved your ${provider} API key — testing…` });
+          void probeProvider(provider, { config }).then((r) => {
+            pushHistory(
+              r.ok
+                ? { kind: "notice", text: `✓ ${provider} connected — works!` }
+                : { kind: "error", text: `✗ ${provider}: ${friendlyError(r.error ?? "did not respond")}` },
+            );
+            forceRender((n) => n + 1);
+          });
         } catch (err) {
           pushHistory({ kind: "error", text: `Could not save the key: ${String(err)}` });
         }
@@ -1319,7 +1334,12 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     <ModelPicker
       theme={theme}
       entries={catalog}
-      ready={(e) => providerHasKey(e.provider)}
+      readiness={(e) => {
+        const hasKey = providerHasKey(e.provider);
+        const h = providerHealthSnapshot()[e.provider];
+        if (h && Date.now() < h.until && h.ok) return "ready";
+        return hasKey ? "unverified" : "needs-key";
+      }}
       current={session.record.model}
       favorites={favorites}
       onSelect={selectModel}

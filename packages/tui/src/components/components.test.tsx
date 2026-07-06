@@ -280,7 +280,7 @@ describe("ModelPicker", () => {
 
   it("groups our models / cloud / local and marks readiness", () => {
     const { lastFrame } = render(
-      <ModelPicker theme={theme} entries={entries} ready={(e) => e.provider !== "anthropic"} current="termcoder/auto" {...pickerProps} />,
+      <ModelPicker theme={theme} entries={entries} readiness={(e) => (e.provider !== "anthropic" ? "ready" : "needs-key")} current="termcoder/auto" {...pickerProps} />,
     );
     const f = lastFrame() ?? "";
     expect(f).toContain("termcoder AI");
@@ -293,7 +293,7 @@ describe("ModelPicker", () => {
 
   it("pins favorites to the top", () => {
     const { lastFrame } = render(
-      <ModelPicker theme={theme} entries={entries} ready={() => true} current="x" {...pickerProps} favorites={["ollama/llama3.1"]} />,
+      <ModelPicker theme={theme} entries={entries} readiness={() => "ready"} current="x" {...pickerProps} favorites={["ollama/llama3.1"]} />,
     );
     const f = lastFrame() ?? "";
     expect(f).toContain("★ Favorites");
@@ -303,7 +303,7 @@ describe("ModelPicker", () => {
   it("filters as you type and selects on enter", async () => {
     const onSelect = vi.fn();
     const { stdin } = render(
-      <ModelPicker theme={theme} entries={entries} ready={() => true} current="x" {...pickerProps} onSelect={onSelect} />,
+      <ModelPicker theme={theme} entries={entries} readiness={() => "ready"} current="x" {...pickerProps} onSelect={onSelect} />,
     );
     await tick();
     stdin.write("llama");
