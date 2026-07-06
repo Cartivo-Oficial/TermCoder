@@ -47,6 +47,14 @@ of silently breaking later. The desktop **Settings** panel writes the same globa
   `OPENAI_API_KEY`, `GEMINI_API_KEY`, …).
 - `providers.<name>.baseURL` — point an OpenAI-compatible provider (Groq, OpenRouter, a
   local server) at its endpoint.
+- **Every major provider connects the same way.** Built in: Anthropic, OpenAI, Google,
+  Groq, OpenRouter, Mistral, DeepSeek, xAI, Together, Cerebras — plus local Ollama and the
+  keyless free tier. `/connect` lists them with a link to get a key; `/key <provider> <key>`
+  saves and immediately tests it.
+- **No call can hang.** A model that goes silent for `reliability.idleTimeoutMs`
+  (default 45s) is treated as failed: termcoder retries, falls back to another provider,
+  and tells you — instead of spinning forever. Routing also skips providers that just
+  failed (for ~5 minutes), so `termcoder/auto` doesn't walk into the same wall twice.
 - **Unlimited & private:** install [Ollama](https://ollama.com), `ollama pull llama3.1`,
   then `/model ollama/llama3.1` — runs locally, no key, no quota, ever.
 - **Better answers, still free:** the keyless tier is small. For much better replies connect a
