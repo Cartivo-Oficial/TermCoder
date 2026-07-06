@@ -255,6 +255,14 @@ export { friendlyError } from "./session/session";
 export { projectSummary, repoDetail } from "./knowledge/repomap";
 export { buildSymbolIndex, findSymbols, type SymbolEntry } from "./knowledge/symbols";
 
+export {
+  buildRetrievalIndex,
+  rankFiles,
+  retrievalContext,
+  tokenize,
+  type RetrievalIndex,
+} from "./knowledge/retrieval";
+
 export { getModelCatalog, type ModelEntry } from "./models/catalog";
 
 export { formatFile, formattersFor } from "./format/formatters";

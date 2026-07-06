@@ -15,12 +15,12 @@ export interface SymbolEntry {
   line: number;
 }
 
-const IGNORE = new Set([
+export const IGNORE = new Set([
   "node_modules", ".git", "dist", "out", "release", ".next", ".turbo", ".cache",
   "coverage", "vendor", "target", "__pycache__", ".idea", ".vscode",
 ]);
 
-const SOURCE_EXT = new Set([
+export const SOURCE_EXT = new Set([
   "ts", "tsx", "mts", "cts", "js", "jsx", "mjs", "cjs", "py", "go", "rs", "java",
   "rb", "php", "c", "h", "cpp", "cc", "hpp", "cs", "kt", "swift",
 ]);
