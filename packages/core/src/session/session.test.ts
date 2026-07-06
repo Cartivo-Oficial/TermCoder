@@ -463,6 +463,12 @@ describe("Session agent loop", () => {
     expect(msg).toMatch(/connect|key|Gemini/i);
   });
 
+  it("timeout errors read as a friendly timeout", () => {
+    const msg = friendlyError("The model produced no output for 45s (timed out)");
+    expect(msg).toMatch(/timed out/i);
+    expect(msg).toMatch(/model|try again/i);
+  });
+
   it("surfaces a stream error after retries are exhausted", async () => {
     // Both the initial call and the retry fail; with no key to fall back to,
     // the error surfaces.

@@ -138,6 +138,11 @@ export const ConfigSchema = z.object({
       memoryChars: z.number().int().positive().default(4000),
     })
     .default({}),
+  reliability: z
+    .object({
+      idleTimeoutMs: z.number().int().positive().default(45000),
+    })
+    .default({}),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

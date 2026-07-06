@@ -28,3 +28,36 @@ export function nextModelOnError(s: RetryState): RetryState | null {
   if (s.fallback && s.fallback !== s.model) return { model: s.fallback, retriesLeft: 0 };
   return null;
 }
+
+export async function* streamWithIdleTimeout<C>(
+  stream: AsyncIterable<C>,
+  ms: number,
+  onTimeout?: () => void,
+): AsyncGenerator<C | { type: "error"; error: unknown }> {
+  const it = stream[Symbol.asyncIterator]();
+  while (true) {
+    let timer: NodeJS.Timeout | undefined;
+    const nextP = it.next();
+    nextP.catch(() => {});
+    const winner = await Promise.race([
+      nextP.then((r) => ({ kind: "next" as const, r })),
+      new Promise<{ kind: "timeout" }>((res) => {
+        timer = setTimeout(() => res({ kind: "timeout" }), ms);
+      }),
+    ]);
+    clearTimeout(timer);
+    if (winner.kind === "timeout") {
+      onTimeout?.();
+      yield { type: "error", error: new Error(`The model produced no output for ${Math.round(ms / 1000)}s (timed out)`) };
+      try {
+        const ret = it.return?.(undefined as never);
+        if (ret) {
+          await Promise.race([ret, new Promise(r => setTimeout(r, 50))]);
+        }
+      } catch {}
+      return;
+    }
+    if (winner.r.done) return;
+    yield winner.r.value;
+  }
+}

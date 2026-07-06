@@ -228,6 +228,9 @@ export function friendlyError(raw: string): string {
   ) {
     return "The free model is busy or unreachable right now. Try again in a moment — or connect a better model for fast, reliable answers: a free Gemini key (/upgrade), a local Ollama (https://ollama.com), or paste a provider key in Settings → Providers.";
   }
+  if (s.includes("timed out") || s.includes("timeout") || s.includes("aborted")) {
+    return "The model timed out without responding. Try again, switch models with /model, or connect a faster provider (/upgrade).";
+  }
   return raw;
 }
 
