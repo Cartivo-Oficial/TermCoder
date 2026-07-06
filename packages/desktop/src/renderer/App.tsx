@@ -381,7 +381,11 @@ export function App() {
   const [expandTools, setExpandTools] = useState(() => localStorage.getItem("tc-expand") === "1");
   const [progressBar, setProgressBar] = useState(() => localStorage.getItem("tc-progress") !== "0");
   const [fontSize, setFontSize] = useState(() => Number(localStorage.getItem("tc-fs")) || 14);
-  const [accent, setAccent] = useState(() => localStorage.getItem("tc-accent") || "#ededee");
+  const [accent, setAccent] = useState(() => {
+    const saved = localStorage.getItem("tc-accent");
+    if (!saved || saved === "#ededee" || saved === "#e6e6e7") return "";
+    return saved;
+  });
   const [density, setDensity] = useState<"comfortable" | "compact">(
     () => (localStorage.getItem("tc-density") as "comfortable" | "compact") || "comfortable",
   );
@@ -494,10 +498,17 @@ export function App() {
     localStorage.setItem("tc-progress", progressBar ? "1" : "0");
   }, [progressBar]);
   useEffect(() => {
-    document.documentElement.style.setProperty("--accent", accent);
-    document.documentElement.style.setProperty("--accent-dim", accentDim(accent));
-    localStorage.setItem("tc-accent", accent);
-  }, [accent]);
+    if (accent) {
+      document.documentElement.style.setProperty("--accent", accent);
+      document.documentElement.style.setProperty("--accent-dim", accentDim(accent));
+      localStorage.setItem("tc-accent", accent);
+    } else {
+      const ct = COLOR_THEMES.find((t) => t.id === colorTheme) ?? COLOR_THEMES[0]!;
+      document.documentElement.style.setProperty("--accent", ct.accent);
+      document.documentElement.style.setProperty("--accent-dim", accentDim(ct.accent));
+      localStorage.removeItem("tc-accent");
+    }
+  }, [accent, colorTheme]);
   useEffect(() => {
     document.documentElement.setAttribute("data-density", density);
     localStorage.setItem("tc-density", density);
