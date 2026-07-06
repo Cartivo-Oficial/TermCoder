@@ -101,6 +101,36 @@ describe("Session agent loop", () => {
     expect(events).not.toContain("error");
   });
 
+  it("aborts a silent stream at the idle timeout and retries", async () => {
+    const hangConfig = loadConfig({ cwd: dir, configDir: join(dir, "cfg"), env: {} });
+    hangConfig.reliability = { idleTimeoutMs: 40 };
+    let calls = 0;
+    const runner: ModelRunner = () => {
+      calls += 1;
+      const hang = calls === 1;
+      async function* stream() {
+        if (hang) {
+          await new Promise(() => {});
+        } else {
+          yield { type: "text-delta" as const, text: "recovered" };
+        }
+      }
+      return {
+        fullStream: stream(),
+        response: Promise.resolve({ messages: [{ role: "assistant", content: "recovered" }] as ModelMessage[] }),
+        finishReason: Promise.resolve("stop"),
+        toolCalls: Promise.resolve([]),
+      };
+    };
+    const permission = new PermissionManager(hangConfig.permission, async () => "deny");
+    const session = Session.create({ store, registry, config: hangConfig, permission, runner }, { cwd: dir });
+    const events: string[] = [];
+    for await (const e of session.prompt("hello")) events.push(e.type);
+    expect(calls).toBe(2);
+    expect(events).toContain("done");
+    expect(events).not.toContain("error");
+  });
+
   it("injects a discovered skill's name+description (not its body) into the system prompt", async () => {
     mkdirSync(join(dir, ".termcoder", "skills"), { recursive: true });
     writeFileSync(

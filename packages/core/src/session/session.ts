@@ -7,7 +7,8 @@ import { formatFile } from "../format/formatters";
 import type { Config } from "../config/config";
 import type { PermissionManager } from "../permission/permission";
 import { classifyTaskComplexity, pickAutoModel, resolveModel } from "../provider/provider";
-import { firstKeyedModel, nextModelOnError, MODEL_RETRIES, type RetryState } from "../provider/reliability";
+import { firstKeyedModel, nextModelOnError, streamWithIdleTimeout, MODEL_RETRIES, type RetryState } from "../provider/reliability";
+import { markProvider } from "../provider/health";
 import { projectSummary } from "../knowledge/repomap";
 import type { SessionStore, SessionRecord } from "../storage/storage";
 import type { ToolContext } from "../tools/types";
@@ -234,6 +235,11 @@ export function friendlyError(raw: string): string {
   return raw;
 }
 
+function healthIdOf(modelId: string): string {
+  const provider = modelId.slice(0, Math.max(0, modelId.indexOf("/")));
+  return provider === "termcoderfree" ? "pollinations" : provider;
+}
+
 /**
  * A live conversation with the model. {@link prompt} drives the manual agent
  * loop: stream text, run requested tools through the permission gate, append
@@ -436,6 +442,8 @@ export class Session {
         let stepFailed = false;
 
         while (true) {
+          const attemptAbort = new AbortController();
+          const attemptSignal = signal ? AbortSignal.any([signal, attemptAbort.signal]) : attemptAbort.signal;
           result = activeRunner({
             system:
               systemPrompt(ctx.cwd, agent, persona) +
@@ -448,23 +456,28 @@ export class Session {
               this.deps.config.context?.keepRecentToolResults ?? 6,
             ),
             tools,
-            signal,
+            signal: attemptSignal,
           });
 
+          const idleMs = this.deps.config.reliability?.idleTimeoutMs ?? 45000;
           let streamError: string | null = null;
           let emittedText = false;
-          for await (const chunk of result.fullStream) {
+          for await (const chunk of streamWithIdleTimeout(result.fullStream, idleMs, () => attemptAbort.abort())) {
             if (chunk.type === "text-delta") {
               emittedText = true;
-              yield { type: "text-delta", text: chunk.text ?? "" };
+              yield { type: "text-delta", text: (chunk as { text?: string }).text ?? "" };
             } else if (chunk.type === "error") {
               if (signal?.aborted) return;
-              streamError = friendlyError(stringifyError(chunk.error));
+              streamError = friendlyError(stringifyError((chunk as { error?: unknown }).error));
               break;
             }
           }
 
-          if (!streamError) break; // success
+          if (!streamError) {
+            markProvider(healthIdOf(modelToUse), true);
+            break;
+          }
+          markProvider(healthIdOf(modelToUse), false, streamError);
 
           // Once text has streamed we can't cleanly retry — surface the error.
           const next = emittedText ? null : nextModelOnError(attempt);
