@@ -7,6 +7,7 @@ import { CommandPalette, type PaletteItem } from "./CommandPalette";
 import { Settings, type ServerStatus, type SettingsTab } from "./Settings";
 import { Welcome } from "./Welcome";
 import { Hero } from "./Hero";
+import { Logo } from "./Logo";
 import { useI18n } from "./i18n";
 import { COLOR_THEMES, THEME_VARS } from "./themes";
 import { KEYBIND_ACTIONS, comboFor, matchCombo } from "./keybinds";
@@ -1484,6 +1485,8 @@ export function App() {
     <div className="shell">
       <header className="toolbar">
         <div className="tb-left">
+          <div className="brand"><Logo /></div>
+          <span className="tb-title">termcoder</span>
           <div className="menu-wrap">
             <button className="icon" title={t("nav.menu")} onClick={() => setMenuOpen((v) => !v)}><IconMenu /></button>
             {menuOpen ? (
