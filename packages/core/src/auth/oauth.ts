@@ -78,6 +78,25 @@ export function refreshClaude(refreshToken: string, fetchImpl: typeof fetch = fe
   );
 }
 
+const REFRESH_SKEW_MS = 120_000;
+
+export async function ensureFreshClaude(
+  creds: ClaudeOAuth,
+  save: (c: ClaudeOAuth) => void = () => {},
+  clear: () => void = () => {},
+  fetchImpl: typeof fetch = fetch,
+): Promise<ClaudeOAuth | undefined> {
+  if (creds.expiresAt - Date.now() > REFRESH_SKEW_MS) return creds;
+  try {
+    const fresh = await refreshClaude(creds.refreshToken, fetchImpl);
+    save(fresh);
+    return fresh;
+  } catch {
+    clear();
+    return undefined;
+  }
+}
+
 export function loadClaudeOAuth(config: Config): ClaudeOAuth | undefined {
   return config.providers.anthropic?.oauth;
 }

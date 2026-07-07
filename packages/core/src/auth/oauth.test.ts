@@ -12,6 +12,7 @@ import {
   saveClaudeOAuth,
   clearClaudeOAuth,
   oauthFetch,
+  ensureFreshClaude,
 } from "./oauth";
 import { loadConfig } from "../config/config";
 
@@ -107,5 +108,26 @@ describe("oauthFetch", () => {
     const sys = (seen!.body as { system: unknown }).system;
     const first = Array.isArray(sys) ? (sys[0] as { text: string }).text : String(sys);
     expect(first).toContain("Claude Code");
+  });
+});
+
+describe("ensureFreshClaude", () => {
+  it("refreshes near-expiry creds and persists them", async () => {
+    const f = fakeFetch({ access_token: "new", refresh_token: "rt2", expires_in: 3600 });
+    let saved: unknown;
+    const creds = await ensureFreshClaude({ accessToken: "old", refreshToken: "rt", expiresAt: Date.now() + 1000 }, (c) => (saved = c), () => {}, f);
+    expect(creds?.accessToken).toBe("new");
+    expect(saved).toBeTruthy();
+  });
+  it("clears creds and returns undefined when refresh fails", async () => {
+    const f = fakeFetch({ error: "invalid_grant" }, false);
+    let cleared = false;
+    const creds = await ensureFreshClaude({ accessToken: "old", refreshToken: "rt", expiresAt: Date.now() + 1000 }, () => {}, () => (cleared = true), f);
+    expect(creds).toBeUndefined();
+    expect(cleared).toBe(true);
+  });
+  it("returns creds unchanged when still fresh", async () => {
+    const good = { accessToken: "ok", refreshToken: "rt", expiresAt: Date.now() + 9e5 };
+    expect(await ensureFreshClaude(good)).toBe(good);
   });
 });
