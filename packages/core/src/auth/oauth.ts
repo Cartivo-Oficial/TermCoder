@@ -35,3 +35,42 @@ export function beginClaudeLogin(): { url: string; verifier: string } {
   u.searchParams.set("state", verifier);
   return { url: u.toString(), verifier };
 }
+
+async function postToken(body: Record<string, string>, fetchImpl: typeof fetch): Promise<ClaudeOAuth> {
+  const res = await fetchImpl(CLAUDE_OAUTH.tokenUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new Error("Claude sign-in failed. Try /login-claude again, or use an API key.");
+  }
+  const json = (await res.json()) as { access_token: string; refresh_token: string; expires_in: number };
+  return {
+    accessToken: json.access_token,
+    refreshToken: json.refresh_token,
+    expiresAt: Date.now() + (json.expires_in ?? 3600) * 1000,
+  };
+}
+
+export function completeClaudeLogin(pasted: string, verifier: string, fetchImpl: typeof fetch = fetch): Promise<ClaudeOAuth> {
+  const [code, state] = pasted.trim().split("#");
+  return postToken(
+    {
+      grant_type: "authorization_code",
+      code: code ?? "",
+      state: state ?? "",
+      client_id: CLAUDE_OAUTH.clientId,
+      redirect_uri: CLAUDE_OAUTH.redirectUri,
+      code_verifier: verifier,
+    },
+    fetchImpl,
+  );
+}
+
+export function refreshClaude(refreshToken: string, fetchImpl: typeof fetch = fetch): Promise<ClaudeOAuth> {
+  return postToken(
+    { grant_type: "refresh_token", refresh_token: refreshToken, client_id: CLAUDE_OAUTH.clientId },
+    fetchImpl,
+  );
+}
