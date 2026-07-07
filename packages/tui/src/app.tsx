@@ -59,6 +59,10 @@ import {
   discoverMemories,
   deleteMemory,
   slugifyMemoryName,
+  beginClaudeLogin,
+  completeClaudeLogin,
+  saveClaudeOAuth,
+  clearClaudeOAuth,
   type Config,
   type PermissionDecision,
   type PermissionRequest,
@@ -181,6 +185,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
   const inputHistory = useRef<string[]>([]);
   const histIndex = useRef(-1);
   const lastPrompt = useRef("");
+  const claudeVerifier = useRef<string | null>(null);
 
   const store = useRef(new SessionStore()).current;
   const subRegistry = useRef(registryProp ?? new ToolRegistry()).current;
@@ -627,6 +632,44 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
             text: `Connect a provider — /connect <name> for methods:\n${lines.join("\n")}\n\nYou don't need any of these — termcoder already runs on a free model.`,
           });
         }
+        break;
+      }
+      case "login-claude": {
+        const pasted = arg.trim();
+        if (!pasted) {
+          const { url, verifier } = beginClaudeLogin();
+          claudeVerifier.current = verifier;
+          pushHistory({
+            kind: "notice",
+            text: [
+              "Experimental — sign in with your Claude Pro/Max subscription:",
+              `  1. Open: ${url}`,
+              "  2. Approve, copy the code it shows, then run:  /login-claude <code>",
+              "If Anthropic changes their flow this may stop working; you can always use /key or the free model.",
+            ].join("\n"),
+          });
+          break;
+        }
+        if (!claudeVerifier.current) {
+          pushHistory({ kind: "error", text: "Run /login-claude with no argument first to get the sign-in link." });
+          break;
+        }
+        completeClaudeLogin(pasted, claudeVerifier.current)
+          .then((creds) => {
+            saveClaudeOAuth(creds);
+            claudeVerifier.current = null;
+            forceRender((n) => n + 1);
+            pushHistory({ kind: "notice", text: "✓ Claude subscription connected (experimental). termcoder/auto can now use it." });
+          })
+          .catch((err) => {
+            pushHistory({ kind: "error", text: err instanceof Error ? err.message : String(err) });
+          });
+        break;
+      }
+      case "logout-claude": {
+        clearClaudeOAuth();
+        forceRender((n) => n + 1);
+        pushHistory({ kind: "notice", text: "Disconnected the Claude subscription login." });
         break;
       }
       case "key": {

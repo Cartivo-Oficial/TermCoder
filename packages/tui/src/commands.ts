@@ -12,6 +12,8 @@ export const TUI_COMMANDS: TuiCommand[] = [
   { name: "setup", desc: "Set up a model (free options available)" },
   { name: "upgrade", desc: "Connect a better model (free Gemini key) for much better answers" },
   { name: "connect", arg: "[provider]", desc: "Connect a provider (API key now; subscription login soon)" },
+  { name: "login-claude", desc: "Sign in with a Claude Pro/Max subscription (experimental)" },
+  { name: "logout-claude", desc: "Disconnect the Claude subscription login" },
   { name: "key", arg: "<provider> <key>", desc: "Save an API key (google/anthropic/openai)" },
   { name: "new", desc: "Start a new session" },
   { name: "sessions", desc: "List saved sessions" },
