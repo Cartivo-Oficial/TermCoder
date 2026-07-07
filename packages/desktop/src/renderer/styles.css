@@ -197,7 +197,7 @@ svg { display: block; }
 .welcome-overlay {
   position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
   background:
-    radial-gradient(1100px 520px at 50% -8%, color-mix(in srgb, #ff7a45 14%, transparent), transparent 60%),
+    radial-gradient(1100px 520px at 50% -8%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 60%),
     radial-gradient(900px 500px at 50% 108%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%),
     color-mix(in srgb, var(--bg, #0a0a0b) 88%, #000);
   backdrop-filter: blur(10px);
@@ -226,7 +226,7 @@ svg { display: block; }
 .welcome-choice:hover { transform: translateY(-3px); }
 .welcome-choice:hover::before { opacity: 1; }
 .welcome-choice.code:hover { border-color: #58a6ff; background: color-mix(in srgb, #58a6ff 10%, transparent); box-shadow: 0 12px 30px color-mix(in srgb, #58a6ff 18%, transparent); }
-.welcome-choice.study:hover { border-color: #ff7a45; background: color-mix(in srgb, #ff7a45 11%, transparent); box-shadow: 0 12px 30px color-mix(in srgb, #ff7a45 20%, transparent); }
+.welcome-choice.study:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 11%, transparent); box-shadow: 0 12px 30px color-mix(in srgb, var(--accent) 20%, transparent); }
 .wc-icon { display: grid; place-items: center; width: 62px; height: 62px; border-radius: 16px; font-size: 30px; background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid var(--border); }
 .wc-title { font-size: 18px; font-weight: 700; }
 .wc-desc { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
@@ -234,7 +234,7 @@ svg { display: block; }
 .welcome-choice.code .wc-go { color: #58a6ff; }
 .welcome-choice.study .wc-go { color: #ff8a4d; }
 .welcome-choice:hover .wc-go { opacity: 1; transform: none; }
-.wc-badge { position: absolute; top: 12px; right: 12px; font-size: 10px; font-weight: 600; letter-spacing: .2px; color: #ff8a4d; background: color-mix(in srgb, #ff7a45 15%, transparent); border: 1px solid color-mix(in srgb, #ff7a45 40%, transparent); padding: 2px 7px; border-radius: 999px; }
+.wc-badge { position: absolute; top: 12px; right: 12px; font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: .2px; color: #ff8a4d; background: color-mix(in srgb, var(--accent) 15%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); padding: 2px 7px; border-radius: 999px; }
 .welcome-foot { margin-top: 26px; color: var(--muted); font-size: 12px; }
 
 .ctx-meter { display: inline-flex; align-items: center; gap: 6px; cursor: default; }
@@ -693,7 +693,7 @@ button.chip { cursor: pointer; }
   padding: 14px 16px;
   background: var(--panel, #16161b);
   border: 1px solid var(--line, #26262d);
-  border-left: 3px solid var(--accent, #ff7a45);
+  border-left: 3px solid var(--accent);
   border-radius: 12px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
   animation: update-in 0.25s ease;

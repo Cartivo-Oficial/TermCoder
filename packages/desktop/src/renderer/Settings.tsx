@@ -612,12 +612,12 @@ export function Settings(p: Props) {
                           if (ct.id !== "default") p.setTheme(ct.dark ? "dark" : "light");
                         }}
                         style={{
-                          background: ct.vars["--panel"] ?? (ct.dark ? "#0e0e0f" : "#f2f0ea"),
+                          background: ct.vars["--panel"] ?? (ct.dark ? "#100F0D" : "#f2f0ea"),
                           borderColor: p.colorTheme === ct.id ? ct.accent : "var(--border)",
                         }}
                       >
                         <span className="theme-dot" style={{ background: ct.accent }} />
-                        <span className="theme-name" style={{ color: ct.vars["--text"] ?? (ct.dark ? "#e6e6e7" : "#20201c") }}>{ct.name}</span>
+                        <span className="theme-name" style={{ color: ct.vars["--text"] ?? (ct.dark ? "#ECEAE6" : "#20201c") }}>{ct.name}</span>
                       </button>
                     ))}
                   </div>
