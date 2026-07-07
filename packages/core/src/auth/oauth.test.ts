@@ -1,6 +1,18 @@
 import { createHash } from "node:crypto";
-import { describe, expect, it } from "vitest";
-import { beginClaudeLogin, completeClaudeLogin, pkce, refreshClaude } from "./oauth";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+  beginClaudeLogin,
+  completeClaudeLogin,
+  pkce,
+  refreshClaude,
+  loadClaudeOAuth,
+  saveClaudeOAuth,
+  clearClaudeOAuth,
+} from "./oauth";
+import { loadConfig } from "../config/config";
 
 function fakeFetch(payload: unknown, ok = true): typeof fetch {
   return (async () =>
@@ -49,5 +61,28 @@ describe("refreshClaude", () => {
     const f = fakeFetch({ access_token: "at2", refresh_token: "rt2", expires_in: 3600 });
     const creds = await refreshClaude("rt", f);
     expect(creds.accessToken).toBe("at2");
+  });
+});
+
+describe("Claude oauth credential store", () => {
+  let cfg: string;
+  let prevXdg: string | undefined;
+  beforeEach(() => {
+    cfg = mkdtempSync(join(tmpdir(), "tc-oauthcfg-"));
+    prevXdg = process.env.XDG_CONFIG_HOME;
+    process.env.XDG_CONFIG_HOME = cfg;
+  });
+  afterEach(() => {
+    if (prevXdg === undefined) delete process.env.XDG_CONFIG_HOME;
+    else process.env.XDG_CONFIG_HOME = prevXdg;
+    rmSync(cfg, { recursive: true, force: true });
+  });
+
+  it("round-trips Claude oauth creds via the global config", () => {
+    saveClaudeOAuth({ accessToken: "at", refreshToken: "rt", expiresAt: Date.now() + 1000 });
+    const loaded = loadClaudeOAuth(loadConfig({ cwd: cfg, env: { XDG_CONFIG_HOME: cfg } }));
+    expect(loaded?.accessToken).toBe("at");
+    clearClaudeOAuth();
+    expect(loadClaudeOAuth(loadConfig({ cwd: cfg, env: { XDG_CONFIG_HOME: cfg } }))).toBeUndefined();
   });
 });

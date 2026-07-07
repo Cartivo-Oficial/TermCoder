@@ -124,6 +124,17 @@ export {
 } from "./auth/auth";
 
 export {
+  beginClaudeLogin,
+  completeClaudeLogin,
+  refreshClaude,
+  loadClaudeOAuth,
+  saveClaudeOAuth,
+  clearClaudeOAuth,
+  CLAUDE_OAUTH,
+  type ClaudeOAuth,
+} from "./auth/oauth";
+
+export {
   GitHubClient,
   GitHubError,
   gitHubToken,

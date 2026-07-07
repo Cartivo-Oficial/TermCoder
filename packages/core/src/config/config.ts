@@ -103,6 +103,9 @@ export const ConfigSchema = z.object({
         apiKey: z.string().optional(),
         /** Override the API base URL (for OpenAI-compatible servers like Groq, OpenRouter, local). */
         baseURL: z.string().optional(),
+        oauth: z
+          .object({ accessToken: z.string(), refreshToken: z.string(), expiresAt: z.number() })
+          .optional(),
       }),
     )
     .default({}),

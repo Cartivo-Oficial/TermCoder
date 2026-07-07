@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
+import { readGlobalConfig, writeGlobalConfig, type Config } from "../config/config";
 
 export interface ClaudeOAuth {
   accessToken: string;
@@ -73,4 +74,26 @@ export function refreshClaude(refreshToken: string, fetchImpl: typeof fetch = fe
     { grant_type: "refresh_token", refresh_token: refreshToken, client_id: CLAUDE_OAUTH.clientId },
     fetchImpl,
   );
+}
+
+export function loadClaudeOAuth(config: Config): ClaudeOAuth | undefined {
+  return config.providers.anthropic?.oauth;
+}
+
+export function saveClaudeOAuth(creds: ClaudeOAuth): void {
+  const config = readGlobalConfig();
+  const providers = { ...((config.providers as Record<string, unknown>) ?? {}) };
+  providers.anthropic = { ...((providers.anthropic as Record<string, unknown>) ?? {}), oauth: creds };
+  writeGlobalConfig({ ...config, providers });
+}
+
+export function clearClaudeOAuth(): void {
+  const config = readGlobalConfig();
+  const providers = { ...((config.providers as Record<string, unknown>) ?? {}) };
+  const anthropic = providers.anthropic as Record<string, unknown> | undefined;
+  if (!anthropic?.oauth) return;
+  const next = { ...anthropic };
+  delete next.oauth;
+  providers.anthropic = next;
+  writeGlobalConfig({ ...config, providers });
 }
