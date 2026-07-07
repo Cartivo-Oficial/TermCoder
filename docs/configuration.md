@@ -55,6 +55,11 @@ of silently breaking later. The desktop **Settings** panel writes the same globa
   (default 45s) is treated as failed: termcoder retries, falls back to another provider,
   and tells you — instead of spinning forever. Routing also skips providers that just
   failed (for ~5 minutes), so `termcoder/auto` doesn't walk into the same wall twice.
+- **Claude subscription login (experimental).** Use your Claude Pro or Max subscription
+  instead of an API key to access Anthropic's models. This feature is experimental and
+  may break if Anthropic changes their login flow. Authenticate with `/login-claude` in
+  the CLI or "Claude Pro/Max login" in the desktop's Connect modal. If authentication
+  fails, termcoder falls back to the free keyless tier or a configured API key.
 - **Unlimited & private:** install [Ollama](https://ollama.com), `ollama pull llama3.1`,
   then `/model ollama/llama3.1` — runs locally, no key, no quota, ever.
 - **Better answers, still free:** the keyless tier is small. For much better replies connect a
