@@ -6,6 +6,7 @@ import { FileTree } from "./FileTree";
 import { CommandPalette, type PaletteItem } from "./CommandPalette";
 import { Settings, type ServerStatus, type SettingsTab } from "./Settings";
 import { Welcome } from "./Welcome";
+import { Hero } from "./Hero";
 import { useI18n } from "./i18n";
 import { COLOR_THEMES, THEME_VARS } from "./themes";
 import { KEYBIND_ACTIONS, comboFor, matchCombo } from "./keybinds";
@@ -1686,7 +1687,7 @@ export function App() {
           <div className="transcript" ref={scrollRef}>
             {messages.length === 0 ? (
               <div className="empty">
-                <div>{t("chat.empty")}</div>
+                <Hero />
                 {!/^(termcoderfree|termcoder\/|termexplorer|ollama\/)/.test(model) ? (
                   <button className="free-hint" onClick={() => changeModel("termcoderfree/auto")}>
                     {t("chat.freeHint")}
@@ -1862,6 +1863,7 @@ export function App() {
                 }
               }}
             >
+              <span className="prompt-glyph" aria-hidden="true">❯</span>
               <button className="attach" title={t("composer.attach")} onClick={() => void attachFiles()}><IconPlus /></button>
               <button
                 className="attach"
