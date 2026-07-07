@@ -208,7 +208,7 @@ function MemoryAdd({
   );
 }
 
-const ACCENTS = ["#ededee", "#4f8cff", "#4ade80", "#b794f6", "#f59e0b", "#f87171"];
+const ACCENTS = ["#FF7A45", "#4f8cff", "#4ade80", "#b794f6", "#f59e0b", "#f87171"];
 
 const TABS: Array<{ groupKey: string; items: Array<[SettingsTab, string]> }> = [
   {

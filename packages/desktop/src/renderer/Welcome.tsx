@@ -18,14 +18,14 @@ export function Welcome({ onChoose }: { onChoose: (mode: "code" | "study") => vo
         <div className="welcome-choices">
           <button className="welcome-choice code" onClick={() => onChoose("code")}>
             <span className="wc-icon">💻</span>
-            <span className="wc-title eyebrow">{t("welcome.code")}</span>
+            <span className="wc-title">{t("welcome.code")}</span>
             <span className="wc-desc">{t("welcome.code.desc")}</span>
             <span className="wc-go">{t("welcome.start")} →</span>
           </button>
           <button className="welcome-choice study" onClick={() => onChoose("study")}>
             <span className="wc-badge">termexplorer</span>
             <span className="wc-icon">📚</span>
-            <span className="wc-title eyebrow">{t("welcome.study")}</span>
+            <span className="wc-title">{t("welcome.study")}</span>
             <span className="wc-desc">{t("welcome.study.desc")}</span>
             <span className="wc-go">{t("welcome.start")} →</span>
           </button>
