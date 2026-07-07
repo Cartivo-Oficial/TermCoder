@@ -165,6 +165,13 @@ describe("server", () => {
     expect(openai?.methods.some((m) => m.id === "api-key" && m.available)).toBe(true);
   });
 
+  it("starts a Claude oauth login and rejects completing without a start", async () => {
+    const start = await fetch(`${base()}/auth/claude/start`, { method: "POST" });
+    expect(start.status).toBe(200);
+    const body = (await start.json()) as { url: string };
+    expect(body.url).toContain("oauth");
+  });
+
   it("probes a provider and reports health", async () => {
     const bad = await fetch(`${base()}/providers/probe`, {
       method: "POST",

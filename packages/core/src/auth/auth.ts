@@ -19,7 +19,12 @@ const SOON = "Log in with your subscription — coming soon.";
 
 const OAUTH_SOON: Record<string, AuthMethod[]> = {
   anthropic: [
-    { id: "oauth-browser", label: "Claude Pro/Max (browser)", available: false, hint: SOON },
+    {
+      id: "oauth-browser",
+      label: "Claude Pro/Max login",
+      available: true,
+      hint: "Experimental — sign in with your subscription. May break if Anthropic changes their flow.",
+    },
     { id: "oauth-headless", label: "Claude Pro/Max (headless)", available: false, hint: SOON },
   ],
   openai: [

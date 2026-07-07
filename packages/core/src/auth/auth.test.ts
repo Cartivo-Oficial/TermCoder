@@ -12,7 +12,7 @@ describe("connectable providers", () => {
     expect(apiKey.available).toBe(true);
     expect(apiKey.hint).toContain("console.groq.com");
   });
-  it("anthropic keeps its oauth placeholders", () => {
-    expect(providerAuthMethods("anthropic").filter((m) => !m.available)).toHaveLength(2);
+  it("anthropic has one oauth placeholder left (oauth-headless); oauth-browser is live", () => {
+    expect(providerAuthMethods("anthropic").filter((m) => !m.available)).toHaveLength(1);
   });
 });

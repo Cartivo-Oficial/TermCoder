@@ -274,6 +274,10 @@ export function Settings(p: Props) {
   const [connectFor, setConnectFor] = useState<string | null>(null);
   const [providerAuth, setProviderAuth] = useState<ProviderAuthInfo[]>([]);
   const [probeState, setProbeState] = useState<Record<string, { busy?: boolean; ok?: boolean; error?: string }>>({});
+  const [claudeUrl, setClaudeUrl] = useState<string | null>(null);
+  const [claudeCode, setClaudeCode] = useState("");
+  const [claudeBusy, setClaudeBusy] = useState(false);
+  const [claudeResult, setClaudeResult] = useState<"ok" | string | null>(null);
 
   function loadProviderAuth() {
     fetch(`${httpBase}/providers`)
@@ -1009,7 +1013,15 @@ export function Settings(p: Props) {
                         <button className="settings-btn ghost" disabled={probe?.busy} onClick={() => void testProvider(pa.provider)}>
                           {probe?.busy ? t("providers.testing") : t("providers.test")}
                         </button>
-                        <button className="settings-btn" onClick={() => setConnectFor(pa.provider)}>
+                        <button
+                          className="settings-btn"
+                          onClick={() => {
+                            setClaudeUrl(null);
+                            setClaudeCode("");
+                            setClaudeResult(null);
+                            setConnectFor(pa.provider);
+                          }}
+                        >
                           {pa.configured ? "Manage" : "Connect"}
                         </button>
                       </div>
@@ -1284,8 +1296,85 @@ export function Settings(p: Props) {
                         {!m.available && (
                           <span className="badge muted" style={{ marginLeft: 8 }}>coming soon</span>
                         )}
+                        {m.id === "oauth-browser" && m.available && (
+                          <span className="badge muted" style={{ marginLeft: 8 }}>experimental</span>
+                        )}
                       </div>
-                      {m.id === "api-key" && m.available ? (
+                      {m.id === "oauth-browser" && m.available ? (
+                        <div className="provider-key" style={{ marginTop: 8, flexDirection: "column", alignItems: "stretch", gap: 8 }}>
+                          {m.hint && <p className="hint" style={{ margin: 0 }}>{m.hint}</p>}
+                          {!claudeUrl ? (
+                            <button
+                              className="settings-btn"
+                              disabled={claudeBusy}
+                              onClick={async () => {
+                                setClaudeBusy(true);
+                                setClaudeResult(null);
+                                try {
+                                  const r = await fetch(`${httpBase}/auth/claude/start`, { method: "POST" }).then(
+                                    (x) => x.json() as Promise<{ url: string }>,
+                                  );
+                                  setClaudeUrl(r.url);
+                                  window.open(r.url, "_blank", "noopener,noreferrer");
+                                } catch {
+                                  setClaudeResult("Couldn't reach the server. Try again.");
+                                }
+                                setClaudeBusy(false);
+                              }}
+                            >
+                              {claudeBusy ? t("settings.saving") : "Open sign-in"}
+                            </button>
+                          ) : (
+                            <>
+                              <a href={claudeUrl} target="_blank" rel="noreferrer noopener">
+                                Reopen sign-in page
+                              </a>
+                              <div className="provider-key" style={{ gap: 8 }}>
+                                <input
+                                  type="text"
+                                  className="settings-input"
+                                  placeholder="Paste the code here"
+                                  value={claudeCode}
+                                  onChange={(e) => setClaudeCode(e.target.value)}
+                                />
+                                <button
+                                  className="settings-btn"
+                                  disabled={!claudeCode.trim() || claudeBusy}
+                                  onClick={async () => {
+                                    setClaudeBusy(true);
+                                    setClaudeResult(null);
+                                    try {
+                                      const r = await fetch(`${httpBase}/auth/claude/complete`, {
+                                        method: "POST",
+                                        headers: { "content-type": "application/json" },
+                                        body: JSON.stringify({ code: claudeCode.trim() }),
+                                      }).then((x) => x.json() as Promise<{ ok: boolean; error?: string }>);
+                                      if (r.ok) {
+                                        setClaudeResult("ok");
+                                        setClaudeCode("");
+                                        loadProviderAuth();
+                                        p.refreshStatus();
+                                      } else {
+                                        setClaudeResult(r.error ?? "Sign-in failed.");
+                                      }
+                                    } catch {
+                                      setClaudeResult("Couldn't reach the server. Try again.");
+                                    }
+                                    setClaudeBusy(false);
+                                  }}
+                                >
+                                  {claudeBusy ? t("settings.saving") : "Connect"}
+                                </button>
+                              </div>
+                              {claudeResult === "ok" ? (
+                                <div className="srow-desc" style={{ color: "var(--ok)" }}>✓ Connected</div>
+                              ) : claudeResult ? (
+                                <div className="srow-desc" style={{ color: "var(--bad)" }}>{claudeResult}</div>
+                              ) : null}
+                            </>
+                          )}
+                        </div>
+                      ) : m.id === "api-key" && m.available ? (
                         <div className="provider-key" style={{ marginTop: 8 }}>
                           <input
                             type="password"

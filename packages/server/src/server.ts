@@ -41,6 +41,9 @@ import {
   providerHealthSnapshot,
   providerInfo,
   friendlyError,
+  beginClaudeLogin,
+  completeClaudeLogin,
+  saveClaudeOAuth,
   deckSummaries,
   dueCards,
   gradeCard,
@@ -131,6 +134,8 @@ const CORS = {
   "access-control-allow-methods": "GET,POST,DELETE,OPTIONS",
   "access-control-allow-headers": "content-type",
 };
+
+let claudeVerifier: string | null = null;
 
 function hasKey(config: Config, env: NodeJS.ProcessEnv, provider: string): boolean {
   if (provider === "ollama" || provider === "pollinations" || provider === "termcoderfree") return true; // keyless
@@ -475,6 +480,25 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     if (!provider || !providerInfo(provider)) return sendJson(res, 400, { error: "unknown provider" });
     const result = await probeProvider(provider, { config: ctx.config });
     return sendJson(res, 200, result.ok ? result : { ok: false, error: friendlyError(result.error ?? "no response") });
+  }
+
+  if (req.method === "POST" && parts.length === 3 && parts[0] === "auth" && parts[1] === "claude" && parts[2] === "start") {
+    const { url, verifier } = beginClaudeLogin();
+    claudeVerifier = verifier;
+    return sendJson(res, 200, { url });
+  }
+
+  if (req.method === "POST" && parts.length === 3 && parts[0] === "auth" && parts[1] === "claude" && parts[2] === "complete") {
+    const body = await readJson(req);
+    if (!claudeVerifier) return sendJson(res, 400, { error: "start the login first" });
+    try {
+      const creds = await completeClaudeLogin(String(body.code ?? ""), claudeVerifier);
+      saveClaudeOAuth(creds);
+      claudeVerifier = null;
+      return sendJson(res, 200, { ok: true });
+    } catch (err) {
+      return sendJson(res, 400, { ok: false, error: err instanceof Error ? err.message : String(err) });
+    }
   }
 
   // Inline editor autocomplete (Copilot-style ghost text).
