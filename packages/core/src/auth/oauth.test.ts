@@ -13,6 +13,7 @@ import {
   clearClaudeOAuth,
   oauthFetch,
   ensureFreshClaude,
+  ensureFreshClaudeConfig,
 } from "./oauth";
 import { loadConfig } from "../config/config";
 
@@ -129,5 +130,50 @@ describe("ensureFreshClaude", () => {
   it("returns creds unchanged when still fresh", async () => {
     const good = { accessToken: "ok", refreshToken: "rt", expiresAt: Date.now() + 9e5 };
     expect(await ensureFreshClaude(good)).toBe(good);
+  });
+});
+
+describe("ensureFreshClaudeConfig", () => {
+  let cfgDir: string;
+  let prevXdg: string | undefined;
+  beforeEach(() => {
+    cfgDir = mkdtempSync(join(tmpdir(), "tc-oauthcfg2-"));
+    prevXdg = process.env.XDG_CONFIG_HOME;
+    process.env.XDG_CONFIG_HOME = cfgDir;
+  });
+  afterEach(() => {
+    if (prevXdg === undefined) delete process.env.XDG_CONFIG_HOME;
+    else process.env.XDG_CONFIG_HOME = prevXdg;
+    rmSync(cfgDir, { recursive: true, force: true });
+  });
+
+  it("updates the in-memory config's oauth creds on a successful refresh", async () => {
+    const config = loadConfig({ cwd: cfgDir, env: { XDG_CONFIG_HOME: cfgDir } });
+    config.providers.anthropic = {
+      ...config.providers.anthropic,
+      oauth: { accessToken: "old", refreshToken: "rt", expiresAt: Date.now() + 1000 },
+    };
+    const f = fakeFetch({ access_token: "new", refresh_token: "rt2", expires_in: 3600 });
+    await ensureFreshClaudeConfig(config, f);
+    expect(config.providers.anthropic?.oauth?.accessToken).toBe("new");
+  });
+
+  it("deletes the in-memory oauth creds when the refresh is rejected", async () => {
+    const config = loadConfig({ cwd: cfgDir, env: { XDG_CONFIG_HOME: cfgDir } });
+    config.providers.anthropic = {
+      ...config.providers.anthropic,
+      oauth: { accessToken: "old", refreshToken: "rt", expiresAt: Date.now() + 1000 },
+    };
+    const f = fakeFetch({ error: "invalid_grant" }, false);
+    await ensureFreshClaudeConfig(config, f);
+    expect(config.providers.anthropic?.oauth).toBeUndefined();
+  });
+
+  it("is a no-op when there are no oauth creds", async () => {
+    const config = loadConfig({ cwd: cfgDir, env: { XDG_CONFIG_HOME: cfgDir } });
+    const before = config.providers.anthropic;
+    const f = fakeFetch({ access_token: "new", refresh_token: "rt2", expires_in: 3600 });
+    await ensureFreshClaudeConfig(config, f);
+    expect(config.providers.anthropic).toBe(before);
   });
 });

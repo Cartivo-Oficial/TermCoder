@@ -146,3 +146,16 @@ export function oauthFetch(creds: ClaudeOAuth, inner: typeof fetch = fetch): typ
 export function anthropicOAuthModel(model: string, creds: ClaudeOAuth): LanguageModel {
   return createAnthropic({ apiKey: "", fetch: oauthFetch(creds) })(model);
 }
+
+export async function ensureFreshClaudeConfig(config: Config, fetchImpl: typeof fetch = fetch): Promise<void> {
+  const creds = config.providers.anthropic?.oauth;
+  if (!creds) return;
+  const fresh = await ensureFreshClaude(creds, saveClaudeOAuth, clearClaudeOAuth, fetchImpl);
+  if (fresh) {
+    config.providers.anthropic = { ...config.providers.anthropic, oauth: fresh };
+  } else if (config.providers.anthropic) {
+    const next = { ...config.providers.anthropic };
+    delete (next as { oauth?: unknown }).oauth;
+    config.providers.anthropic = next;
+  }
+}

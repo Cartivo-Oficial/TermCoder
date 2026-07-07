@@ -166,6 +166,13 @@ describe("server", () => {
   });
 
   it("starts a Claude oauth login and rejects completing without a start", async () => {
+    const rejected = await fetch(`${base()}/auth/claude/complete`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ code: "x" }),
+    });
+    expect(rejected.status).toBe(400);
+
     const start = await fetch(`${base()}/auth/claude/start`, { method: "POST" });
     expect(start.status).toBe(200);
     const body = (await start.json()) as { url: string };

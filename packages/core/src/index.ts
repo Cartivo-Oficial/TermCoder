@@ -127,6 +127,8 @@ export {
   beginClaudeLogin,
   completeClaudeLogin,
   refreshClaude,
+  ensureFreshClaude,
+  ensureFreshClaudeConfig,
   loadClaudeOAuth,
   saveClaudeOAuth,
   clearClaudeOAuth,

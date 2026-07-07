@@ -19,6 +19,7 @@ import { loadProjectContext } from "../util/context";
 import { capText, pruneMessagesForModel } from "../util/tokens";
 import { discoverSkills, skillsMenu } from "../skill/skills";
 import { discoverMemories, recallMemories } from "../memory/memory";
+import { ensureFreshClaudeConfig } from "../auth/oauth";
 
 /** Events emitted while a turn runs. The client renders these; the core stays UI-agnostic. */
 export type SessionEvent =
@@ -217,7 +218,10 @@ export function friendlyError(raw: string): string {
     s.includes("401") ||
     s.includes("authentication")
   ) {
-    return "The API key for this provider is missing or invalid. Check it in Settings → Providers.";
+    return (
+      "The API key for this provider is missing or invalid. Check it in Settings → Providers." +
+      " (If you're signed in with a Claude subscription, run /login-claude again — the session may have expired.)"
+    );
   }
   if (
     s.includes("fetch failed") ||
@@ -357,6 +361,9 @@ export class Session {
     } = {},
   ): AsyncGenerator<SessionEvent, void> {
     const ctx: ToolContext = { cwd: this.record.cwd };
+    if (this.deps.config.providers.anthropic?.oauth) {
+      await ensureFreshClaudeConfig(this.deps.config);
+    }
     // Resolve the active agent (built-in or custom). It decides the model,
     // system prompt, permitted tools and step budget for this turn.
     const agent = resolveAgent(
