@@ -1,4 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import type { LanguageModel } from "ai";
 import { readGlobalConfig, writeGlobalConfig, type Config } from "../config/config";
 
 export interface ClaudeOAuth {
@@ -96,4 +98,32 @@ export function clearClaudeOAuth(): void {
   delete next.oauth;
   providers.anthropic = next;
   writeGlobalConfig({ ...config, providers });
+}
+
+export function oauthFetch(creds: ClaudeOAuth, inner: typeof fetch = fetch): typeof fetch {
+  return (async (url: string | URL | Request, init?: RequestInit) => {
+    const headers = new Headers(init?.headers);
+    headers.delete("x-api-key");
+    headers.set("authorization", `Bearer ${creds.accessToken}`);
+    headers.set("anthropic-beta", CLAUDE_OAUTH.betaHeader);
+    let body = init?.body;
+    if (typeof body === "string") {
+      try {
+        const parsed = JSON.parse(body) as { system?: unknown };
+        const preamble = { type: "text", text: CLAUDE_OAUTH.systemPreamble };
+        const existing = Array.isArray(parsed.system)
+          ? parsed.system
+          : parsed.system
+            ? [{ type: "text", text: String(parsed.system) }]
+            : [];
+        parsed.system = [preamble, ...existing];
+        body = JSON.stringify(parsed);
+      } catch {}
+    }
+    return inner(url as string, { ...init, headers, body });
+  }) as unknown as typeof fetch;
+}
+
+export function anthropicOAuthModel(model: string, creds: ClaudeOAuth): LanguageModel {
+  return createAnthropic({ apiKey: "", fetch: oauthFetch(creds) })(model);
 }

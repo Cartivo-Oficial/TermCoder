@@ -76,6 +76,13 @@ describe("resolveModel", () => {
   });
 });
 
+describe("resolveModel anthropic oauth branch", () => {
+  it("resolves anthropic via oauth when there is no api key", () => {
+    const config = ConfigSchema.parse({ providers: { anthropic: { oauth: { accessToken: "a", refreshToken: "r", expiresAt: Date.now() + 9e5 } } } });
+    expect(resolveModel("anthropic/claude-haiku-4-5-20251001", { config, env: {} })).toBeTruthy();
+  });
+});
+
 describe("resolveModel openai-compat registry branch", () => {
   it("resolves a registry compat provider with a config key", () => {
     const config = ConfigSchema.parse({ providers: { groq: { apiKey: "gsk_x" } } });

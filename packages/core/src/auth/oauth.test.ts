@@ -11,6 +11,7 @@ import {
   loadClaudeOAuth,
   saveClaudeOAuth,
   clearClaudeOAuth,
+  oauthFetch,
 } from "./oauth";
 import { loadConfig } from "../config/config";
 
@@ -84,5 +85,27 @@ describe("Claude oauth credential store", () => {
     expect(loaded?.accessToken).toBe("at");
     clearClaudeOAuth();
     expect(loadClaudeOAuth(loadConfig({ cwd: cfg, env: { XDG_CONFIG_HOME: cfg } }))).toBeUndefined();
+  });
+});
+
+describe("oauthFetch", () => {
+  it("injects the bearer, beta header, and system preamble; drops x-api-key", async () => {
+    let seen: { headers: Headers; body: unknown } | undefined;
+    const inner = (async (_url: string, init: RequestInit) => {
+      seen = { headers: new Headers(init.headers), body: JSON.parse(String(init.body)) };
+      return { ok: true, status: 200, json: async () => ({}), text: async () => "{}" } as Response;
+    }) as unknown as typeof fetch;
+    const f = oauthFetch({ accessToken: "AT", refreshToken: "RT", expiresAt: Date.now() + 9e5 }, inner);
+    await f("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "x-api-key": "should-be-removed", "content-type": "application/json" },
+      body: JSON.stringify({ system: "You are termcoder.", messages: [] }),
+    });
+    expect(seen!.headers.get("authorization")).toBe("Bearer AT");
+    expect(seen!.headers.get("anthropic-beta")).toContain("oauth-2025-04-20");
+    expect(seen!.headers.get("x-api-key")).toBeNull();
+    const sys = (seen!.body as { system: unknown }).system;
+    const first = Array.isArray(sys) ? (sys[0] as { text: string }).text : String(sys);
+    expect(first).toContain("Claude Code");
   });
 });

@@ -2,6 +2,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText, type LanguageModel } from "ai";
+import { anthropicOAuthModel } from "../auth/oauth";
 import type { Config } from "../config/config";
 import { markProvider, providerMarkedBad } from "./health";
 import { providerInfo } from "./registry";
@@ -26,6 +27,7 @@ export const FREE_MODEL = "termcoderfree/auto";
 
 function providerHasKey(config: Config, env: NodeJS.ProcessEnv, provider: string): boolean {
   if (KEYLESS_PROVIDERS.has(provider)) return true;
+  if (provider === "anthropic" && config.providers.anthropic?.oauth) return true;
   if (config.providers[provider]?.apiKey) return true;
   return Boolean(keyFromEnv(provider, env));
 }
@@ -146,11 +148,16 @@ export function resolveModel(
   const cfg = config.providers[provider] ?? {};
 
   switch (provider) {
-    case "anthropic":
+    case "anthropic": {
+      const oauth = cfg.oauth;
+      if (!cfg.apiKey && !env.ANTHROPIC_API_KEY && oauth) {
+        return anthropicOAuthModel(model, oauth);
+      }
       return createAnthropic({
         apiKey: requireKey(provider, cfg.apiKey ?? env.ANTHROPIC_API_KEY),
         baseURL: cfg.baseURL,
       })(model);
+    }
 
     case "openai":
       return createOpenAI({
