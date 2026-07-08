@@ -1,4 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { loadChatGPTOAuth, saveChatGPTOAuth, clearChatGPTOAuth, ensureFreshChatGPTConfig } from "./chatgpt-oauth";
+import { loadConfig, ConfigSchema } from "../config/config";
 import { beginChatGPTLogin, pollChatGPTLogin, refreshChatGPT } from "./chatgpt-oauth";
 
 function seqFetch(responses: Array<{ status: number; body: unknown }>): typeof fetch {
@@ -42,5 +47,38 @@ describe("refreshChatGPT", () => {
     const f = seqFetch([{ status: 200, body: { access_token: "at2", refresh_token: "rt2", expires_in: 3600 } }]);
     const creds = await refreshChatGPT("rt", f);
     expect(creds.accessToken).toBe("at2");
+  });
+});
+
+let cfg: string;
+let prevXdg: string | undefined;
+
+beforeEach(() => {
+  cfg = mkdtempSync(join(tmpdir(), "tc-cgptcfg-"));
+  prevXdg = process.env.XDG_CONFIG_HOME;
+  process.env.XDG_CONFIG_HOME = cfg;
+});
+
+afterEach(() => {
+  if (prevXdg === undefined) delete process.env.XDG_CONFIG_HOME;
+  else process.env.XDG_CONFIG_HOME = prevXdg;
+  rmSync(cfg, { recursive: true, force: true });
+});
+
+describe("store and config helpers", () => {
+  it("round-trips ChatGPT oauth creds via config", () => {
+    saveChatGPTOAuth({ accessToken: "at", refreshToken: "rt", expiresAt: Date.now() + 1000, accountId: "acc_1" });
+    const loaded = loadChatGPTOAuth(loadConfig({ cwd: cfg, env: { XDG_CONFIG_HOME: cfg } }));
+    expect(loaded?.accessToken).toBe("at");
+    expect(loaded?.accountId).toBe("acc_1");
+    clearChatGPTOAuth();
+    expect(loadChatGPTOAuth(loadConfig({ cwd: cfg, env: { XDG_CONFIG_HOME: cfg } }))).toBeUndefined();
+  });
+
+  it("ensureFreshChatGPTConfig refreshes near-expiry creds in place", async () => {
+    const config = ConfigSchema.parse({ providers: { openai: { oauth: { accessToken: "old", refreshToken: "rt", expiresAt: Date.now() + 1000 } } } });
+    const f = (async () => ({ ok: true, status: 200, json: async () => ({ access_token: "new", refresh_token: "rt2", expires_in: 3600 }) }) as Response) as unknown as typeof fetch;
+    await ensureFreshChatGPTConfig(config, f);
+    expect(config.providers.openai?.oauth?.accessToken).toBe("new");
   });
 });

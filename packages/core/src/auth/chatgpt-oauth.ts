@@ -91,3 +91,59 @@ export async function refreshChatGPT(refreshToken: string, fetchImpl: typeof fet
   if (!res.ok) throw new Error("ChatGPT session refresh failed.");
   return toCreds((await res.json()) as { access_token: string; refresh_token: string; expires_in?: number });
 }
+
+import { readGlobalConfig, writeGlobalConfig, type Config } from "../config/config";
+
+export function loadChatGPTOAuth(config: Config): ChatGPTOAuth | undefined {
+  return config.providers.openai?.oauth as ChatGPTOAuth | undefined;
+}
+
+export function saveChatGPTOAuth(creds: ChatGPTOAuth): void {
+  const config = readGlobalConfig();
+  const providers = { ...((config.providers as Record<string, unknown>) ?? {}) };
+  providers.openai = { ...((providers.openai as Record<string, unknown>) ?? {}), oauth: creds };
+  writeGlobalConfig({ ...config, providers });
+}
+
+export function clearChatGPTOAuth(): void {
+  const config = readGlobalConfig();
+  const providers = { ...((config.providers as Record<string, unknown>) ?? {}) };
+  const openai = providers.openai as Record<string, unknown> | undefined;
+  if (!openai?.oauth) return;
+  const next = { ...openai };
+  delete next.oauth;
+  providers.openai = next;
+  writeGlobalConfig({ ...config, providers });
+}
+
+const REFRESH_SKEW_MS = 120_000;
+
+export async function ensureFreshChatGPT(
+  creds: ChatGPTOAuth,
+  save: (c: ChatGPTOAuth) => void = () => {},
+  clear: () => void = () => {},
+  fetchImpl: typeof fetch = fetch,
+): Promise<ChatGPTOAuth | undefined> {
+  if (creds.expiresAt - Date.now() > REFRESH_SKEW_MS) return creds;
+  try {
+    const fresh = await refreshChatGPT(creds.refreshToken, fetchImpl);
+    save(fresh);
+    return fresh;
+  } catch {
+    clear();
+    return undefined;
+  }
+}
+
+export async function ensureFreshChatGPTConfig(config: Config, fetchImpl: typeof fetch = fetch): Promise<void> {
+  const creds = config.providers.openai?.oauth as ChatGPTOAuth | undefined;
+  if (!creds) return;
+  const fresh = await ensureFreshChatGPT(creds, saveChatGPTOAuth, clearChatGPTOAuth, fetchImpl);
+  if (fresh) {
+    config.providers.openai = { ...config.providers.openai, oauth: fresh };
+  } else if (config.providers.openai) {
+    const next = { ...config.providers.openai };
+    delete (next as { oauth?: unknown }).oauth;
+    config.providers.openai = next;
+  }
+}

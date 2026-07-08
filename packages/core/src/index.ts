@@ -137,6 +137,19 @@ export {
 } from "./auth/oauth";
 
 export {
+  beginChatGPTLogin,
+  pollChatGPTLogin,
+  refreshChatGPT,
+  loadChatGPTOAuth,
+  saveChatGPTOAuth,
+  clearChatGPTOAuth,
+  ensureFreshChatGPTConfig,
+  CHATGPT_OAUTH,
+  type ChatGPTOAuth,
+  type DeviceGrant,
+} from "./auth/chatgpt-oauth";
+
+export {
   GitHubClient,
   GitHubError,
   gitHubToken,
