@@ -20,6 +20,7 @@ import { capText, pruneMessagesForModel } from "../util/tokens";
 import { discoverSkills, skillsMenu } from "../skill/skills";
 import { discoverMemories, recallMemories } from "../memory/memory";
 import { ensureFreshClaudeConfig } from "../auth/oauth";
+import { ensureFreshChatGPTConfig } from "../auth/chatgpt-oauth";
 
 /** Events emitted while a turn runs. The client renders these; the core stays UI-agnostic. */
 export type SessionEvent =
@@ -363,6 +364,9 @@ export class Session {
     const ctx: ToolContext = { cwd: this.record.cwd };
     if (this.deps.config.providers.anthropic?.oauth) {
       await ensureFreshClaudeConfig(this.deps.config);
+    }
+    if (this.deps.config.providers.openai?.oauth) {
+      await ensureFreshChatGPTConfig(this.deps.config);
     }
     // Resolve the active agent (built-in or custom). It decides the model,
     // system prompt, permitted tools and step budget for this turn.
