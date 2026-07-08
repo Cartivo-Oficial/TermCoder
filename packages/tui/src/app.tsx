@@ -63,6 +63,10 @@ import {
   completeClaudeLogin,
   saveClaudeOAuth,
   clearClaudeOAuth,
+  beginChatGPTLogin,
+  pollChatGPTLogin,
+  saveChatGPTOAuth,
+  clearChatGPTOAuth,
   type Config,
   type PermissionDecision,
   type PermissionRequest,
@@ -670,6 +674,30 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         clearClaudeOAuth();
         forceRender((n) => n + 1);
         pushHistory({ kind: "notice", text: "Disconnected the Claude subscription login." });
+        break;
+      }
+      case "login-chatgpt": {
+        beginChatGPTLogin().then((grant) => {
+          pushHistory({ kind: "notice", text: [
+            "Experimental — sign in with your ChatGPT Plus/Pro subscription:",
+            `  1. Open: ${grant.verificationUri}`,
+            `  2. Enter this code: ${grant.userCode}`,
+            "Waiting for you to approve… (this may take a moment; it falls back to /key or the free model if it fails)",
+          ].join("\n") });
+          return pollChatGPTLogin(grant.deviceCode, { intervalMs: grant.interval * 1000 });
+        }).then((creds) => {
+          saveChatGPTOAuth(creds);
+          forceRender((n) => n + 1);
+          pushHistory({ kind: "notice", text: "✓ ChatGPT subscription connected (experimental)." });
+        }).catch((err) => {
+          pushHistory({ kind: "error", text: err instanceof Error ? err.message : String(err) });
+        });
+        break;
+      }
+      case "logout-chatgpt": {
+        clearChatGPTOAuth();
+        forceRender((n) => n + 1);
+        pushHistory({ kind: "notice", text: "Disconnected the ChatGPT subscription login." });
         break;
       }
       case "key": {

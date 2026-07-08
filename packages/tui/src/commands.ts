@@ -14,6 +14,8 @@ export const TUI_COMMANDS: TuiCommand[] = [
   { name: "connect", arg: "[provider]", desc: "Connect a provider (API key now; subscription login soon)" },
   { name: "login-claude", desc: "Sign in with a Claude Pro/Max subscription (experimental)" },
   { name: "logout-claude", desc: "Disconnect the Claude subscription login" },
+  { name: "login-chatgpt", desc: "Sign in with a ChatGPT Plus/Pro subscription (experimental)" },
+  { name: "logout-chatgpt", desc: "Disconnect the ChatGPT subscription login" },
   { name: "key", arg: "<provider> <key>", desc: "Save an API key (google/anthropic/openai)" },
   { name: "new", desc: "Start a new session" },
   { name: "sessions", desc: "List saved sessions" },
