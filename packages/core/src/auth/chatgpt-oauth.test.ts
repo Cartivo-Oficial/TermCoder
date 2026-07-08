@@ -4,7 +4,17 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { loadChatGPTOAuth, saveChatGPTOAuth, clearChatGPTOAuth, ensureFreshChatGPTConfig } from "./chatgpt-oauth";
 import { loadConfig, ConfigSchema } from "../config/config";
-import { beginChatGPTLogin, pollChatGPTLogin, refreshChatGPT } from "./chatgpt-oauth";
+import { beginChatGPTLogin, pollChatGPTLogin, refreshChatGPT, chatgptFetch } from "./chatgpt-oauth";
+
+it("chatgptFetch sets the bearer + account header and drops x-api-key", async () => {
+  let seen: Headers | undefined;
+  const inner = (async (_u: string, init: RequestInit) => { seen = new Headers(init.headers); return { ok: true, status: 200, json: async () => ({}), text: async () => "{}" } as Response; }) as unknown as typeof fetch;
+  const f = chatgptFetch({ accessToken: "AT", refreshToken: "RT", expiresAt: Date.now() + 9e5, accountId: "acc_1" }, inner);
+  await f("https://chatgpt.com/backend-api/codex/responses", { method: "POST", headers: { "x-api-key": "drop", "content-type": "application/json" }, body: "{}" });
+  expect(seen!.get("authorization")).toBe("Bearer AT");
+  expect(seen!.get("chatgpt-account-id")).toBe("acc_1");
+  expect(seen!.get("x-api-key")).toBeNull();
+});
 
 function seqFetch(responses: Array<{ status: number; body: unknown }>): typeof fetch {
   let i = 0;

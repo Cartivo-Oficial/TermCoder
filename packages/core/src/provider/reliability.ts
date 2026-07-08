@@ -12,7 +12,8 @@ export function firstKeyedModel(config: Config, env: NodeJS.ProcessEnv): string 
   if (has("google", "GOOGLE_GENERATIVE_AI_API_KEY", "GEMINI_API_KEY")) return "google/gemini-2.5-flash";
   if (!providerMarkedBad("anthropic") && (has("anthropic", "ANTHROPIC_API_KEY") || Boolean(config.providers.anthropic?.oauth)))
     return "anthropic/claude-haiku-4-5-20251001";
-  if (has("openai", "OPENAI_API_KEY")) return "openai/gpt-4o-mini";
+  if (!providerMarkedBad("openai") && (has("openai", "OPENAI_API_KEY") || Boolean(config.providers.openai?.oauth)))
+    return "openai/gpt-4o-mini";
   return undefined;
 }
 

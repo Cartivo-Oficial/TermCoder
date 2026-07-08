@@ -83,6 +83,13 @@ describe("resolveModel anthropic oauth branch", () => {
   });
 });
 
+describe("resolveModel openai oauth branch", () => {
+  it("resolves openai via oauth when there is no api key", () => {
+    const config = ConfigSchema.parse({ providers: { openai: { oauth: { accessToken: "a", refreshToken: "r", expiresAt: Date.now() + 9e5 } } } });
+    expect(resolveModel("openai/gpt-5", { config, env: {} })).toBeTruthy();
+  });
+});
+
 describe("resolveModel openai-compat registry branch", () => {
   it("resolves a registry compat provider with a config key", () => {
     const config = ConfigSchema.parse({ providers: { groq: { apiKey: "gsk_x" } } });

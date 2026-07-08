@@ -3,6 +3,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText, type LanguageModel } from "ai";
 import { anthropicOAuthModel } from "../auth/oauth";
+import { chatgptModel } from "../auth/chatgpt-oauth";
 import type { Config } from "../config/config";
 import { markProvider, providerMarkedBad } from "./health";
 import { providerInfo } from "./registry";
@@ -28,6 +29,7 @@ export const FREE_MODEL = "termcoderfree/auto";
 function providerHasKey(config: Config, env: NodeJS.ProcessEnv, provider: string): boolean {
   if (KEYLESS_PROVIDERS.has(provider)) return true;
   if (provider === "anthropic" && config.providers.anthropic?.oauth) return true;
+  if (provider === "openai" && config.providers.openai?.oauth) return true;
   if (config.providers[provider]?.apiKey) return true;
   return Boolean(keyFromEnv(provider, env));
 }
@@ -159,11 +161,16 @@ export function resolveModel(
       })(model);
     }
 
-    case "openai":
+    case "openai": {
+      const oauth = cfg.oauth;
+      if (!cfg.apiKey && !env.OPENAI_API_KEY && oauth) {
+        return chatgptModel(model, oauth);
+      }
       return createOpenAI({
         apiKey: requireKey(provider, cfg.apiKey ?? env.OPENAI_API_KEY),
         baseURL: cfg.baseURL,
       })(model);
+    }
 
     case "google":
       return createGoogleGenerativeAI({

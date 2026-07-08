@@ -1,3 +1,6 @@
+import { createOpenAI } from "@ai-sdk/openai";
+import type { LanguageModel } from "ai";
+
 export interface ChatGPTOAuth {
   accessToken: string;
   refreshToken: string;
@@ -11,7 +14,22 @@ export const CHATGPT_OAUTH = {
   tokenUrl: "https://auth.openai.com/oauth/token",
   deviceGrantType: "urn:ietf:params:oauth:grant-type:device_code",
   scopes: "openid profile email offline_access",
+  backendBaseUrl: "https://chatgpt.com/backend-api/codex",
 };
+
+export function chatgptFetch(creds: ChatGPTOAuth, inner: typeof fetch = fetch): typeof fetch {
+  return (async (url: string | URL | Request, init?: RequestInit) => {
+    const headers = new Headers(init?.headers);
+    headers.delete("x-api-key");
+    headers.set("authorization", `Bearer ${creds.accessToken}`);
+    if (creds.accountId) headers.set("chatgpt-account-id", creds.accountId);
+    return inner(url as string, { ...init, headers });
+  }) as unknown as typeof fetch;
+}
+
+export function chatgptModel(model: string, creds: ChatGPTOAuth): LanguageModel {
+  return createOpenAI({ apiKey: "", baseURL: CHATGPT_OAUTH.backendBaseUrl, fetch: chatgptFetch(creds) })(model);
+}
 
 export interface DeviceGrant {
   deviceCode: string;
