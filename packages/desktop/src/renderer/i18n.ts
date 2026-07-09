@@ -334,9 +334,7 @@ const en: Dict = {
   "dash.tokensIn": "in",
   "dash.tokensOut": "out",
   "dash.models": "Models",
-  "dash.toolkit": "Toolkit",
-  "dash.new": "New session",
-  "dash.settings": "Settings",
+  "dash.noUsage": "No token usage yet",
 };
 
 const pt: Dict = {
@@ -638,9 +636,7 @@ const pt: Dict = {
   "dash.tokensIn": "entrada",
   "dash.tokensOut": "saída",
   "dash.models": "Modelos",
-  "dash.toolkit": "Ferramentas",
-  "dash.new": "Nova sessão",
-  "dash.settings": "Configurações",
+  "dash.noUsage": "Ainda sem uso de tokens",
 };
 
 const es: Dict = {
@@ -942,9 +938,7 @@ const es: Dict = {
   "dash.tokensIn": "entrada",
   "dash.tokensOut": "salida",
   "dash.models": "Modelos",
-  "dash.toolkit": "Herramientas",
-  "dash.new": "Nueva sesión",
-  "dash.settings": "Ajustes",
+  "dash.noUsage": "Aún sin uso de tokens",
 };
 
 // High-traffic subset for the remaining languages; everything else falls back

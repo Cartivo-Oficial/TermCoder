@@ -356,10 +356,9 @@ export function App() {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
-  const [dashOpen, setDashOpen] = useState(() => localStorage.getItem("tc-dash") !== "0");
   const [onboarded, setOnboarded] = useState(() => localStorage.getItem("tc-onboarded") === "1");
   const [studentMode, setStudentMode] = useState(() => localStorage.getItem("tc-student") === "1");
-  const [rightTab, setRightTab] = useState<"files" | "changes">("files");
+  const [rightTab, setRightTab] = useState<"files" | "changes" | "overview">("files");
   const [theme, setTheme] = useState<"dark" | "light">(
     () => (localStorage.getItem("tc-theme") as "dark" | "light") || "dark",
   );
@@ -1546,13 +1545,11 @@ export function App() {
           <button className="icon" title={`${t("nav.toggleFiles")} (Ctrl J)`} onClick={() => setRightOpen((v) => !v)}><IconPanelRight /></button>
           <button
             className="icon"
-            title="Toggle dashboard"
-            onClick={() =>
-              setDashOpen((v) => {
-                localStorage.setItem("tc-dash", v ? "0" : "1");
-                return !v;
-              })
-            }
+            title={t("dash.overview")}
+            onClick={() => {
+              setRightOpen(true);
+              setRightTab("overview");
+            }}
           >
             <IconDashboard />
           </button>
@@ -1631,7 +1628,7 @@ export function App() {
                         </button>
                       </div>
                       <div className="sc-meta">
-                        <span className="chip">{sessionModelShort(s.model)}</span>
+                        <span className="sc-model">{sessionModelShort(s.model)}</span>
                         {s.usage ? (
                           <span>
                             ↓{fmtK(s.usage.tokensIn)} ↑{fmtK(s.usage.tokensOut)}
@@ -2062,8 +2059,13 @@ export function App() {
               <button className={rightTab === "files" ? "active" : ""} onClick={() => setRightTab("files")}>
                 {t("right.allFiles")}
               </button>
+              <button className={rightTab === "overview" ? "active" : ""} onClick={() => setRightTab("overview")}>
+                {t("dash.overview")}
+              </button>
             </div>
-            {rightTab === "files" ? (
+            {rightTab === "overview" ? (
+              <Dashboard sessions={sessions} t={t} />
+            ) : rightTab === "files" ? (
               <FileTree root={cwd} status={status} onOpen={(p) => void openFile(p)} />
             ) : changedFiles.length === 0 ? (
               <div className="muted tree-empty">{t("right.noChanges")}</div>
@@ -2086,15 +2088,6 @@ export function App() {
               </div>
             )}
           </aside>
-        ) : null}
-
-        {dashOpen ? (
-          <Dashboard
-            sessions={sessions}
-            t={t}
-            onNew={newSession}
-            onSettings={() => setSettingsOpen(true)}
-          />
         ) : null}
       </div>
 
@@ -2223,10 +2216,6 @@ export function App() {
         const ctxPct = lastCtx > 0 ? Math.round((lastCtx / ((catalog.find((c) => c.id === model)?.contextK ?? 128) * 1000)) * 100) : 0;
         return (
           <div className="statusbar">
-            <span className="sb-item">{cwd?.split(/[\\/]/).pop()}</span>
-            <span className="sb-sep">·</span>
-            <span className="sb-item mono">{model.split("/").pop()}</span>
-            <span className="sb-sep">·</span>
             <span className="sb-item mono">{agent ?? "build"}</span>
             {lastCtx > 0 ? (<><span className="sb-sep">·</span><span className={`sb-item mono ${ctxPct > 70 ? "hot" : ctxPct > 40 ? "warm" : ""}`}>ctx {fmtTokens(lastCtx)} ({ctxPct}%)</span></>) : null}
             {(tokensIn || tokensOut) ? (<><span className="sb-sep">·</span><span className="sb-item mono">↓{fmtTokens(tokensIn)} ↑{fmtTokens(tokensOut)}</span></>) : null}
