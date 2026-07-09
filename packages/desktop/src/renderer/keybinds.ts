@@ -11,6 +11,7 @@ export const KEYBIND_ACTIONS: KeybindAction[] = [
   { id: "toggleSessions", labelKey: "keybind.toggleSessions", default: "mod+b" },
   { id: "toggleFiles", labelKey: "keybind.toggleFiles", default: "mod+j" },
   { id: "openFolder", labelKey: "keybind.openFolder", default: "mod+o" },
+  { id: "toggleTerminal", labelKey: "keybind.toggleTerminal", default: "mod+`" },
 ];
 
 const IS_MAC =

@@ -802,3 +802,19 @@ button.chip { cursor: pointer; }
   transition: color var(--t-fast), border-color var(--t-fast), box-shadow var(--t-med);
 }
 .suggest-chip:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); box-shadow: 0 0 18px var(--accent-glow); }
+
+.center-tabs { display: flex; gap: 2px; padding: 6px 10px 0; flex-shrink: 0; }
+.center-tabs button { font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); background: none; border: none; border-radius: 7px; padding: 5px 10px; cursor: pointer; }
+.center-tabs button:hover { color: var(--text); background: var(--elev); }
+.center-tabs button.active { color: var(--text); background: var(--elev2); box-shadow: inset 0 -2px 0 var(--accent); }
+.term-pane { position: absolute; inset: 34px 0 0 0; display: flex; flex-direction: column; background: var(--bg); z-index: 5; }
+.term-pane.hidden { display: none; }
+.term-bar { display: flex; align-items: center; gap: 6px; padding: 7px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.term-chip { font-family: var(--mono); font-size: 11px; color: var(--muted); background: var(--elev); border: 1px solid var(--border); border-radius: 7px; padding: 4px 9px; cursor: pointer; }
+.term-chip:hover { color: var(--text); border-color: var(--accent); }
+.term-chip.restart { color: var(--accent); border-color: var(--accent); }
+.term-spacer { flex: 1; }
+.term-host { flex: 1; min-height: 0; padding: 6px 4px 4px 10px; }
+.term-host .xterm { height: 100%; }
+.term-error { padding: 18px; color: var(--muted); font-size: 12.5px; display: flex; flex-direction: column; gap: 8px; }
+.term-error pre { font-family: var(--mono); font-size: 11px; color: var(--faint); white-space: pre-wrap; }

@@ -339,6 +339,12 @@ const en: Dict = {
   "dash.tokensOut": "out",
   "dash.models": "Models",
   "dash.noUsage": "No token usage yet",
+  "tab.chat": "Chat",
+  "tab.terminal": "Terminal",
+  "term.unavailable": "Terminal unavailable on this build.",
+  "term.exited": "Process exited ({code})",
+  "term.restart": "Restart",
+  "keybind.toggleTerminal": "Toggle terminal",
 };
 
 const pt: Dict = {
@@ -648,6 +654,12 @@ const pt: Dict = {
   "dash.tokensOut": "saída",
   "dash.models": "Modelos",
   "dash.noUsage": "Ainda sem uso de tokens",
+  "tab.chat": "Chat",
+  "tab.terminal": "Terminal",
+  "term.unavailable": "Terminal indisponível nesta versão.",
+  "term.exited": "Processo encerrado ({code})",
+  "term.restart": "Reiniciar",
+  "keybind.toggleTerminal": "Alternar terminal",
 };
 
 const es: Dict = {
@@ -957,6 +969,12 @@ const es: Dict = {
   "dash.tokensOut": "salida",
   "dash.models": "Modelos",
   "dash.noUsage": "Aún sin uso de tokens",
+  "tab.chat": "Chat",
+  "tab.terminal": "Terminal",
+  "term.unavailable": "Terminal no disponible en esta versión.",
+  "term.exited": "Proceso terminado ({code})",
+  "term.restart": "Reiniciar",
+  "keybind.toggleTerminal": "Alternar terminal",
 };
 
 const fr: Dict = {

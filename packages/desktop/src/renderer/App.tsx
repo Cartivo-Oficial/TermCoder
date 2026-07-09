@@ -13,6 +13,7 @@ import { IconStop, IconShare, IconCopy, IconEdit, IconMic, IconUndo, IconBolt } 
 import { ErrorBoundary } from "./ErrorBoundary";
 import { ModelBrowser } from "./ModelBrowser";
 import { Rail } from "./Rail";
+import { TerminalPane } from "./TerminalPane";
 import { SidePanel } from "./SidePanel";
 import { SessionsPanel } from "./SessionsPanel";
 import { DiffBlock, DiffBody, ToolCard } from "./ToolCard";
@@ -303,6 +304,8 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [connected, setConnected] = useState(false);
   const [cwd, setCwd] = useState<string | null>(null);
+  const [centerTab, setCenterTab] = useState<"chat" | "terminal">("chat");
+  const [termMounted, setTermMounted] = useState(false);
   const [model, setModel] = useState<string>(MODELS[0]!);
   const [tokens, setTokens] = useState(0);
   const [tokensIn, setTokensIn] = useState(0);
@@ -588,6 +591,10 @@ export function App() {
       } else if (matchCombo(e, bind("openFolder"))) {
         e.preventDefault();
         void chooseFolder();
+      } else if (matchCombo(e, bind("toggleTerminal"))) {
+        e.preventDefault();
+        setTermMounted(true);
+        setCenterTab((tab) => (tab === "terminal" ? "chat" : "terminal"));
       } else if (e.key === "Escape") {
         setPaletteOpen(false);
         setViewerOpen(false);
@@ -1388,6 +1395,15 @@ export function App() {
     { id: "left", label: t("palette.toggleSessions"), hint: t("palette.hint.command"), run: () => setLeftOpen((v) => !v) },
     { id: "right", label: t("palette.toggleFiles"), hint: t("palette.hint.command"), run: () => setSidePanel((p) => (p === "files" ? null : "files")) },
     {
+      id: "terminal",
+      label: t("tab.terminal"),
+      hint: t("palette.hint.command"),
+      run: () => {
+        setTermMounted(true);
+        setCenterTab("terminal");
+      },
+    },
+    {
       id: "theme",
       label: t("palette.switchTheme", { theme: t(theme === "dark" ? "theme.light" : "theme.dark") }),
       hint: t("palette.hint.command"),
@@ -1489,6 +1505,23 @@ export function App() {
         ) : null}
 
         <main className="center">
+          <div className="center-tabs">
+            <button
+              className={centerTab === "chat" ? "active" : ""}
+              onClick={() => setCenterTab("chat")}
+            >
+              {t("tab.chat")}
+            </button>
+            <button
+              className={centerTab === "terminal" ? "active" : ""}
+              onClick={() => {
+                setTermMounted(true);
+                setCenterTab("terminal");
+              }}
+            >
+              {t("tab.terminal")}
+            </button>
+          </div>
           <div className="chat-head">
             {editingTitle ? (
               <input
@@ -1878,6 +1911,14 @@ export function App() {
             </div>
             </div>
           </div>
+
+          {termMounted ? (
+            <TerminalPane
+              cwd={cwd}
+              hidden={centerTab !== "terminal"}
+              themeKey={`${theme}:${colorTheme}:${accent}`}
+            />
+          ) : null}
         </main>
 
         {sidePanel ? (
