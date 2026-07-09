@@ -136,6 +136,8 @@ interface SessionSummary {
   title: string;
   messageCount: number;
   cwd: string;
+  model: string;
+  usage?: { tokensIn: number; tokensOut: number };
 }
 
 /** Display label: fall back to the folder name for legacy "Untitled session". */
@@ -158,6 +160,9 @@ const shortPath = (p: string) => {
   return parts.length > 3 ? `…\\${parts.slice(-2).join("\\")}` : p;
 };
 const fmtTokens = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
+const fmtK = (n: number | undefined) =>
+  n !== undefined && n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : String(n ?? 0);
+const sessionModelShort = (m: string) => m.split("/").pop() ?? m;
 
 /** A soft two-note chime (Web Audio) for the "agent finished" cue. */
 function playChime() {
@@ -1579,23 +1584,40 @@ export function App() {
               ) : null}
               {sessions
                 .filter((s) => s.messageCount > 0)
-                .map((s) => (
-                <div key={s.id} className={`session-row ${s.id === currentId ? "active" : ""}`}>
-                  <button className="session" onClick={() => void openSession(s.id)}>
-                    {sessionLabel(s)}
-                  </button>
-                  <button
-                    className="session-del"
-                    title={t("session.deleteOne")}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!confirmDelete || window.confirm(t("session.confirmOne"))) void deleteSession(s.id);
-                    }}
-                  >
-                    <IconTrash />
-                  </button>
-                </div>
-              ))}
+                .map((s) => {
+                  const active = s.id === currentId;
+                  const dotClass = active && busy ? "gen" : "idle";
+                  return (
+                    <div
+                      key={s.id}
+                      className={`session-card ${active ? "active" : ""}`}
+                      onClick={() => void openSession(s.id)}
+                    >
+                      <div className="sc-top">
+                        <span className={`dot ${dotClass}`} />
+                        <span className="sc-title">{sessionLabel(s)}</span>
+                        <button
+                          className="session-del"
+                          title={t("session.deleteOne")}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!confirmDelete || window.confirm(t("session.confirmOne"))) void deleteSession(s.id);
+                          }}
+                        >
+                          <IconTrash />
+                        </button>
+                      </div>
+                      <div className="sc-meta">
+                        <span className="chip">{sessionModelShort(s.model)}</span>
+                        {s.usage ? (
+                          <span>
+                            ↓{fmtK(s.usage.tokensIn)} ↑{fmtK(s.usage.tokensOut)}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
             <div className="left-footer">
               <button className="icon" title={t("nav.settings")} onClick={() => setSettingsOpen(true)}><IconGear /></button>
