@@ -278,6 +278,26 @@ export function Settings(p: Props) {
   const [claudeCode, setClaudeCode] = useState("");
   const [claudeBusy, setClaudeBusy] = useState(false);
   const [claudeResult, setClaudeResult] = useState<"ok" | string | null>(null);
+  const [chatgptCode, setChatgptCode] = useState<{ userCode: string; url: string } | null>(null);
+  const [chatgptStatus, setChatgptStatus] = useState<string | null>(null);
+  const [chatgptBusy, setChatgptBusy] = useState(false);
+
+  useEffect(() => {
+    if (!chatgptCode) return;
+    const id = setInterval(async () => {
+      try {
+        const s = await fetch(`${httpBase}/auth/chatgpt/status`).then((x) => x.json() as Promise<{ state: string; error?: string }>);
+        setChatgptStatus(s.state);
+        if (s.state === "connected") {
+          clearInterval(id);
+          loadProviderAuth();
+          p.refreshStatus();
+        }
+        if (s.state === "failed") clearInterval(id);
+      } catch {}
+    }, 3000);
+    return () => clearInterval(id);
+  }, [chatgptCode]);
 
   function loadProviderAuth() {
     fetch(`${httpBase}/providers`)
@@ -1301,6 +1321,50 @@ export function Settings(p: Props) {
                         )}
                       </div>
                       {m.id === "oauth-browser" && m.available ? (
+                        connectFor === "openai" ? (
+                        <div className="provider-key" style={{ marginTop: 8, flexDirection: "column", alignItems: "stretch", gap: 8 }}>
+                          {m.hint && <p className="hint" style={{ margin: 0 }}>{m.hint}</p>}
+                          {!chatgptCode ? (
+                            <button
+                              className="settings-btn"
+                              disabled={chatgptBusy}
+                              onClick={async () => {
+                                setChatgptBusy(true);
+                                setChatgptStatus(null);
+                                try {
+                                  const r = await fetch(`${httpBase}/auth/chatgpt/start`, { method: "POST" }).then(
+                                    (x) => x.json() as Promise<{ verificationUri?: string; userCode?: string; error?: string }>,
+                                  );
+                                  if (r.verificationUri && r.userCode) {
+                                    setChatgptCode({ userCode: r.userCode, url: r.verificationUri });
+                                    window.open(r.verificationUri, "_blank", "noopener,noreferrer");
+                                  } else {
+                                    setChatgptStatus(r.error ?? "Couldn't start sign-in.");
+                                  }
+                                } catch {
+                                  setChatgptStatus("Couldn't reach the server. Try again.");
+                                }
+                                setChatgptBusy(false);
+                              }}
+                            >
+                              {chatgptBusy ? t("settings.saving") : "Open sign-in"}
+                            </button>
+                          ) : (
+                            <>
+                              <div className="srow-desc">On the OpenAI page, enter this code:</div>
+                              <div style={{ fontFamily: "var(--mono)", fontSize: 18, letterSpacing: "0.12em", color: "var(--accent)" }}>{chatgptCode.userCode}</div>
+                              <a href={chatgptCode.url} target="_blank" rel="noreferrer noopener">Reopen sign-in page</a>
+                              {chatgptStatus === "connected" ? (
+                                <div className="srow-desc" style={{ color: "var(--ok)" }}>✓ Connected</div>
+                              ) : chatgptStatus === "failed" ? (
+                                <div className="srow-desc" style={{ color: "var(--bad)" }}>Sign-in failed. Try again.</div>
+                              ) : (
+                                <div className="srow-desc muted">Waiting for you to approve on OpenAI…</div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                        ) : (
                         <div className="provider-key" style={{ marginTop: 8, flexDirection: "column", alignItems: "stretch", gap: 8 }}>
                           {m.hint && <p className="hint" style={{ margin: 0 }}>{m.hint}</p>}
                           {!claudeUrl ? (
@@ -1374,6 +1438,7 @@ export function Settings(p: Props) {
                             </>
                           )}
                         </div>
+                        )
                       ) : m.id === "api-key" && m.available ? (
                         <div className="provider-key" style={{ marginTop: 8 }}>
                           <input

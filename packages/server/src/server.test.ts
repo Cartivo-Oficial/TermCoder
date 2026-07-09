@@ -179,6 +179,17 @@ describe("server", () => {
     expect(body.url).toContain("oauth");
   });
 
+  it("reports ChatGPT device-login status without crashing", async () => {
+    const status = await fetch(`${base()}/auth/chatgpt/status`);
+    expect(status.status).toBe(200);
+    const body = (await status.json()) as { state: string };
+    expect(typeof body.state).toBe("string");
+
+    const start = await fetch(`${base()}/auth/chatgpt/start`, { method: "POST" });
+    expect([200, 502]).toContain(start.status);
+    expect(start.headers.get("content-type")).toContain("json");
+  });
+
   it("probes a provider and reports health", async () => {
     const bad = await fetch(`${base()}/providers/probe`, {
       method: "POST",

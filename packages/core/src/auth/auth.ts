@@ -28,7 +28,7 @@ const OAUTH_SOON: Record<string, AuthMethod[]> = {
     { id: "oauth-headless", label: "Claude Pro/Max (headless)", available: false, hint: SOON },
   ],
   openai: [
-    { id: "oauth-browser", label: "ChatGPT Pro/Plus (browser)", available: false, hint: SOON },
+    { id: "oauth-browser", label: "ChatGPT Plus/Pro login", available: true, hint: "Experimental — sign in with your subscription. Highest chance of breaking; falls back to a key or the free model." },
     { id: "oauth-headless", label: "ChatGPT Pro/Plus (headless)", available: false, hint: SOON },
   ],
 };

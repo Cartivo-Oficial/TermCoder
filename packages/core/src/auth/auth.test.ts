@@ -15,4 +15,8 @@ describe("connectable providers", () => {
   it("anthropic has one oauth placeholder left (oauth-headless); oauth-browser is live", () => {
     expect(providerAuthMethods("anthropic").filter((m) => !m.available)).toHaveLength(1);
   });
+  it("openai has one oauth placeholder left (oauth-headless); oauth-browser is live", () => {
+    expect(providerAuthMethods("openai").filter((m) => !m.available)).toHaveLength(1);
+    expect(providerAuthMethods("openai").find((m) => m.id === "oauth-browser")?.available).toBe(true);
+  });
 });

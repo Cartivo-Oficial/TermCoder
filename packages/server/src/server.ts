@@ -44,6 +44,9 @@ import {
   beginClaudeLogin,
   completeClaudeLogin,
   saveClaudeOAuth,
+  beginChatGPTLogin,
+  pollChatGPTLogin,
+  saveChatGPTOAuth,
   deckSummaries,
   dueCards,
   gradeCard,
@@ -136,6 +139,7 @@ const CORS = {
 };
 
 let claudeVerifier: string | null = null;
+let chatgptLogin: { state: string; error?: string } = { state: "idle" };
 
 function hasKey(config: Config, env: NodeJS.ProcessEnv, provider: string): boolean {
   if (provider === "ollama" || provider === "pollinations" || provider === "termcoderfree") return true; // keyless
@@ -500,6 +504,28 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     } catch (err) {
       return sendJson(res, 400, { ok: false, error: err instanceof Error ? err.message : String(err) });
     }
+  }
+
+  if (req.method === "POST" && parts.length === 3 && parts[0] === "auth" && parts[1] === "chatgpt" && parts[2] === "start") {
+    try {
+      const grant = await beginChatGPTLogin();
+      chatgptLogin = { state: "pending" };
+      pollChatGPTLogin(grant.deviceCode, { intervalMs: grant.interval * 1000 })
+        .then((creds) => {
+          saveChatGPTOAuth(creds);
+          chatgptLogin = { state: "connected" };
+        })
+        .catch((err) => {
+          chatgptLogin = { state: "failed", error: err instanceof Error ? err.message : String(err) };
+        });
+      return sendJson(res, 200, { verificationUri: grant.verificationUri, userCode: grant.userCode });
+    } catch (err) {
+      return sendJson(res, 502, { error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
+  if (req.method === "GET" && parts.length === 3 && parts[0] === "auth" && parts[1] === "chatgpt" && parts[2] === "status") {
+    return sendJson(res, 200, chatgptLogin);
   }
 
   // Inline editor autocomplete (Copilot-style ghost text).
