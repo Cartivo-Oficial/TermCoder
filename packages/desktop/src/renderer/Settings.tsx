@@ -1349,7 +1349,11 @@ export function Settings(p: Props) {
                             >
                               {chatgptBusy ? t("settings.saving") : "Open sign-in"}
                             </button>
-                          ) : (
+                          ) : null}
+                          {!chatgptCode && chatgptStatus && chatgptStatus !== "pending" && chatgptStatus !== "connected" ? (
+                            <div className="srow-desc" style={{ color: "var(--bad)" }}>{chatgptStatus}</div>
+                          ) : null}
+                          {chatgptCode ? (
                             <>
                               <div className="srow-desc">On the OpenAI page, enter this code:</div>
                               <div style={{ fontFamily: "var(--mono)", fontSize: 18, letterSpacing: "0.12em", color: "var(--accent)" }}>{chatgptCode.userCode}</div>
@@ -1362,7 +1366,7 @@ export function Settings(p: Props) {
                                 <div className="srow-desc muted">Waiting for you to approve on OpenAI…</div>
                               )}
                             </>
-                          )}
+                          ) : null}
                         </div>
                         ) : (
                         <div className="provider-key" style={{ marginTop: 8, flexDirection: "column", alignItems: "stretch", gap: 8 }}>
