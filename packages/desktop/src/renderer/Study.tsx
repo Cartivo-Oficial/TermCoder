@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 interface StudyProps {
   port: number;
   onClose: () => void;
+  inline?: boolean;
 }
 interface DeckSummary {
   name: string;
@@ -29,7 +30,7 @@ interface ReviewState {
 const GRADE_HINT = "0 = blackout · 1–2 = wrong · 3 = hard · 4 = good · 5 = easy";
 
 /** The desktop Study overlay: decks, spaced-repetition review, and generation. */
-export function Study({ port, onClose }: StudyProps) {
+export function Study({ port, onClose, inline }: StudyProps) {
   const httpBase = `http://localhost:${port}`;
   const [ov, setOv] = useState<Overview>({ decks: [], streak: 0, reviewsToday: 0 });
   const [topic, setTopic] = useState("");
@@ -98,9 +99,7 @@ export function Study({ port, onClose }: StudyProps) {
 
   if (review) {
     const card = review.cards[review.i]!;
-    return (
-      <div className="settings" onClick={onClose}>
-        <div className="settings-card" style={{ maxWidth: 540, width: "92%", minHeight: 0 }} onClick={(e) => e.stopPropagation()}>
+    const body = (
           <div style={{ padding: "20px 24px" }}>
             <div className="hint" style={{ marginBottom: 14 }}>
               {review.deck} · card {review.i + 1}/{review.cards.length}
@@ -137,18 +136,18 @@ export function Study({ port, onClose }: StudyProps) {
               </button>
             </div>
           </div>
+    );
+    if (inline) return <div className="study-inline">{body}</div>;
+    return (
+      <div className="settings" onClick={onClose}>
+        <div className="settings-card" style={{ maxWidth: 540, width: "92%", minHeight: 0 }} onClick={(e) => e.stopPropagation()}>
+          {body}
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="settings" onClick={onClose}>
-      <div className="settings-card" style={{ maxWidth: 560, width: "92%" }} onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px 0" }}>
-          <h3 style={{ margin: 0 }}>Study</h3>
-          <button className="settings-btn" onClick={onClose}>✕</button>
-        </div>
+  const body = (
         <div style={{ padding: "8px 24px 24px" }}>
           <div className="hint" style={{ marginBottom: 16 }}>
             Streak: {ov.streak} 🔥 · {ov.reviewsToday} reviewed today
@@ -188,6 +187,16 @@ export function Study({ port, onClose }: StudyProps) {
             ))
           )}
         </div>
+  );
+  if (inline) return <div className="study-inline">{body}</div>;
+  return (
+    <div className="settings" onClick={onClose}>
+      <div className="settings-card" style={{ maxWidth: 560, width: "92%" }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px 0" }}>
+          <h3 style={{ margin: 0 }}>Study</h3>
+          <button className="settings-btn" onClick={onClose}>✕</button>
+        </div>
+        {body}
       </div>
     </div>
   );

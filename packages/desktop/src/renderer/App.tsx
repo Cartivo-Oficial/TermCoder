@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
-import { FileTree } from "./FileTree";
 import { CommandPalette, type PaletteItem } from "./CommandPalette";
 import { Settings, type ServerStatus, type SettingsTab } from "./Settings";
 import { Welcome } from "./Welcome";
@@ -11,11 +10,10 @@ import { useI18n } from "./i18n";
 import { COLOR_THEMES, THEME_VARS } from "./themes";
 import { KEYBIND_ACTIONS, comboFor, matchCombo } from "./keybinds";
 import { IconStop, IconShare, IconCopy, IconEdit, IconMic, IconUndo, IconBolt } from "./Icons";
-import { Dashboard } from "./Dashboard";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { ModelBrowser } from "./ModelBrowser";
-import { Study } from "./Study";
 import { Rail } from "./Rail";
+import { SidePanel } from "./SidePanel";
 import { SessionsPanel } from "./SessionsPanel";
 import { DiffBlock, DiffBody, ToolCard } from "./ToolCard";
 import { CodeEditor } from "./CodeEditor";
@@ -314,11 +312,9 @@ export function App() {
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [leftOpen, setLeftOpen] = useState(true);
-  const [rightOpen, setRightOpen] = useState(true);
   const [sidePanel, setSidePanel] = useState<null | "files" | "study" | "agents">(null);
   const [onboarded, setOnboarded] = useState(() => localStorage.getItem("tc-onboarded") === "1");
   const [studentMode, setStudentMode] = useState(() => localStorage.getItem("tc-student") === "1");
-  const [rightTab, setRightTab] = useState<"files" | "changes" | "overview">("files");
   const [theme, setTheme] = useState<"dark" | "light">(
     () => (localStorage.getItem("tc-theme") as "dark" | "light") || "dark",
   );
@@ -326,7 +322,6 @@ export function App() {
   const [keybinds, setKeybinds] = useState<Record<string, string>>({});
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [studyOpen, setStudyOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("general");
   const [serverStatus, setServerStatus] = useState<ServerStatus | null>(null);
   const [autoApprove, setAutoApprove] = useState(() => localStorage.getItem("tc-auto") === "1");
@@ -593,7 +588,7 @@ export function App() {
         setLeftOpen((v) => !v);
       } else if (matchCombo(e, bind("toggleFiles"))) {
         e.preventDefault();
-        setRightOpen((v) => !v);
+        setSidePanel((p) => (p === "files" ? null : "files"));
       } else if (matchCombo(e, bind("openFolder"))) {
         e.preventDefault();
         void chooseFolder();
@@ -754,11 +749,10 @@ export function App() {
     localStorage.setItem("tc-student", on ? "1" : "0");
     if (on) {
       setLeftOpen(false);
-      setRightOpen(false);
+      setSidePanel(null);
       void changeModel("termexplorer/auto");
     } else {
       setLeftOpen(true);
-      setRightOpen(true);
     }
   }
 
@@ -1435,7 +1429,7 @@ export function App() {
     { id: "new", label: t("nav.newSession"), hint: t("palette.hint.command"), run: () => void newSession() },
     { id: "folder", label: t("nav.chooseFolder"), hint: t("palette.hint.command"), run: () => void chooseFolder() },
     { id: "left", label: t("palette.toggleSessions"), hint: t("palette.hint.command"), run: () => setLeftOpen((v) => !v) },
-    { id: "right", label: t("palette.toggleFiles"), hint: t("palette.hint.command"), run: () => setRightOpen((v) => !v) },
+    { id: "right", label: t("palette.toggleFiles"), hint: t("palette.hint.command"), run: () => setSidePanel((p) => (p === "files" ? null : "files")) },
     {
       id: "theme",
       label: t("palette.switchTheme", { theme: t(theme === "dark" ? "theme.light" : "theme.dark") }),
@@ -1938,44 +1932,24 @@ export function App() {
           </div>
         </main>
 
-        {rightOpen ? (
-          <aside className="right">
-            <div className="right-tabs">
-              <button className={rightTab === "changes" ? "active" : ""} onClick={() => setRightTab("changes")}>
-                {changes} {t("right.changes")}
-              </button>
-              <button className={rightTab === "files" ? "active" : ""} onClick={() => setRightTab("files")}>
-                {t("right.allFiles")}
-              </button>
-              <button className={rightTab === "overview" ? "active" : ""} onClick={() => setRightTab("overview")}>
-                {t("dash.overview")}
-              </button>
-            </div>
-            {rightTab === "overview" ? (
-              <Dashboard sessions={sessions} t={t} />
-            ) : rightTab === "files" ? (
-              <FileTree root={cwd} status={status} onOpen={(p) => void openFile(p)} />
-            ) : changedFiles.length === 0 ? (
-              <div className="muted tree-empty">{t("right.noChanges")}</div>
-            ) : (
-              <div className="tree">
-                <button className="view-all" onClick={() => void openAllDiffs()}>
-                  {t("right.viewAllDiffs")}
-                </button>
-                {changedFiles.map(([path, letter]) => (
-                  <div key={path} className="tree-row" onClick={() => void openDiff(path)}>
-                    <span
-                      className="git-badge"
-                      style={{ color: letter === "A" ? "var(--ok)" : letter === "D" ? "var(--bad)" : "var(--warn)" }}
-                    >
-                      {letter}
-                    </span>
-                    <span className="fname">{path}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </aside>
+        {sidePanel ? (
+          <SidePanel
+            kind={sidePanel}
+            onClose={() => setSidePanel(null)}
+            cwd={cwd}
+            status={status}
+            changes={changes}
+            changedFiles={changedFiles}
+            onOpenFile={(p) => void openFile(p)}
+            onOpenDiff={(p) => void openDiff(p)}
+            onOpenAllDiffs={() => void openAllDiffs()}
+            sessions={sessions}
+            port={port}
+            agents={agents}
+            currentAgent={agent}
+            onPickAgent={(name) => setAgent(name)}
+            onManageAgents={() => { setSidePanel(null); setSettingsTab("agents"); setSettingsOpen(true); }}
+          />
         ) : null}
       </div>
       </div>
@@ -2000,8 +1974,6 @@ export function App() {
       {browserOpen ? (
         <ModelBrowser port={port} current={model} onSelect={changeModel} onClose={() => setBrowserOpen(false)} />
       ) : null}
-
-      {studyOpen ? <Study port={port} onClose={() => setStudyOpen(false)} /> : null}
 
       {update ? (
         <div className="update-toast">

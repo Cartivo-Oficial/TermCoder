@@ -168,7 +168,7 @@ svg { display: block; }
 .titlebar .win-btn:hover { background: var(--accent-dim); color: var(--text); }
 .win-btn.close:hover { background: #e5484d; color: #fff; }
 
-.body { flex: 1; display: flex; min-height: 0; }
+.body { flex: 1; display: flex; min-height: 0; position: relative; }
 
 /* Left */
 .left {
@@ -513,8 +513,26 @@ svg { display: block; }
 .chip select { background: transparent; border: none; color: var(--text); font: inherit; outline: none; cursor: pointer; }
 .chip select option { background: var(--elev); color: var(--text); }
 
-/* Right */
-.right { width: 290px; flex-shrink: 0; background: var(--panel2); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+/* Side panel — right slide-over over the chat */
+.side-scrim {
+  position: absolute; inset: 0; z-index: 24;
+  background: rgba(0, 0, 0, 0.35);
+  animation: fadeIn var(--t-fast) var(--ease);
+}
+.side-panel {
+  position: absolute; top: 0; right: 0; bottom: 0; z-index: 25;
+  width: min(420px, 92vw);
+  display: flex; flex-direction: column;
+  border-left: 1px solid var(--border);
+  box-shadow: -24px 0 60px rgba(0, 0, 0, 0.35);
+  animation: slideIn var(--t-med) var(--ease);
+}
+@keyframes slideIn { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.side-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 6px; }
+.study-inline { overflow-y: auto; padding: 8px 16px 16px; }
+.agents-panel { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; overflow-y: auto; }
+.agent-row { text-align: left; cursor: pointer; color: var(--text); font: inherit; }
+.agent-row.active { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
 .right-tabs { display: flex; gap: 4px; padding: 8px; border-bottom: 1px solid var(--border); }
 .right-tabs button { flex: 1; background: transparent; border: none; border-radius: 8px; color: var(--muted); padding: 6px 8px; font-size: 12px; }
 .right-tabs button:hover { background: var(--elev); }
