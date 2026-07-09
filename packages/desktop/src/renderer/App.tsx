@@ -2091,8 +2091,6 @@ export function App() {
         {dashOpen ? (
           <Dashboard
             sessions={sessions}
-            liveIn={tokensIn}
-            liveOut={tokensOut}
             t={t}
             onNew={newSession}
             onSettings={() => setSettingsOpen(true)}

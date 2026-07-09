@@ -573,4 +573,29 @@ describe("Session agent loop", () => {
     await collect(session, "second prompt");
     expect(session.record.usage).toEqual({ tokensIn: 30, tokensOut: 9 });
   });
+
+  it("persists token usage even when a later step errors out", async () => {
+    config.permission.write = "allow";
+    const runner = scriptedRunner([
+      {
+        chunks: [{ type: "text-delta", text: "Writing." }],
+        finishReason: "tool-calls",
+        toolCalls: [{ toolCallId: "t1", toolName: "write", input: { path: "note.txt", content: "hi" } }],
+        responseMessages: [{ role: "assistant", content: "Writing." }],
+        usage: Promise.resolve({ inputTokens: 15, outputTokens: 4 }),
+      },
+      {
+        chunks: [
+          { type: "text-delta", text: "partial" },
+          { type: "error", error: new Error("stream blew up") },
+        ],
+        finishReason: "stop",
+      },
+    ]);
+    const permission = new PermissionManager(config.permission, async () => "allow");
+    const session = Session.create({ store, registry, config, permission, runner }, { cwd: dir });
+    const events = await collect(session, "write a note");
+    expect(events.some((e) => e.type === "error")).toBe(true);
+    expect(session.record.usage).toEqual({ tokensIn: 15, tokensOut: 4 });
+  });
 });

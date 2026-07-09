@@ -67,10 +67,24 @@ function mute(hex: string): string {
   return `#${((1 << 24) | (r << 16) | (gg << 8) | b).toString(16).slice(1)}`;
 }
 
+function readable(hex: string): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return hex;
+  const n = parseInt(m[1]!, 16);
+  const r = (n >> 16) & 0xff;
+  const g = (n >> 8) & 0xff;
+  const b = n & 0xff;
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  if (lum <= 0.62) return hex;
+  const k = 0.62 / lum;
+  const d = (c: number) => Math.round(c * k);
+  return `#${((1 << 24) | (d(r) << 16) | (d(g) << 8) | d(b)).toString(16).slice(1)}`;
+}
+
 const ico =
   (Icon: IconType, color?: string): (() => ReactNode) =>
   () =>
-    <Icon size={15} color={color} />;
+    <Icon size={15} color={color ? readable(color) : color} />;
 
 const FOLDER_COLOR: Record<string, string> = {
   node_modules: "#6b6b72",

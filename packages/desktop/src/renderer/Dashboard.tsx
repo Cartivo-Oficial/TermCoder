@@ -6,8 +6,6 @@ function fmtK(n: number): string {
 
 export function Dashboard(p: {
   sessions: Summary[];
-  liveIn: number;
-  liveOut: number;
   t: (k: string) => string;
   onNew: () => void;
   onSettings: () => void;
