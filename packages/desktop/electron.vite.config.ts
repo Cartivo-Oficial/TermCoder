@@ -7,7 +7,7 @@ export default defineConfig({
     build: {
       rollupOptions: {
         input: { index: resolve(__dirname, "src/main/index.ts") },
-        external: ["bufferutil", "utf-8-validate"],
+        external: ["bufferutil", "utf-8-validate", "@lydell/node-pty"],
       },
     },
   },

@@ -24,6 +24,7 @@ import {
   ToolRegistry,
 } from "@termcoder/core";
 import { createServer } from "@termcoder/server";
+import { registerPtyIpc } from "./pty";
 
 if (process.platform === "win32") app.setAppUserModelId("ai.termcoder.app");
 
@@ -402,6 +403,7 @@ app.whenReady().then(async () => {
     cb(permission === "media" || permission === "mediaKeySystem" || permission === "notifications");
   });
 
+  registerPtyIpc();
   await startServer();
   createWindow();
   app.on("activate", () => {
