@@ -35,6 +35,36 @@ import {
   SiSvelte,
   SiJson,
   SiGraphql,
+  SiOpenjdk,
+  SiKotlin,
+  SiSwift,
+  SiDart,
+  SiLua,
+  SiElixir,
+  SiScala,
+  SiHaskell,
+  SiJulia,
+  SiPerl,
+  SiTerraform,
+  SiJupyter,
+  SiAstro,
+  SiPrisma,
+  SiGithubactions,
+  SiEditorconfig,
+  SiBabel,
+  SiWebpack,
+  SiStorybook,
+  SiJest,
+  SiCypress,
+  SiZig,
+  SiDeno,
+  SiBun,
+  SiSharp,
+  SiXml,
+  SiClojure,
+  SiErlang,
+  SiGradle,
+  SiCmake,
 } from "react-icons/si";
 import {
   FaImage,
@@ -42,10 +72,14 @@ import {
   FaFile,
   FaFileAlt,
   FaBook,
-  FaAward,
+  FaBalanceScale,
   FaFolder,
   FaFolderOpen,
   FaDatabase,
+  FaFileArchive,
+  FaFileCsv,
+  FaFilePdf,
+  FaFont,
 } from "react-icons/fa";
 
 /* Real brand logos (Simple Icons via react-icons) for common file types, plus
@@ -67,6 +101,12 @@ function mute(hex: string): string {
   return `#${((1 << 24) | (r << 16) | (gg << 8) | b).toString(16).slice(1)}`;
 }
 
+/* Clamp a brand hex into a luminance band that stays legible on both the dark
+   and the paper theme: pale logos (JS yellow) get darkened, near-black ones
+   (Prisma, CMake) get lifted toward white. */
+const LUM_LO = 0.34;
+const LUM_HI = 0.62;
+
 function readable(hex: string): string {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex);
   if (!m) return hex;
@@ -75,10 +115,17 @@ function readable(hex: string): string {
   const g = (n >> 8) & 0xff;
   const b = n & 0xff;
   const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  if (lum <= 0.62) return hex;
-  const k = 0.62 / lum;
-  const d = (c: number) => Math.round(c * k);
-  return `#${((1 << 24) | (d(r) << 16) | (d(g) << 8) | d(b)).toString(16).slice(1)}`;
+  let f: (c: number) => number;
+  if (lum > LUM_HI) {
+    const k = LUM_HI / lum;
+    f = (c) => Math.round(c * k);
+  } else if (lum < LUM_LO && lum < 1) {
+    const t = (LUM_LO - lum) / (1 - lum);
+    f = (c) => Math.round(c + (255 - c) * t);
+  } else {
+    return hex;
+  }
+  return `#${((1 << 24) | (f(r) << 16) | (f(g) << 8) | f(b)).toString(16).slice(1)}`;
 }
 
 const ico =
@@ -107,10 +154,10 @@ const FOLDER_COLOR: Record<string, string> = {
 
 export function folderIcon(name: string, open: boolean): ReactNode {
   const color = mute(FOLDER_COLOR[name] ?? "#7d8590");
-  return open ? <FaFolderOpen size={14} color={color} /> : <FaFolder size={14} color={color} />;
+  return open ? <FaFolderOpen size={15} color={color} /> : <FaFolder size={15} color={color} />;
 }
 
-const GenericFile = () => <FaFile size={14} color="var(--muted)" />;
+const GenericFile = () => <FaFile size={15} color="var(--muted)" />;
 
 const EXACT: Record<string, () => ReactNode> = {
   "package.json": ico(SiNpm, "#cb3837"),
@@ -118,11 +165,19 @@ const EXACT: Record<string, () => ReactNode> = {
   "pnpm-lock.yaml": ico(SiPnpm, "#f69220"),
   "pnpm-workspace.yaml": ico(SiPnpm, "#f69220"),
   "yarn.lock": ico(SiYarn, "#2c8ebb"),
+  "bun.lockb": ico(SiBun, "#fbf0df"),
+  "deno.json": ico(SiDeno, "#70ffaf"),
+  "deno.lock": ico(SiDeno, "#70ffaf"),
+  "action.yml": ico(SiGithubactions, "#2088ff"),
+  "action.yaml": ico(SiGithubactions, "#2088ff"),
   ".gitignore": ico(SiGit, "#f05032"),
   ".gitattributes": ico(SiGit, "#f05032"),
   ".gitmodules": ico(SiGit, "#f05032"),
-  license: ico(FaAward, "#e3b341"),
-  "license.md": ico(FaAward, "#e3b341"),
+  license: ico(FaBalanceScale, "#c9a227"),
+  "license.md": ico(FaBalanceScale, "#c9a227"),
+  "license.txt": ico(FaBalanceScale, "#c9a227"),
+  ".editorconfig": ico(SiEditorconfig, "#9a9aa2"),
+  "cmakelists.txt": ico(SiCmake, "#064f8c"),
 };
 
 const STARTS: Array<[RegExp, () => ReactNode]> = [
@@ -137,6 +192,12 @@ const STARTS: Array<[RegExp, () => ReactNode]> = [
   [/^\.env/i, ico(SiDotenv, "#ecd53f")],
   [/^dockerfile|^\.dockerignore/i, ico(SiDocker, "#2496ed")],
   [/^\.prettier/i, ico(SiPrettier, "#f7b93e")],
+  [/^babel\.config|^\.babelrc/i, ico(SiBabel, "#f9dc3e")],
+  [/^webpack\.config/i, ico(SiWebpack, "#8dd6f9")],
+  [/^jest\.config/i, ico(SiJest, "#c21325")],
+  [/^cypress\.config/i, ico(SiCypress, "#69d3a7")],
+  [/^schema\.prisma$/i, ico(SiPrisma, "#2d3748")],
+  [/^\.storybook/i, ico(SiStorybook, "#ff4785")],
 ];
 
 const EXT: Record<string, () => ReactNode> = {
@@ -175,11 +236,41 @@ const EXT: Record<string, () => ReactNode> = {
   sh: ico(SiGnubash, "#4eaa25"),
   bash: ico(SiGnubash, "#4eaa25"),
   zsh: ico(SiGnubash, "#4eaa25"),
-  sql: ico(FaDatabase, "#e38c00"),
-  java: ico(FaFileAlt, "#ea2d2e"),
-  kt: ico(FaFileAlt, "#7f52ff"),
-  swift: ico(FaFileAlt, "#f05138"),
+  sql: ico(FaDatabase, "#6a9fb5"),
+  java: ico(SiOpenjdk, "#ea2d2e"),
+  kt: ico(SiKotlin, "#7f52ff"),
+  kts: ico(SiKotlin, "#7f52ff"),
+  swift: ico(SiSwift, "#f05138"),
+  dart: ico(SiDart, "#0175c2"),
+  lua: ico(SiLua, "#2c2d72"),
+  ex: ico(SiElixir, "#4b275f"),
+  exs: ico(SiElixir, "#4b275f"),
+  erl: ico(SiErlang, "#a90533"),
+  scala: ico(SiScala, "#dc322f"),
+  hs: ico(SiHaskell, "#5e5086"),
+  jl: ico(SiJulia, "#9558b2"),
+  pl: ico(SiPerl, "#39457e"),
+  clj: ico(SiClojure, "#5881d8"),
+  cs: ico(SiSharp, "#68217a"),
+  zig: ico(SiZig, "#f7a41d"),
+  tf: ico(SiTerraform, "#7b42bc"),
+  tfvars: ico(SiTerraform, "#7b42bc"),
+  ipynb: ico(SiJupyter, "#f37626"),
+  astro: ico(SiAstro, "#ff5d01"),
+  prisma: ico(SiPrisma, "#2d3748"),
+  gradle: ico(SiGradle, "#02303a"),
+  xml: ico(SiXml, "#f0654a"),
   graphql: ico(SiGraphql, "#e10098"),
+  gql: ico(SiGraphql, "#e10098"),
+  csv: ico(FaFileCsv, "#4caf50"),
+  pdf: ico(FaFilePdf, "#e5252a"),
+  zip: ico(FaFileArchive, "#9a9aa2"),
+  tar: ico(FaFileArchive, "#9a9aa2"),
+  gz: ico(FaFileArchive, "#9a9aa2"),
+  woff: ico(FaFont, "#a371f7"),
+  woff2: ico(FaFont, "#a371f7"),
+  ttf: ico(FaFont, "#a371f7"),
+  otf: ico(FaFont, "#a371f7"),
   svg: ico(FaImage, "#a371f7"),
   png: ico(FaImage, "#a371f7"),
   jpg: ico(FaImage, "#a371f7"),

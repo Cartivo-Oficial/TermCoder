@@ -78,13 +78,6 @@ svg { display: block; }
 }
 .toolbar button, .toolbar .search { -webkit-app-region: no-drag; }
 .tb-left, .tb-right { display: flex; gap: 2px; align-items: center; }
-.brand {
-  display: flex; align-items: center; justify-content: center;
-  width: 34px; height: 30px; margin-right: 2px; flex-shrink: 0;
-  color: var(--text); -webkit-app-region: no-drag;
-}
-.brand svg { width: 25px; height: 25px; }
-.tb-title { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 0.02em; }
 .tb-center { flex: 1; display: flex; justify-content: center; position: relative; }
 .icon {
   background: transparent; border: none; color: var(--muted);
