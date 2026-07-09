@@ -34,6 +34,7 @@ import {
   SiVuedotjs,
   SiSvelte,
   SiJson,
+  SiGraphql,
 } from "react-icons/si";
 import {
   FaImage,
@@ -44,12 +45,12 @@ import {
   FaAward,
   FaFolder,
   FaFolderOpen,
+  FaDatabase,
 } from "react-icons/fa";
 
 /* Real brand logos (Simple Icons via react-icons) for common file types, plus
    filled FontAwesome glyphs for folders/generic files so every icon shares the
-   same visual weight. Brand colors are softened toward a neutral so the tree
-   reads as one calm, cohesive palette instead of a wall of neon. */
+   same visual weight. Brand colors on file types; folders use muted tones. */
 
 const NEUTRAL = "#8b8b93";
 
@@ -69,7 +70,7 @@ function mute(hex: string): string {
 const ico =
   (Icon: IconType, color?: string): (() => ReactNode) =>
   () =>
-    <Icon size={14} color={color ? mute(color) : color} />;
+    <Icon size={15} color={color} />;
 
 const FOLDER_COLOR: Record<string, string> = {
   node_modules: "#6b6b72",
@@ -160,6 +161,11 @@ const EXT: Record<string, () => ReactNode> = {
   sh: ico(SiGnubash, "#4eaa25"),
   bash: ico(SiGnubash, "#4eaa25"),
   zsh: ico(SiGnubash, "#4eaa25"),
+  sql: ico(FaDatabase, "#e38c00"),
+  java: ico(FaFileAlt, "#ea2d2e"),
+  kt: ico(FaFileAlt, "#7f52ff"),
+  swift: ico(FaFileAlt, "#f05138"),
+  graphql: ico(SiGraphql, "#e10098"),
   svg: ico(FaImage, "#a371f7"),
   png: ico(FaImage, "#a371f7"),
   jpg: ico(FaImage, "#a371f7"),
