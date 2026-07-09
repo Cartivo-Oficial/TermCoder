@@ -1687,19 +1687,6 @@ export function App() {
                 {m.role === "error" ? <div className="bubble error">✗ {m.text}</div> : null}
               </div>
             ))}
-            {busy ? (
-              <div className="working">
-                <span className="working-orb" />
-                <span className="working-text">
-                  {workingLabel}
-                  {workingDetail ? <span className="muted"> · {workingDetail}</span> : null}
-                </span>
-                <span className="working-dots"><i /><i /><i /></span>
-                {workingTokens > 0 ? (
-                  <span className="working-tokens">{fmtTokens(workingTokens)} {t("chat.tok")}</span>
-                ) : null}
-              </div>
-            ) : null}
             </div>
           </div>
 
@@ -1719,6 +1706,7 @@ export function App() {
           ) : null}
 
           <div className="dock">
+            <div className="dock-inner">
             {mention ? (
               <div className="mention-pop">
                 {mention.items.map((f, i) => (
@@ -1773,7 +1761,7 @@ export function App() {
               </div>
             ) : null}
             <div
-              className="composer"
+              className={`composer ${busy ? "busy" : ""}`}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 e.preventDefault();
@@ -1790,24 +1778,26 @@ export function App() {
                 }
               }}
             >
-              <span className="prompt-glyph" aria-hidden="true">❯</span>
-              <button className="attach" title={t("composer.attach")} onClick={() => void attachFiles()}><IconPlus /></button>
-              <button
-                className="attach"
-                title={autonomous ? "Autonomous mode: ON — runs to the goal, verifies, and keeps fixing" : "Autonomous mode: OFF"}
-                onClick={() => setAutonomous((v) => !v)}
-                style={autonomous ? { color: "var(--accent)" } : undefined}
-              >
-                <IconBolt />
-              </button>
-              <button
-                className={`attach mic ${recording ? "recording" : ""} ${transcribing ? "transcribing" : ""}`}
-                title={transcribing ? t("voice.transcribing") : recording ? t("voice.stop") : t("composer.mic")}
-                onClick={() => void toggleMic()}
-                disabled={transcribing}
-              >
-                <IconMic />
-              </button>
+              <div className="composer-status">
+                <span className={`dot ${busy ? "gen" : connected ? "on" : "off"}`} />
+                {busy ? (
+                  <span className="cs-working">
+                    {workingLabel}
+                    {workingDetail ? <span className="muted"> · {workingDetail}</span> : null}
+                    {workingTokens > 0 ? <span className="cs-tok">{fmtTokens(workingTokens)} {t("chat.tok")}</span> : null}
+                  </span>
+                ) : (
+                  <>
+                    {(() => {
+                      const ctxPct = lastCtx > 0 ? Math.round((lastCtx / ((catalog.find((c) => c.id === model)?.contextK ?? 128) * 1000)) * 100) : 0;
+                      return lastCtx > 0 ? (
+                        <span className={`cs-item ${ctxPct > 70 ? "hot" : ctxPct > 40 ? "warm" : ""}`}>ctx {fmtTokens(lastCtx)} ({ctxPct}%)</span>
+                      ) : null;
+                    })()}
+                    {tokensIn || tokensOut ? <span className="cs-item">↓{fmtTokens(tokensIn)} ↑{fmtTokens(tokensOut)}</span> : null}
+                  </>
+                )}
+              </div>
               <textarea
                 ref={inputRef}
                 value={input}
@@ -1874,60 +1864,76 @@ export function App() {
                   }
                 }}
               />
-              {busy ? (
-                <button className="send stop" onClick={stop} title={t("chat.stop")}><IconStop /></button>
-              ) : (
-                <button className="send" onClick={send} disabled={!connected}><IconSend /></button>
-              )}
-            </div>
-            <div className="selectors">
-              {!studentMode ? (
-              <div className="menu-wrap">
-                <button
-                  className={`chip ${agents.find((a) => a.name === agent)?.readOnly ? "armed" : ""}`}
-                  title={t("mode.title")}
-                  onClick={() => setAgentOpen((v) => !v)}
-                >
-                  {agent} ▾
-                </button>
-                {agentOpen ? (
-                  <div className="menu mode-pop" onMouseLeave={() => setAgentOpen(false)}>
-                    {(agents.length ? agents : [{ name: "build", description: "", mode: "primary", builtin: true, readOnly: false } as AgentInfo])
-                      .filter((a) => a.mode !== "subagent")
-                      .map((a) => (
-                        <button
-                          key={a.name}
-                          className={agent === a.name ? "active" : ""}
-                          onClick={() => { setAgent(a.name); setAgentOpen(false); }}
-                        >
-                          <div className="mode-opt">
-                            <div className="mode-name">
-                              {a.name}
-                              {a.readOnly ? <span className="agent-ro">read-only</span> : null}
-                              {!a.builtin ? <span className="agent-custom">custom</span> : null}
+              <div className="composer-actions">
+                {!studentMode ? (
+                <div className="menu-wrap">
+                  <button
+                    className={`chip ${agents.find((a) => a.name === agent)?.readOnly ? "armed" : ""}`}
+                    title={t("mode.title")}
+                    onClick={() => setAgentOpen((v) => !v)}
+                  >
+                    {agent} ▾
+                  </button>
+                  {agentOpen ? (
+                    <div className="menu mode-pop" onMouseLeave={() => setAgentOpen(false)}>
+                      {(agents.length ? agents : [{ name: "build", description: "", mode: "primary", builtin: true, readOnly: false } as AgentInfo])
+                        .filter((a) => a.mode !== "subagent")
+                        .map((a) => (
+                          <button
+                            key={a.name}
+                            className={agent === a.name ? "active" : ""}
+                            onClick={() => { setAgent(a.name); setAgentOpen(false); }}
+                          >
+                            <div className="mode-opt">
+                              <div className="mode-name">
+                                {a.name}
+                                {a.readOnly ? <span className="agent-ro">read-only</span> : null}
+                                {!a.builtin ? <span className="agent-custom">custom</span> : null}
+                              </div>
+                              {a.description ? <div className="mode-desc">{a.description}</div> : null}
                             </div>
-                            {a.description ? <div className="mode-desc">{a.description}</div> : null}
-                          </div>
-                          {agent === a.name ? <span className="check">✓</span> : null}
-                        </button>
-                      ))}
-                    <div className="menu-sep" />
-                    <button onClick={() => setAutoApprove((v) => !v)}>
-                      {t("settings.autoApprove")}<span className="mk">{autoApprove ? "On" : "Off"}</span>
-                    </button>
-                    <button onClick={() => { setAgentOpen(false); setSettingsTab("agents"); setSettingsOpen(true); }}>
-                      {t("agents.manage")}
-                    </button>
-                  </div>
+                            {agent === a.name ? <span className="check">✓</span> : null}
+                          </button>
+                        ))}
+                      <div className="menu-sep" />
+                      <button onClick={() => setAutoApprove((v) => !v)}>
+                        {t("settings.autoApprove")}<span className="mk">{autoApprove ? "On" : "Off"}</span>
+                      </button>
+                      <button onClick={() => { setAgentOpen(false); setSettingsTab("agents"); setSettingsOpen(true); }}>
+                        {t("agents.manage")}
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
                 ) : null}
+                <button className="chip model" title={t("models.browse")} onClick={() => setBrowserOpen(true)}>
+                  {model} ▾
+                </button>
+                <span className="ca-spacer" />
+                <button className="attach" title={t("composer.attach")} onClick={() => void attachFiles()}><IconPlus /></button>
+                <button
+                  className="attach"
+                  title={autonomous ? "Autonomous mode: ON — runs to the goal, verifies, and keeps fixing" : "Autonomous mode: OFF"}
+                  onClick={() => setAutonomous((v) => !v)}
+                  style={autonomous ? { color: "var(--accent)" } : undefined}
+                >
+                  <IconBolt />
+                </button>
+                <button
+                  className={`attach mic ${recording ? "recording" : ""} ${transcribing ? "transcribing" : ""}`}
+                  title={transcribing ? t("voice.transcribing") : recording ? t("voice.stop") : t("composer.mic")}
+                  onClick={() => void toggleMic()}
+                  disabled={transcribing}
+                >
+                  <IconMic />
+                </button>
+                {busy ? (
+                  <button className="send stop" onClick={stop} title={t("chat.stop")}><IconStop /></button>
+                ) : (
+                  <button className="send" onClick={send} disabled={!connected}><IconSend /></button>
+                )}
               </div>
-              ) : null}
-              <button className="chip model" title={t("models.browse")} onClick={() => setBrowserOpen(true)}>
-                {model} ▾
-              </button>
-              <button className="chip" onClick={() => { setSettingsTab("general"); setSettingsOpen(true); }}>
-                {t("nav.settings")} ▾
-              </button>
+            </div>
             </div>
           </div>
         </main>
@@ -2095,18 +2101,6 @@ export function App() {
         />
       ) : null}
 
-      {(() => {
-        const ctxPct = lastCtx > 0 ? Math.round((lastCtx / ((catalog.find((c) => c.id === model)?.contextK ?? 128) * 1000)) * 100) : 0;
-        return (
-          <div className="statusbar">
-            <span className="sb-item mono">{agent ?? "build"}</span>
-            {lastCtx > 0 ? (<><span className="sb-sep">·</span><span className={`sb-item mono ${ctxPct > 70 ? "hot" : ctxPct > 40 ? "warm" : ""}`}>ctx {fmtTokens(lastCtx)} ({ctxPct}%)</span></>) : null}
-            {(tokensIn || tokensOut) ? (<><span className="sb-sep">·</span><span className="sb-item mono">↓{fmtTokens(tokensIn)} ↑{fmtTokens(tokensOut)}</span></>) : null}
-            <span className="sb-spacer" />
-            <span className={`dot ${busy ? "gen" : "idle"}`} />
-          </div>
-        );
-      })()}
     </div>
   );
 }
