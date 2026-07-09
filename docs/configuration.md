@@ -60,6 +60,12 @@ of silently breaking later. The desktop **Settings** panel writes the same globa
   may break if Anthropic changes their login flow. Authenticate with `/login-claude` in
   the CLI or "Claude Pro/Max login" in the desktop's Connect modal. If authentication
   fails, termcoder falls back to the free keyless tier or a configured API key.
+- **ChatGPT subscription login (experimental).** Use a ChatGPT Plus/Pro subscription for
+  OpenAI models instead of an API key. Run `/login-chatgpt` (open the page, enter the code
+  it shows, approve) or use "ChatGPT Plus/Pro login" in the desktop Connect modal. This is
+  the highest-risk of the subscription logins — OpenAI restricts programmatic ChatGPT use —
+  so it's opt-in and experimental; on any failure termcoder falls back to a key or the free
+  model.
 - **Unlimited & private:** install [Ollama](https://ollama.com), `ollama pull llama3.1`,
   then `/model ollama/llama3.1` — runs locally, no key, no quota, ever.
 - **Better answers, still free:** the keyless tier is small. For much better replies connect a
