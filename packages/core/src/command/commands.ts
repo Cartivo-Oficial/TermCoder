@@ -4,17 +4,12 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { parseFrontmatter } from "../util/frontmatter";
 
-/** A reusable slash command defined in a markdown file. */
 export interface CommandDef {
   name: string;
   description?: string;
-  /** Run the command as this agent. */
   agent?: string;
-  /** Override the model for this command. */
   model?: string;
-  /** Force the command to run as a delegated sub-task. */
   subtask?: boolean;
-  /** The prompt template (markdown body). */
   template: string;
 }
 
@@ -38,13 +33,11 @@ function readCommandDir(dir: string): CommandDef[] {
     try {
       out.push(fromMarkdown(f.replace(/\.md$/, ""), readFileSync(join(dir, f), "utf8")));
     } catch {
-      /* skip unreadable command files */
     }
   }
   return out;
 }
 
-/** Built-in commands, overridable by a user file of the same name. */
 const BUILTIN_COMMANDS: CommandDef[] = [
   {
     name: "init",
@@ -62,7 +55,6 @@ export interface DiscoverCommandsOptions {
   env?: NodeJS.ProcessEnv;
 }
 
-/** Built-ins < global `commands/*.md` < project `.termcoder/commands/*.md` (by name). */
 export function discoverCommands(opts: DiscoverCommandsOptions): CommandDef[] {
   const env = opts.env ?? process.env;
   const globalDir = join(env.XDG_CONFIG_HOME ?? join(homedir(), ".config"), "termcoder", "commands");
@@ -74,12 +66,6 @@ export function discoverCommands(opts: DiscoverCommandsOptions): CommandDef[] {
   return [...byName.values()];
 }
 
-/**
- * Expand a command template into a final prompt:
- * - `$ARGUMENTS` → all args; `$1`, `$2`… → positional args
- * - `` !`cmd` `` → runs the command in `cwd` and injects its stdout
- * - `@path` → injects the file's contents
- */
 export function expandCommand(template: string, argsString: string, cwd: string): string {
   const args = argsString.trim() ? argsString.trim().split(/\s+/) : [];
   let out = template;
@@ -106,7 +92,6 @@ export function expandCommand(template: string, argsString: string, cwd: string)
         return `\n\n${rel}:\n\`\`\`\n${readFileSync(path, "utf8")}\n\`\`\`\n`;
       }
     } catch {
-      /* leave the token as-is if it can't be read */
     }
     return m;
   });

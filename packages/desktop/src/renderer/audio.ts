@@ -1,20 +1,15 @@
-// Helpers to turn a MediaRecorder blob (webm/opus) into 16 kHz mono WAV, which
-// chat models like Gemini accept as audio input. We decode with the Web Audio
-// API, downmix to mono, linearly resample, and write a PCM16 WAV.
 
 function audioBufferToWav(buffer: AudioBuffer, targetRate = 16000): ArrayBuffer {
   const channels = buffer.numberOfChannels;
   const srcRate = buffer.sampleRate;
   const srcLen = buffer.length;
 
-  // Downmix to mono.
   const mono = new Float32Array(srcLen);
   for (let c = 0; c < channels; c++) {
     const data = buffer.getChannelData(c);
     for (let i = 0; i < srcLen; i++) mono[i] = (mono[i] ?? 0) + data[i]! / channels;
   }
 
-  // Linear resample to the target rate.
   const ratio = srcRate / targetRate;
   const outLen = Math.max(1, Math.floor(srcLen / ratio));
   const out = new Float32Array(outLen);
@@ -55,7 +50,6 @@ function audioBufferToWav(buffer: AudioBuffer, targetRate = 16000): ArrayBuffer 
   return ab;
 }
 
-/** Decode a recorded audio blob and re-encode it as a 16 kHz mono WAV blob. */
 export async function blobToWav(blob: Blob): Promise<Blob> {
   const arrayBuf = await blob.arrayBuffer();
   const AudioCtx =
@@ -69,7 +63,6 @@ export async function blobToWav(blob: Blob): Promise<Blob> {
   }
 }
 
-/** Base64 (no data: prefix) of a blob, for JSON transport. */
 export function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

@@ -1,10 +1,5 @@
 import { diffLines } from "diff";
 
-/**
- * Build a compact unified-style diff between two strings. Each line is prefixed
- * with `+ ` (added), `- ` (removed), or `  ` (context). Long unchanged runs are
- * collapsed. Clients colorize by the leading character.
- */
 export function formatDiff(oldStr: string, newStr: string, maxLines = 60): string {
   const parts = diffLines(oldStr ?? "", newStr ?? "");
   const out: string[] = [];

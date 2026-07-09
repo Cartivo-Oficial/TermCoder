@@ -97,7 +97,6 @@ Describe how the agent should work in this project. For example:
 - Anything else the agent should always keep in mind.
 `;
 
-/** Convert a saved session's messages into renderable transcript items. */
 function recordToItems(record: SessionRecord): ViewItem[] {
   return transcriptSegments(record).map((seg): ViewItem => {
     if (seg.role === "user") return { kind: "user", text: seg.text };
@@ -138,7 +137,6 @@ function statusFor(toolName?: string): string {
   }
 }
 
-/** A descriptive busy status for a tool call: the concrete target when known. */
 function toolStatus(name: string, title?: string, detail?: string): string {
   if (name === "bash" && detail) return `Running: ${detail.split("\n")[0]!.slice(0, 52)}…`;
   if (name === "task") return "Delegating to sub-agent…";
@@ -146,12 +144,10 @@ function toolStatus(name: string, title?: string, detail?: string): string {
   return statusFor(name);
 }
 
-/** Current wall-clock time as a compact HH:MM for message timestamps. */
 function now(): string {
   return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-/** A short turn duration, e.g. "48s" or "2m 48s". */
 function fmtDuration(secs: number): string {
   return secs >= 60 ? `${Math.floor(secs / 60)}m ${secs % 60}s` : `${secs}s`;
 }
@@ -214,7 +210,6 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     Session.create({ store, registry, config, permission }, { cwd }),
   );
 
-  // While a turn runs, tick an elapsed-seconds counter for the status line.
   useEffect(() => {
     if (!busy) {
       setElapsed(0);
@@ -225,13 +220,11 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     return () => clearInterval(id);
   }, [busy]);
 
-  // Auto-save an unsent draft (debounced) so it survives a restart.
   useEffect(() => {
     const id = setTimeout(() => saveDraft(cwd, input), 400);
     return () => clearTimeout(id);
   }, [input, cwd]);
 
-  // Load the model catalog once (Models.dev + local Ollama + our models).
   useEffect(() => {
     let alive = true;
     getModelCatalog({ config })
@@ -242,7 +235,6 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     };
   }, []);
 
-  // Best-effort: let the user know when a newer termcoder is on npm.
   useEffect(() => {
     const isNewer = (a: string, b: string): boolean => {
       const x = a.split(".").map((n) => parseInt(n, 10) || 0);
@@ -289,14 +281,12 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     try {
       saveConfig({ model: id }); // remember the choice across sessions
     } catch {
-      /* config not writable — still applies this session */
     }
     setModelPickerOpen(false);
     forceRender((n) => n + 1);
     pushHistory({ kind: "notice", text: `Model set to ${id}.` });
   }
 
-  // Whether a usable model/provider is configured (drives the readiness dot).
   const modelReady =
     ["ollama", "termcoder", "termexplorer"].includes(session.record.model.split("/")[0] ?? "") ||
     Boolean(
@@ -307,16 +297,12 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     ) ||
     Object.values(config.providers).some((p) => p.apiKey);
 
-  // Percentage of the current model's context window used last turn.
   const modelCtxK = catalog.find((e) => e.id === session.record.model)?.contextK ?? 128;
   const ctxPct = lastCtx > 0 ? Math.min(100, Math.max(1, Math.round((lastCtx / (modelCtxK * 1000)) * 100))) : 0;
 
-  // Project files for @-mention completion (scanned once per cwd).
   const projectFiles = useMemo(() => listProjectFiles(cwd), [cwd]);
   const [menuDismissed, setMenuDismissed] = useState(false);
 
-  // Derive the active dropdown from the current input (end-anchored). A leading
-  // "/" opens the command menu; a trailing "@token" opens the file menu.
   const showMenus = !busy && !permRequest && !menuDismissed;
   const commandMatches =
     showMenus && input.startsWith("/") && !input.includes(" ") ? matchCommands(input.slice(1)) : [];
@@ -332,7 +318,6 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     onAccept: () => {
       if (commandMatches.length > 0) {
         const chosen = commandMatches[menuSelClamped]!;
-        // No-arg commands run immediately; ones taking an argument complete and wait.
         if (chosen.arg) {
           setInput(`/${chosen.name} `);
         } else {
@@ -350,8 +335,6 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     onClose: () => setMenuDismissed(true),
   };
 
-  // Esc interrupts the active turn; Shift+Tab cycles the mode/agent. Editing,
-  // menu and history keys live in MultilineInput.
   useInput((_input, key) => {
     if (key.escape && busy) {
       aborted.current = true;
@@ -359,7 +342,6 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     } else if (key.tab && key.shift && !busy && !permRequest && !modelPickerOpen && !review) {
       cycleMode();
     } else if (key.ctrl && _input === "p" && !busy && !permRequest && !modelPickerOpen && !review) {
-      // Command palette: open the "/" menu.
       setInput("/");
       setMenuSel(0);
     }
@@ -410,11 +392,6 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     permResolve.current = null;
   }
 
-  /**
-   * Autonomous mode: work toward a goal without stopping to ask, then run the
-   * project's check (tests/build). If it fails, feed the failure back and keep
-   * fixing — up to a round budget. Reuses runPrompt for the streaming turns.
-   */
   async function runBackground(goal: string) {
     const verify = detectVerifyCommand(cwd);
     const maxRounds = 5;
@@ -468,7 +445,6 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     let thoughtShown = false;
     const sync = () => setLive([...localLive]);
 
-    // Note how long the model "thought" before its first visible output.
     const markThought = () => {
       if (thoughtShown) return;
       thoughtShown = true;
@@ -532,7 +508,6 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
             break;
           case "error": {
             localLive.push({ kind: "error", text: event.error });
-            // Point key/quota errors at the built-in setup flow.
             if (/api key|unauthor|401|403|invalid.*key|quota|rate.?limit|no .*credentials/i.test(event.error)) {
               localLive.push({ kind: "notice", text: "→ Fix it with /setup (or /key <provider> <key>)." });
             }
@@ -544,8 +519,6 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         sync();
       }
     } finally {
-      // Commit the finished turn to the static scrollback, timestamping the
-      // assistant reply with the wall-clock time and how long it took.
       const dur = fmtDuration(Math.round((Date.now() - turnStart) / 1000));
       const stamped = localLive.map((it) =>
         it.kind === "assistant" ? { ...it, time: now(), dur } : it,
@@ -556,7 +529,6 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     }
   }
 
-  /** A GitHub client from the saved token, or null (with an error notice). */
   function ghClient(): GitHubClient | null {
     try {
       return GitHubClient.fromConfig(config);
@@ -1186,7 +1158,6 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           try {
             saveConfig({ theme: arg }); // remember it across sessions
           } catch {
-            /* config not writable — theme still applies this session */
           }
           pushHistory({ kind: "notice", text: `Theme set to ${arg} (saved).` });
         } else {
@@ -1317,7 +1288,6 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
       return;
     }
     if (text.startsWith("$")) {
-      // Delegate straight to a fresh sub-agent (keeps the main thread clean).
       const task = text.slice(1).trim();
       if (task) void runSubagent(task);
       return;
@@ -1327,7 +1297,6 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     void runPrompt(text);
   }
 
-  /** Run a one-off task in a fresh general sub-agent, streamed inline. */
   function runSubagent(task: string) {
     pushHistory({ kind: "user", text: `$ ${task}`, time: now() });
     pushHistory({ kind: "notice", text: "Delegating to a sub-agent…" });
@@ -1338,14 +1307,11 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     return runPrompt(task, sub);
   }
 
-  // Show the animated hero until a real conversation starts (startup notices
-  // don't count). It lives outside <Static> so its starfield can twinkle.
   const conversationEmpty =
     !busy &&
     live.length === 0 &&
     !history.some((h) => h.kind === "user" || h.kind === "assistant");
 
-  // Flashcard review takes over the screen until you finish or press esc.
   if (review) {
     return (
       <ReviewMode
@@ -1370,8 +1336,6 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     );
   }
 
-  // Gate the whole interface behind the trust decision — the "do you trust this
-  // folder?" question appears on its own, before the splash and composer.
   if (!trusted) {
     return (
       <TrustPrompt
@@ -1461,10 +1425,6 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     />
   );
 
-  // MiMo-style layout: on a fresh home the logo + composer are vertically
-  // centred (fill the terminal height) with the footer pinned to the bottom.
-  // Once chatting, content flows naturally — the composer sits right below the
-  // last message, not pushed to the bottom — so there's no awkward gap.
   if (conversationEmpty) {
     return (
       <Box flexDirection="column" minHeight={termRows} key={`${session.record.id}:${clearEpoch}`}>

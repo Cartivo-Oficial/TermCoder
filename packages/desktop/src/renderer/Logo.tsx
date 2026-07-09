@@ -1,6 +1,5 @@
 import type { SVGProps } from "react";
 
-/** The termcoder mark: a bold squared-"C" bracket with an inset card. */
 export const Logo = (p: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 96 96" width={18} height={18} {...p}>
     <path

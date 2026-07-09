@@ -82,13 +82,9 @@ import {
   FaFont,
 } from "react-icons/fa";
 
-/* Real brand logos (Simple Icons via react-icons) for common file types, plus
-   filled FontAwesome glyphs for folders/generic files so every icon shares the
-   same visual weight. Brand colors on file types; folders use muted tones. */
 
 const NEUTRAL = "#8b8b93";
 
-/** Blend a brand hex toward neutral gray so nothing screams on the dark tree. */
 function mute(hex: string): string {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex);
   if (!m) return hex;
@@ -101,9 +97,6 @@ function mute(hex: string): string {
   return `#${((1 << 24) | (r << 16) | (gg << 8) | b).toString(16).slice(1)}`;
 }
 
-/* Clamp a brand hex into a luminance band that stays legible on both the dark
-   and the paper theme: pale logos (JS yellow) get darkened, near-black ones
-   (Prisma, CMake) get lifted toward white. */
 const LUM_LO = 0.34;
 const LUM_HI = 0.62;
 

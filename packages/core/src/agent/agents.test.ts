@@ -62,7 +62,6 @@ describe("agents", () => {
     );
     const scoped = resolveAgent({ config, cwd, env: {} }, "scoped");
     expect(scoped.permission?.edit).toEqual({ "docs/**": "allow", "**": "deny" });
-    // A glob map is conditional, so the tool stays available (the gate decides).
     expect(agentCanMutate(scoped)).toBe(true);
     expect(allowed("scoped")).toContain("edit");
   });

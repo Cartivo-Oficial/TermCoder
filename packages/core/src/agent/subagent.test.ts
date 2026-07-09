@@ -65,7 +65,6 @@ describe("createSubagentTool", () => {
     );
     const res = await t.run({ prompt: "find the bug" }, { cwd: dir });
     expect(res.output).toContain("Investigated and found the bug.");
-    // The sub-agent persisted its own session.
     expect(store.list()).toHaveLength(1);
   });
 
@@ -100,7 +99,6 @@ describe("createSubagentTool", () => {
     const t = tool(scriptedRunner([]));
     expect(t.name).toBe("task");
     expect(t.readOnly).toBe(true);
-    // The sub-agent registry does not contain the task tool (no infinite recursion).
     expect(registry.get("task")).toBeUndefined();
   });
 });

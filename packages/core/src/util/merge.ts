@@ -8,10 +8,6 @@ function isPlainObject(value: unknown): value is Plain {
   );
 }
 
-/**
- * Deep-merge plain objects. Later sources win. Arrays and scalars are replaced,
- * not merged. Used to layer config sources (defaults < global < project < env).
- */
 export function deepMerge<T extends Plain>(...sources: Array<Partial<T> | undefined>): T {
   const out: Plain = {};
   for (const source of sources) {

@@ -3,7 +3,6 @@ import { Box, Text } from "ink";
 import type { Theme } from "../theme";
 import { CodeBlock } from "./CodeBlock";
 
-/** Render inline `code`, **bold**, [links](url), and bare URLs within a line. */
 function renderInline(text: string, theme: Theme): ReactNode[] {
   const nodes: ReactNode[] = [];
   const pattern = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\)|https?:\/\/[^\s)]+)/g;
@@ -26,7 +25,6 @@ function renderInline(text: string, theme: Theme): ReactNode[] {
         </Text>,
       );
     } else if (token.startsWith("http")) {
-      // Bare URL — underline it so it stands out (terminals make it clickable).
       nodes.push(
         <Text key={key++} color={theme.accent} underline>
           {token}
@@ -51,7 +49,6 @@ const cells = (row: string): string[] =>
 
 const isSeparatorRow = (line: string): boolean => /^\s*\|?[\s:|-]+\|?\s*$/.test(line) && line.includes("-");
 
-/** Render a GitHub-style pipe table as aligned, bordered columns. */
 function renderTable(block: string[], theme: Theme, key: number): ReactNode {
   const header = cells(block[0]!);
   const body = block.slice(2).map(cells);
@@ -89,11 +86,6 @@ function renderTable(block: string[], theme: Theme, key: number): ReactNode {
   );
 }
 
-/**
- * A small, dependency-free Markdown renderer for assistant messages: headings,
- * bullet/numbered lists, blockquotes, tables, links, horizontal rules, fenced
- * code, and inline code/bold. Covers what models emit in chat without a parser.
- */
 export function Markdown({ theme, text }: { theme: Theme; text: string }) {
   const lines = text.split("\n");
   const rows: ReactNode[] = [];
@@ -126,7 +118,6 @@ export function Markdown({ theme, text }: { theme: Theme; text: string }) {
       continue;
     }
 
-    // Table: a header row of `|` cells followed by a `---` separator row.
     if (line.includes("|") && i + 1 < lines.length && isSeparatorRow(lines[i + 1]!)) {
       const block: string[] = [line, lines[i + 1]!];
       let j = i + 2;
@@ -196,7 +187,6 @@ export function Markdown({ theme, text }: { theme: Theme; text: string }) {
     );
   }
 
-  // Streaming may end mid-fence; render what we have of the open block.
   if (inCode && codeLines.length > 0) flushCode(lines.length);
 
   return <Box flexDirection="column">{rows}</Box>;

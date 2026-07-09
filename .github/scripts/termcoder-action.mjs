@@ -1,18 +1,4 @@
 #!/usr/bin/env node
-// termcoder GitHub Action runner.
-//
-// Reads the triggering GitHub event, runs a headless termcoder turn in the
-// checked-out repo, and posts the result back as an issue/PR comment. Optionally
-// commits and pushes the changes it made.
-//
-// Env it expects (the Action wires these up):
-//   GITHUB_TOKEN       - token with `issues:write` / `contents:write`
-//   GITHUB_EVENT_PATH  - path to the event payload JSON (set by Actions)
-//   GITHUB_REPOSITORY  - "owner/repo"
-//   TC_TRIGGER         - phrase that activates the bot (default "/termcoder")
-//   TC_MODEL           - model id (default "termcoder/auto")
-//   TC_APPLY           - "true" to let it edit files and push a commit
-//   TC_TASK            - an explicit task (overrides the comment/issue body)
 
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -40,13 +26,11 @@ const event = process.env.GITHUB_EVENT_PATH
   ? JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"))
   : {};
 
-/** Work out the issue/PR number and the text that triggered us. */
 function resolveTask() {
   if (process.env.TC_TASK) {
     const number = event.issue?.number ?? event.pull_request?.number;
     return { number, task: process.env.TC_TASK };
   }
-  // issue_comment / pull_request_review_comment
   const comment = event.comment?.body;
   if (comment && comment.includes(trigger)) {
     return {
@@ -54,7 +38,6 @@ function resolveTask() {
       task: comment.slice(comment.indexOf(trigger) + trigger.length).trim(),
     };
   }
-  // issues opened/edited
   if (event.issue?.body && event.issue.body.includes(trigger)) {
     const body = event.issue.body;
     return {
@@ -107,8 +90,6 @@ async function main() {
   if (process.env.TC_MODEL) config.model = process.env.TC_MODEL;
   const store = new SessionStore();
   const registry = new ToolRegistry(builtinTools);
-  // In CI there's no human to prompt; auto-approve when applying, otherwise the
-  // read-only "plan" agent can't mutate anyway.
   const permission = new PermissionManager(config.permission, async () => "allow");
 
   const session = Session.create(

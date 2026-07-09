@@ -7,8 +7,6 @@ import { memoryTool } from "./memory";
 let dir: string;
 let cfg: string;
 let prevXdg: string | undefined;
-// ToolContext is just { cwd }; user-scope memory resolves via configDir(process.env),
-// so point XDG at a temp dir to keep the test hermetic.
 const ctx = () => ({ cwd: dir }) as never;
 
 beforeEach(() => {

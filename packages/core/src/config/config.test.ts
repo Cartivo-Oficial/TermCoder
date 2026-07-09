@@ -98,7 +98,6 @@ describe("loadConfig", () => {
     expect(() =>
       saveConfig({ permission: { bash: "maybe" } }, { configDir, env: {} }),
     ).toThrow();
-    // Nothing persisted, so load still returns defaults.
     expect(loadConfig({ cwd, configDir, env: {} }).permission.bash).toBe("ask");
   });
 });

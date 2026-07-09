@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { Text, useInput } from "ink";
 import type { Theme } from "../theme";
 
-/** Routes menu navigation to whoever owns the open dropdown (command/mention). */
 export interface MenuControl {
   open: boolean;
   onMove: (delta: number) => void;
@@ -17,9 +16,7 @@ interface MultilineInputProps {
   onSubmit: (value: string) => void;
   focus: boolean;
   placeholder?: string;
-  /** ↑/↓ at the top/bottom line browse input history. */
   onHistory?: (dir: "up" | "down") => void;
-  /** When a dropdown is open, arrows/tab/enter drive it instead of the text. */
   menu?: MenuControl;
 }
 
@@ -57,12 +54,6 @@ function indexAt(value: string, line: number, col: number): number {
   return idx + Math.min(col, lines[line]?.length ?? 0);
 }
 
-/**
- * A controlled multi-line text input. Enter submits; end a line with `\` to
- * insert a newline instead. Supports cursor movement, home/end (ctrl+a/e),
- * kill-to-start (ctrl+u), and paste (multi-char input, including newlines).
- * History and dropdown navigation are delegated to the parent via props.
- */
 export function MultilineInput({
   theme,
   value,
@@ -76,8 +67,6 @@ export function MultilineInput({
   const [cursor, setCursor] = useState(value.length);
   const lastValue = useRef(value);
 
-  // When the value changes from outside (history recall, menu completion),
-  // snap the cursor to the end.
   useEffect(() => {
     if (value !== lastValue.current) {
       lastValue.current = value;
@@ -98,12 +87,10 @@ export function MultilineInput({
         if (key.downArrow) return void menu.onMove(1);
         if (key.tab || key.return) return void menu.onAccept();
         if (key.escape) return void menu.onClose();
-        // other keys fall through so typing keeps refining the query
       }
 
       if (key.return) {
         if (value[cursor - 1] === "\\") {
-          // `\` + Enter → newline (drop the backslash).
           edit(value.slice(0, cursor - 1) + "\n" + value.slice(cursor), cursor);
         } else {
           onSubmit(value);
@@ -153,7 +140,6 @@ export function MultilineInput({
   const { line: cl, col: cc } = posOf(value, cursor);
   const lines = value.split("\n");
 
-  // Scroll a window over long input, keeping the cursor line in view.
   const MAX_LINES = 10;
   const total = lines.length;
   const start =
@@ -181,7 +167,6 @@ export function MultilineInput({
   );
 }
 
-/** Render a line, drawing an inverse-video block at the cursor column. */
 function renderLine(line: string, cursorCol: number) {
   if (cursorCol < 0) return <Text>{line}</Text>;
   const before = line.slice(0, cursorCol);

@@ -7,7 +7,6 @@ interface MentionMenuProps {
   theme: Theme;
   files: string[];
   selected: number;
-  /** Workspace root, used to read a short preview of the selected file. */
   cwd?: string;
 }
 
@@ -15,7 +14,6 @@ const MAX_VISIBLE = 6;
 const PREVIEW_LINES = 6;
 const TEXT_EXT = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|rb|php|java|c|h|cpp|cc|cs|kt|swift|md|mdx|txt|json|ya?ml|toml|css|scss|html|sh|sql|env|xml|ini|cfg)$/i;
 
-/** Read the first few lines of a file for the mention preview. */
 function preview(cwd: string, rel: string): string[] {
   if (!TEXT_EXT.test(rel)) return [];
   try {
@@ -26,7 +24,6 @@ function preview(cwd: string, rel: string): string[] {
   }
 }
 
-/** File-suggestion dropdown (with a preview of the selected file) for `@file`. */
 export function MentionMenu({ theme, files, selected, cwd }: MentionMenuProps) {
   if (files.length === 0) return null;
   const start = Math.max(0, Math.min(selected - MAX_VISIBLE + 1, files.length - MAX_VISIBLE));

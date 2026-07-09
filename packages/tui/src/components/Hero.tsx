@@ -3,8 +3,6 @@ import { Box, Text, useStdout } from "ink";
 import type { Theme } from "../theme";
 import { wordLines, makeStars, renderStars } from "../logo";
 
-// Two gradients across the wordmark: warm orange for "term", cool light for
-// "coder" — so the logo shades like the pixel look instead of flat colour.
 const TERM = ["#ffb066", "#ff9a45", "#ff8036", "#ff6a2b"];
 const CODER = ["#f2f2f4", "#e2e2e6", "#d0d0d6", "#bebec4", "#acacb2"];
 
@@ -28,15 +26,9 @@ function LetterCols({ word, colors }: { word: string; colors: string[] }) {
 
 interface HeroProps {
   theme: Theme;
-  /** Freeze the twinkle (reduced motion / tests). */
   animate?: boolean;
 }
 
-/**
- * The empty-state hero: a gradient block wordmark inside a gently twinkling
- * starfield, centered. The starfield animates via a slow frame counter, so it
- * lives outside <Static> (which never re-renders).
- */
 export function Hero({ theme, animate = true }: HeroProps) {
   const cols = useStdout().stdout?.columns ?? 80;
   const width = Math.max(30, Math.min(cols - 2, 78));
@@ -46,9 +38,6 @@ export function Hero({ theme, animate = true }: HeroProps) {
 
   useEffect(() => {
     if (!animate) return;
-    // Animate the starfield for a short while, then settle. Continuous repaints
-    // fight the terminal's own scrollback (scrolling up snaps back on redraw),
-    // so we stop after the intro to keep scrolling smooth.
     let ticks = 0;
     const id = setInterval(() => {
       setFrame((f) => (f + 1) % 1024);

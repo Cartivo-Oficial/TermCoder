@@ -21,7 +21,6 @@ interface ScriptedStep {
   usage?: Promise<{ inputTokens?: number; outputTokens?: number }>;
 }
 
-/** A model runner that replays one scripted step per call. */
 function scriptedRunner(steps: ScriptedStep[]): ModelRunner {
   let i = 0;
   return () => {
@@ -170,11 +169,9 @@ describe("Session agent loop", () => {
         async function* stream() { yield { type: "text-delta", text: "ok" }; }
         return { fullStream: stream(), response: Promise.resolve({ messages: [] }), finishReason: Promise.resolve("stop"), toolCalls: Promise.resolve([]) };
       };
-      // no memories yet → no recall header
       await collect(makeSession(runner), "hi");
       expect(captured).not.toMatch(/What you remember/);
 
-      // add a project memory, then a fresh session sees it
       saveMemory({ scope: "project", name: "arch", description: "monorepo of four packages", type: "project", body: "core, server, tui, desktop", cwd: dir });
       await collect(makeSession(runner), "hi again");
       expect(captured).toMatch(/What you remember/);
@@ -311,7 +308,6 @@ describe("Session agent loop", () => {
       { type: "text-delta", text: "Hello there." },
       { type: "done" },
     ]);
-    // Persisted: the user prompt plus the assistant reply.
     expect(store.load(session.record.id).messages).toHaveLength(2);
   });
 
@@ -435,8 +431,6 @@ describe("Session agent loop", () => {
       };
     };
     const permission = new PermissionManager(config.permission, async () => "deny");
-    // A read-only-but-delegating tool like `task` must NOT be exposed in plan
-    // mode, since its sub-agent would run unrestricted.
     const taskTool: TermTool = {
       name: "task",
       description: "delegate",
@@ -525,8 +519,6 @@ describe("Session agent loop", () => {
   });
 
   it("surfaces a stream error after retries are exhausted", async () => {
-    // Both the initial call and the retry fail; with no key to fall back to,
-    // the error surfaces.
     const runner = scriptedRunner([
       { chunks: [{ type: "error", error: new Error("boom") }], finishReason: "error" },
       { chunks: [{ type: "error", error: new Error("boom") }], finishReason: "error" },

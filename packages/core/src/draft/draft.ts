@@ -2,10 +2,6 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 
-/**
- * Per-folder composer drafts: remember an unsent message so it survives a
- * restart. Keyed by absolute cwd, stored in the global config dir.
- */
 
 function dir(env: NodeJS.ProcessEnv = process.env): string {
   const xdg = env.XDG_CONFIG_HOME;

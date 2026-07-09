@@ -52,7 +52,6 @@ describe("pruneMessagesForModel", () => {
     expect(valueOf(pruned[2]!)).toContain("elided to save context");
     expect(valueOf(pruned[3]!)).toBe(big); // recent kept in full
     expect(valueOf(pruned[4]!)).toBe(big);
-    // The user turn is untouched.
     expect(pruned[0]).toBe(messages[0]);
   });
 

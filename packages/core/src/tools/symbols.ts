@@ -2,11 +2,6 @@ import { z } from "zod";
 import { defineTool } from "./types";
 import { buildSymbolIndex, findSymbols } from "../knowledge/symbols";
 
-/**
- * Find where a symbol (function, class, type, …) is defined across the whole
- * codebase, ranked by relevance. Faster and more precise than guessing a grep
- * pattern when you know a name but not its location.
- */
 export const symbolsTool = defineTool({
   name: "symbols",
   description:

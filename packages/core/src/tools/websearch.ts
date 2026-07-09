@@ -26,7 +26,6 @@ function decodeRedirect(href: string): string {
   return href;
 }
 
-/** Parse DuckDuckGo's HTML results page into structured results. */
 export function parseDuckDuckGo(html: string): SearchResult[] {
   const results: SearchResult[] = [];
   const snippets: string[] = [];

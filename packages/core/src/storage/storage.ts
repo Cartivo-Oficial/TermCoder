@@ -11,7 +11,6 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import type { ModelMessage } from "ai";
 
-/** A persisted conversation: an ordered list of model messages plus metadata. */
 export interface SessionRecord {
   id: string;
   title: string;
@@ -19,19 +18,14 @@ export interface SessionRecord {
   updatedAt: number;
   cwd: string;
   model: string;
-  /** Agent mode: "build" = full access, "plan" = read-only (no edits/bash). */
   mode?: "build" | "plan";
-  /** Active agent name (build/plan/general/explore/scout or a custom one). */
   agent?: string;
-  /** Sampling temperature (0–2). Undefined uses the provider default. */
   temperature?: number;
-  /** Max tool-execution rounds per prompt. Undefined uses the engine default. */
   maxSteps?: number;
   messages: ModelMessage[];
   usage?: { tokensIn: number; tokensOut: number };
 }
 
-/** Lightweight session listing entry (no message bodies). */
 export interface SessionSummary {
   id: string;
   title: string;
@@ -48,10 +42,6 @@ export function defaultSessionsDir(env: NodeJS.ProcessEnv = process.env): string
   return join(homedir(), ".termcoder", "sessions");
 }
 
-/**
- * File-backed session storage. One JSON file per session under `baseDir`.
- * Designed to be swappable (e.g. for a server/database) behind this same API.
- */
 export class SessionStore {
   private readonly baseDir: string;
 
@@ -98,7 +88,6 @@ export class SessionStore {
     return existsSync(this.file(id));
   }
 
-  /** Persist a session, stamping `updatedAt`. */
   save(record: SessionRecord): void {
     this.ensureDir();
     record.updatedAt = Date.now();
@@ -110,14 +99,12 @@ export class SessionStore {
     return JSON.parse(readFileSync(this.file(id), "utf8")) as SessionRecord;
   }
 
-  /** Delete a single session. Returns true if a file was removed. */
   delete(id: string): boolean {
     if (!this.exists(id)) return false;
     rmSync(this.file(id), { force: true });
     return true;
   }
 
-  /** Delete every stored session. Returns the number removed. */
   deleteAll(): number {
     if (!existsSync(this.baseDir)) return 0;
     let removed = 0;
@@ -129,7 +116,6 @@ export class SessionStore {
     return removed;
   }
 
-  /** All sessions, newest-updated first. Skips unreadable files. */
   list(): SessionSummary[] {
     if (!existsSync(this.baseDir)) return [];
     const summaries: SessionSummary[] = [];
@@ -150,7 +136,6 @@ export class SessionStore {
           usage: record.usage,
         });
       } catch {
-        // Ignore corrupt session files rather than failing the whole listing.
       }
     }
     return summaries.sort((a, b) => b.updatedAt - a.updatedAt);

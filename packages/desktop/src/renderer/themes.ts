@@ -3,11 +3,9 @@ export interface ColorTheme {
   name: string;
   dark: boolean;
   accent: string;
-  /** Structural palette overrides (accent is handled separately). */
   vars: Record<string, string>;
 }
 
-/** The structural CSS variables a color theme can override. */
 export const THEME_VARS = ["--bg", "--panel", "--panel2", "--elev", "--elev2", "--border", "--text", "--muted", "--faint"];
 
 export const COLOR_THEMES: ColorTheme[] = [

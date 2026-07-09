@@ -86,13 +86,9 @@ export interface ServerDeps {
   config?: Config;
   store?: SessionStore;
   registry?: ToolRegistry;
-  /** Override the model call (tests / custom providers). */
   runner?: ModelRunner;
-  /** Default working directory for new sessions. */
   cwd?: string;
-  /** MCP/LSP/plugin connection status to expose at GET /status. */
   status?: ServerStatus;
-  /** Directory of a built web UI to serve (the browser app). */
   webDir?: string;
 }
 
@@ -106,11 +102,6 @@ interface Ctx {
   webDir?: string;
 }
 
-/**
- * A headless HTTP + WebSocket server wrapping the core engine. HTTP manages
- * session resources; the WebSocket streams a turn's events and carries the
- * permission round-trip. The same core powers the TUI, so behavior matches.
- */
 export function createServer(deps: ServerDeps = {}): Server {
   const ctx: Ctx = {
     config: deps.config ?? loadConfig(),
@@ -151,7 +142,6 @@ function hasKey(config: Config, env: NodeJS.ProcessEnv, provider: string): boole
   return false;
 }
 
-/** Build a `.md` agent file from the builder form fields. */
 function agentMarkdown(body: Record<string, unknown>): string {
   const lines = ["---"];
   if (typeof body.description === "string" && body.description.trim()) {
@@ -162,8 +152,6 @@ function agentMarkdown(body: Record<string, unknown>): string {
   if (body.readOnly) {
     lines.push("permission:", "  write: deny", "  edit: deny", "  bash: deny", "  mcp: deny");
   } else if (Array.isArray(body.editPaths)) {
-    // Restrict writes/edits to an allowlist of globs: deny everything, then
-    // re-allow the listed paths (later matches win).
     const globs = (body.editPaths as unknown[])
       .filter((g): g is string => typeof g === "string" && g.trim() !== "")
       .map((g) => g.trim());
@@ -195,7 +183,6 @@ function providerStatus(ctx: Ctx): Array<{ name: string; configured: boolean }> 
   ];
 }
 
-/** Config for the settings UI with API keys masked to a boolean. */
 function redactConfig(config: Config) {
   const providers: Record<string, { hasKey: boolean; baseURL?: string }> = {};
   for (const [name, p] of Object.entries(config.providers)) {
@@ -229,10 +216,6 @@ const MIME: Record<string, string> = {
   ".map": "application/json; charset=utf-8",
 };
 
-/**
- * Serve a file from the web-UI directory (the browser app). Falls back to
- * index.html for extension-less routes (SPA). Returns false if nothing matched.
- */
 function serveStatic(res: ServerResponse, webDir: string, pathname: string): boolean {
   const rel = normalize(decodeURIComponent(pathname)).replace(/^([/\\]|\.\.[/\\])+/, "");
   let file = join(webDir, rel || "index.html");
@@ -268,15 +251,10 @@ function readJson(req: IncomingMessage): Promise<Record<string, unknown>> {
   });
 }
 
-/** A permission manager used only for resource calls that never prompt. */
 function inertPermission(config: Config): PermissionManager {
   return new PermissionManager(config.permission, async () => "deny");
 }
 
-/**
- * Build a GitHub client from config and run a call, turning a missing token or
- * a GitHub API error into the right JSON status instead of a 500.
- */
 async function withGitHub(
   res: ServerResponse,
   ctx: Ctx,
@@ -325,20 +303,17 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 200, ctx.store.list());
   }
 
-  // Delete every session at once.
   if (req.method === "DELETE" && parts.length === 1 && parts[0] === "sessions") {
     const removed = ctx.store.deleteAll();
     return sendJson(res, 200, { removed });
   }
 
-  // Delete a single session by id.
   if (req.method === "DELETE" && parts.length === 2 && parts[0] === "sessions") {
     const id = parts[1]!;
     const removed = ctx.store.delete(id);
     return sendJson(res, removed ? 200 : 404, removed ? { id } : { error: "session not found" });
   }
 
-  // Transcribe a short audio clip via the configured multimodal model.
   if (req.method === "POST" && parts.length === 1 && parts[0] === "transcribe") {
     const body = await readJson(req);
     const audioB64 = typeof body.audio === "string" ? body.audio : "";
@@ -357,7 +332,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 200, { model: ctx.config.model, providers: providerStatus(ctx), ...ctx.status });
   }
 
-  // Available agents (built-ins + custom) for the agent picker.
   if (req.method === "GET" && parts.length === 1 && parts[0] === "agents") {
     const agents = discoverAgents({ config: ctx.config, cwd: ctx.cwd }).map((a) => ({
       name: a.name,
@@ -371,7 +345,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 200, agents);
   }
 
-  // Model catalog (Models.dev + local Ollama + fallback) for the model browser.
   if (req.method === "GET" && parts.length === 1 && parts[0] === "models") {
     const env = process.env;
     const catalog = await getModelCatalog({ config: ctx.config });
@@ -385,18 +358,14 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 200, withConfigured);
   }
 
-  // ---- Study (flashcards) ----
-  // Overview: every deck (with due counts) + the study streak.
   if (req.method === "GET" && parts.length === 1 && parts[0] === "study") {
     const p = loadProgress();
     return sendJson(res, 200, { decks: deckSummaries(), streak: p.streak, reviewsToday: reviewsToday() });
   }
-  // Cards due for review in a deck.
   if (req.method === "GET" && parts.length === 2 && parts[0] === "study" && parts[1] === "due") {
     const deck = url.searchParams.get("deck") ?? "";
     return sendJson(res, 200, dueCards(deck));
   }
-  // Grade a reviewed card (also records a review for the streak).
   if (req.method === "POST" && parts.length === 2 && parts[0] === "study" && parts[1] === "grade") {
     const body = await readJson(req);
     const deck = typeof body.deck === "string" ? body.deck : "";
@@ -406,7 +375,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     if (card) recordReview();
     return sendJson(res, 200, { ok: Boolean(card), card });
   }
-  // Generate flashcards about a topic and add them to a deck.
   if (req.method === "POST" && parts.length === 2 && parts[0] === "study" && parts[1] === "generate") {
     const body = await readJson(req);
     const topic = typeof body.topic === "string" ? body.topic.trim() : "";
@@ -424,12 +392,9 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     }
   }
 
-  // ---- Classrooms (GitHub-native, async) ----
-  // The classes this machine has joined (local list; no network).
   if (req.method === "GET" && parts.length === 1 && parts[0] === "classrooms") {
     return sendJson(res, 200, loadClassrooms());
   }
-  // GitHub-backed classroom actions.
   if (req.method === "POST" && parts.length === 1 && parts[0] === "classroom") {
     const body = await readJson(req);
     const action = body.action;
@@ -457,7 +422,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     });
   }
 
-  // Connectable providers + their login methods (for the "Connect" UI).
   if (req.method === "GET" && parts.length === 1 && parts[0] === "providers") {
     const env = process.env;
     const snapshot = providerHealthSnapshot();
@@ -528,7 +492,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 200, chatgptLogin);
   }
 
-  // Inline editor autocomplete (Copilot-style ghost text).
   if (req.method === "POST" && parts.length === 1 && parts[0] === "complete") {
     const body = await readJson(req);
     const prefix = typeof body.prefix === "string" ? body.prefix : "";
@@ -547,7 +510,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     }
   }
 
-  // Available slash commands.
   if (req.method === "GET" && parts.length === 1 && parts[0] === "commands") {
     const cmds = discoverCommands({ cwd: ctx.cwd }).map((c) => ({
       name: c.name,
@@ -558,7 +520,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 200, cmds);
   }
 
-  // Expand a command template (args + shell + @file) into the final prompt.
   if (req.method === "POST" && parts.length === 2 && parts[0] === "commands" && parts[1] === "expand") {
     const body = await readJson(req);
     const name = typeof body.name === "string" ? body.name : "";
@@ -569,7 +530,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 200, { prompt, agent: cmd.agent, model: cmd.model });
   }
 
-  // Create/update a custom agent as a markdown file in .termcoder/agents/.
   if (req.method === "POST" && parts.length === 1 && parts[0] === "agents") {
     const body = await readJson(req);
     const name = typeof body.name === "string" ? body.name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "-") : "";
@@ -580,7 +540,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 201, { name });
   }
 
-  // Delete a custom agent file.
   if (req.method === "DELETE" && parts.length === 2 && parts[0] === "agents") {
     const name = parts[1]!;
     const file = join(ctx.cwd, ".termcoder", "agents", `${name}.md`);
@@ -589,7 +548,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 200, { name });
   }
 
-  // Available skills (project + global) — names/descriptions for the UI.
   if (req.method === "GET" && parts.length === 1 && parts[0] === "skills") {
     const skills = discoverSkills({ cwd: ctx.cwd }).map((s) => ({
       name: s.name,
@@ -599,7 +557,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 200, skills);
   }
 
-  // Create/update a skill as a markdown file in .termcoder/skills/.
   if (req.method === "POST" && parts.length === 1 && parts[0] === "skills") {
     const body = await readJson(req);
     const name = typeof body.name === "string" ? body.name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "-") : "";
@@ -610,7 +567,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 201, { name });
   }
 
-  // Delete a project skill file.
   if (req.method === "DELETE" && parts.length === 2 && parts[0] === "skills") {
     const name = parts[1]!;
     const file = join(ctx.cwd, ".termcoder", "skills", `${name}.md`);
@@ -619,14 +575,12 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 200, { name });
   }
 
-  // GET /memory — remembered facts (project + user)
   if (req.method === "GET" && parts.length === 1 && parts[0] === "memory") {
     const memories = discoverMemories({ cwd: ctx.cwd }).map((m) => ({
       name: m.name, description: m.description, type: m.type, scope: m.scope, body: m.body,
     }));
     return sendJson(res, 200, { memories });
   }
-  // POST /memory — save a fact
   if (req.method === "POST" && parts.length === 1 && parts[0] === "memory") {
     const body = await readJson(req);
     try {
@@ -643,18 +597,15 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
       return sendJson(res, 400, { ok: false, error: err instanceof Error ? err.message : String(err) });
     }
   }
-  // DELETE /memory/:name
   if (req.method === "DELETE" && parts.length === 2 && parts[0] === "memory") {
     const removed = deleteMemory({ name: parts[1]!, cwd: ctx.cwd });
     return sendJson(res, 200, { ok: removed });
   }
 
-  // Read the live config (without secrets) for the settings UI.
   if (req.method === "GET" && parts.length === 1 && parts[0] === "config") {
     return sendJson(res, 200, redactConfig(ctx.config));
   }
 
-  // Add or update an MCP server (takes effect on next app start).
   if (req.method === "POST" && parts.length === 1 && parts[0] === "mcp") {
     const body = await readJson(req);
     const name = typeof body.name === "string" ? body.name.trim() : "";
@@ -679,7 +630,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     }
   }
 
-  // Toggle / delete an MCP server.
   if (parts.length >= 2 && parts[0] === "mcp") {
     const name = parts[1]!;
     const raw = readGlobalConfig();
@@ -701,7 +651,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     }
   }
 
-  // Persist a partial config to the global file and hot-reload it.
   if (req.method === "POST" && parts.length === 1 && parts[0] === "config") {
     const body = await readJson(req);
     try {
@@ -724,7 +673,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 200, ctx.store.load(id));
   }
 
-  // Flattened, render-ready transcript for a saved session.
   if (
     req.method === "GET" &&
     parts.length === 3 &&
@@ -736,7 +684,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 200, transcriptSegments(ctx.store.load(id)));
   }
 
-  // Change the model used by a saved session.
   if (req.method === "POST" && parts.length === 3 && parts[0] === "sessions" && parts[2] === "model") {
     const id = parts[1]!;
     if (!ctx.store.exists(id)) return sendJson(res, 404, { error: "session not found" });
@@ -749,7 +696,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 200, { model: record.model });
   }
 
-  // Update agent settings (temperature, maxSteps) for a saved session.
   if (req.method === "POST" && parts.length === 3 && parts[0] === "sessions" && parts[2] === "settings") {
     const id = parts[1]!;
     if (!ctx.store.exists(id)) return sendJson(res, 404, { error: "session not found" });
@@ -776,7 +722,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     });
   }
 
-  // Rename a saved session.
   if (req.method === "POST" && parts.length === 3 && parts[0] === "sessions" && parts[2] === "title") {
     const id = parts[1]!;
     if (!ctx.store.exists(id)) return sendJson(res, 404, { error: "session not found" });
@@ -789,7 +734,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 200, { title: record.title });
   }
 
-  // Whether the last turn left a revertable checkpoint.
   if (req.method === "GET" && parts.length === 3 && parts[0] === "sessions" && parts[2] === "checkpoint") {
     const id = parts[1]!;
     if (!ctx.store.exists(id)) return sendJson(res, 404, { error: "session not found" });
@@ -798,7 +742,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 200, { hasCheckpoint: cm.hasLatest() });
   }
 
-  // Revert the files changed in the last turn.
   if (req.method === "POST" && parts.length === 3 && parts[0] === "sessions" && parts[2] === "revert") {
     const id = parts[1]!;
     if (!ctx.store.exists(id)) return sendJson(res, 404, { error: "session not found" });
@@ -808,7 +751,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 200, { restored });
   }
 
-  // Publish the session transcript as a secret GitHub Gist; return its URL.
   if (req.method === "POST" && parts.length === 3 && parts[0] === "sessions" && parts[2] === "gist") {
     const id = parts[1]!;
     if (!ctx.store.exists(id)) return sendJson(res, 404, { error: "session not found" });
@@ -828,12 +770,10 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     });
   }
 
-  // Who is the configured GitHub token? (validates the token.)
   if (req.method === "GET" && parts.length === 1 && parts[0] === "github") {
     return withGitHub(res, ctx, async (client) => ({ user: await client.whoami() }));
   }
 
-  // Import a session shared as a gist (by id or URL) into the local store.
   if (req.method === "POST" && parts.length === 2 && parts[0] === "sessions" && parts[1] === "import") {
     const body = await readJson(req);
     const ref = typeof body.ref === "string" ? body.ref : "";
@@ -844,7 +784,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     });
   }
 
-  // Publish or install a pack of custom agents/skills/commands.
   if (req.method === "POST" && parts.length === 1 && parts[0] === "packs") {
     const body = await readJson(req);
     const action = body.action;
@@ -870,7 +809,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     });
   }
 
-  // Push/pull/sync per-user stores (favorites, drafts, …) via the sync gist.
   if (req.method === "POST" && parts.length === 2 && parts[0] === "sync") {
     const op = parts[1];
     return withGitHub(res, ctx, async (client) => {
@@ -883,7 +821,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     });
   }
 
-  // Shareable transcript: HTML by default, Markdown with ?format=md.
   if (
     req.method === "GET" &&
     parts.length === 3 &&
@@ -902,7 +839,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return void res.end(renderSessionHtml(record));
   }
 
-  // Fall through to the web UI (browser app) for GET requests, if one is built.
   if ((req.method === "GET" || req.method === "HEAD") && ctx.webDir && serveStatic(res, ctx.webDir, url.pathname)) {
     return;
   }
@@ -913,7 +849,6 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
 function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
   const url = new URL(req.url ?? "/", "http://localhost");
   const parts = url.pathname.split("/").filter(Boolean);
-  // Expect /sessions/:id/stream
   if (parts.length !== 3 || parts[0] !== "sessions" || parts[2] !== "stream") {
     ws.close(1008, "expected /sessions/:id/stream");
     return;
@@ -936,8 +871,6 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
       }),
   );
 
-  // This connection's registry adds a `task` tool bound to its permission gate;
-  // the sub-agent runs against ctx.registry (no task tool — single-level delegation).
   const registry = new ToolRegistry([
     ...ctx.registry.list(),
     createSubagentTool({
@@ -968,7 +901,6 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
       for await (const event of session.prompt(text, { signal, attachments })) {
         ws.send(JSON.stringify(event));
       }
-      // A cancelled turn ends the generator without a "done"; tell the client.
       if (signal.aborted) ws.send(JSON.stringify({ type: "stopped" }));
     } catch (err) {
       ws.send(JSON.stringify({ type: "error", error: String(err) }));
@@ -978,8 +910,6 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
     }
   }
 
-  // Autonomous mode: run to the goal without asking, then verify (tests/build)
-  // and keep fixing until it passes or the round budget runs out.
   async function runBackground(goal: string): Promise<void> {
     if (running) {
       ws.send(JSON.stringify({ type: "error", error: "a prompt is already running" }));
@@ -1031,7 +961,6 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
     } else if (msg.type === "background" && typeof msg.goal === "string") {
       void runBackground(msg.goal);
     } else if (msg.type === "stop") {
-      // Abort any in-flight turn; also release a pending permission prompt.
       controller?.abort();
       for (const [id, resolve] of pending) {
         pending.delete(id);

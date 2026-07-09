@@ -22,7 +22,6 @@ import { discoverMemories, recallMemories } from "../memory/memory";
 import { ensureFreshClaudeConfig } from "../auth/oauth";
 import { ensureFreshChatGPTConfig } from "../auth/chatgpt-oauth";
 
-/** Events emitted while a turn runs. The client renders these; the core stays UI-agnostic. */
 export type SessionEvent =
   | { type: "text-delta"; text: string }
   | { type: "tool-call"; id: string; name: string; args: unknown; title?: string; detail?: string }
@@ -31,7 +30,6 @@ export type SessionEvent =
   | { type: "done" }
   | { type: "error"; error: string };
 
-/** Minimal shape the session needs from a model call — satisfied by AI SDK `streamText`. */
 export interface ModelStreamResult {
   fullStream: AsyncIterable<{ type: string; text?: string; error?: unknown }>;
   response: Promise<{ messages: ModelMessage[] }>;
@@ -40,7 +38,6 @@ export interface ModelStreamResult {
   usage?: Promise<{ inputTokens?: number; outputTokens?: number } | undefined>;
 }
 
-/** Runs one model turn. Overridable in tests with a scripted fake. */
 export type ModelRunner = (opts: {
   system: string;
   messages: ModelMessage[];
@@ -54,11 +51,8 @@ export interface SessionDeps {
   config: Config;
   permission: PermissionManager;
   env?: NodeJS.ProcessEnv;
-  /** Override the model call (used by tests). */
   runner?: ModelRunner;
-  /** Override the termcoder/auto review pass (used by tests). */
   reviewer?: () => Promise<string>;
-  /** Safety cap on tool-execution rounds per prompt. */
   maxSteps?: number;
 }
 
@@ -72,8 +66,6 @@ interface ToolResultPart {
 type Persona = "coder" | "study";
 
 function systemPrompt(cwd: string, agent: AgentDef, persona?: Persona): string {
-  // termexplorer — the study assistant persona. A friendly tutor rather than a
-  // coding agent, for students doing schoolwork, summaries and revision.
   if (persona === "study") {
     const lines = [
       "You are termexplorer, a friendly and patient study assistant for students.",
@@ -168,7 +160,6 @@ function systemPrompt(cwd: string, agent: AgentDef, persona?: Persona): string {
   return lines.join("\n");
 }
 
-/** Last path segment of a working directory, used as a default session title. */
 function folderName(cwd: string): string {
   const parts = cwd.split(/[\\/]/).filter(Boolean);
   return parts[parts.length - 1] ?? "session";
@@ -178,7 +169,6 @@ function isDefaultTitle(title: string): boolean {
   return !title.trim() || title === "Untitled session";
 }
 
-/** First line of the prompt, trimmed to a short, single-line session label. */
 function deriveTitle(text: string): string {
   const firstLine = text.replace(/\s+/g, " ").trim();
   if (!firstLine) return "Untitled session";
@@ -191,7 +181,6 @@ function stringifyError(error: unknown): string {
   return JSON.stringify(error);
 }
 
-/** Turn a raw provider error into something actionable for the user. */
 export function friendlyError(raw: string): string {
   const s = raw.toLowerCase();
   if (
@@ -247,11 +236,6 @@ function healthIdOf(modelId: string): string {
   return provider === "termcoderfree" ? "pollinations" : provider;
 }
 
-/**
- * A live conversation with the model. {@link prompt} drives the manual agent
- * loop: stream text, run requested tools through the permission gate, append
- * results, and repeat until the model stops calling tools.
- */
 export class Session {
   private _checkpoint?: CheckpointManager;
   private _retrievalIndex?: RetrievalIndex;
@@ -283,10 +267,7 @@ export class Session {
     const record = deps.store.create({
       cwd: opts.cwd,
       model: deps.config.model,
-      // Default a new session to its working-folder name so the sidebar is
-      // meaningful immediately; the user can rename it afterwards.
       title: opts.title ?? folderName(opts.cwd),
-      // `agent` supersedes the legacy `mode`; keep both for back-compat.
       mode: opts.mode,
       agent: opts.agent ?? opts.mode,
       temperature: opts.temperature,
@@ -320,11 +301,6 @@ export class Session {
       }) as unknown as ModelStreamResult;
   }
 
-  /**
-   * The termcoder/auto reviewer: a grounded second opinion over the working-tree
-   * diff. Returns "DONE" when the change looks correct, or a list of concrete
-   * problems to fix. Best-effort — any failure just approves.
-   */
   private async reviewChanges(): Promise<string> {
     try {
       const diff =
@@ -357,7 +333,6 @@ export class Session {
     text: string,
     opts: {
       signal?: AbortSignal;
-      /** Image attachments (data URLs) to send alongside the text. */
       attachments?: Array<{ dataUrl: string; mediaType: string }>;
     } = {},
   ): AsyncGenerator<SessionEvent, void> {
@@ -368,49 +343,31 @@ export class Session {
     if (this.deps.config.providers.openai?.oauth) {
       await ensureFreshChatGPTConfig(this.deps.config);
     }
-    // Resolve the active agent (built-in or custom). It decides the model,
-    // system prompt, permitted tools and step budget for this turn.
     const agent = resolveAgent(
       { config: this.deps.config, cwd: this.record.cwd, env: this.deps.env },
       this.record.agent ?? this.record.mode,
     );
-    // The agent's tool filter enforces allowlists + permission denies, and
-    // withholds `task` from read-only agents so they can't bypass via a subagent.
     const tools = this.deps.registry.toToolSet(agentToolFilter(agent));
-    // Apply the agent's (possibly glob-scoped) permission overrides for this turn.
     this.deps.permission.setAgentPermission(agent.permission);
 
     const coderBrain = this.record.model.startsWith("termcoder/");
     const studyBrain = this.record.model.startsWith("termexplorer/");
     const brain = coderBrain || studyBrain;
     const persona: Persona | undefined = coderBrain ? "coder" : studyBrain ? "study" : undefined;
-    // Our brains route by task complexity: a fast model for simple asks, the
-    // strongest available for hard/complex ones.
     const routedModel =
       brain && !agent.model
         ? pickAutoModel(this.deps.config, this.deps.env, classifyTaskComplexity(text))
         : undefined;
     let activeRunner = this.deps.runner ?? this.buildRunner(agent, routedModel);
-    // The model a step runs on. On a transient failure we retry it, then fall
-    // back to a configured key, sticking with whatever ends up working.
     let modelToUse = routedModel ?? this.record.model;
     const maxSteps = agent.steps ?? this.record.maxSteps ?? this.deps.maxSteps ?? 25;
     const { signal } = opts;
 
-    // termcoder/auto adds a grounded review pass after it edits files (coding
-    // only). One review-fix cycle per turn.
     const orchestrate = coderBrain && agentCanMutate(agent);
     let reviewsLeft = orchestrate ? 1 : 0;
 
-    // Progressive disclosure: only skill names + descriptions go in the prompt;
-    // the agent loads a full skill body via the `skill` tool when it's relevant.
     const skillMenu = skillsMenu(discoverSkills({ cwd: ctx.cwd, env: this.deps.env }));
-    // A short, always-on grounding block so the agent starts with real knowledge
-    // of the project's shape (the repomap tool gives the full detail on demand).
     const repoSummary = projectSummary(ctx.cwd);
-    // What the agent has remembered about this project and user — injected as an
-    // always-on index plus full bodies within a budget, so even the small free
-    // model starts with the right context.
     const memoryRecall = recallMemories(
       discoverMemories({ cwd: ctx.cwd, env: this.deps.env }),
       this.deps.config.context?.memoryChars ?? 4000,
@@ -428,16 +385,12 @@ export class Session {
       );
     }
 
-    // Derive a human title from the first prompt so the sidebar isn't a wall
-    // of "Untitled session".
     if (this.record.messages.length === 0 && isDefaultTitle(this.record.title)) {
       this.record.title = deriveTitle(text);
     }
 
     const attachments = opts.attachments ?? [];
     if (attachments.length > 0) {
-      // Multimodal message: text plus one image part per attachment. Models
-      // without vision will error, surfaced through friendlyError.
       const content = [
         { type: "text" as const, text },
         ...attachments.map((a) => ({ type: "image" as const, image: a.dataUrl })),
@@ -448,7 +401,6 @@ export class Session {
     }
     this.persist();
 
-    // Snapshot files this turn touches, so it can be reverted as one unit.
     this.checkpoint.begin();
 
     let inputTokens = 0;
@@ -457,9 +409,6 @@ export class Session {
     try {
       for (let step = 0; step < maxSteps; step++) {
         if (signal?.aborted) return;
-        // Try this step's model; on a transient failure (before any text is
-        // shown), retry it, then fall back to a configured key, before giving
-        // up. Retries do not consume the maxSteps budget.
         let attempt: RetryState = {
           model: modelToUse,
           retriesLeft: MODEL_RETRIES,
@@ -478,7 +427,6 @@ export class Session {
               (memoryRecall ? `\n\n${memoryRecall}` : "") +
               (retrievalHints ? `\n\n${retrievalHints}` : "") +
               (skillMenu ? `\n\n${skillMenu}` : ""),
-            // Send a token-frugal view: full record, but older tool outputs elided.
             messages: pruneMessagesForModel(
               this.record.messages,
               this.deps.config.context?.keepRecentToolResults ?? 6,
@@ -507,7 +455,6 @@ export class Session {
           }
           markProvider(healthIdOf(modelToUse), false, streamError);
 
-          // Once text has streamed we can't cleanly retry — surface the error.
           const next = emittedText ? null : nextModelOnError(attempt);
           if (!next) {
             yield { type: "error", error: streamError };
@@ -532,14 +479,11 @@ export class Session {
             inputTokens += usage?.inputTokens ?? 0;
             outputTokens += usage?.outputTokens ?? 0;
           } catch {
-            // usage is best-effort
           }
         }
 
         const finishReason = await result.finishReason;
         if (finishReason !== "tool-calls") {
-          // termcoder/auto: review the diff once before finishing; if the
-          // reviewer flags real problems, feed them back for one fix round.
           if (orchestrate && reviewsLeft > 0 && this.checkpoint.hasPending() && !signal?.aborted) {
             reviewsLeft -= 1;
             yield { type: "text-delta", text: "\n\n🔎 Reviewing changes…\n" };
@@ -609,7 +553,6 @@ export class Session {
       output = "Permission denied by the user.";
       isError = true;
     } else {
-      // Snapshot the target file before a write/edit so the turn can be reverted.
       if (tool.permissionKind === "write" || tool.permissionKind === "edit") {
         const inputPath = (call.input as { path?: unknown }).path;
         if (typeof inputPath === "string") {
@@ -618,14 +561,12 @@ export class Session {
       }
       try {
         output = (await tool.run(call.input, ctx)).output;
-        // Auto-format the edited file if formatters are enabled (best-effort).
         if (tool.permissionKind === "write" || tool.permissionKind === "edit") {
           const editedPath = (call.input as { path?: unknown }).path;
           if (typeof editedPath === "string") {
             try {
               formatFile(this.deps.config, join(ctx.cwd, editedPath), ctx.cwd);
             } catch {
-              /* formatting never blocks or fails an edit */
             }
           }
         }
@@ -635,8 +576,6 @@ export class Session {
       }
     }
 
-    // The UI event carries the full output; the copy stored for the model is
-    // capped so one big read/command can't bloat every later turn.
     yield { type: "tool-result", id: call.toolCallId, name: call.toolName, output, isError };
     const cap = this.deps.config.context?.maxToolOutputChars ?? 8000;
     return {

@@ -22,7 +22,6 @@ interface Range {
   start: Position;
   end: Position;
 }
-/** A subset of the LSP Diagnostic shape that we surface. */
 export interface LspDiagnostic {
   range: Range;
   severity?: number;
@@ -57,12 +56,6 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   ]);
 }
 
-/**
- * A thin LSP client over a JSON-RPC connection. It tracks pushed
- * `publishDiagnostics` per document URI and lets callers open a document and
- * await its diagnostics. Constructed from a {@link MessageConnection} so it can
- * be tested in-process against a fake server.
- */
 export class LspClient {
   private readonly byUri = new Map<string, LspDiagnostic[]>();
   private readonly waiters = new Map<string, (diagnostics: LspDiagnostic[]) => void>();
@@ -92,7 +85,6 @@ export class LspClient {
     await this.conn.sendNotification("initialized", {});
   }
 
-  /** Open (or update) a document and wait for its diagnostics, or time out. */
   async diagnostics(
     uri: string,
     languageId: string,
@@ -133,10 +125,6 @@ export interface LspServerHandle {
   extensions: string[];
 }
 
-/**
- * Routes diagnostics requests to the right language server by file extension and
- * exposes a single read-only `diagnostics` tool to the agent.
- */
 export class LspManager {
   constructor(
     private readonly handles: LspServerHandle[],
@@ -192,10 +180,6 @@ export interface LspConnectResult {
   close: () => Promise<void>;
 }
 
-/**
- * Launch every enabled language server and build the diagnostics tool. A server
- * that fails to start is recorded but never blocks the others or the agent.
- */
 export async function connectLspServers(
   config: Config,
   cwd: string = process.cwd(),
@@ -208,7 +192,6 @@ export async function connectLspServers(
     let child: ChildProcess | undefined;
     try {
       child = spawn(cfg.command, cfg.args, { cwd, stdio: ["pipe", "pipe", "pipe"] });
-      // Surface an immediate spawn failure (e.g. command not found).
       await new Promise<void>((resolve, reject) => {
         const onError = (err: Error) => reject(err);
         child!.once("error", onError);

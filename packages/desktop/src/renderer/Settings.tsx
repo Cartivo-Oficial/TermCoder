@@ -270,7 +270,6 @@ export function Settings(p: Props) {
   const [cfg, setCfg] = useState<LiveConfig | null>(null);
   const [keyDrafts, setKeyDrafts] = useState<Record<string, string>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
-  // The "Connect <provider>" modal (OpenCode-style login-method picker).
   const [connectFor, setConnectFor] = useState<string | null>(null);
   const [providerAuth, setProviderAuth] = useState<ProviderAuthInfo[]>([]);
   const [probeState, setProbeState] = useState<Record<string, { busy?: boolean; ok?: boolean; error?: string }>>({});
@@ -452,7 +451,6 @@ export function Settings(p: Props) {
         body: JSON.stringify(partial),
       });
     } catch {
-      /* ignore */
     }
     loadConfig();
     p.refreshStatus();
@@ -464,7 +462,6 @@ export function Settings(p: Props) {
     void patchConfig({ keybinds: { [id]: combo } });
   }
 
-  // While recording a shortcut, capture the next non-modifier keypress.
   useEffect(() => {
     if (!recording) return;
     const onKey = (e: KeyboardEvent) => {
@@ -523,7 +520,6 @@ export function Settings(p: Props) {
       );
       setSessionCount(list.length - old.length);
     } catch {
-      /* ignore */
     }
   }
 
@@ -541,7 +537,6 @@ export function Settings(p: Props) {
         body: JSON.stringify(payload),
       });
     } catch {
-      /* ignore */
     }
     setMcpName("");
     setMcpCommand("");
@@ -552,7 +547,6 @@ export function Settings(p: Props) {
     try {
       await fetch(`${httpBase}/mcp/${encodeURIComponent(name)}/toggle`, { method: "POST" });
     } catch {
-      /* ignore */
     }
     loadConfig();
   }
@@ -560,7 +554,6 @@ export function Settings(p: Props) {
     try {
       await fetch(`${httpBase}/mcp/${encodeURIComponent(name)}`, { method: "DELETE" });
     } catch {
-      /* ignore */
     }
     loadConfig();
   }

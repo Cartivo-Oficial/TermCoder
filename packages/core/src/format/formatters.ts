@@ -9,7 +9,6 @@ interface Formatter {
   environment?: Record<string, string>;
 }
 
-/** Built-in formatters. `$FILE` is replaced with the edited file's path. */
 const BUILTINS: Formatter[] = [
   {
     name: "prettier",
@@ -23,7 +22,6 @@ const BUILTINS: Formatter[] = [
   { name: "clang-format", command: ["clang-format", "-i", "$FILE"], extensions: [".c", ".cc", ".cpp", ".cxx", ".h", ".hpp"] },
 ];
 
-/** Which formatters apply to a file extension, given the config. */
 export function formattersFor(config: Config, ext: string): Formatter[] {
   const f = config.formatter;
   if (f === false || f === undefined) return [];
@@ -37,7 +35,6 @@ export function formattersFor(config: Config, ext: string): Formatter[] {
       result.push({ name: b.name, command: o?.command ?? b.command, extensions, environment: o?.environment });
     }
   }
-  // Custom formatters (a config key that isn't a built-in).
   for (const [name, o] of Object.entries(overrides)) {
     if (BUILTINS.some((b) => b.name === name) || o?.disabled) continue;
     if (o.command && o.extensions && o.extensions.includes(ext)) {
@@ -47,11 +44,6 @@ export function formattersFor(config: Config, ext: string): Formatter[] {
   return result;
 }
 
-/**
- * Run the matching formatters on a file. Best-effort: a missing formatter
- * binary is silently skipped (it never fails the edit). Returns the names that
- * actually ran.
- */
 export function formatFile(config: Config, absPath: string, cwd: string): string[] {
   const ext = extname(absPath).toLowerCase();
   const ran: string[] = [];

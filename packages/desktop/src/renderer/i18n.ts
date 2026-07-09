@@ -1,8 +1,5 @@
 import { useSyncExternalStore } from "react";
 
-/* A tiny, dependency-free i18n layer. Strings are looked up by key for the
-   active language, falling back to English and then to the key itself, so a
-   missing translation degrades gracefully rather than blanking the UI. */
 
 export type Lang =
   | "en"
@@ -962,8 +959,6 @@ const es: Dict = {
   "dash.noUsage": "Aún sin uso de tokens",
 };
 
-// High-traffic subset for the remaining languages; everything else falls back
-// to English so the UI is fully usable while translations grow over time.
 const fr: Dict = {
   "search.placeholder": "Rechercher {project}",
   "nav.newSession": "Nouvelle session",
@@ -1268,7 +1263,6 @@ export function t(key: string, vars?: Record<string, string | number>): string {
   return s;
 }
 
-/** Subscribe a component to language changes; returns the active lang + helpers. */
 export function useI18n(): { lang: Lang; setLang: (l: Lang) => void; t: typeof t } {
   const lang = useSyncExternalStore(
     (cb) => {

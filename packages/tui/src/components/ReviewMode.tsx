@@ -13,7 +13,6 @@ interface ReviewModeProps {
 
 const GRADES = "0 = blackout · 1–2 = wrong · 3 = hard · 4 = good · 5 = easy";
 
-/** A focused flashcard review: show the front, reveal the back, grade 0–5. */
 export function ReviewMode({ theme, deck, cards, onGrade, onExit }: ReviewModeProps) {
   const [i, setI] = useState(0);
   const [revealed, setRevealed] = useState(false);

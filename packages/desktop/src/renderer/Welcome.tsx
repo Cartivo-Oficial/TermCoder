@@ -3,11 +3,6 @@ import { useI18n } from "./i18n";
 
 const GLYPHS = ["·", "+", "✦", "*"];
 
-/**
- * First-run mode picker. Lets a newcomer choose the coding agent (termcoder) or
- * the study assistant (termexplorer) so students aren't dropped into a
- * code-centric UI they don't need.
- */
 export function Welcome({ onChoose }: { onChoose: (mode: "code" | "study") => void }) {
   const { t } = useI18n();
   const stars = useMemo(

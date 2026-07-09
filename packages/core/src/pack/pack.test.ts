@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { installPack, publishPack, readPack } from "./pack";
 import type { Gist, GitHubClient } from "../github/github";
 
-/** An in-memory gist backend covering the calls pack publish/install make. */
 function fakeClient() {
   const store: Record<string, Record<string, string>> = {};
   let n = 0;

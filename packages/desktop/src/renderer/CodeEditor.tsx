@@ -26,7 +26,6 @@ function langFor(name: string): Extension {
   return [];
 }
 
-/** A CodeMirror 6 editor. Recreated when the file (name) changes. */
 export function CodeEditor({
   name,
   value,
@@ -92,7 +91,6 @@ export function CodeEditor({
     });
     view.focus();
     return () => view.destroy();
-    // Recreate when switching files or theme; live edits are pushed via onChange.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name, theme]);
 

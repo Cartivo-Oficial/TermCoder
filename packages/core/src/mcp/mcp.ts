@@ -5,13 +5,9 @@ import { jsonSchema } from "ai";
 import type { Config, McpServerConfig } from "../config/config";
 import type { TermTool } from "../tools/types";
 
-/** Result of connecting all configured MCP servers. */
 export interface McpConnectResult {
-  /** Tools from every server that connected, ready to add to a ToolRegistry. */
   tools: TermTool[];
-  /** Per-server connection status (for surfacing in the UI). */
   servers: Array<{ name: string; ok: boolean; toolCount: number; error?: string }>;
-  /** Disconnect all clients. */
   close: () => Promise<void>;
 }
 
@@ -22,7 +18,6 @@ interface RemoteTool {
   annotations?: { readOnlyHint?: boolean };
 }
 
-/** A minimal view of the SDK client — keeps this module easy to test/mock. */
 export interface McpClientLike {
   listTools(): Promise<{ tools: RemoteTool[] }>;
   callTool(params: { name: string; arguments?: Record<string, unknown> }): Promise<{
@@ -44,14 +39,6 @@ function previewArgs(args: unknown): string | undefined {
   return json.length > 200 ? `${json.slice(0, 197)}…` : json;
 }
 
-/**
- * Wrap one connected MCP client's tools as {@link TermTool}s. Names are
- * namespaced by server (`<server>_<tool>`); tools the server marks read-only
- * skip the permission gate, others are gated under the "mcp" permission kind.
- *
- * Factored out from {@link connectMcpServers} so the wrapping logic can be
- * tested in-process against an in-memory MCP server.
- */
 export async function wrapClientTools(
   serverName: string,
   client: McpClientLike,
@@ -93,11 +80,6 @@ function makeTransport(cfg: McpServerConfig) {
   return new StreamableHTTPClientTransport(new URL(cfg.url));
 }
 
-/**
- * Connect every enabled MCP server from config and collect their tools. A
- * server that fails to connect is recorded in `servers` with its error but does
- * not prevent the others (or the agent) from starting.
- */
 export async function connectMcpServers(config: Config): Promise<McpConnectResult> {
   const entries = Object.entries(config.mcp).filter(([, cfg]) => cfg.enabled);
   const clients: Client[] = [];

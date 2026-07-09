@@ -1,5 +1,3 @@
-// A compact block-letter wordmark + a deterministic starfield, for the
-// welcome splash. Kept dependency-free and small so it renders instantly.
 
 const GLYPHS: Record<string, string[]> = {
   T: ["█████", "  █  ", "  █  ", "  █  ", "  █  "],
@@ -15,7 +13,6 @@ const GLYPHS: Record<string, string[]> = {
 };
 const BLANK = ["     ", "     ", "     ", "     ", "     "];
 
-/** Render a word as 5 rows of block characters. Unknown chars become blanks. */
 export function wordLines(word: string): string[] {
   const rows = ["", "", "", "", ""];
   for (const ch of word.toUpperCase()) {
@@ -25,10 +22,6 @@ export function wordLines(word: string): string[] {
   return rows.map((r) => r.replace(/\s+$/, ""));
 }
 
-/**
- * A sparse, deterministic starfield of `rows` lines, `width` wide. Same seed →
- * same field, so it's stable across renders (and testable).
- */
 export function starfield(width: number, rows: number, seed = 1): string[] {
   let s = seed >>> 0 || 1;
   const rand = () => {
@@ -47,14 +40,12 @@ export function starfield(width: number, rows: number, seed = 1): string[] {
   return out;
 }
 
-/** A star at a fixed position with a twinkle phase offset. */
 export interface Star {
   r: number;
   c: number;
   phase: number;
 }
 
-/** Scatter `count` stars over a `width`×`rows` grid, deterministically. */
 export function makeStars(width: number, rows: number, count: number, seed = 1): Star[] {
   let s = seed >>> 0 || 1;
   const rand = () => {
@@ -72,11 +63,8 @@ export function makeStars(width: number, rows: number, count: number, seed = 1):
   return stars;
 }
 
-// Intensity cycle — stars stay in place but pulse dim→bright→dim as the frame
-// advances, giving a gentle twinkle.
 const TWINKLE = ["·", "·", "+", "✦", "*", "✦", "+", "·"];
 
-/** Render stars into `rows` lines for a given animation frame. */
 export function renderStars(stars: Star[], width: number, rows: number, frame: number): string[] {
   const grid: string[][] = Array.from({ length: rows }, () => new Array<string>(width).fill(" "));
   for (const st of stars) {

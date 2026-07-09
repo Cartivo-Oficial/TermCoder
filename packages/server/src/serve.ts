@@ -13,7 +13,6 @@ import { createServer } from "./server";
 
 const port = Number(process.env.PORT ?? 4096);
 
-/** Find a built web UI to serve (env override, a sibling desktop build, or ./web). */
 function findWebDir(): string | undefined {
   const here = dirname(fileURLToPath(import.meta.url));
   const candidates = [

@@ -11,7 +11,6 @@ export interface SessionCardData {
 }
 
 const baseName = (p: string) => p.split(/[\\/]/).filter(Boolean).pop() ?? "project";
-/** Display label: fall back to the folder name for legacy "Untitled session". */
 const sessionLabel = (s: { title: string; cwd: string }): string =>
   !s.title || s.title === "Untitled session" ? baseName(s.cwd) : s.title;
 const shortPath = (p: string) => {

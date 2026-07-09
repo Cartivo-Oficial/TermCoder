@@ -30,7 +30,6 @@ const KEYWORDS = new Set([
 const LITERALS = new Set(["true", "false", "null", "nil", "none", "undefined", "self", "this", "super"]);
 const OPERATORS = "=+-*/%<>!&|^~?:;,.(){}[]";
 
-/** Split one line of code into typed tokens (language-agnostic, best effort). */
 function tokenize(line: string): Array<{ type: TokenType; text: string }> {
   const tokens: Array<{ type: TokenType; text: string }> = [];
   const n = line.length;
@@ -93,7 +92,6 @@ function tokenize(line: string): Array<{ type: TokenType; text: string }> {
   return tokens;
 }
 
-/** Render a line of code as colored Ink spans. */
 export function highlightCode(line: string, theme: Theme): ReactNode[] {
   return tokenize(line).map((token, k) => {
     const color =

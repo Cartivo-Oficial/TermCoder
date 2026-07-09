@@ -5,13 +5,6 @@ import { GitHubClient, parseGistId } from "../github/github";
 import { installPack } from "../pack/pack";
 import { configFile } from "../util/paths";
 
-/**
- * Classrooms, GitHub-native and async — no realtime backend. A class is a single
- * (secret) gist owned by its creator, holding a `classroom.json` manifest with
- * the shared packs (agents/skills/commands) and assignments. Only the creator
- * edits the manifest; students join, submit, and appear on the roster through
- * gist **comments**, which anyone in the class can post and read.
- */
 
 const MANIFEST = "classroom.json";
 const DESC_PREFIX = "termcoder-classroom: ";
@@ -31,7 +24,6 @@ export interface Classroom {
   assignments: Assignment[];
 }
 
-/** A class remembered on this machine (so `/class` can list them). */
 export interface JoinedClass {
   code: string; // the class gist id
   name: string;
@@ -46,7 +38,6 @@ export interface Submission {
   at: string;
 }
 
-// ---- local store (which classes this machine belongs to) ----
 
 function storeFile(env: NodeJS.ProcessEnv): string {
   return configFile("classrooms.json", env);
@@ -71,9 +62,7 @@ export function rememberClass(c: JoinedClass, env: NodeJS.ProcessEnv = process.e
   writeFileSync(f, JSON.stringify(list, null, 2), "utf8");
 }
 
-// ---- GitHub-backed operations ----
 
-/** Read a class's manifest from its gist. */
 export async function fetchClassroom(code: string, client: GitHubClient): Promise<Classroom> {
   const gist = await client.getGist(parseGistId(code));
   const raw = await client.gistFileContent(gist, MANIFEST);
@@ -81,7 +70,6 @@ export async function fetchClassroom(code: string, client: GitHubClient): Promis
   return JSON.parse(raw) as Classroom;
 }
 
-/** Create a class; returns the code (gist id) to share with students. */
 export async function createClassroom(
   name: string,
   client: GitHubClient,
@@ -103,7 +91,6 @@ export async function createClassroom(
   return joined;
 }
 
-/** Join a class: install its shared packs, remember it, and sign the roster. */
 export async function joinClassroom(
   code: string,
   client: GitHubClient,
@@ -117,19 +104,16 @@ export async function joinClassroom(
       const r = await installPack(pack, client, { target: "project", cwd: opts.cwd, env: opts.env });
       installed.push(...r.written);
     } catch {
-      // a broken pack shouldn't block joining
     }
   }
   rememberClass({ code: id, name: classroom.name, role: "student" }, opts.env);
   try {
     await client.createGistComment(id, `[joined] ${(await client.whoami()).login}`);
   } catch {
-    // roster is best-effort
   }
   return { classroom, installed };
 }
 
-/** Post a new assignment (creator only — students can't edit the manifest). */
 export async function addAssignment(
   code: string,
   a: { title: string; description?: string; due?: string },
@@ -149,7 +133,6 @@ export async function addAssignment(
   return assignment;
 }
 
-/** Submit work for an assignment: a link (usually a shared-session viewer URL) + note. */
 export async function submitAssignment(
   code: string,
   opts: { assignmentId: string; link: string; note?: string },
@@ -162,7 +145,6 @@ export async function submitAssignment(
   await client.createGistComment(id, body);
 }
 
-/** All submissions posted to a class (optionally filtered to one assignment). */
 export async function listSubmissions(
   code: string,
   client: GitHubClient,
@@ -179,7 +161,6 @@ export async function listSubmissions(
   return out;
 }
 
-/** Who has joined a class (from the roster comments). */
 export async function listRoster(code: string, client: GitHubClient): Promise<Array<{ user: string; at: string }>> {
   const comments = await client.listGistComments(parseGistId(code));
   return comments

@@ -14,10 +14,8 @@ export interface ModelEntry {
   local?: boolean;
 }
 
-// Providers termcoder can resolve today; models.dev has many more we skip.
 const SUPPORTED = new Set(["anthropic", "openai", "google"]);
 
-/** Always-available curated set so the browser works offline. */
 const FALLBACK: ModelEntry[] = [
   { id: "termcoder/auto", provider: "termcoder", model: "auto", name: "termcoder Auto — best available (recommended)", vision: true, free: true },
   { id: "termexplorer/auto", provider: "termexplorer", model: "auto", name: "termexplorer — study & schoolwork tutor", vision: true, free: true },
@@ -85,7 +83,6 @@ async function loadModelsDev(env: NodeJS.ProcessEnv): Promise<ModelEntry[]> {
       if (Date.now() - (cached.t ?? 0) < 24 * 3600 * 1000 && Array.isArray(cached.models)) return cached.models;
     }
   } catch {
-    /* ignore a corrupt cache */
   }
   const models = transformModelsDev(await fetchJson("https://models.dev/api.json", 6000));
   if (models.length) {
@@ -93,7 +90,6 @@ async function loadModelsDev(env: NodeJS.ProcessEnv): Promise<ModelEntry[]> {
       mkdirSync(configDir(env), { recursive: true });
       writeFileSync(cacheFile, JSON.stringify({ t: Date.now(), models }), "utf8");
     } catch {
-      /* cache write is best-effort */
     }
   }
   return models;
@@ -117,11 +113,6 @@ async function loadOllama(baseURL: string): Promise<ModelEntry[]> {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-/**
- * The merged model catalog: curated fallback ∪ Models.dev (cached, filtered to
- * supported providers) ∪ the user's locally-installed Ollama models. Later
- * sources refine earlier ones by id.
- */
 export async function getModelCatalog(opts: {
   config: Config;
   env?: NodeJS.ProcessEnv;

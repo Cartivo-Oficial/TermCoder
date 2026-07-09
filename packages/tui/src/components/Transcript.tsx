@@ -11,7 +11,6 @@ interface TranscriptProps {
 
 const STATUS_ICON = { running: "•", done: "✓", error: "✗" } as const;
 
-/** Renders the conversation: user/assistant turns, tool calls, notices, errors. */
 export function Transcript({ theme, items }: TranscriptProps) {
   return (
     <Box flexDirection="column">
@@ -22,7 +21,6 @@ export function Transcript({ theme, items }: TranscriptProps) {
   );
 }
 
-/** Render a single transcript entry. Exported for use inside Ink's <Static>. */
 export function TranscriptItem({ theme, item }: { theme: Theme; item: ViewItem }) {
   switch (item.kind) {
     case "user":
@@ -102,10 +100,6 @@ function indent(text: string): string {
 
 const COLLAPSE_AT = 6;
 
-/**
- * Tool output, collapsed when long: a `▸ N lines` header plus the first few
- * lines, dimmed. Short output is shown in full. Keeps the transcript scannable.
- */
 function ToolOutput({ theme, output }: { theme: Theme; output: string }) {
   const lines = output.replace(/\s+$/, "").split("\n");
   if (lines.length <= COLLAPSE_AT) {

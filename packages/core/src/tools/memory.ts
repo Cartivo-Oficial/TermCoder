@@ -2,11 +2,6 @@ import { z } from "zod";
 import { defineTool } from "./types";
 import { discoverMemories, saveMemory, deleteMemory, memoryIndex } from "../memory/memory";
 
-/**
- * Read and write the agent's memory. The recall block (index + budgeted bodies)
- * is injected into the system prompt; this tool loads a full item on demand and
- * lets the agent save a durable, high-value fact it just learned.
- */
 export const memoryTool = defineTool({
   name: "memory",
   description:
@@ -37,7 +32,6 @@ export const memoryTool = defineTool({
       const removed = deleteMemory({ name: args.name ?? "", cwd });
       return { output: removed ? `Deleted memory "${args.name}".` : `No memory named "${args.name ?? ""}".` };
     }
-    // save
     if (!args.name || !args.body) return { output: "To save a memory, provide name and body." };
     try {
       const m = saveMemory({

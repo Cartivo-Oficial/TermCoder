@@ -19,11 +19,8 @@ const ENV_KEY: Record<string, string> = {
   google: "GOOGLE_GENERATIVE_AI_API_KEY",
 };
 
-/** Providers that never need an API key (local, or a free keyless service). */
 export const KEYLESS_PROVIDERS = new Set(["ollama", "pollinations", "termcoderfree"]);
 
-/** The free, keyless model everyone can use out of the box — no setup. Branded
- * as "termcoderfree"; it resolves to the keyless service under the hood. */
 export const FREE_MODEL = "termcoderfree/auto";
 
 function providerHasKey(config: Config, env: NodeJS.ProcessEnv, provider: string): boolean {
@@ -34,7 +31,6 @@ function providerHasKey(config: Config, env: NodeJS.ProcessEnv, provider: string
   return Boolean(keyFromEnv(provider, env));
 }
 
-/** How hard a task looks — drives which model tier the router picks. */
 export type TaskComplexity = "simple" | "complex";
 
 const COMPLEX_RE =
@@ -42,11 +38,6 @@ const COMPLEX_RE =
 
 const CROSS_CUTTING_RE = /\b(across|throughout|entire|codebase|multiple\s+files|every\s+\w+\s+file)\b/i;
 
-/**
- * Classify a request as "simple" (a small, local edit/answer) or "complex"
- * (architecture, debugging, cross-cutting or long tasks). A transparent
- * heuristic — no model call — so routing is instant and predictable.
- */
 export function classifyTaskComplexity(text: string): TaskComplexity {
   const t = text.trim();
   if (t.length > 600) return "complex";
@@ -55,7 +46,6 @@ export function classifyTaskComplexity(text: string): TaskComplexity {
   return "simple";
 }
 
-/** Per-provider fast/strong model tiers used by the complexity router. */
 const TIERS: Record<string, { fast: string; strong: string }> = {
   google: { fast: "google/gemini-2.5-flash", strong: "google/gemini-2.5-pro" },
   anthropic: { fast: "anthropic/claude-haiku-4-5-20251001", strong: "anthropic/claude-sonnet-4-6" },
@@ -64,12 +54,6 @@ const TIERS: Record<string, { fast: string; strong: string }> = {
   pollinations: { fast: FREE_MODEL, strong: FREE_MODEL },
 };
 
-/**
- * The termcoder/auto router: pick the best model the user can actually use,
- * favouring free/local, and matching the model tier to task complexity — a
- * cheap/fast model for simple edits, the strongest available for hard work.
- * Honours an explicit `config.termcoder.route` list first.
- */
 export function pickAutoModel(
   config: Config,
   env: NodeJS.ProcessEnv = process.env,
@@ -78,12 +62,8 @@ export function pickAutoModel(
   const route = config.termcoder?.route;
   if (Array.isArray(route) && route.length) {
     const ids = route.filter((id): id is string => typeof id === "string" && id.includes("/"));
-    // With two+ entries, treat [fast, strong, …]; pick by complexity.
     if (ids.length) return complexity === "complex" ? (ids[1] ?? ids[0]!) : ids[0]!;
   }
-  // Prefer a real key if the user set one (better quality + higher limits).
-  // Then a local Ollama if they opted into it. Otherwise the free, keyless
-  // service — so termcoder works with zero setup and never hits "no model".
   const hasApiKey = (p: string) => Boolean(config.providers[p]?.apiKey) || Boolean(env[ENV_KEY[p] ?? ""]) || (p === "google" && Boolean(env.GEMINI_API_KEY));
   const usable = (p: string) => hasApiKey(p) && !providerMarkedBad(p);
   const provider =
@@ -111,16 +91,6 @@ function keyFromEnv(provider: string, env: NodeJS.ProcessEnv): string | undefine
   return undefined;
 }
 
-/**
- * Resolve a provider-qualified model id (e.g. "anthropic/claude-sonnet-4-6") to
- * a Vercel AI SDK language model. Supports paid providers (anthropic, openai),
- * free options (google's Gemini free tier, local ollama), and any
- * OpenAI-compatible endpoint via a per-provider `baseURL`.
- *
- * API keys come from `config.providers[provider].apiKey` first, then the
- * provider's conventional environment variable.
- */
-/** Our virtual "brain" models (termcoder = coding, termexplorer = study). */
 export function isVirtualModel(modelId: string): boolean {
   return modelId.startsWith("termcoder/") || modelId.startsWith("termexplorer/");
 }
@@ -129,13 +99,9 @@ export function resolveModel(
   modelId: string,
   { config, env = process.env }: ResolveModelOptions,
 ): LanguageModel {
-  // "termcoderfree" is our branding for the free, keyless service — always
-  // resolve it there, regardless of any keys the user has.
   if (modelId.startsWith("termcoderfree/")) {
     return resolveModel("pollinations/openai", { config, env });
   }
-  // Our virtual brains ("termcoder/auto", "termexplorer/auto") route to a
-  // concrete provider model; the persona is decided by the session, not here.
   if (isVirtualModel(modelId)) {
     return resolveModel(pickAutoModel(config, env), { config, env });
   }
@@ -182,17 +148,12 @@ export function resolveModel(
       })(model);
 
     case "ollama":
-      // Local, free, no key. Ollama exposes an OpenAI-compatible API. Use the
-      // Chat Completions API (.chat) — these servers don't implement the newer
-      // Responses API the SDK would otherwise default to.
       return createOpenAI({
         baseURL: cfg.baseURL ?? "http://localhost:11434/v1",
         apiKey: cfg.apiKey ?? "ollama",
       }).chat(model);
 
     case "pollinations":
-      // Free, keyless, community-hosted OpenAI-compatible service. This is the
-      // zero-setup default so anyone can use termcoder without an API key.
       return createOpenAI({
         baseURL: cfg.baseURL ?? "https://text.pollinations.ai/openai",
         apiKey: cfg.apiKey ?? "free",
@@ -236,16 +197,10 @@ export async function probeProvider(id: string, opts: ProbeOptions): Promise<{ o
 }
 
 export interface SuggestOptions extends ResolveModelOptions {
-  /** The recent exchange to base the suggestion on. */
   context: string;
   model?: string;
 }
 
-/**
- * Suggest the single most useful next request the user might make, based on the
- * latest exchange. On-demand (one cheap call) so it never runs unless asked.
- * Best-effort — returns "" on any failure.
- */
 export async function suggestFollowup(opts: SuggestOptions): Promise<string> {
   try {
     const model = resolveModel(opts.model ?? pickAutoModel(opts.config, opts.env), opts);
@@ -264,23 +219,13 @@ export async function suggestFollowup(opts: SuggestOptions): Promise<string> {
 }
 
 export interface TranscribeOptions extends ResolveModelOptions {
-  /** Raw audio bytes (WAV/PCM recommended for broad provider support). */
   audio: Uint8Array;
-  /** MIME type of the audio, e.g. "audio/wav". */
   mediaType: string;
-  /** Override the model used for transcription; defaults to config.model. */
   model?: string;
 }
 
-/**
- * Transcribe a short audio clip using the configured chat model's multimodal
- * input (e.g. Gemini). This avoids a paid speech API — it reuses whatever
- * provider key the user already has. The model must accept audio input.
- */
 export interface CompleteCodeOptions extends ResolveModelOptions {
-  /** Text before the cursor. */
   prefix: string;
-  /** Text after the cursor. */
   suffix: string;
   language?: string;
   model?: string;
@@ -288,16 +233,11 @@ export interface CompleteCodeOptions extends ResolveModelOptions {
 
 function cleanCompletion(text: string): string {
   let t = text.replace(/^```[a-zA-Z0-9]*\n?/, "").replace(/```\s*$/, "").trimEnd();
-  // Cap runaway completions.
   const lines = t.split("\n");
   if (lines.length > 12) t = lines.slice(0, 12).join("\n");
   return t.length > 600 ? t.slice(0, 600) : t;
 }
 
-/**
- * Ghost-text code completion for the editor: given the code around the cursor,
- * return only the snippet to insert. Best-effort — errors yield an empty string.
- */
 export async function completeCode(opts: CompleteCodeOptions): Promise<string> {
   const model = resolveModel(opts.model ?? opts.config.model, opts);
   const { text } = await generateText({

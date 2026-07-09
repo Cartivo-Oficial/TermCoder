@@ -9,14 +9,12 @@ import {
   type ViewUpdate,
 } from "@codemirror/view";
 
-/** The pending ghost suggestion: text to insert at `pos`. */
 const setSuggestion = StateEffect.define<{ text: string; pos: number } | null>();
 
 const suggestionField = StateField.define<{ text: string; pos: number } | null>({
   create: () => null,
   update(value, tr) {
     for (const e of tr.effects) if (e.is(setSuggestion)) return e.value;
-    // Any edit or cursor move invalidates a stale suggestion.
     if (tr.docChanged || tr.selection) return null;
     return value;
   },
@@ -55,10 +53,6 @@ function acceptSuggestion(view: EditorView): boolean {
   return true;
 }
 
-/**
- * Copilot-style inline completion. Debounced fetch on edits; Tab accepts the
- * ghost text, Escape dismisses it. `enabled.current` gates it at runtime.
- */
 export function inlineCompletion(
   fetchCompletion: (prefix: string, suffix: string) => Promise<string>,
   enabled: { current: boolean },

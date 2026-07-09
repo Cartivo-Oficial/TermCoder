@@ -9,7 +9,6 @@ const IGNORE = ["**/node_modules/**", "**/.git/**", "**/dist/**"];
 const MAX_MATCHES = 200;
 const MAX_FILE_BYTES = 512 * 1024;
 
-/** Heuristic: treat a file as binary if its head contains a NUL byte. */
 function looksBinary(buf: Buffer): boolean {
   const len = Math.min(buf.length, 1024);
   for (let i = 0; i < len; i++) if (buf[i] === 0) return true;

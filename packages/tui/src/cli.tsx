@@ -23,8 +23,6 @@ async function main() {
     return;
   }
 
-  // INIT_CWD is the directory the user ran the command from (pnpm/npm set it);
-  // fall back to process.cwd() for a directly-invoked binary.
   const cwd = process.env.INIT_CWD ?? process.cwd();
   const config = loadConfig({ cwd });
 
@@ -46,7 +44,6 @@ async function main() {
     );
   }
 
-  // Connect MCP/LSP servers and load plugins; fold all their tools into the registry.
   const mcp = await connectMcpServers(config);
   const lsp = await connectLspServers(config, cwd);
   const plugins = await loadPlugins(config.plugins, { config, cwd });

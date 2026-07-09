@@ -1,10 +1,5 @@
 import type { ModelMessage } from "ai";
 
-/**
- * Truncate text to a character budget, keeping the head and tail with a marker
- * in between. Tool outputs (file reads, command logs, search hits) are the main
- * driver of context bloat, and their useful signal is usually at the ends.
- */
 export function capText(text: string, max: number): string {
   if (text.length <= max) return text;
   const head = Math.max(0, Math.floor(max * 0.65));
@@ -26,14 +21,6 @@ function isTextOutput(o: unknown): o is TextOutput {
   );
 }
 
-/**
- * Build a model-facing view of the message history that keeps the full record
- * intact but elides the bodies of older tool results. The most recent
- * `keepRecent` tool results are sent verbatim (they're what the model is
- * actively working with); everything older becomes a one-line stub. This stops
- * a long session from re-billing every past file read and command dump on every
- * turn — the single biggest token sink in an agent loop.
- */
 export function pruneMessagesForModel(
   messages: ModelMessage[],
   keepRecent: number,

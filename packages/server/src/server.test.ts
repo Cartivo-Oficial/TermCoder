@@ -96,7 +96,6 @@ describe("server", () => {
   });
 
   it("GitHub-backed routes report a missing token instead of crashing", async () => {
-    // No token configured (env: {}), so each should 401 with a clear message.
     const who = await fetch(`${base()}/github`);
     expect(who.status).toBe(401);
     expect(((await who.json()) as { error: string }).error).toMatch(/token/i);
@@ -227,10 +226,8 @@ describe("server", () => {
       const root = await fetch(`http://localhost:${p}/`);
       expect(root.status).toBe(200);
       expect(await root.text()).toContain("id=root");
-      // An extension-less route falls back to index.html (SPA); a missing asset 404s.
       expect((await fetch(`http://localhost:${p}/some/route`)).status).toBe(200);
       expect((await fetch(`http://localhost:${p}/missing.js`)).status).toBe(404);
-      // API routes still win over static.
       expect((await fetch(`http://localhost:${p}/study`)).status).toBe(200);
     } finally {
       await new Promise<void>((r) => s.close(() => r()));

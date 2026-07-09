@@ -16,9 +16,7 @@ interface ComposerProps {
   status?: string;
   elapsed?: number;
   onHistory?: (dir: "up" | "down") => void;
-  /** Command dropdown (typing "/…"). */
   commandMenu?: TuiCommand[];
-  /** File dropdown (typing "@…"). */
   mentionMenu?: string[];
   menuSelected?: number;
   menuControl?: MenuControl;
@@ -27,7 +25,6 @@ interface ComposerProps {
   cwd: string;
 }
 
-/** The input area: dropdowns, the multi-line prompt (or busy line), mode + hints. */
 export function Composer(props: ComposerProps) {
   const { theme, value, onChange, onSubmit, busy, disabled, status, elapsed } = props;
   const showCommands = !busy && (props.commandMenu?.length ?? 0) > 0;
@@ -101,7 +98,6 @@ export function Composer(props: ComposerProps) {
   );
 }
 
-/** A dim "key label" pair for the hint bar (e.g. `/ commands`). */
 function HintKey({ theme, k, label }: { theme: Theme; k: string; label: string }) {
   return (
     <Text>

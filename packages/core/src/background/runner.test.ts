@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { runAutonomous, runVerify, type AutonomousEvent, type AutonomousSession } from "./runner";
 
-/** A fake session that just streams a short reply; records each instruction. */
 function fakeSession(prompts: string[] = []): AutonomousSession {
   return {
     record: { cwd: process.cwd() },
@@ -43,7 +42,6 @@ describe("runAutonomous", () => {
       runAutonomous({ session: fakeSession(prompts), goal: "make tests pass", verifyCommand: "exit 1", maxRounds: 3 }),
     );
     expect(prompts).toHaveLength(3);
-    // Rounds after the first are driven by the failure feedback.
     expect(prompts[1]).toContain("failed");
     expect(events.at(-1)).toMatchObject({ type: "finished", status: "maxed", rounds: 3 });
   });

@@ -1,13 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-/**
- * A dependency-free code index: scans source files and extracts top-level
- * definitions (functions, classes, types, …) with their locations. This gives
- * the agent real "where is X defined / what's the API here" retrieval that ranks
- * by relevance, instead of guessing grep patterns. No AST, no embeddings — fast
- * regex over a bounded set of files, so it costs nothing.
- */
 export interface SymbolEntry {
   name: string;
   kind: string;
@@ -30,7 +23,6 @@ interface Pattern {
   kind: string;
 }
 
-// Language-agnostic-ish definition patterns, matched per line.
 const PATTERNS: Pattern[] = [
   { re: /^\s*(?:export\s+)?(?:default\s+)?(?:async\s+)?function\s+([A-Za-z0-9_]+)/, kind: "function" },
   { re: /^\s*(?:export\s+)?(?:abstract\s+)?class\s+([A-Za-z0-9_]+)/, kind: "class" },
@@ -47,7 +39,6 @@ function extentionOf(name: string): string {
   return dot === -1 ? "" : name.slice(dot + 1).toLowerCase();
 }
 
-/** Build the symbol index for a workspace (bounded for large repos). */
 export function buildSymbolIndex(cwd: string, fileCap = 2500): SymbolEntry[] {
   const symbols: SymbolEntry[] = [];
   let files = 0;
@@ -97,10 +88,6 @@ function indexFile(abs: string, rel: string, out: SymbolEntry[]): void {
   }
 }
 
-/**
- * Rank symbols for a query: exact name > prefix > substring > subsequence.
- * Case-insensitive. Returns the best `limit` matches.
- */
 export function findSymbols(index: SymbolEntry[], query: string, limit = 25): SymbolEntry[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];

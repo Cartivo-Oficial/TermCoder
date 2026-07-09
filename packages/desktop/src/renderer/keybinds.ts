@@ -1,11 +1,6 @@
-// Configurable keyboard shortcuts. Each action has a stable id and a default
-// combo; the user can override any of them (persisted in config.keybinds). A
-// combo is a "+"-joined string of modifiers and one key, e.g. "mod+k",
-// "mod+shift+n". "mod" means Ctrl on Windows/Linux and ⌘ on macOS.
 
 export interface KeybindAction {
   id: string;
-  /** i18n key for the human label. */
   labelKey: string;
   default: string;
 }
@@ -23,7 +18,6 @@ const IS_MAC =
 
 const MODIFIER_KEYS = new Set(["control", "shift", "alt", "meta", "os", "altgraph"]);
 
-/** Resolve the effective combo for an action, honouring user overrides. */
 export function comboFor(
   keybinds: Record<string, string> | undefined,
   action: KeybindAction,
@@ -39,7 +33,6 @@ function normalizeKey(key: string): string {
   return k;
 }
 
-/** Whether a keyboard event matches a combo string. */
 export function matchCombo(e: KeyboardEvent, combo: string): boolean {
   const tokens = combo.toLowerCase().split("+").map((t) => t.trim()).filter(Boolean);
   const needMod = tokens.includes("mod");
@@ -63,10 +56,6 @@ export function matchCombo(e: KeyboardEvent, combo: string): boolean {
   return true;
 }
 
-/**
- * Build a canonical combo string from a keydown event, for the recorder UI.
- * Returns "" for a bare modifier press (so the user can hold then pick a key).
- */
 export function comboFromEvent(e: KeyboardEvent): string {
   if (MODIFIER_KEYS.has(e.key.toLowerCase())) return "";
   const parts: string[] = [];
@@ -77,7 +66,6 @@ export function comboFromEvent(e: KeyboardEvent): string {
   return parts.join("+");
 }
 
-/** Human-readable rendering of a combo, e.g. "Ctrl + K" (or "⌘ + K" on macOS). */
 export function formatCombo(combo: string): string {
   return combo
     .split("+")

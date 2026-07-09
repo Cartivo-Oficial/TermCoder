@@ -45,7 +45,6 @@ describe("PermissionManager", () => {
 
     expect(await pm.check(req("write"))).toBe(true);
     expect(await pm.check(req("write"))).toBe(true);
-    // Asked only once; the second call used the remembered decision.
     expect(asker).toHaveBeenCalledOnce();
   });
 });
@@ -66,7 +65,6 @@ describe("resolvePermissionMode (glob rules)", () => {
 
   it("respects single-segment vs deep wildcards", () => {
     expect(resolvePermissionMode({ "src/*": "allow" }, "src/a.ts")).toBe("allow");
-    // `src/*` should not cross a directory separator.
     expect(resolvePermissionMode({ "src/*": "allow" }, "src/nested/a.ts")).toBe("ask");
     expect(resolvePermissionMode({ "src/**": "allow" }, "src/nested/a.ts")).toBe("allow");
   });
@@ -96,7 +94,6 @@ describe("PermissionManager with glob rules", () => {
     const pm = new PermissionManager({ ...baseConfig, write: "allow" }, asker);
     pm.setAgentPermission({ write: "deny" });
     expect(await pm.check(req("write", "src/app.ts"))).toBe(false);
-    // Clearing the override restores the config default.
     pm.setAgentPermission(undefined);
     expect(await pm.check(req("write", "src/app.ts"))).toBe(true);
     expect(asker).not.toHaveBeenCalled();

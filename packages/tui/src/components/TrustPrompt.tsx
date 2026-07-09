@@ -9,12 +9,6 @@ interface TrustPromptProps {
 
 const BRAND = "#ff7a45";
 
-/**
- * A first-use safety gate (like Claude Code's "do you trust this folder?"),
- * shown on its own BEFORE the main interface. The agent can read files and run
- * commands, so we confirm before working in a new directory. `y` trusts and
- * remembers it; `n`/esc quits.
- */
 export function TrustPrompt({ theme, cwd, onDecision }: TrustPromptProps) {
   useInput((input, key) => {
     if (input === "y" || input === "Y") onDecision(true);

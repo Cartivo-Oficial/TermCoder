@@ -3,12 +3,9 @@ import type { SessionRecord } from "../storage/storage";
 import { SessionStore } from "../storage/storage";
 import { GitHubClient, parseGistId } from "../github/github";
 
-/** A flattened, render-ready piece of the conversation. */
 export interface TranscriptSegment {
   role: "user" | "assistant" | "tool";
-  /** Tool name for tool-call/tool-result segments. */
   label?: string;
-  /** True when `text` should be shown verbatim in a monospace block. */
   code?: boolean;
   text: string;
 }
@@ -27,7 +24,6 @@ function outputToText(output: unknown): string {
   return JSON.stringify(output, null, 2);
 }
 
-/** Flatten a session's messages into ordered, render-ready segments. */
 export function transcriptSegments(record: SessionRecord): TranscriptSegment[] {
   const segments: TranscriptSegment[] = [];
   for (const message of record.messages as Array<{ role: string; content: unknown }>) {
@@ -76,7 +72,6 @@ function escapeHtml(text: string): string {
     .replace(/>/g, "&gt;");
 }
 
-/** Render a session as a self-contained, shareable HTML document. */
 export function renderSessionHtml(record: SessionRecord): string {
   const created = new Date(record.createdAt).toISOString();
   const blocks = transcriptSegments(record)
@@ -119,10 +114,6 @@ ${blocks}
 `;
 }
 
-/**
- * The files that make up a shared-session gist: a human-readable Markdown and
- * HTML transcript, plus the raw record JSON so it can be re-imported elsewhere.
- */
 export function sessionGistFiles(record: SessionRecord): Record<string, { content: string }> {
   return {
     "termcoder-session.md": { content: renderSessionMarkdown(record) },
@@ -131,11 +122,6 @@ export function sessionGistFiles(record: SessionRecord): Record<string, { conten
   };
 }
 
-/**
- * Import a session shared as a gist (by id or URL) into the local store. The
- * imported record gets a fresh id and an "(imported)" title so it never
- * clobbers an existing session.
- */
 export async function importSessionFromGist(
   ref: string,
   client: GitHubClient,
@@ -155,7 +141,6 @@ export async function importSessionFromGist(
   return record;
 }
 
-/** Render a session as a Markdown transcript. */
 export function renderSessionMarkdown(record: SessionRecord): string {
   const created = new Date(record.createdAt).toISOString();
   const lines: string[] = [

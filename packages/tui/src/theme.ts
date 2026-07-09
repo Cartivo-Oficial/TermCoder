@@ -1,24 +1,17 @@
-/** A terminal color palette. Values are hex (truecolor) or named colors. */
 export interface Theme {
-  /** Brand + interactive accent. */
   primary: string;
-  /** Assistant / signature accent (also code keywords). */
   accent: string;
   user: string;
   assistant: string;
   tool: string;
-  /** Inline code / values. */
   code: string;
   running: string;
   success: string;
   error: string;
   muted: string;
-  /** Hairlines and box borders. */
   border: string;
 }
 
-// Clean, near-monochrome chrome with a single soft-blue accent for interactive
-// glyphs; semantic color reserved for diffs and status.
 const mono: Theme = {
   primary: "#eceff6",
   accent: "#7aa2f7",
@@ -33,7 +26,6 @@ const mono: Theme = {
   border: "#2a2a2e",
 };
 
-// Optional colorful palettes (use `/theme vivid`).
 const vivid: Theme = {
   primary: "#58a6ff",
   accent: "#b794f6",
@@ -48,8 +40,6 @@ const vivid: Theme = {
   border: "#30363d",
 };
 
-// A calm, near-monochrome base recoloured with a single accent — a family of
-// tasteful themes selectable via `/theme <name>`.
 function accented(accent: string, running: string): Theme {
   return { ...mono, primary: "#eceff6", accent, running };
 }

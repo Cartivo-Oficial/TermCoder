@@ -29,7 +29,6 @@ interface ReviewState {
 
 const GRADE_HINT = "0 = blackout · 1–2 = wrong · 3 = hard · 4 = good · 5 = easy";
 
-/** The desktop Study overlay: decks, spaced-repetition review, and generation. */
 export function Study({ port, onClose, inline }: StudyProps) {
   const httpBase = `http://localhost:${port}`;
   const [ov, setOv] = useState<Overview>({ decks: [], streak: 0, reviewsToday: 0 });

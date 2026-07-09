@@ -3,21 +3,10 @@ import { dirname } from "node:path";
 import { configFile } from "../util/paths";
 import type { GitHubClient } from "../github/github";
 
-/**
- * Sync per-user JSON stores (favorites, drafts, later study decks/progress) to
- * a single private "termcoder sync" gist so they follow you across machines.
- *
- * Conflict policy is deliberately simple and honest: last-write-wins by wall
- * clock. Each store is wrapped in an envelope carrying `updatedAt`; on pull we
- * only overwrite the local file when the remote envelope is newer.
- *
- * Secrets never sync — only the named stores below, never `config.json`.
- */
 
 const SYNC_DESCRIPTION = "termcoder:sync — private synced settings";
 const META_FILE = "sync.json";
 
-/** Stores synced by default (favorites, drafts, and study decks/progress). */
 export const DEFAULT_SYNC_STORES = ["favorites", "drafts", "decks", "progress"] as const;
 
 interface SyncMeta {
@@ -63,12 +52,10 @@ function writeLocal(name: string, data: unknown, env: NodeJS.ProcessEnv): void {
   writeFileSync(f, JSON.stringify(data, null, 2), "utf8");
 }
 
-/** Whether a sync gist has been established for this machine yet. */
 export function isSyncConfigured(env: NodeJS.ProcessEnv = process.env): boolean {
   return Boolean(loadMeta(env).gistId);
 }
 
-/** Upload a single local store to the sync gist (creating it on first push). */
 export async function pushSync(
   name: string,
   client: GitHubClient,
@@ -88,7 +75,6 @@ export async function pushSync(
   return true;
 }
 
-/** Download a store from the sync gist, overwriting the local copy iff newer. */
 export async function pullSync(
   name: string,
   client: GitHubClient,
@@ -106,7 +92,6 @@ export async function pullSync(
   return true;
 }
 
-/** Pull-then-push every store; returns which ones changed locally on pull. */
 export async function syncAll(
   client: GitHubClient,
   names: readonly string[] = DEFAULT_SYNC_STORES,

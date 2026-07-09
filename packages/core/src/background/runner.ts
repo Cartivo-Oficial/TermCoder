@@ -3,17 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { SessionEvent } from "../session/session";
 
-/**
- * The autonomous "keep working until it's verified" loop. It drives a session
- * toward a goal, then runs a verification command (tests/build). If that fails,
- * it feeds the failure back and lets the agent fix it — repeating until the
- * check passes, the goal needs no more work, or a round budget is hit.
- *
- * The caller enables auto-approval (so it runs unattended) and streams the
- * events; permissions and checkpoints are handled by the session as usual.
- */
 
-/** The slice of Session this runner needs — kept minimal so it's easy to test. */
 export interface AutonomousSession {
   record: { cwd: string };
   prompt(text: string, opts?: { signal?: AbortSignal }): AsyncGenerator<SessionEvent, void>;
@@ -30,14 +20,11 @@ export type AutonomousEvent =
 export interface RunAutonomousOptions {
   session: AutonomousSession;
   goal: string;
-  /** Max execute→verify rounds before giving up. Default 5. */
   maxRounds?: number;
-  /** Shell command run after each round; a non-zero exit feeds back for a fix. */
   verifyCommand?: string;
   signal?: AbortSignal;
 }
 
-/** Run a shell command in `cwd`, capturing combined output and success. */
 export function runVerify(
   command: string,
   cwd: string,
@@ -65,11 +52,6 @@ export function runVerify(
   });
 }
 
-/**
- * Guess a verification command for a project (the thing to run to know the work
- * is good): a test script if there is one, else a build/typecheck. Returns
- * undefined when nothing obvious is found.
- */
 export function detectVerifyCommand(cwd: string): string | undefined {
   const pkgPath = join(cwd, "package.json");
   if (existsSync(pkgPath)) {
@@ -84,7 +66,6 @@ export function detectVerifyCommand(cwd: string): string | undefined {
         if (scripts[name]) return `${pm} run ${name}`;
       }
     } catch {
-      /* unreadable package.json */
     }
   }
   if (existsSync(join(cwd, "go.mod"))) return "go build ./...";

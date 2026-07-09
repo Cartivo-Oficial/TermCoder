@@ -61,9 +61,6 @@ declare global {
   }
 }
 
-// In Electron the server port comes from the preload / query string. In the web
-// build (served by `termcoder serve`) we talk to the same origin the page came
-// from — so it also works over the LAN, not just localhost.
 const port =
   window.api?.serverPort ||
   Number(new URLSearchParams(location.search).get("port")) ||
@@ -75,8 +72,6 @@ const wsScheme = location.protocol === "https:" ? "wss:" : "ws:";
 const httpBase = `${scheme}//${host}:${port}`;
 const wsBase = `${wsScheme}//${host}:${port}`;
 
-// The home dir and a clean default (Documents) come from the main process. We
-// avoid rooting the file tree in the home directory — it's full of system junk.
 const HOME_DIR = decodeURIComponent(new URLSearchParams(location.search).get("home") || "");
 const DEFAULT_DIR = decodeURIComponent(new URLSearchParams(location.search).get("docs") || "") || HOME_DIR;
 function cleanDir(dir?: string | null): string | undefined {
@@ -136,7 +131,6 @@ interface SessionSummary {
   usage?: { tokensIn: number; tokensOut: number };
 }
 
-/** Display label: fall back to the folder name for legacy "Untitled session". */
 const sessionLabel = (s: { title: string; cwd: string }): string =>
   !s.title || s.title === "Untitled session" ? baseName(s.cwd) : s.title;
 interface Segment {
@@ -153,7 +147,6 @@ const isDiff = (t: string) => /^[+-] /m.test(t);
 const baseName = (p: string) => p.split(/[\\/]/).filter(Boolean).pop() ?? "project";
 const fmtTokens = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
 
-/** A soft two-note chime (Web Audio) for the "agent finished" cue. */
 function playChime() {
   try {
     const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -172,7 +165,6 @@ function playChime() {
     osc.stop(ctx.currentTime + 0.36);
     osc.onended = () => void ctx.close();
   } catch {
-    /* audio may be unavailable */
   }
 }
 
@@ -328,9 +320,6 @@ export function App() {
   const [autonomous, setAutonomous] = useState(false);
   const [update, setUpdate] = useState<{ latest: string } | null>(null);
 
-  // Once on launch, check npm for a newer release and offer a discreet banner
-  // (dismissable per-version). The desktop app is installer-based, so we point
-  // to the download page rather than auto-updating.
   useEffect(() => {
     window.api
       ?.checkUpdate?.()
@@ -402,10 +391,7 @@ export function App() {
   const streamRef = useRef<MediaStream | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
-  // Set while tearing down so the socket's auto-reconnect doesn't fight unmount.
   const stopReconnect = useRef(false);
-  // Whether the next text-delta should append to the last (assistant) message.
-  // Reset whenever a tool/error breaks the streaming run or a turn ends.
   const appendRef = useRef(false);
   const currentIdRef = useRef<string | null>(null);
   const started = useRef(false);
@@ -417,8 +403,6 @@ export function App() {
     localStorage.setItem("tc-theme", theme);
   }, [theme]);
 
-  // Color theme owns the palette + data-theme. "default" (mono) falls back to
-  // the dark/light toggle; named themes apply their own structural variables.
   useEffect(() => {
     const root = document.documentElement;
     const ct = COLOR_THEMES.find((t) => t.id === colorTheme) ?? COLOR_THEMES[0]!;
@@ -601,7 +585,6 @@ export function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [keybinds]);
 
-  // Load configurable keybinds from the server config on mount.
   useEffect(() => {
     fetch(`${httpBase}/config`)
       .then((r) => r.json())
@@ -619,9 +602,6 @@ export function App() {
         const list = (await (await fetch(`${httpBase}/sessions`)).json()) as SessionSummary[];
         setSessions(list);
         const savedCwd = cleanDir(localStorage.getItem("tc-cwd"));
-        // Always start fresh — never auto-reopen a previous conversation. Reuse
-        // an existing blank session if there is one (so empties don't pile up),
-        // otherwise begin a new one. Past chats stay in the sidebar, on demand.
         const blank = list.find((s) => s.messageCount === 0 && !(HOME_DIR && s.cwd === HOME_DIR));
         if (blank) await openSession(blank.id);
         else await createSession(savedCwd ?? DEFAULT_DIR ?? undefined);
@@ -643,7 +623,6 @@ export function App() {
     try {
       setSessions((await (await fetch(`${httpBase}/sessions`)).json()) as SessionSummary[]);
     } catch {
-      /* ignore */
     }
   }
 
@@ -661,7 +640,6 @@ export function App() {
     try {
       setServerStatus((await (await fetch(`${httpBase}/status`)).json()) as ServerStatus);
     } catch {
-      /* ignore */
     }
   }
 
@@ -696,11 +674,6 @@ export function App() {
     openSocket(id);
   }
 
-  /**
-   * Open the streaming socket for a session and keep it alive. If the socket
-   * drops (or never opened — e.g. the server wasn't quite ready on first launch)
-   * it reconnects itself, so the chat no longer needs an app restart to work.
-   */
   function openSocket(id: string) {
     const ws = new WebSocket(`${wsBase}/sessions/${id}/stream`);
     wsRef.current = ws;
@@ -710,13 +683,10 @@ export function App() {
       try {
         ws.close();
       } catch {
-        /* already closing */
       }
     };
     ws.onclose = () => {
       setConnected(false);
-      // Reconnect only if this is still the live socket for the current session
-      // and we aren't tearing down (a newer connect() replaces wsRef.current).
       if (!stopReconnect.current && wsRef.current === ws && currentIdRef.current === id) {
         setTimeout(() => {
           if (!stopReconnect.current && wsRef.current === ws && currentIdRef.current === id) {
@@ -743,7 +713,6 @@ export function App() {
     setLastCtx(0);
   }
 
-  /** Enter/leave the simplified study experience (termexplorer + chat only). */
   function applyStudentMode(on: boolean) {
     setStudentMode(on);
     localStorage.setItem("tc-student", on ? "1" : "0");
@@ -771,7 +740,6 @@ export function App() {
     setCurrentId(record.id);
     resetTokenMeters();
     localStorage.setItem("tc-session", record.id);
-    // Default new sessions to the termcoder/auto brain unless the user picked one.
     const dm = localStorage.getItem("tc-model") || "termcoder/auto";
     if (dm !== record.model) {
       setModel(dm);
@@ -815,7 +783,6 @@ export function App() {
       connect(id);
       pushNav(id);
     } catch {
-      /* ignore */
     }
   }
 
@@ -828,7 +795,6 @@ export function App() {
     try {
       await fetch(`${httpBase}/sessions/${id}`, { method: "DELETE" });
     } catch {
-      /* ignore — refresh below reflects the real state */
     }
     const remaining = sessions.filter((s) => s.id !== id);
     setSessions(remaining);
@@ -845,7 +811,6 @@ export function App() {
     try {
       await fetch(`${httpBase}/sessions`, { method: "DELETE" });
     } catch {
-      /* ignore */
     }
     wsRef.current?.close();
     setSessions([]);
@@ -885,7 +850,6 @@ export function App() {
       const n = data.restored?.length ?? 0;
       notice(n ? t("revert.done", { n }) : t("revert.none"));
     } catch {
-      /* ignore */
     }
     setCanRevert(false);
     void refreshGit();
@@ -902,7 +866,6 @@ export function App() {
         body: JSON.stringify({ title: trimmed }),
       });
     } catch {
-      /* ignore */
     }
     void refreshSessions();
   }
@@ -911,7 +874,6 @@ export function App() {
     try {
       await navigator.clipboard.writeText(text);
     } catch {
-      /* clipboard may be unavailable */
     }
   }
 
@@ -929,7 +891,6 @@ export function App() {
       const res = await window.api?.saveFile?.(`${currentTitle || "termcoder-session"}.html`, html);
       if (res?.ok) notice(t("share.exported", { path: res.path ?? "" }));
     } catch {
-      /* ignore */
     }
   }
 
@@ -1052,15 +1013,12 @@ export function App() {
       appendRef.current = false;
       if (soundRef.current) playChime();
       if (notifyRef.current && !document.hasFocus()) {
-        // Route through the main process so the toast carries the termcoder
-        // icon and grouping; fall back to a plain web notification.
         if (window.api?.notify) {
           window.api.notify("termcoder", t("notify.done"));
         } else {
           try {
             new Notification("termcoder", { body: t("notify.done") });
           } catch {
-            /* notifications unavailable */
           }
         }
       }
@@ -1073,7 +1031,6 @@ export function App() {
       return;
     }
 
-    // ---- Autonomous ("background") mode status lines ----
     if (e.type === "background-start") {
       appendRef.current = false;
       const v = e.verify ? `, verifying with \`${e.verify}\`` : " (no check found — single pass)";
@@ -1111,11 +1068,7 @@ export function App() {
     }
 
     if (e.type === "text-delta") {
-      // Live, animated token estimate while the model streams (the real usage
-      // figure only arrives at the end of the turn).
       setLiveTokens((v) => v + Math.max(1, Math.round((e.text?.length ?? 0) / 4)));
-      // Capture the decision BEFORE the updater so the updater stays pure
-      // (StrictMode double-invokes updaters; impurity here caused crashes).
       const shouldAppend = appendRef.current;
       appendRef.current = true;
       setMessages((prev) => {
@@ -1180,7 +1133,6 @@ export function App() {
     setLiveTokens(0);
     setMessages((prev) => [...prev, { role: "user", text, images: images.map((i) => i.dataUrl) }]);
     setBusy(true);
-    // Autonomous mode (no images): run to the goal, verify, and keep fixing.
     if (autonomous && images.length === 0) {
       wsRef.current?.send(JSON.stringify({ type: "background", goal: text }));
       setPendingImages([]);
@@ -1232,9 +1184,6 @@ export function App() {
     setPendingImages((prev) => prev.filter((_, idx) => idx !== i));
   }
 
-  // Voice dictation: record audio, convert to WAV, and transcribe with the
-  // configured multimodal model (e.g. Gemini) via the server. Reliable inside
-  // Electron, unlike the Web Speech API.
   function notice(text: string) {
     setMessages((p) => [...p, { role: "notice", text }]);
   }
@@ -1327,7 +1276,6 @@ export function App() {
     });
   }
 
-  // --- Slash commands ---------------------------------------------------
   function parseCommand(text: string): { name: string; args: string } | null {
     if (!text.startsWith("/")) return null;
     const after = text.slice(1);
@@ -1404,7 +1352,6 @@ export function App() {
       if (typeof data.prompt === "string" && data.prompt.trim()) prompt = data.prompt;
       if (typeof data.agent === "string") setAgent(data.agent);
     } catch {
-      /* fall back to the raw text */
     }
     setMessages((prev) => [...prev, { role: "user", text: raw }]);
     setBusy(true);
@@ -1416,8 +1363,6 @@ export function App() {
   const currentTitle = currentSession ? sessionLabel(currentSession) : t("chat.newSession");
   const changedFiles = Object.entries(status);
 
-  // Live activity for the "working" indicator: the most recent running tool, or
-  // a generic "thinking" state while the model streams a reply.
   const runningTool = busy
     ? [...messages].reverse().find((m) => m.role === "tool" && m.status === "running")
     : undefined;

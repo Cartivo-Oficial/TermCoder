@@ -187,7 +187,6 @@ describe("logo", () => {
   it("renders a word as 5 aligned block rows", () => {
     const rows = wordLines("TERM");
     expect(rows).toHaveLength(5);
-    // every row is the same width (padding preserved between glyphs)
     const widths = new Set(rows.map((r) => r.length));
     expect(widths.size).toBe(1);
     expect(rows.join("")).toContain("█");
@@ -203,8 +202,6 @@ describe("logo", () => {
     const f0 = renderStars(stars, 30, 3, 0);
     const f1 = renderStars(stars, 30, 3, 1);
     expect(f0).toHaveLength(3);
-    // At least one cell differs between frames (the twinkle), but the field is
-    // not empty in either frame.
     expect(f0.join("\n")).not.toEqual(f1.join("\n"));
     expect(f0.join("").trim().length).toBeGreaterThan(0);
   });

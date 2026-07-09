@@ -2,7 +2,6 @@ import { generateText } from "ai";
 import type { Config } from "../config/config";
 import { resolveModel } from "../provider/provider";
 
-/** Extract flashcards from a model reply — the first JSON array of {front, back}. */
 export function parseCards(text: string): Array<{ front: string; back: string }> {
   const match = text.match(/\[[\s\S]*\]/);
   if (!match) return [];
@@ -19,11 +18,6 @@ export function parseCards(text: string): Array<{ front: string; back: string }>
   }
 }
 
-/**
- * Ask the study model to write flashcards about a topic (or from pasted notes).
- * Uses termexplorer by default and returns parsed {front, back} pairs — free,
- * since the default model needs no key.
- */
 export async function generateFlashcards(opts: {
   topic: string;
   count?: number;
@@ -33,8 +27,6 @@ export async function generateFlashcards(opts: {
 }): Promise<Array<{ front: string; back: string }>> {
   const count = opts.count ?? 8;
   const model = resolveModel(opts.model ?? "termexplorer/auto", { config: opts.config, env: opts.env });
-  // Fail fast rather than hang: the free keyless model can be slow/flaky, and a
-  // caller (the CLI/desktop) would rather show "try again" than wait a minute.
   const { text } = await generateText({
     model,
     maxRetries: 1,

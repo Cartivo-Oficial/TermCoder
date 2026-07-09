@@ -2,12 +2,6 @@ import { z } from "zod";
 import { defineTool } from "./types";
 import { repoDetail } from "../knowledge/repomap";
 
-/**
- * Returns a structured map of the current project — stack, script commands,
- * top-level directories, and the exported symbols of entry points. Gives the
- * agent a real understanding of the codebase's shape without spending a dozen
- * ls/read calls to rediscover it.
- */
 export const repomapTool = defineTool({
   name: "repomap",
   description:

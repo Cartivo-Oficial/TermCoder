@@ -30,7 +30,6 @@ describe("saveMemory + discoverMemories", () => {
   it("round-trips a project memory and a user memory; project overrides user by name", () => {
     saveMemory({ scope: "user", name: "Uses PNPM", description: "prefers pnpm", type: "preference", body: "always pnpm", cwd: dir, env });
     saveMemory({ scope: "project", name: "arch", description: "monorepo", type: "project", body: "four packages", cwd: dir, env });
-    // same name in both scopes → project wins
     saveMemory({ scope: "user", name: "arch", description: "user arch", type: "project", body: "user body", cwd: dir, env });
 
     const mems = discoverMemories({ cwd: dir, env });
@@ -73,7 +72,6 @@ describe("memoryIndex + recallMemories", () => {
     const tiny = recallMemories(mems, 80); // only room for the index + at most one body
     expect(tiny).toContain("- old: old one");
     expect(tiny).toContain("- new: new one");
-    // at least one full body is omitted under the tight budget
     const bodiesShown = (tiny.match(/_BODY/g) ?? []).length;
     expect(bodiesShown).toBeLessThan(2);
   });
@@ -91,13 +89,11 @@ describe("helpers", () => {
     expect(looksLikeSecret("just a normal note about pnpm")).toBe(false);
     expect(looksLikeSecret("risk-mitigation-strategy-for-the-project")).toBe(false);
     expect(looksLikeSecret("sk-ant-abc123def456ghi789")).toBe(true);
-    // additional high-confidence shapes
     expect(looksLikeSecret("AKIAIOSFODNN7EXAMPLE")).toBe(true);
     expect(looksLikeSecret("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abc")).toBe(true);
     expect(looksLikeSecret("postgres://user:hunter2@db.example.com/app")).toBe(true);
     expect(looksLikeSecret("api_key = sk_live_supersecretvalue")).toBe(true);
     expect(looksLikeSecret("password: hunter2longvalue")).toBe(true);
-    // must NOT flag legit memory content: a 40-char git commit SHA, or plain prose
     expect(looksLikeSecret("the baseline is commit a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0")).toBe(false);
     expect(looksLikeSecret("remember to run the tests before merging")).toBe(false);
   });

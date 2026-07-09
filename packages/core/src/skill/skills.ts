@@ -3,12 +3,6 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { parseFrontmatter } from "../util/frontmatter";
 
-/**
- * A reusable "skill": a named playbook of instructions the agent can pull in on
- * demand. Only the name + description live in the system prompt (cheap); the
- * full body is loaded via the `skill` tool when a task actually matches — the
- * same progressive-disclosure idea that keeps context (and token cost) small.
- */
 export interface SkillDef {
   name: string;
   description: string;
@@ -28,7 +22,6 @@ function readSkillDir(dir: string, source: SkillDef["source"]): SkillDef[] {
       const description = typeof data.description === "string" ? data.description : "";
       out.push({ name, description, body: body.trim(), source });
     } catch {
-      /* skip unreadable skill files */
     }
   }
   return out;
@@ -39,10 +32,6 @@ export interface DiscoverSkillsOptions {
   env?: NodeJS.ProcessEnv;
 }
 
-/**
- * All available skills. Project skills (`.termcoder/skills/*.md`) override
- * global ones (`~/.config/termcoder/skills/*.md`) by name.
- */
 export function discoverSkills(opts: DiscoverSkillsOptions): SkillDef[] {
   const env = opts.env ?? process.env;
   const globalDir = join(env.XDG_CONFIG_HOME ?? join(homedir(), ".config"), "termcoder", "skills");
@@ -54,15 +43,10 @@ export function discoverSkills(opts: DiscoverSkillsOptions): SkillDef[] {
   return [...byName.values()];
 }
 
-/** Look up one skill by name. */
 export function getSkill(cwd: string, name: string, env?: NodeJS.ProcessEnv): SkillDef | undefined {
   return discoverSkills({ cwd, env }).find((s) => s.name === name);
 }
 
-/**
- * A compact menu (names + descriptions only) for the system prompt. Empty when
- * no skills are defined, so nothing is spent when the feature is unused.
- */
 export function skillsMenu(skills: SkillDef[]): string {
   if (skills.length === 0) return "";
   const lines = skills.map((s) => `- ${s.name}: ${s.description || "(no description)"}`);

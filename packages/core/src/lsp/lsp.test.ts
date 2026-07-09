@@ -12,10 +12,6 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { LspClient, LspManager } from "./lsp";
 
-/**
- * A fake LSP server linked to a client over in-memory streams. It answers
- * `initialize` and pushes one diagnostic whenever a document is opened.
- */
 function makeFakeServer(): { clientConn: MessageConnection; dispose: () => void } {
   const toServer = new PassThrough();
   const toClient = new PassThrough();

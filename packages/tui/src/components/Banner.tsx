@@ -9,12 +9,9 @@ interface BannerProps {
   sessionId: string;
 }
 
-// Two gradients across the wordmark: warm orange for "term", cool light for
-// "coder" — so the logo shades like the MiMo/pixel look instead of flat colour.
 const TERM = ["#ffb066", "#ff9a45", "#ff8036", "#ff6a2b"];
 const CODER = ["#f2f2f4", "#e2e2e6", "#d0d0d6", "#bebec4", "#acacb2"];
 
-/** A word rendered letter-by-letter so each column can take its own colour. */
 function LetterCols({ word, colors }: { word: string; colors: string[] }) {
   return (
     <Box flexDirection="row">
@@ -31,7 +28,6 @@ function LetterCols({ word, colors }: { word: string; colors: string[] }) {
   );
 }
 
-/** A centered welcome splash: a starfield around a gradient block logo. */
 export function Banner({ theme }: BannerProps) {
   const cols = useStdout().stdout?.columns ?? 80;
   const width = Math.max(24, Math.min(cols - 2, 64));

@@ -8,11 +8,9 @@ import type { PermissionKind } from "../permission/permission";
 import type { TermTool, ToolContext, ToolResult } from "../tools/types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/** The shape a user's tool file may export (both native and OpenCode styles). */
 interface RawTool {
   name?: string;
   description?: string;
-  /** zod schema — OpenCode calls this `args`, we call it `inputSchema`. */
   args?: z.ZodType | Schema;
   inputSchema?: z.ZodType | Schema;
   readOnly?: boolean;
@@ -49,12 +47,6 @@ export interface DiscoverToolsResult {
   errors: Array<{ file: string; error: string }>;
 }
 
-/**
- * Auto-discover user tools from `~/.config/termcoder/tools/` (global) and
- * `<cwd>/.termcoder/tools/` (project). Each `.js`/`.mjs`/`.cjs` file's default
- * (and named) exports become tools. (TypeScript must be compiled to JS first —
- * Node can't import `.ts` at runtime.)
- */
 export async function discoverTools(opts: {
   cwd: string;
   env?: NodeJS.ProcessEnv;

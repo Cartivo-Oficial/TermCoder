@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { configDir, configFile } from "../util/paths";
 
-/** Favourite model ids, pinned to the top of the model picker. Global. */
 
 function dir(env: NodeJS.ProcessEnv = process.env): string {
   return configDir(env);
@@ -21,7 +20,6 @@ export function loadFavorites(env: NodeJS.ProcessEnv = process.env): string[] {
   }
 }
 
-/** Toggle a model id in the favourites and persist; returns the new list. */
 export function toggleFavorite(id: string, env: NodeJS.ProcessEnv = process.env): string[] {
   const list = loadFavorites(env);
   const i = list.indexOf(id);

@@ -35,12 +35,6 @@ function parseScalar(raw: string): unknown {
   return s;
 }
 
-/**
- * A deliberately small YAML subset: top-level `key: value`, inline arrays
- * `[a, b]`, inline flow maps (`{ "a/**": allow, b: deny }`), block arrays
- * (`  - item`), and one level of nested objects (`  subkey: value`). Enough for
- * agent/command frontmatter without a dep.
- */
 function parseYaml(src: string): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   let curKey: string | null = null;
@@ -79,7 +73,6 @@ function parseYaml(src: string): Record<string, unknown> {
   return out;
 }
 
-/** Split a markdown document into its YAML frontmatter and body. */
 export function parseFrontmatter(text: string): Frontmatter {
   const t = text.replace(/^﻿/, "");
   const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(t);

@@ -1,12 +1,9 @@
-/** A slash-command's metadata, used by the menu, autocomplete, and /help. */
 export interface TuiCommand {
   name: string;
-  /** Argument hint shown in the menu, e.g. "<id>". */
   arg?: string;
   desc: string;
 }
 
-/** The built-in slash commands, in menu order. */
 export const TUI_COMMANDS: TuiCommand[] = [
   { name: "help", desc: "Show all commands" },
   { name: "setup", desc: "Set up a model (free options available)" },
@@ -51,11 +48,6 @@ export const TUI_COMMANDS: TuiCommand[] = [
   { name: "exit", desc: "Quit termcoder" },
 ];
 
-/**
- * Rank commands for the given partial input (the text after "/"). Prefix
- * matches rank above substring matches; both above subsequence ("fuzzy")
- * matches. An empty query returns all commands in declared order.
- */
 export function matchCommands(query: string): TuiCommand[] {
   const q = query.toLowerCase();
   if (!q) return TUI_COMMANDS;
@@ -73,7 +65,6 @@ export function matchCommands(query: string): TuiCommand[] {
     .map((s) => s.c);
 }
 
-/** Whether every char of `needle` appears in `haystack` in order. */
 function isSubsequence(needle: string, haystack: string): boolean {
   let i = 0;
   for (const ch of haystack) {
@@ -83,7 +74,6 @@ function isSubsequence(needle: string, haystack: string): boolean {
   return needle.length === 0;
 }
 
-/** The `/help` body, rendered from the command registry. */
 export function helpText(): string {
   const width = Math.max(...TUI_COMMANDS.map((c) => c.name.length + (c.arg ? c.arg.length + 1 : 0)));
   const lines = TUI_COMMANDS.map((c) => {

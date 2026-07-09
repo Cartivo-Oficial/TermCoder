@@ -5,12 +5,9 @@ interface StatusBarProps {
   theme: Theme;
   cwd: string;
   tokens: number;
-  /** Input tokens sent last turn — the live context size. */
   lastCtx?: number;
-  /** Percentage of the model's context window used last turn. */
   ctxPct?: number;
   autoApprove: boolean;
-  /** App version, shown at the far right like a footer. */
   version?: string;
 }
 
@@ -25,11 +22,6 @@ function shortenPath(p: string): string {
   return tail || p;
 }
 
-/**
- * A minimal footer, MiMo-style: the folder at the bottom-left and the version at
- * the bottom-right. Context/token usage only appear once a turn has run, so a
- * fresh home screen stays clean.
- */
 export function StatusBar({ theme, cwd, tokens, lastCtx, ctxPct, autoApprove, version }: StatusBarProps) {
   const dot = <Text color={theme.border}>{"  ·  "}</Text>;
   return (

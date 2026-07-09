@@ -2,11 +2,6 @@ import { z } from "zod";
 import { defineTool } from "./types";
 import { discoverSkills, getSkill } from "../skill/skills";
 
-/**
- * Loads the full instructions for a named skill. The skill menu (names +
- * descriptions) is injected into the system prompt; this tool fetches a skill's
- * body only when the agent decides it's relevant, so unused skills cost nothing.
- */
 export const skillTool = defineTool({
   name: "skill",
   description:

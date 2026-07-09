@@ -5,11 +5,6 @@ const IGNORE = new Set([
   "node_modules", ".git", "dist", "out", "release", ".next", ".turbo", ".cache", "coverage",
 ]);
 
-/**
- * A capped, ignore-aware list of workspace files (forward-slash relative paths),
- * for `@file` mention completion. Walks breadth-limited so a huge repo doesn't
- * stall the UI.
- */
 export function listProjectFiles(cwd: string, cap = 4000): string[] {
   const out: string[] = [];
   const walk = (dir: string, rel: string, depth: number) => {
@@ -34,7 +29,6 @@ export function listProjectFiles(cwd: string, cap = 4000): string[] {
   return out;
 }
 
-/** Rank files for a mention query: basename prefix > path substring > subsequence. */
 export function matchFiles(files: string[], query: string, limit = 8): string[] {
   const q = query.toLowerCase();
   if (!q) return files.slice(0, limit);

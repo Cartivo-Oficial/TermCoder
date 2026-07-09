@@ -3,7 +3,6 @@ import { defineTool } from "./types";
 
 const MAX_CHARS = 8000;
 
-/** Strip HTML to readable plain text (best effort). */
 export function htmlToText(html: string): string {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, "")

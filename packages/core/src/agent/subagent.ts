@@ -8,7 +8,6 @@ import type { TermTool } from "../tools/types";
 
 export interface SubagentDeps {
   store: SessionStore;
-  /** Tools available to the sub-agent. MUST NOT include the task tool itself. */
   registry: ToolRegistry;
   config: Config;
   permission: PermissionManager;
@@ -16,15 +15,6 @@ export interface SubagentDeps {
   runner?: ModelRunner;
 }
 
-/**
- * Build the `task` tool: it delegates a self-contained instruction to a fresh
- * sub-agent (a nested Session) that runs to completion with its own message
- * history, then returns the sub-agent's text plus which tools it used.
- *
- * The sub-agent reuses the caller's permission gate, so mutating actions still
- * prompt the user. Its registry deliberately excludes the task tool, bounding
- * delegation to a single level.
- */
 export function createSubagentTool(deps: SubagentDeps): TermTool {
   return {
     name: "task",
@@ -43,7 +33,6 @@ export function createSubagentTool(deps: SubagentDeps): TermTool {
         .optional()
         .describe("Specialist to use: explore, scout, reviewer, architect, tester, debugger, or general."),
     }),
-    // The call itself is auto-allowed; the sub-agent's own tool calls are gated.
     readOnly: true,
     describe: (args: { prompt: string; agent?: string }) => ({
       title: args.agent ? `sub-agent: ${args.agent}` : "sub-agent task",

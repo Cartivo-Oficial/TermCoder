@@ -18,7 +18,6 @@ import { symbolsTool } from "./symbols";
 export type { TermTool, ToolContext, ToolResult } from "./types";
 export { defineTool } from "./types";
 
-/** All built-in tools, keyed by name. */
 export const builtinTools: TermTool[] = [
   readTool,
   lsTool,
@@ -50,11 +49,6 @@ export class ToolRegistry {
     return [...this.byName.values()];
   }
 
-  /**
-   * Build the AI SDK ToolSet. Tools are defined WITHOUT an `execute` function so
-   * the agent loop receives tool calls and runs them itself (through the
-   * permission gate). The model only ever sees the schema, not the executor.
-   */
   toToolSet(filter?: (t: TermTool) => boolean): ToolSet {
     const set: ToolSet = {};
     for (const t of this.byName.values()) {

@@ -14,7 +14,6 @@ import {
 } from "./classroom";
 import type { Gist, GitHubClient } from "../github/github";
 
-/** An in-memory gist backend shared by several users (teacher, student, …). */
 function backend() {
   const gists: Record<string, { files: Record<string, string>; comments: Array<{ id: number; body: string; created_at: string; user: { login: string } }> }> = {};
   let n = 0;
@@ -74,7 +73,6 @@ describe("classroom", () => {
     const teacher = be.client("teacher");
     const student = be.client("student");
 
-    // Teacher creates a class and posts an assignment.
     const cls = await createClassroom("Math 101", teacher, { env });
     expect(cls.role).toBe("teacher");
     expect(loadClassrooms(env)).toHaveLength(1);
@@ -85,7 +83,6 @@ describe("classroom", () => {
     expect(fetched.assignments).toHaveLength(1);
     expect(fetched.assignments[0]!.title).toBe("Fractions worksheet");
 
-    // Student joins (no packs) — remembered locally, signs the roster.
     const joined = await joinClassroom(cls.code, student, { cwd: cfg, env });
     expect(joined.classroom.name).toBe("Math 101");
     expect(loadClassrooms(env).some((c) => c.role === "student")).toBe(true);
@@ -93,13 +90,11 @@ describe("classroom", () => {
     const roster = await listRoster(cls.code, teacher);
     expect(roster.map((r) => r.user)).toContain("student");
 
-    // Student submits; teacher sees it.
     await submitAssignment(cls.code, { assignmentId: a.id, link: "https://viewer/x", note: "done!" }, student);
     const subs = await listSubmissions(cls.code, teacher);
     expect(subs).toHaveLength(1);
     expect(subs[0]).toMatchObject({ user: "student", assignmentId: a.id, link: "https://viewer/x", note: "done!" });
 
-    // Filtering by a different assignment yields nothing.
     expect(await listSubmissions(cls.code, teacher, "other")).toHaveLength(0);
   });
 });

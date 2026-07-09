@@ -3,25 +3,18 @@ import { pathToFileURL } from "node:url";
 import type { Config } from "../config/config";
 import type { TermTool } from "../tools/types";
 
-/** The surface a plugin uses to extend termcoder. Passed to `register`. */
 export interface PluginApi {
-  /** The resolved configuration. */
   config: Config;
-  /** The workspace directory. */
   cwd: string;
-  /** Register a tool the agent can call. */
   addTool: (tool: TermTool) => void;
-  /** Emit a startup log line (surfaced by the host). */
   log: (message: string) => void;
 }
 
-/** A termcoder plugin: a name plus a register hook that adds tools. */
 export interface Plugin {
   name: string;
   register: (api: PluginApi) => void | Promise<void>;
 }
 
-/** Identity helper for authoring plugins with type-checking and inference. */
 export function definePlugin(plugin: Plugin): Plugin {
   return plugin;
 }
@@ -42,7 +35,6 @@ function looksLikePath(spec: string): boolean {
   );
 }
 
-/** Resolve a specifier to something `import()` accepts: a file URL for paths. */
 function toImportSpecifier(spec: string, cwd: string): string {
   if (spec.startsWith("file:")) return spec;
   if (looksLikePath(spec)) {
@@ -51,11 +43,6 @@ function toImportSpecifier(spec: string, cwd: string): string {
   return spec; // bare package name
 }
 
-/**
- * Dynamically import each plugin specifier and run its `register` hook, collecting
- * the tools it adds. A plugin that fails to load is recorded but never blocks the
- * others or the agent — extensions should be additive, not fatal.
- */
 export async function loadPlugins(
   specifiers: string[],
   context: { config: Config; cwd: string },

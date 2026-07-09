@@ -8,7 +8,6 @@ import { parseFrontmatter } from "../util/frontmatter";
 export type AgentMode = "primary" | "subagent" | "all";
 type PermMap = Partial<Record<"bash" | "write" | "edit" | "mcp", PermissionRule>>;
 
-/** A fully-resolved agent profile. */
 export interface AgentDef {
   name: string;
   description?: string;
@@ -18,7 +17,6 @@ export interface AgentDef {
   temperature?: number;
   steps?: number;
   permission?: PermMap;
-  /** Allowlist of tool names; omitted means "all permitted". */
   tools?: string[];
   color?: string;
   builtin?: boolean;
@@ -26,7 +24,6 @@ export interface AgentDef {
 
 const READONLY: PermMap = { write: "deny", edit: "deny", bash: "deny", mcp: "deny" };
 
-/** OpenCode-parity built-ins: build/plan primaries, general/explore/scout subagents. */
 export const BUILTIN_AGENTS: AgentDef[] = [
   { name: "build", description: "Full access — edits files and runs commands.", mode: "primary", builtin: true },
   { name: "plan", description: "Read-only — investigates and proposes a plan.", mode: "primary", permission: { ...READONLY }, builtin: true },
@@ -125,7 +122,6 @@ function readAgentDir(dir: string): AgentDef[] {
     try {
       out.push(fromMarkdown(f.replace(/\.md$/, ""), readFileSync(join(dir, f), "utf8")));
     } catch {
-      /* skip unreadable agent files */
     }
   }
   return out;
@@ -137,10 +133,6 @@ export interface DiscoverAgentsOptions {
   env?: NodeJS.ProcessEnv;
 }
 
-/**
- * All available agents. Later sources replace earlier ones by name:
- * built-ins < config.agent < global `agents/*.md` < project `.termcoder/agents/*.md`.
- */
 export function discoverAgents(opts: DiscoverAgentsOptions): AgentDef[] {
   const env = opts.env ?? process.env;
   const globalDir = join(env.XDG_CONFIG_HOME ?? join(homedir(), ".config"), "termcoder", "agents");
@@ -154,13 +146,11 @@ export function discoverAgents(opts: DiscoverAgentsOptions): AgentDef[] {
   return [...byName.values()];
 }
 
-/** Resolve an agent by name, falling back to "build". */
 export function resolveAgent(opts: DiscoverAgentsOptions, name: string | undefined): AgentDef {
   const all = discoverAgents(opts);
   return all.find((a) => a.name === name) ?? all.find((a) => a.name === "build")!;
 }
 
-/** Whether an agent can change the workspace (write/edit/bash available). */
 export function agentCanMutate(agent: AgentDef): boolean {
   const allow = agent.tools ? new Set(agent.tools) : null;
   return ["write", "edit", "bash"].some(
@@ -168,11 +158,6 @@ export function agentCanMutate(agent: AgentDef): boolean {
   );
 }
 
-/**
- * Predicate for which tools an agent may use: respects an allowlist and
- * permission denies, and withholds the delegating `task` tool from agents that
- * can't mutate (so a read-only agent can't bypass via a sub-agent).
- */
 export function agentToolFilter(agent: AgentDef): (t: TermTool) => boolean {
   const allow = agent.tools ? new Set(agent.tools) : null;
   const mutates = agentCanMutate(agent);

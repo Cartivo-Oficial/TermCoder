@@ -3,14 +3,6 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { GitHubClient, parseGistId } from "../github/github";
 
-/**
- * A "pack" bundles the shareable parts of a `.termcoder/` directory — custom
- * agents, skills, and commands — so a whole setup can be published to a gist
- * (or read from a repo) and installed by a classmate in one step.
- *
- * Gists have no folders, so each item is stored flat as `<kind>__<file>.md`
- * (e.g. `skills__pr-review.md`) plus a `pack.json` manifest.
- */
 
 export const PACK_KINDS = ["agents", "skills", "commands"] as const;
 export type PackKind = (typeof PACK_KINDS)[number];
@@ -49,7 +41,6 @@ function parseGistName(name: string): { kind: PackKind; filename: string } | und
   return m ? { kind: m[1] as PackKind, filename: m[2]! } : undefined;
 }
 
-/** Read the agents/skills/commands markdown files out of a `.termcoder` dir. */
 export function readPack(dir: string): PackItem[] {
   const items: PackItem[] = [];
   for (const kind of PACK_KINDS) {
@@ -63,7 +54,6 @@ export function readPack(dir: string): PackItem[] {
   return items;
 }
 
-/** Publish a project's (or global) `.termcoder` items as a gist; returns its URL. */
 export async function publishPack(
   manifest: PackManifest,
   dir: string,
@@ -84,7 +74,6 @@ export async function publishPack(
   return gist.html_url;
 }
 
-/** Fetch a pack from a gist id/URL, or an `owner/repo[/path]` reference. */
 export async function fetchPack(ref: string, client: GitHubClient): Promise<Pack> {
   const repoMatch = ref.match(/^([\w.-]+)\/([\w.-]+)(?:\/(.+))?$/);
   if (repoMatch && !ref.includes("gist.github")) {
@@ -95,7 +84,6 @@ export async function fetchPack(ref: string, client: GitHubClient): Promise<Pack
     try {
       manifest = JSON.parse(await client.getRepoFile(owner, repo, `${base}/pack.json`)) as PackManifest;
     } catch {
-      // no manifest — fall back to the repo name
     }
     const items: PackItem[] = [];
     for (const kind of PACK_KINDS) {
@@ -122,7 +110,6 @@ export async function fetchPack(ref: string, client: GitHubClient): Promise<Pack
       try {
         manifest = JSON.parse(content) as PackManifest;
       } catch {
-        // ignore a malformed manifest
       }
       continue;
     }
@@ -132,7 +119,6 @@ export async function fetchPack(ref: string, client: GitHubClient): Promise<Pack
   return { manifest, items };
 }
 
-/** Write a pack's items into a project or global `.termcoder` dir. */
 export function writePack(
   pack: Pack,
   target: "project" | "global",
@@ -150,7 +136,6 @@ export function writePack(
   return written;
 }
 
-/** Fetch and install a pack in one step. */
 export async function installPack(
   ref: string,
   client: GitHubClient,

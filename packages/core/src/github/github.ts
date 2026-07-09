@@ -28,7 +28,6 @@ export interface GistComment {
   user: { login: string } | null;
 }
 
-/** The GitHub token from config (or the GITHUB_TOKEN env), if any. */
 export function gitHubToken(config?: Config, env: NodeJS.ProcessEnv = process.env): string | undefined {
   return config?.github?.token || env.GITHUB_TOKEN || undefined;
 }
@@ -43,16 +42,9 @@ export class GitHubError extends Error {
   }
 }
 
-/**
- * A thin GitHub REST client for the features that use GitHub as a backend:
- * publishing/reading gists (sessions, packs, synced settings) and reading
- * public repo files (installing a pack straight from a repo). All calls carry
- * a personal-access token that needs at least the `gist` scope.
- */
 export class GitHubClient {
   constructor(private readonly token: string) {}
 
-  /** Build a client from config/env, or throw a friendly error if no token. */
   static fromConfig(config?: Config, env: NodeJS.ProcessEnv = process.env): GitHubClient {
     const token = gitHubToken(config, env);
     if (!token) {
@@ -82,7 +74,6 @@ export class GitHubClient {
     return (res.status === 204 ? undefined : await res.json()) as T;
   }
 
-  /** Validate the token and return the authenticated user. */
   whoami(): Promise<GitHubUser> {
     return this.req<GitHubUser>("/user");
   }
@@ -98,7 +89,6 @@ export class GitHubClient {
     });
   }
 
-  /** Update a gist. Pass `null` for a filename to delete that file. */
   updateGist(id: string, files: Record<string, GistFile | null>): Promise<Gist> {
     return this.req<Gist>(`/gists/${id}`, { method: "PATCH", body: JSON.stringify({ files }) });
   }
@@ -111,22 +101,18 @@ export class GitHubClient {
     return this.req<void>(`/gists/${id}`, { method: "DELETE" });
   }
 
-  /** The authenticated user's gists (newest first, up to 100). */
   listGists(): Promise<Gist[]> {
     return this.req<Gist[]>("/gists?per_page=100");
   }
 
-  /** Post a comment on a gist (used for classroom joins & submissions). */
   createGistComment(gistId: string, body: string): Promise<GistComment> {
     return this.req<GistComment>(`/gists/${gistId}/comments`, { method: "POST", body: JSON.stringify({ body }) });
   }
 
-  /** All comments on a gist (up to 100). */
   listGistComments(gistId: string): Promise<GistComment[]> {
     return this.req<GistComment[]>(`/gists/${gistId}/comments?per_page=100`);
   }
 
-  /** A gist file's text, fetching the raw URL when the inline content is truncated. */
   async gistFileContent(gist: Gist, filename: string): Promise<string | undefined> {
     const f = gist.files[filename];
     if (!f) return undefined;
@@ -138,7 +124,6 @@ export class GitHubClient {
     return f.content;
   }
 
-  /** Read a file's text from a repo (used to install a pack straight from a repo). */
   async getRepoFile(owner: string, repo: string, path: string, ref?: string): Promise<string> {
     const q = ref ? `?ref=${encodeURIComponent(ref)}` : "";
     const data = await this.req<{ content?: string; encoding?: string }>(
@@ -150,7 +135,6 @@ export class GitHubClient {
     return data.content ?? "";
   }
 
-  /** List a directory in a repo. */
   listRepoDir(
     owner: string,
     repo: string,
@@ -162,7 +146,6 @@ export class GitHubClient {
   }
 }
 
-/** Extract a gist id from a bare id or any gist URL. */
 export function parseGistId(ref: string): string {
   const m = ref.match(/gist\.github\.com\/(?:[^/]+\/)?([0-9a-fA-F]+)/);
   if (m) return m[1]!;

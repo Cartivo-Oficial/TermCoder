@@ -25,8 +25,6 @@ import {
 } from "@termcoder/core";
 import { createServer } from "@termcoder/server";
 
-// Set as early as possible (before app is ready) so Windows groups the app
-// under our own id and shows our taskbar icon instead of the generic Electron one.
 if (process.platform === "win32") app.setAppUserModelId("ai.termcoder.app");
 
 let serverPort = 0;
@@ -34,11 +32,7 @@ let cleanup: () => Promise<void> = async () => {};
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 
-/** Start an in-process termcoder server and capture its port. */
 async function startServer(): Promise<void> {
-  // Default to Documents — a clean, neutral folder — rather than the install dir
-  // (process.cwd() for a packaged app) or the home dir (full of Windows system
-  // files/junctions). In dev, pnpm sets INIT_CWD to the project, so that wins.
   let cwd = process.env.INIT_CWD ?? "";
   if (!cwd) {
     try {
@@ -61,7 +55,6 @@ async function startServer(): Promise<void> {
     ...custom.tools,
   ]);
 
-  // Surface loaded custom tools (and load errors) alongside plugins in the UI.
   const customStatus = [
     ...custom.tools.map((t) => ({ name: `tool: ${t.name}`, ok: true, toolCount: 1 })),
     ...custom.errors.map((e) => ({ name: `tool: ${e.file.split(/[\\/]/).pop()}`, ok: false, toolCount: 0, error: e.error })),
@@ -84,8 +77,6 @@ async function startServer(): Promise<void> {
 }
 
 function appIconPath(): string | undefined {
-  // Windows taskbar wants an .ico; everything else takes the PNG. build/ holds
-  // these in dev (under __dirname/../../build) and resources/ when packaged.
   const names = process.platform === "win32" ? ["icon.ico", "icon.png"] : ["icon.png"];
   for (const name of names) {
     for (const candidate of [
@@ -130,19 +121,14 @@ function createWindow(): void {
     if (mainWindow === win) mainWindow = null;
   });
 
-  // Re-assert the icon after creation; in dev the taskbar otherwise keeps the
-  // generic Electron icon.
   const icon = appIconImage();
   if (icon) win.setIcon(icon);
 
-  // Pass the home + a clean default (Documents) so the renderer can avoid
-  // rooting the file tree in the messy home directory.
   const home = app.getPath("home");
   let docs = home;
   try {
     docs = app.getPath("documents");
   } catch {
-    /* no Documents — fall back to home */
   }
   const params = `port=${serverPort}&home=${encodeURIComponent(home)}&docs=${encodeURIComponent(docs)}`;
 
@@ -214,10 +200,6 @@ const HIDE_NAMES = new Set(["node_modules", "desktop.ini", "thumbs.db", "$recycl
 ipcMain.handle("list-dir", (_event, dir: string) => {
   try {
     return readdirSync(dir, { withFileTypes: true })
-      // Keep the tree clean, even in the home directory: hide dotfiles/dotfolders
-      // (incl. termcoder's own .termcoder), noise dirs, Windows system files
-      // (NTUSER.*, desktop.ini…), and reparse-point junctions (My Documents,
-      // Cookies, "Ambiente de Rede", …).
       .filter((d) => {
         const n = d.name.toLowerCase();
         if (d.name.startsWith(".")) return false;
@@ -311,7 +293,6 @@ ipcMain.on("notify", (_e, title: string, body: string) => {
   notification.show();
 });
 
-/** True if `latest` is a higher semver than `current` (major.minor.patch). */
 function isNewerVersion(latest: string, current: string): boolean {
   const a = latest.split(".").map((n) => parseInt(n, 10) || 0);
   const b = current.split(".").map((n) => parseInt(n, 10) || 0);
@@ -322,7 +303,6 @@ function isNewerVersion(latest: string, current: string): boolean {
   return false;
 }
 
-// Check npm for a newer termcoder release (the renderer shows a banner if so).
 ipcMain.handle("check-update", async () => {
   const current = app.getVersion();
   try {
@@ -384,7 +364,6 @@ ipcMain.on("set-global-shortcut", (_e, enabled: boolean, accelerator: string) =>
         else showMainWindow();
       });
     } catch {
-      /* invalid accelerator — ignore */
     }
   }
 });
@@ -416,12 +395,9 @@ ipcMain.handle("git-status", (_event, dir: string) => {
 });
 
 app.whenReady().then(async () => {
-  // Dock icon on macOS (the Windows taskbar id is set at module load above).
   const icon = appIconImage();
   if (icon && process.platform === "darwin" && app.dock) app.dock.setIcon(icon);
 
-  // Allow the renderer to use the microphone (for voice dictation). This is a
-  // local, trusted app, so we grant media requests outright.
   session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => {
     cb(permission === "media" || permission === "mediaKeySystem" || permission === "notifications");
   });

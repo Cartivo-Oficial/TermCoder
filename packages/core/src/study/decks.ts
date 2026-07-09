@@ -3,15 +3,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { configFile } from "../util/paths";
 
-/**
- * Spaced-repetition flashcards for the study assistant (termexplorer), using the
- * SM-2 algorithm. Decks live in `~/.config/termcoder/decks.json` and sync across
- * machines through the Phase-1 sync layer (the "decks" store).
- */
 
 const DAY = 86_400_000;
 
-/** A single flashcard with its SM-2 scheduling state. */
 export interface Card {
   id: string;
   front: string;
@@ -31,7 +25,6 @@ export interface Deck {
 
 export type DeckMap = Record<string, Deck>;
 
-/** A review grade: 0 (blackout) … 5 (perfect recall). 3+ counts as correct. */
 export type Grade = 0 | 1 | 2 | 3 | 4 | 5;
 
 function file(env: NodeJS.ProcessEnv): string {
@@ -55,15 +48,10 @@ export function saveDecks(decks: DeckMap, env: NodeJS.ProcessEnv = process.env):
   writeFileSync(f, JSON.stringify(decks, null, 2), "utf8");
 }
 
-/** A fresh card, due immediately. */
 export function newCard(front: string, back: string, now = Date.now()): Card {
   return { id: randomUUID(), front, back, ease: 2.5, interval: 0, reps: 0, due: now, createdAt: now };
 }
 
-/**
- * Apply one SM-2 review to a card. A grade below 3 lapses the card (back to a
- * 1-day interval); 3+ advances it and nudges the easiness factor.
- */
 export function schedule(card: Card, grade: Grade, now = Date.now()): Card {
   let { ease, interval, reps } = card;
   if (grade < 3) {
@@ -79,7 +67,6 @@ export function schedule(card: Card, grade: Grade, now = Date.now()): Card {
   return { ...card, ease, interval, reps, due: now + interval * DAY };
 }
 
-/** Add cards to a deck (creating it if needed) and persist. Returns the deck. */
 export function addCards(
   deckName: string,
   cards: Array<{ front: string; back: string }>,
@@ -96,14 +83,12 @@ export function addCards(
   return deck;
 }
 
-/** Cards in a deck that are due for review now (oldest-due first). */
 export function dueCards(deckName: string, env: NodeJS.ProcessEnv = process.env, now = Date.now()): Card[] {
   const deck = loadDecks(env)[deckName];
   if (!deck) return [];
   return deck.cards.filter((c) => c.due <= now).sort((a, b) => a.due - b.due);
 }
 
-/** Grade a card in a deck, updating its schedule; returns the updated card. */
 export function gradeCard(
   deckName: string,
   cardId: string,
@@ -123,7 +108,6 @@ export function gradeCard(
   return updated;
 }
 
-/** A summary of every deck: total cards and how many are due now. */
 export function deckSummaries(
   env: NodeJS.ProcessEnv = process.env,
   now = Date.now(),

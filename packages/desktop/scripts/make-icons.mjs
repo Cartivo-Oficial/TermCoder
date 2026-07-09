@@ -1,10 +1,3 @@
-// Rasterize build/icon.svg into the PNGs + a Windows .ico the app/installer need.
-// Run with: node scripts/make-icons.mjs
-//
-// IMPORTANT: the Windows shell (Explorer/taskbar) only reliably renders PNG-
-// compressed icon entries at 256px. Smaller sizes MUST be classic BMP/DIB or the
-// shell silently falls back to a generic/stale icon — which is exactly the "old
-// logo won't go away" bug. So we emit BMP for 16–128 and PNG only for 256.
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { writeFileSync } from "node:fs";
@@ -25,7 +18,6 @@ for (const { name, size } of pngSizes) {
   console.log(`wrote build/${name} (${size}px)`);
 }
 
-/** A 32bpp bottom-up BGRA DIB (BITMAPINFOHEADER + XOR pixels + empty AND mask). */
 async function bmpDib(size) {
   const rgba = await sharp(svg, { density: 384 }).resize(size, size).ensureAlpha().raw().toBuffer();
   const xor = Buffer.alloc(size * size * 4);
@@ -41,7 +33,6 @@ async function bmpDib(size) {
       xor[d + 3] = rgba[s + 3]; // A
     }
   }
-  // 1bpp AND mask, rows padded to 4 bytes; all-zero since alpha carries opacity.
   const andStride = Math.ceil(Math.ceil(size / 8) / 4) * 4;
   const andMask = Buffer.alloc(andStride * size, 0);
 
@@ -84,7 +75,6 @@ const images = [];
 for (const size of [16, 24, 32, 48, 64, 128]) {
   images.push({ size, buffer: await bmpDib(size) });
 }
-// 256px as PNG (the one size the shell renders as PNG reliably).
 images.push({ size: 256, buffer: await sharp(svg, { density: 384 }).resize(256, 256).png().toBuffer() });
 
 writeFileSync(join(buildDir, "icon.ico"), buildIco(images));

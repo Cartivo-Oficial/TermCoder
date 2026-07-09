@@ -9,7 +9,6 @@ interface PermissionModalProps {
   onDecision: (decision: PermissionDecision) => void;
 }
 
-/** Blocking prompt shown before a mutating tool runs. Keys: a / d / A. */
 export function PermissionModal({ theme, request, onDecision }: PermissionModalProps) {
   useInput((input) => {
     if (input === "a") onDecision("allow");

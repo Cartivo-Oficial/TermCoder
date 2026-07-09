@@ -8,7 +8,6 @@ type Readiness = "ready" | "unverified" | "needs-key";
 interface ModelPickerProps {
   theme: Theme;
   entries: ModelEntry[];
-  /** Whether the user can run this model now: health-checked, key saved but unverified, or missing a key. */
   readiness: (e: ModelEntry) => Readiness;
   current: string;
   favorites: string[];
@@ -23,7 +22,6 @@ const BAR_WIDTH = 60;
 
 type Row = { header: string } | { entry: ModelEntry; itemIndex: number };
 
-/** An advanced, grouped, searchable model chooser (opened by `/model`). */
 export function ModelPicker({
   theme,
   entries,
@@ -42,7 +40,6 @@ export function ModelPicker({
   const filtered = entries.filter((e) => !q || `${e.name} ${e.id}`.toLowerCase().includes(q));
   const favSet = new Set(favorites);
 
-  // Favourites pinned first; every other model appears once in its category.
   const sections: Array<{ label: string; match: (e: ModelEntry) => boolean }> = [
     { label: "★ Favorites", match: (e) => favSet.has(e.id) },
     { label: "✦ termcoder AI — our models", match: (e) => !favSet.has(e.id) && (e.provider === "termcoder" || e.provider === "termexplorer") },
@@ -62,7 +59,6 @@ export function ModelPicker({
     }
   }
 
-  // "+ Add model": typing a full "provider/model" id offers it as a custom pick.
   const customId = query.trim();
   if (/^[a-z0-9._-]+\/.+/i.test(customId) && !items.some((e) => e.id === customId)) {
     const custom: ModelEntry = {
@@ -104,7 +100,6 @@ export function ModelPicker({
     }
   });
 
-  // Scroll a window over the (grouped) rows, keeping the selected item visible.
   const selRow = rows.findIndex((r) => "entry" in r && r.itemIndex === selClamped);
   const start = Math.max(0, Math.min(selRow - Math.floor(MAX_VISIBLE / 2), rows.length - MAX_VISIBLE));
   const visible = rows.slice(Math.max(0, start), Math.max(0, start) + MAX_VISIBLE);
@@ -149,7 +144,6 @@ export function ModelPicker({
             .join(" · ");
           const star = favSet.has(e.id) ? "★ " : "";
           if (active) {
-            // Full-width accent bar on the selected row.
             const line = `❯ ${dotFor} ${star}${e.name}${badges ? `   ${badges}` : ""}${e.id === current ? "  ✓" : ""}`;
             return (
               <Text key={`i${i}`} backgroundColor={theme.accent} color="#0b0b0d" bold>

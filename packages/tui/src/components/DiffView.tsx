@@ -1,7 +1,6 @@
 import { Box, Text } from "ink";
 import type { Theme } from "../theme";
 
-/** True if the text looks like a unified diff (has +/- prefixed lines). */
 export function isDiff(text: string): boolean {
   return /^[+-] /m.test(text);
 }
@@ -12,11 +11,6 @@ interface Row {
   text: string;
 }
 
-/**
- * Render a unified-style diff with a new-file line-number gutter: additions
- * green, removals red, context dim. Line numbers track the new side (removed
- * lines have none); collapsed context runs advance the counter.
- */
 export function DiffView({ theme, text }: { theme: Theme; text: string }) {
   let newNo = 1;
   const rows: Row[] = text.split("\n").map((line) => {

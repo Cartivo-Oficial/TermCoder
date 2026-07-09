@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { pullSync, pushSync, syncAll } from "./sync";
 import type { Gist, GitHubClient } from "../github/github";
 
-/** A tiny in-memory gist backend implementing just what sync uses. */
 function fakeClient() {
   const store: Record<string, Record<string, string>> = {};
   let n = 0;
@@ -45,7 +44,6 @@ describe("sync store", () => {
   let cfgB: string;
   let envA: NodeJS.ProcessEnv;
   let envB: NodeJS.ProcessEnv;
-  // Stores live under the `termcoder` subdir of XDG_CONFIG_HOME (see configDir).
   const cdir = (cfg: string) => join(cfg, "termcoder");
   const favFile = (cfg: string) => join(cdir(cfg), "favorites.json");
   const metaFile = (cfg: string) => join(cdir(cfg), "sync.json");
@@ -71,7 +69,6 @@ describe("sync store", () => {
     writeFav(cfgA, ["ollama/llama3.1"]);
     expect(await pushSync("favorites", client, envA)).toBe(true);
 
-    // Machine B points at the same sync gist, has no local favorites yet.
     const meta = JSON.parse(readFileSync(metaFile(cfgA), "utf8"));
     mkdirSync(cdir(cfgB), { recursive: true });
     writeFileSync(metaFile(cfgB), JSON.stringify(meta), "utf8");
@@ -85,14 +82,12 @@ describe("sync store", () => {
     await pushSync("favorites", client, envA);
     const gistId = JSON.parse(readFileSync(metaFile(cfgA), "utf8")).gistId as string;
 
-    // Remote is newer → overwrite local.
     await client.updateGist(gistId, {
       "favorites.json": { content: JSON.stringify({ updatedAt: Date.now() + 1e7, data: ["b"] }) },
     });
     expect(await pullSync("favorites", client, envA)).toBe(true);
     expect(readFav(cfgA)).toEqual(["b"]);
 
-    // Remote is older → keep local.
     await client.updateGist(gistId, {
       "favorites.json": { content: JSON.stringify({ updatedAt: 1, data: ["c"] }) },
     });

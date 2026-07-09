@@ -1,13 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-/**
- * Lightweight, dependency-free codebase understanding. `projectSummary` is a
- * short, always-on grounding block for the agent (stack, scripts, key dirs,
- * entry points); `repoDetail` is a fuller map fetched on demand by the `repomap`
- * tool (full commands, a shallow tree, exported symbols). No AST, no index —
- * just fast heuristics over the filesystem, so it costs almost nothing.
- */
 
 const IGNORE = new Set([
   "node_modules", ".git", "dist", "out", "release", ".next", ".turbo", ".cache",
@@ -48,7 +41,6 @@ function detectStack(cwd: string): Stack {
         if (pkg.scripts?.[k]) scripts[k] = pkg.scripts[k]!;
       }
     } catch {
-      /* malformed package.json — ignore */
     }
   }
 
@@ -83,7 +75,6 @@ function countFiles(dir: string, depth = 0): number {
       if (n > 9999) break;
     }
   } catch {
-    /* unreadable dir */
   }
   return n;
 }
@@ -96,7 +87,6 @@ function topDirs(cwd: string): Array<{ name: string; files: number }> {
       out.push({ name: ent.name, files: countFiles(join(cwd, ent.name)) });
     }
   } catch {
-    /* unreadable cwd */
   }
   return out.sort((a, b) => b.files - a.files).slice(0, 12);
 }
@@ -111,7 +101,6 @@ function entryPoints(cwd: string): string[] {
   return ENTRY_CANDIDATES.filter((p) => existsSync(join(cwd, p)));
 }
 
-/** A short grounding block injected into the agent's system prompt. */
 export function projectSummary(cwd: string): string {
   const { stack, scripts } = detectStack(cwd);
   const dirs = topDirs(cwd);
@@ -127,7 +116,6 @@ export function projectSummary(cwd: string): string {
   return lines.join("\n");
 }
 
-/** Exported symbol names grepped (no AST) from a source file. */
 function exportsOf(cwd: string, rel: string): string[] {
   try {
     const text = readFileSync(join(cwd, rel), "utf8");
@@ -153,7 +141,6 @@ function shallowTree(cwd: string, rel: string): string[] {
   }
 }
 
-/** A fuller map returned by the repomap tool (script commands, tree, symbols). */
 export function repoDetail(cwd: string): string {
   const { stack, scripts } = detectStack(cwd);
   const dirs = topDirs(cwd);
