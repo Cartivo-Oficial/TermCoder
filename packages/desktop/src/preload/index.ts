@@ -34,4 +34,28 @@ contextBridge.exposeInMainWorld("api", {
   setTray: (enabled: boolean) => ipcRenderer.send("set-tray", enabled),
   setGlobalShortcut: (enabled: boolean, accelerator: string) =>
     ipcRenderer.send("set-global-shortcut", enabled, accelerator),
+  pty: {
+    available: (): Promise<{ ok: boolean; error?: string }> => ipcRenderer.invoke("pty:available"),
+    tools: (): Promise<Array<{ id: string; label: string; command: string }>> =>
+      ipcRenderer.invoke("pty:tools"),
+    start: (options: {
+      cwd: string | null;
+      cols: number;
+      rows: number;
+    }): Promise<{ ok: true; pid: number } | { ok: false; error: string }> =>
+      ipcRenderer.invoke("pty:start", options),
+    write: (data: string) => ipcRenderer.send("pty:input", data),
+    resize: (cols: number, rows: number) => ipcRenderer.send("pty:resize", cols, rows),
+    kill: () => ipcRenderer.send("pty:kill"),
+    onData: (cb: (data: string) => void) => {
+      const handler = (_e: unknown, data: string) => cb(data);
+      ipcRenderer.on("pty:data", handler);
+      return () => ipcRenderer.off("pty:data", handler);
+    },
+    onExit: (cb: (code: number) => void) => {
+      const handler = (_e: unknown, code: number) => cb(code);
+      ipcRenderer.on("pty:exit", handler);
+      return () => ipcRenderer.off("pty:exit", handler);
+    },
+  },
 });

@@ -57,6 +57,18 @@ declare global {
       gitCommit: (dir: string, message: string) => Promise<{ ok: boolean; message: string }>;
       setTray: (enabled: boolean) => void;
       setGlobalShortcut: (enabled: boolean, accelerator: string) => void;
+      pty: {
+        available: () => Promise<{ ok: boolean; error?: string }>;
+        tools: () => Promise<Array<{ id: string; label: string; command: string }>>;
+        start: (options: { cwd: string | null; cols: number; rows: number }) => Promise<
+          { ok: true; pid: number } | { ok: false; error: string }
+        >;
+        write: (data: string) => void;
+        resize: (cols: number, rows: number) => void;
+        kill: () => void;
+        onData: (cb: (data: string) => void) => () => void;
+        onExit: (cb: (code: number) => void) => () => void;
+      };
     };
   }
 }
