@@ -10,13 +10,14 @@ import { Hero } from "./Hero";
 import { useI18n } from "./i18n";
 import { COLOR_THEMES, THEME_VARS } from "./themes";
 import { KEYBIND_ACTIONS, comboFor, matchCombo } from "./keybinds";
-import { IconStop, IconShare, IconCopy, IconEdit, IconMic, IconUndo, IconBolt, IconStudy } from "./Icons";
+import { IconStop, IconShare, IconCopy, IconEdit, IconMic, IconUndo, IconBolt } from "./Icons";
 import { Dashboard } from "./Dashboard";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { ModelBrowser } from "./ModelBrowser";
 import { Study } from "./Study";
 import { Rail } from "./Rail";
 import { SessionsPanel } from "./SessionsPanel";
+import { DiffBlock, DiffBody, ToolCard } from "./ToolCard";
 import { CodeEditor } from "./CodeEditor";
 import { blobToWav, blobToBase64 } from "./audio";
 import {
@@ -177,18 +178,6 @@ function playChime() {
   }
 }
 
-function DiffBlock({ text }: { text: string }) {
-  return (
-    <pre className="diff">
-      {text.split("\n").map((line, i) => (
-        <div key={i} className={line.startsWith("+") ? "add" : line.startsWith("-") ? "del" : "ctx"}>
-          {line}
-        </div>
-      ))}
-    </pre>
-  );
-}
-
 interface Tab {
   id: string;
   name: string;
@@ -196,25 +185,6 @@ interface Tab {
   content: string;
   path?: string;
   dirty?: boolean;
-}
-
-function DiffBody({ content }: { content: string }) {
-  return (
-    <pre className="viewer-body diff">
-      {content.split("\n").map((line, i) => {
-        const cls =
-          line.startsWith("+") && !line.startsWith("+++") ? "add"
-          : line.startsWith("-") && !line.startsWith("---") ? "del"
-          : line.startsWith("@@") ? "hunk"
-          : "ctx";
-        return (
-          <div key={i} className={cls}>
-            {line || " "}
-          </div>
-        );
-      })}
-    </pre>
-  );
 }
 
 function TabbedViewer({
@@ -1602,9 +1572,6 @@ export function App() {
             )}
             <span className={`dot ${connected ? "on" : "off"}`} title={connected ? t("chat.connected") : t("chat.connecting")} />
             <div className="ch-right">
-              <button className="icon sm" title="Study — flashcards" onClick={() => setStudyOpen(true)}>
-                <IconStudy />
-              </button>
               {tokens > 0 ? (
                 <span
                   className="ctx-meter"
@@ -1651,6 +1618,7 @@ export function App() {
           {busy && progressBar ? <div className="progress" /> : null}
 
           <div className="transcript" ref={scrollRef}>
+            <div className="transcript-inner">
             {messages.length === 0 ? (
               <div className="empty">
                 <Hero />
@@ -1696,6 +1664,7 @@ export function App() {
                     <div className="bubble assistant streaming">{m.text}</div>
                   ) : (
                     <div className="assistant-wrap">
+                      <div className="msg-meta"><span className="msg-spine" />termcoder</div>
                       <div className="bubble assistant markdown">
                         <ErrorBoundary fallback={() => <pre className="md-fallback">{m.text}</pre>}>
                           <ReactMarkdown
@@ -1713,16 +1682,7 @@ export function App() {
                   )
                 ) : null}
                 {m.role === "tool" ? (
-                  <div className="tool-wrap">
-                    <div className="tool">
-                      <span className={`status ${m.status}`}>
-                        {m.status === "error" ? "✗" : m.status === "done" ? "✓" : "•"}
-                      </span>
-                      <span className="toolname">{m.name}</span>
-                      {m.text ? <span className="muted"> {m.text}</span> : null}
-                    </div>
-                    {m.detail && expandTools ? (isDiff(m.detail) ? <DiffBlock text={m.detail} /> : <pre className="detail">{m.detail}</pre>) : null}
-                  </div>
+                  <ToolCard name={m.name} text={m.text} status={m.status} detail={m.detail} defaultOpen={expandTools} />
                 ) : null}
                 {m.role === "error" ? <div className="bubble error">✗ {m.text}</div> : null}
               </div>
@@ -1740,6 +1700,7 @@ export function App() {
                 ) : null}
               </div>
             ) : null}
+            </div>
           </div>
 
           {perm ? (
