@@ -244,20 +244,13 @@ svg { display: block; }
 /* First-run welcome / mode picker */
 @keyframes wc-in { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
 .welcome-overlay {
-  position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
   background:
-    radial-gradient(1100px 520px at 50% -8%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 60%),
-    radial-gradient(900px 500px at 50% 108%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%),
-    color-mix(in srgb, var(--bg, #0a0a0b) 88%, #000);
-  backdrop-filter: blur(10px);
+    radial-gradient(1000px 600px at 50% 115%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 60%),
+    radial-gradient(140% 140% at 50% 40%, var(--bg) 55%, color-mix(in srgb, var(--bg) 75%, #000) 100%);
 }
-.welcome-card {
-  width: min(600px, 93vw); padding: 46px 42px 34px; border-radius: 22px;
-  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--elev) 96%, #fff), var(--elev));
-  box-shadow: 0 30px 80px rgba(0,0,0,.55), inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent);
-  text-align: center; animation: wc-in .28s ease both;
-}
+.welcome-inner { width: min(680px, 92vw); text-align: center; animation: wc-in 0.28s var(--ease) both; position: relative; }
 .welcome-logo { font-size: 40px; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 4px; }
 .welcome-logo .wl-term { background: linear-gradient(90deg, #ff9a3d, #ff6a2b); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .welcome-logo .wl-coder { color: var(--text); }
@@ -265,8 +258,7 @@ svg { display: block; }
 .welcome-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .welcome-choice {
   position: relative; display: flex; flex-direction: column; align-items: center; gap: 9px;
-  padding: 30px 22px 24px; border-radius: 16px; cursor: pointer; color: var(--text); overflow: hidden;
-  border: 1px solid var(--border); background: color-mix(in srgb, var(--bg) 40%, transparent);
+  padding: 30px 22px 24px; border-radius: var(--r-lg); cursor: pointer; color: var(--text); overflow: hidden;
   transition: border-color .16s, transform .14s, box-shadow .16s, background .16s;
 }
 .welcome-choice::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; opacity: .0; transition: opacity .16s; }
