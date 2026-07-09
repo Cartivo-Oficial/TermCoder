@@ -12,7 +12,19 @@
   --warn: #d3aa66;
   --bad: #e08c8c;
   --accent: #FF7A45;
+  --accent-hot: #FF9A3D;
   --accent-dim: rgba(255, 122, 69, 0.14);
+  /* Layers derive from the theme palette so every color theme keeps working. */
+  --surface: color-mix(in srgb, var(--panel) 84%, transparent);
+  --surface-solid: var(--panel);
+  --floating: var(--elev);
+  --seam: color-mix(in srgb, var(--text) 5%, transparent);
+  --accent-glow: color-mix(in srgb, var(--accent) 9%, transparent);
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --t-fast: 140ms;
+  --t-med: 200ms;
   --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
   --radius: 10px;
   --ease: cubic-bezier(0.2, 0, 0, 1);
@@ -21,7 +33,11 @@
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
 body {
-  background: var(--bg);
+  background:
+    radial-gradient(1100px 700px at 70% 104%, var(--accent-glow), transparent 62%),
+    radial-gradient(800px 500px at -4% -6%, color-mix(in srgb, var(--accent) 4%, transparent), transparent 55%),
+    radial-gradient(140% 140% at 50% 42%, var(--bg) 55%, color-mix(in srgb, var(--bg) 78%, #000) 100%);
+  background-attachment: fixed;
   color: var(--text);
   font: 13.5px/1.6 ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
   font-size: var(--fs, 14px);
@@ -44,6 +60,18 @@ svg { display: block; }
 ::-webkit-scrollbar-button { display: none; height: 0; width: 0; }
 ::-webkit-scrollbar-corner { background: transparent; }
 
+/* Dark frosted glass: surface layer of the 3-layer system. */
+.glass {
+  background: var(--surface);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 1px 0 var(--seam);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .glass { background: var(--surface-solid); }
+}
+
 /* Compact density + reduced motion (toggled from Settings). */
 :root[data-density="compact"] .transcript { gap: 9px; padding-top: 14px; padding-bottom: 14px; }
 :root[data-density="compact"] .bubble.user { padding: 7px 11px; }
@@ -54,6 +82,9 @@ svg { display: block; }
 :root[data-motion="off"] *::after {
   animation-duration: 0s !important;
   transition-duration: 0s !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0s !important; transition-duration: 0s !important; }
 }
 
 /* Soft, consistent motion. All of it is killed by data-motion="off" above. */
