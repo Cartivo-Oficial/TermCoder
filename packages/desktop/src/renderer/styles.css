@@ -816,13 +816,6 @@ button.chip { cursor: pointer; }
 }
 .update-later:hover { color: var(--fg, #e7e7ea); }
 
-.upgrade-card { margin: 14px auto 0; max-width: 420px; display: flex; flex-direction: column; gap: 6px;
-  padding: 14px 16px; background: var(--panel); border: 1px solid var(--border); border-left: 3px solid var(--accent);
-  border-radius: 12px; text-align: left; }
-.upgrade-card b { font-size: 13.5px; }
-.upgrade-card span { font-size: 12.5px; color: var(--muted); }
-.upgrade-actions { display: flex; gap: 8px; margin-top: 6px; }
-
 .hero { position: relative; padding: 26px 12px 6px; overflow: hidden; }
 .stars { position: absolute; inset: 0; pointer-events: none; }
 .stars b {
@@ -835,7 +828,19 @@ button.chip { cursor: pointer; }
 @keyframes tw { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.85; } }
 @media (prefers-reduced-motion: reduce) { .stars b { animation: none; } }
 .hero-art { display: flex; justify-content: center; gap: 11px; position: relative; }
-.hero-art pre { margin: 0; font-family: var(--mono); font-size: 9px; line-height: 1.05; }
-.hero-t { color: var(--accent); }
+.hero-art pre { margin: 0; font-family: var(--mono); font-size: 10px; line-height: 1.05; }
+.hero-t {
+  background: linear-gradient(180deg, var(--accent-hot), var(--accent));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 18px var(--accent-glow));
+}
 .hero-c { color: var(--text); }
 .hero-tag { text-align: center; font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 14px; }
+.hero-suggest { display: flex; gap: 8px; justify-content: center; margin-top: 22px; flex-wrap: wrap; }
+.suggest-chip {
+  background: var(--surface); backdrop-filter: blur(10px);
+  border: 1px solid var(--border); border-radius: 999px;
+  color: var(--muted); padding: 7px 14px; font-size: 12.5px;
+  transition: color var(--t-fast), border-color var(--t-fast), box-shadow var(--t-med);
+}
+.suggest-chip:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); box-shadow: 0 0 18px var(--accent-glow); }

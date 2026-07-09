@@ -1615,7 +1615,7 @@ export function App() {
             <div className="transcript-inner">
             {messages.length === 0 ? (
               <div className="empty">
-                <Hero />
+                <Hero onSuggest={(text) => { setInput(text); inputRef.current?.focus(); }} />
                 {!/^(termcoderfree|termcoder\/|termexplorer|ollama\/)/.test(model) ? (
                   <button className="free-hint" onClick={() => changeModel("termcoderfree/auto")}>
                     {t("chat.freeHint")}
@@ -1623,18 +1623,9 @@ export function App() {
                 ) : null}
                 {!(serverStatus?.providers ?? []).some((p) => p.configured && p.name !== "ollama") &&
                  localStorage.getItem("tc-skip-upgrade") !== "1" ? (
-                  <div className="upgrade-card">
-                    <b>{t("upgrade.title")}</b>
-                    <span>{t("upgrade.body")}</span>
-                    <div className="upgrade-actions">
-                      <button className="settings-btn" onClick={() => { setSettingsTab("providers"); setSettingsOpen(true); }}>
-                        {t("upgrade.cta")}
-                      </button>
-                      <button className="update-later" onClick={(e) => { localStorage.setItem("tc-skip-upgrade", "1"); (e.currentTarget.closest(".upgrade-card") as HTMLElement).style.display = "none"; }}>
-                        {t("upgrade.later")}
-                      </button>
-                    </div>
-                  </div>
+                  <button className="free-hint" onClick={() => { setSettingsTab("providers"); setSettingsOpen(true); }}>
+                    {t("upgrade.title")} →
+                  </button>
                 ) : null}
               </div>
             ) : null}

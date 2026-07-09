@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useI18n } from "./i18n";
 
 const TERM = `█████ █████ ████  █   █
   █   █     █   █ ██ ██
@@ -14,10 +15,11 @@ const CODER = ` ████  ███  ████  █████ ███
 
 const GLYPHS = ["·", "+", "✦", "*"];
 
-export function Hero() {
+export function Hero({ onSuggest }: { onSuggest: (text: string) => void }) {
+  const { t } = useI18n();
   const stars = useMemo(
     () =>
-      Array.from({ length: 22 }, (_, i) => ({
+      Array.from({ length: 26 }, (_, i) => ({
         id: i,
         glyph: GLYPHS[i % GLYPHS.length]!,
         left: `${Math.random() * 96}%`,
@@ -38,6 +40,11 @@ export function Hero() {
         <pre className="hero-c">{CODER}</pre>
       </div>
       <div className="hero-tag">your terminal coding agent</div>
+      <div className="hero-suggest">
+        {(["hero.s1", "hero.s2", "hero.s3"] as const).map((k) => (
+          <button key={k} className="suggest-chip" onClick={() => onSuggest(t(k))}>{t(k)}</button>
+        ))}
+      </div>
     </div>
   );
 }
