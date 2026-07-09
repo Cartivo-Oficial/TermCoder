@@ -422,6 +422,7 @@ export function App() {
   const autoCommitRef = useRef(autoCommit);
   const [agent, setAgent] = useState<string>(() => localStorage.getItem("tc-agent") || "build");
   const [agents, setAgents] = useState<AgentInfo[]>([]);
+  const [catalog, setCatalog] = useState<Array<{ id: string; contextK?: number }>>([]);
   const [agentOpen, setAgentOpen] = useState(false);
   const [browserOpen, setBrowserOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -611,6 +612,10 @@ export function App() {
     fetch(`${httpBase}/commands`)
       .then((r) => r.json())
       .then((list: CommandInfo[]) => setCommands(Array.isArray(list) ? list : []))
+      .catch(() => {});
+    fetch(`${httpBase}/models`)
+      .then((r) => r.json())
+      .then((list) => setCatalog(Array.isArray(list) ? list : []))
       .catch(() => {});
   }, []);
 
@@ -2215,6 +2220,23 @@ export function App() {
           port={port}
         />
       ) : null}
+
+      {(() => {
+        const ctxPct = lastCtx > 0 ? Math.round((lastCtx / ((catalog.find((c) => c.id === model)?.contextK ?? 128) * 1000)) * 100) : 0;
+        return (
+          <div className="statusbar">
+            <span className="sb-item">{cwd?.split(/[\\/]/).pop()}</span>
+            <span className="sb-sep">·</span>
+            <span className="sb-item mono">{model.split("/").pop()}</span>
+            <span className="sb-sep">·</span>
+            <span className="sb-item mono">{agent ?? "build"}</span>
+            {lastCtx > 0 ? (<><span className="sb-sep">·</span><span className={`sb-item mono ${ctxPct > 70 ? "hot" : ctxPct > 40 ? "warm" : ""}`}>ctx {fmtTokens(lastCtx)} ({ctxPct}%)</span></>) : null}
+            {(tokensIn || tokensOut) ? (<><span className="sb-sep">·</span><span className="sb-item mono">↓{fmtTokens(tokensIn)} ↑{fmtTokens(tokensOut)}</span></>) : null}
+            <span className="sb-spacer" />
+            <span className={`dot ${busy ? "gen" : "idle"}`} />
+          </div>
+        );
+      })()}
     </div>
   );
 }

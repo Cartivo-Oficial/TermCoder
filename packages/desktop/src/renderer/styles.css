@@ -117,6 +117,13 @@ svg { display: block; }
 
 .body { flex: 1; display: flex; min-height: 0; }
 
+.statusbar { display: flex; align-items: center; gap: 8px; height: 26px; padding: 0 12px; border-top: 1px solid var(--border); background: var(--panel); font-family: var(--mono); font-size: 11px; color: var(--muted); flex-shrink: 0; }
+.sb-item.mono { color: var(--muted); }
+.sb-item.warm { color: var(--warn); }
+.sb-item.hot { color: var(--bad); }
+.sb-sep { color: var(--faint); }
+.sb-spacer { flex: 1; }
+
 /* Left */
 .left {
   width: 248px; flex-shrink: 0;
