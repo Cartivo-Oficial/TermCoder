@@ -47,7 +47,7 @@ svg { display: block; }
 /* Compact density + reduced motion (toggled from Settings). */
 :root[data-density="compact"] .transcript { gap: 9px; padding-top: 14px; padding-bottom: 14px; }
 :root[data-density="compact"] .bubble.user { padding: 7px 11px; }
-:root[data-density="compact"] .session,
+:root[data-density="compact"] .session-card,
 :root[data-density="compact"] .srow { padding-top: 6px; padding-bottom: 6px; }
 :root[data-motion="off"] *,
 :root[data-motion="off"] *::before,
@@ -159,7 +159,7 @@ svg { display: block; }
 .session-card:hover { background: var(--elev); }
 .session-card.active { background: var(--elev2); box-shadow: inset 2px 0 0 var(--accent); }
 .session-card .sc-top { display: flex; align-items: center; gap: 7px; }
-.session-card .sc-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+.session-card .sc-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); background: transparent; border: none; padding: 0; text-align: left; cursor: pointer; font: inherit; }
 .session-card .sc-meta { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
 .session-del {
   display: flex; align-items: center; justify-content: center;

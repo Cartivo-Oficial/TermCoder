@@ -1591,11 +1591,15 @@ export function App() {
                     <div
                       key={s.id}
                       className={`session-card ${active ? "active" : ""}`}
-                      onClick={() => void openSession(s.id)}
                     >
                       <div className="sc-top">
                         <span className={`dot ${dotClass}`} />
-                        <span className="sc-title">{sessionLabel(s)}</span>
+                        <button
+                          className="sc-title"
+                          onClick={() => void openSession(s.id)}
+                        >
+                          {sessionLabel(s)}
+                        </button>
                         <button
                           className="session-del"
                           title={t("session.deleteOne")}
