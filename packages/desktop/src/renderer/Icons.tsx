@@ -11,20 +11,6 @@ const base: SVGProps<SVGSVGElement> = {
   strokeLinejoin: "round",
 };
 
-export const IconSidebar = (p: SVGProps<SVGSVGElement>) => (
-  <svg {...base} {...p}>
-    <rect x="3" y="4" width="18" height="16" rx="2" />
-    <path d="M9 4v16" />
-  </svg>
-);
-
-export const IconPanelRight = (p: SVGProps<SVGSVGElement>) => (
-  <svg {...base} {...p}>
-    <rect x="3" y="4" width="18" height="16" rx="2" />
-    <path d="M15 4v16" />
-  </svg>
-);
-
 export const IconSearch = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base} {...p}>
     <circle cx="11" cy="11" r="7" />
@@ -187,14 +173,6 @@ export const IconServer = (p: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-export const IconHelp = (p: SVGProps<SVGSVGElement>) => (
-  <svg {...base} {...p}>
-    <circle cx="12" cy="12" r="9" />
-    <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4" />
-    <path d="M12 17h.01" />
-  </svg>
-);
-
 export const IconBolt = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base} {...p}>
     <path d="M13 2 4.5 13.5a.6.6 0 0 0 .5 1h5l-1 7.5L19.5 10a.6.6 0 0 0-.5-1h-5l1-6z" />
@@ -222,10 +200,3 @@ export const IconAgents = (p: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-export const IconDashboard = (p: SVGProps<SVGSVGElement>) => (
-  <svg {...base} {...p}>
-    <rect x="3" y="12" width="4" height="8" rx="1" />
-    <rect x="10" y="7" width="4" height="13" rx="1" />
-    <rect x="17" y="4" width="4" height="16" rx="1" />
-  </svg>
-);

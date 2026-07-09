@@ -73,10 +73,11 @@ svg { display: block; }
 }
 
 /* Compact density + reduced motion (toggled from Settings). */
-:root[data-density="compact"] .transcript { gap: 9px; padding-top: 14px; padding-bottom: 14px; }
+:root[data-density="compact"] .transcript-inner { gap: 10px; }
 :root[data-density="compact"] .bubble.user { padding: 7px 11px; }
 :root[data-density="compact"] .session-card,
 :root[data-density="compact"] .srow { padding-top: 6px; padding-bottom: 6px; }
+:root[data-density="compact"] .composer { padding: 6px 10px; }
 :root[data-motion="off"] *,
 :root[data-motion="off"] *::before,
 :root[data-motion="off"] *::after {
@@ -772,7 +773,10 @@ button.chip { cursor: pointer; }
   --ok: #16a34a;
   --warn: #b45309;
   --bad: #dc2626;
-  --accent: #18181b;
+  /* Same hue family as the dark accent, darkened for contrast on white. */
+  --accent: #E8632C;
+  --accent-hot: #F07B3F;
+  --seam: color-mix(in srgb, #000 4%, transparent);
 }
 
 /* Update-available toast (bottom-right, dismissable) */

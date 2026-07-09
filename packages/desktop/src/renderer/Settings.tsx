@@ -1310,7 +1310,7 @@ export function Settings(p: Props) {
                 <div style={{ padding: "6px 20px 20px" }}>
                   <p className="hint" style={{ marginTop: 6 }}>Choose how to sign in to {pa?.label ?? connectFor}.</p>
                   {methods.map((m) => (
-                    <div key={m.id} style={{ borderTop: "1px solid var(--line)", padding: "12px 0" }}>
+                    <div key={m.id} style={{ borderTop: "1px solid var(--border)", padding: "12px 0" }}>
                       <div className="srow-title">
                         {m.label}
                         {!m.available && (
