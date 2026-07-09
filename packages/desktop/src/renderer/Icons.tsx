@@ -208,3 +208,11 @@ export const IconStudy = (p: SVGProps<SVGSVGElement>) => (
     <path d="M22 9.5v5" />
   </svg>
 );
+
+export const IconDashboard = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...p}>
+    <rect x="3" y="12" width="4" height="8" rx="1" />
+    <rect x="10" y="7" width="4" height="13" rx="1" />
+    <rect x="17" y="4" width="4" height="16" rx="1" />
+  </svg>
+);

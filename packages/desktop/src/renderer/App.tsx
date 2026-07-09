@@ -11,7 +11,8 @@ import { Logo } from "./Logo";
 import { useI18n } from "./i18n";
 import { COLOR_THEMES, THEME_VARS } from "./themes";
 import { KEYBIND_ACTIONS, comboFor, matchCombo } from "./keybinds";
-import { IconTrash, IconStop, IconShare, IconCopy, IconEdit, IconMic, IconUndo, IconBolt, IconStudy } from "./Icons";
+import { IconTrash, IconStop, IconShare, IconCopy, IconEdit, IconMic, IconUndo, IconBolt, IconStudy, IconDashboard } from "./Icons";
+import { Dashboard } from "./Dashboard";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { ModelBrowser } from "./ModelBrowser";
 import { Study } from "./Study";
@@ -355,6 +356,7 @@ export function App() {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
+  const [dashOpen, setDashOpen] = useState(() => localStorage.getItem("tc-dash") !== "0");
   const [onboarded, setOnboarded] = useState(() => localStorage.getItem("tc-onboarded") === "1");
   const [studentMode, setStudentMode] = useState(() => localStorage.getItem("tc-student") === "1");
   const [rightTab, setRightTab] = useState<"files" | "changes">("files");
@@ -1537,6 +1539,18 @@ export function App() {
           </div>
           <button className="icon" title={`${t("nav.newSession")} (Ctrl N)`} onClick={() => void newSession()}><IconNewChat /></button>
           <button className="icon" title={`${t("nav.toggleFiles")} (Ctrl J)`} onClick={() => setRightOpen((v) => !v)}><IconPanelRight /></button>
+          <button
+            className="icon"
+            title="Toggle dashboard"
+            onClick={() =>
+              setDashOpen((v) => {
+                localStorage.setItem("tc-dash", v ? "0" : "1");
+                return !v;
+              })
+            }
+          >
+            <IconDashboard />
+          </button>
           <button className="icon" title={t("nav.toggleTheme")} onClick={() => setTheme((th) => (th === "dark" ? "light" : "dark"))}>
             {theme === "dark" ? <IconSun /> : <IconMoon />}
           </button>
@@ -2067,6 +2081,17 @@ export function App() {
               </div>
             )}
           </aside>
+        ) : null}
+
+        {dashOpen ? (
+          <Dashboard
+            sessions={sessions}
+            liveIn={tokensIn}
+            liveOut={tokensOut}
+            t={t}
+            onNew={newSession}
+            onSettings={() => setSettingsOpen(true)}
+          />
         ) : null}
       </div>
 

@@ -455,6 +455,17 @@ svg { display: block; }
 .git-badge { font-size: 11px; font-weight: 700; width: 12px; text-align: center; }
 .changed-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
 
+/* Dashboard */
+.dashboard { width: 232px; flex-shrink: 0; background: var(--panel2); border-left: 1px solid var(--border); padding: 14px 12px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+.dash-stats { display: flex; flex-direction: column; gap: 6px; }
+.dash-stat { display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; }
+.dash-stat span { color: var(--muted); font-family: var(--mono); font-size: 11px; }
+.dash-stat b { font-size: 15px; }
+.spark { display: flex; align-items: flex-end; gap: 3px; height: 44px; padding: 4px 0; }
+.spark span { flex: 1; background: var(--accent); opacity: 0.7; border-radius: 2px 2px 0 0; min-height: 3px; }
+.dash-mix { display: flex; flex-wrap: wrap; gap: 5px; }
+.dash-toolkit { display: flex; flex-wrap: wrap; gap: 6px; }
+
 /* File viewer */
 .viewer { position: absolute; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 20; }
 .viewer-card { width: min(880px, 90%); max-height: 84%; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }

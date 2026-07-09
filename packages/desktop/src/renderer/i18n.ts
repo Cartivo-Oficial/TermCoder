@@ -329,6 +329,14 @@ const en: Dict = {
   "badge.ready": "ready",
   "badge.notSet": "not set",
   "badge.on": "on",
+  "dash.overview": "Overview",
+  "dash.sessions": "Sessions",
+  "dash.tokensIn": "in",
+  "dash.tokensOut": "out",
+  "dash.models": "Models",
+  "dash.toolkit": "Toolkit",
+  "dash.new": "New session",
+  "dash.settings": "Settings",
 };
 
 const pt: Dict = {
@@ -625,6 +633,14 @@ const pt: Dict = {
   "badge.ready": "pronto",
   "badge.notSet": "não definido",
   "badge.on": "ativo",
+  "dash.overview": "Visão geral",
+  "dash.sessions": "Sessões",
+  "dash.tokensIn": "entrada",
+  "dash.tokensOut": "saída",
+  "dash.models": "Modelos",
+  "dash.toolkit": "Ferramentas",
+  "dash.new": "Nova sessão",
+  "dash.settings": "Configurações",
 };
 
 const es: Dict = {
@@ -921,6 +937,14 @@ const es: Dict = {
   "badge.ready": "listo",
   "badge.notSet": "sin definir",
   "badge.on": "activo",
+  "dash.overview": "Resumen",
+  "dash.sessions": "Sesiones",
+  "dash.tokensIn": "entrada",
+  "dash.tokensOut": "salida",
+  "dash.models": "Modelos",
+  "dash.toolkit": "Herramientas",
+  "dash.new": "Nueva sesión",
+  "dash.settings": "Ajustes",
 };
 
 // High-traffic subset for the remaining languages; everything else falls back
