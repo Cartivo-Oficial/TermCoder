@@ -10,25 +10,23 @@ import { Hero } from "./Hero";
 import { useI18n } from "./i18n";
 import { COLOR_THEMES, THEME_VARS } from "./themes";
 import { KEYBIND_ACTIONS, comboFor, matchCombo } from "./keybinds";
-import { IconTrash, IconStop, IconShare, IconCopy, IconEdit, IconMic, IconUndo, IconBolt, IconStudy } from "./Icons";
+import { IconStop, IconShare, IconCopy, IconEdit, IconMic, IconUndo, IconBolt, IconStudy } from "./Icons";
 import { Dashboard } from "./Dashboard";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { ModelBrowser } from "./ModelBrowser";
 import { Study } from "./Study";
 import { Rail } from "./Rail";
+import { SessionsPanel } from "./SessionsPanel";
 import { CodeEditor } from "./CodeEditor";
 import { blobToWav, blobToBase64 } from "./audio";
 import {
   IconBack,
   IconClose,
   IconForward,
-  IconGear,
-  IconHelp,
   IconMaximize,
   IconMenu,
   IconMinimize,
   IconMoon,
-  IconNewChat,
   IconServer,
   IconPlus,
   IconSearch,
@@ -154,14 +152,7 @@ type StreamEvent = any;
 const IMG_EXT = /\.(png|jpe?g|gif|webp|bmp|svg)$/i;
 const isDiff = (t: string) => /^[+-] /m.test(t);
 const baseName = (p: string) => p.split(/[\\/]/).filter(Boolean).pop() ?? "project";
-const shortPath = (p: string) => {
-  const parts = p.split(/[\\/]/).filter(Boolean);
-  return parts.length > 3 ? `…\\${parts.slice(-2).join("\\")}` : p;
-};
 const fmtTokens = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
-const fmtK = (n: number | undefined) =>
-  n !== undefined && n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : String(n ?? 0);
-const sessionModelShort = (m: string) => m.split("/").pop() ?? m;
 
 /** A soft two-note chime (Web Audio) for the "agent finished" cue. */
 function playChime() {
@@ -1561,84 +1552,19 @@ export function App() {
 
       <div className="body">
         {leftOpen ? (
-          <aside className="left">
-            <div className="project">
-              <div className="avatar">{project.charAt(0).toUpperCase()}</div>
-              <div className="pinfo">
-                <div className="pname">{project}</div>
-                {cwd ? <div className="ppath">{shortPath(cwd)}</div> : null}
-              </div>
-              <button className="icon" title={t("nav.chooseFolder")} onClick={() => void chooseFolder()}>…</button>
-            </div>
-            <button className="new-session" onClick={() => void newSession()}>
-              <IconNewChat /> {t("nav.newSession")}
-            </button>
-            <div className="slist-head">
-              <span className="eyebrow">{t("session.heading")}</span>
-              {sessions.length > 1 ? (
-                <button
-                  className="icon sm"
-                  title={t("session.clearAll")}
-                  onClick={() => {
-                    if (!confirmDelete || window.confirm(t("session.confirmClear", { n: sessions.length }))) {
-                      void clearAllSessions();
-                    }
-                  }}
-                >
-                  <IconTrash />
-                </button>
-              ) : null}
-            </div>
-            <div className="session-list">
-              {sessions.filter((s) => s.messageCount > 0).length === 0 ? (
-                <div className="slist-empty">{t("session.none")}</div>
-              ) : null}
-              {sessions
-                .filter((s) => s.messageCount > 0)
-                .map((s) => {
-                  const active = s.id === currentId;
-                  const dotClass = active && busy ? "gen" : "idle";
-                  return (
-                    <div
-                      key={s.id}
-                      className={`session-card ${active ? "active" : ""}`}
-                    >
-                      <div className="sc-top">
-                        <span className={`dot ${dotClass}`} />
-                        <button
-                          className="sc-title"
-                          onClick={() => void openSession(s.id)}
-                        >
-                          {sessionLabel(s)}
-                        </button>
-                        <button
-                          className="session-del"
-                          title={t("session.deleteOne")}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!confirmDelete || window.confirm(t("session.confirmOne"))) void deleteSession(s.id);
-                          }}
-                        >
-                          <IconTrash />
-                        </button>
-                      </div>
-                      <div className="sc-meta">
-                        <span className="sc-model">{sessionModelShort(s.model)}</span>
-                        {s.usage ? (
-                          <span>
-                            ↓{fmtK(s.usage.tokensIn)} ↑{fmtK(s.usage.tokensOut)}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-            <div className="left-footer">
-              <button className="icon" title={t("nav.settings")} onClick={() => setSettingsOpen(true)}><IconGear /></button>
-              <button className="icon" title={`${t("nav.commandPalette")} (Ctrl K)`} onClick={() => setPaletteOpen(true)}><IconHelp /></button>
-            </div>
-          </aside>
+          <SessionsPanel
+            sessions={sessions}
+            currentId={currentId}
+            busy={busy}
+            project={project}
+            cwd={cwd}
+            confirmDelete={confirmDelete}
+            onOpen={(id) => void openSession(id)}
+            onDelete={(id) => void deleteSession(id)}
+            onClearAll={() => void clearAllSessions()}
+            onNew={() => void newSession()}
+            onChooseFolder={() => void chooseFolder()}
+          />
         ) : null}
 
         <main className="center">

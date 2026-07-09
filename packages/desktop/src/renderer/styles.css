@@ -180,9 +180,11 @@ svg { display: block; }
 /* Left */
 .left {
   width: 248px; flex-shrink: 0;
-  background: var(--panel2); border-right: 1px solid var(--border);
   display: flex; flex-direction: column; padding: 12px 10px; gap: 12px;
+  border-right: 1px solid var(--border);
+  animation: panelIn var(--t-med) var(--ease);
 }
+@keyframes panelIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
 .project { display: flex; align-items: center; gap: 10px; }
 .avatar {
   width: 34px; height: 34px; border-radius: 9px;
@@ -198,10 +200,10 @@ svg { display: block; }
 .new-session {
   display: flex; align-items: center; gap: 8px;
   background: var(--elev); color: var(--text);
-  border: 1px solid var(--border); border-radius: 10px;
+  border: 1px solid var(--border); border-radius: var(--r-md);
   padding: 10px 12px; font-weight: 500;
 }
-.new-session:hover { background: var(--elev2); }
+.new-session:hover { background: var(--elev2); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
 .new-session svg { color: var(--muted); }
 
 .slist-head {
@@ -214,10 +216,12 @@ svg { display: block; }
 .icon.sm svg { width: 13px; height: 13px; }
 
 .session-list { display: flex; flex-direction: column; gap: 1px; overflow-y: auto; flex: 1; }
-.left-footer { display: flex; gap: 4px; padding-top: 8px; border-top: 1px solid var(--border); }
-.session-card { display: flex; flex-direction: column; gap: 5px; padding: 9px 10px; border-radius: 9px; transition: background 0.12s; }
+.session-card { display: flex; flex-direction: column; gap: 5px; padding: 9px 10px; border-radius: 9px; border: 1px solid transparent; transition: background 0.12s; }
 .session-card:hover { background: var(--elev); }
-.session-card.active { background: var(--elev2); box-shadow: inset 2px 0 0 var(--accent); }
+.session-card.active {
+  background: var(--elev2); border-color: var(--border);
+  box-shadow: inset 2px 0 0 var(--accent), 0 4px 14px rgba(0, 0, 0, 0.25);
+}
 .session-card .sc-top { display: flex; align-items: center; gap: 7px; }
 .session-card .sc-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); background: transparent; border: none; padding: 0; text-align: left; cursor: pointer; font-family: inherit; font-size: 13.5px; font-weight: 500; }
 .session-card .sc-meta { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 10.5px; color: var(--faint); padding-left: 15px; }
