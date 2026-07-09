@@ -18,6 +18,7 @@ interface ScriptedStep {
   finishReason: string;
   toolCalls?: Array<{ toolCallId: string; toolName: string; input: unknown }>;
   responseMessages?: ModelMessage[];
+  usage?: Promise<{ inputTokens?: number; outputTokens?: number }>;
 }
 
 /** A model runner that replays one scripted step per call. */
@@ -35,6 +36,7 @@ function scriptedRunner(steps: ScriptedStep[]): ModelRunner {
       response: Promise.resolve({ messages: step.responseMessages ?? [] }),
       finishReason: Promise.resolve(step.finishReason),
       toolCalls: Promise.resolve(step.toolCalls ?? []),
+      usage: step.usage,
     };
   };
 }
@@ -547,5 +549,28 @@ describe("Session agent loop", () => {
     const events: SessionEvent[] = [];
     for await (const e of session.prompt("hi", { signal: AbortSignal.abort() })) events.push(e);
     expect(events).toEqual([]);
+  });
+
+  it("accumulates token usage across turns", async () => {
+    const runner = scriptedRunner([
+      {
+        chunks: [{ type: "text-delta", text: "First response." }],
+        finishReason: "stop",
+        responseMessages: [{ role: "assistant", content: "First response." }],
+        usage: Promise.resolve({ inputTokens: 10, outputTokens: 3 }),
+      },
+      {
+        chunks: [{ type: "text-delta", text: "Second response." }],
+        finishReason: "stop",
+        responseMessages: [{ role: "assistant", content: "Second response." }],
+        usage: Promise.resolve({ inputTokens: 20, outputTokens: 6 }),
+      },
+    ]);
+    const session = makeSession(runner);
+    await collect(session, "first prompt");
+    expect(session.record.usage).toEqual({ tokensIn: 10, tokensOut: 3 });
+
+    await collect(session, "second prompt");
+    expect(session.record.usage).toEqual({ tokensIn: 30, tokensOut: 9 });
   });
 });

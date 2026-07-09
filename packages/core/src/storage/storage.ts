@@ -28,6 +28,7 @@ export interface SessionRecord {
   /** Max tool-execution rounds per prompt. Undefined uses the engine default. */
   maxSteps?: number;
   messages: ModelMessage[];
+  usage?: { tokensIn: number; tokensOut: number };
 }
 
 /** Lightweight session listing entry (no message bodies). */
@@ -39,6 +40,7 @@ export interface SessionSummary {
   cwd: string;
   model: string;
   messageCount: number;
+  usage?: { tokensIn: number; tokensOut: number };
 }
 
 export function defaultSessionsDir(env: NodeJS.ProcessEnv = process.env): string {
@@ -145,6 +147,7 @@ export class SessionStore {
           cwd: record.cwd,
           model: record.model,
           messageCount: record.messages.length,
+          usage: record.usage,
         });
       } catch {
         // Ignore corrupt session files rather than failing the whole listing.

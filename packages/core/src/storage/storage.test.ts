@@ -74,4 +74,12 @@ describe("SessionStore", () => {
     expect(store.list()).toEqual([]);
     expect(store.deleteAll()).toBe(0);
   });
+
+  it("persists and lists per-session usage; absent on a fresh record", () => {
+    const rec = store.create({ cwd: dir, model: "termcoderfree/auto" });
+    expect(store.list()[0]?.usage).toBeUndefined();
+    rec.usage = { tokensIn: 100, tokensOut: 40 };
+    store.save(rec);
+    expect(store.list()[0]?.usage).toEqual({ tokensIn: 100, tokensOut: 40 });
+  });
 });

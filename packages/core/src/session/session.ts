@@ -555,6 +555,10 @@ export class Session {
             }
             yield { type: "text-delta", text: "✓ Review passed.\n" };
           }
+          if (inputTokens || outputTokens) {
+            const prev = this.record.usage ?? { tokensIn: 0, tokensOut: 0 };
+            this.record.usage = { tokensIn: prev.tokensIn + inputTokens, tokensOut: prev.tokensOut + outputTokens };
+          }
           this.persist();
           this.checkpoint.commit(String(this.record.messages.length));
           if (inputTokens || outputTokens) yield { type: "usage", inputTokens, outputTokens };
