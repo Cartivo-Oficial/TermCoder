@@ -10,11 +10,12 @@ import { Hero } from "./Hero";
 import { useI18n } from "./i18n";
 import { COLOR_THEMES, THEME_VARS } from "./themes";
 import { KEYBIND_ACTIONS, comboFor, matchCombo } from "./keybinds";
-import { IconTrash, IconStop, IconShare, IconCopy, IconEdit, IconMic, IconUndo, IconBolt, IconStudy, IconDashboard } from "./Icons";
+import { IconTrash, IconStop, IconShare, IconCopy, IconEdit, IconMic, IconUndo, IconBolt, IconStudy } from "./Icons";
 import { Dashboard } from "./Dashboard";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { ModelBrowser } from "./ModelBrowser";
 import { Study } from "./Study";
+import { Rail } from "./Rail";
 import { CodeEditor } from "./CodeEditor";
 import { blobToWav, blobToBase64 } from "./audio";
 import {
@@ -28,12 +29,10 @@ import {
   IconMinimize,
   IconMoon,
   IconNewChat,
-  IconPanelRight,
   IconServer,
   IconPlus,
   IconSearch,
   IconSend,
-  IconSidebar,
   IconSun,
 } from "./Icons";
 
@@ -355,6 +354,7 @@ export function App() {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
+  const [sidePanel, setSidePanel] = useState<null | "files" | "study" | "agents">(null);
   const [onboarded, setOnboarded] = useState(() => localStorage.getItem("tc-onboarded") === "1");
   const [studentMode, setStudentMode] = useState(() => localStorage.getItem("tc-student") === "1");
   const [rightTab, setRightTab] = useState<"files" | "changes" | "overview">("files");
@@ -1493,7 +1493,18 @@ export function App() {
 
   return (
     <div className="shell">
-      <header className="toolbar">
+      <Rail
+        active={sidePanel ?? (leftOpen ? "chat" : null)}
+        busy={busy}
+        connected={connected}
+        onSelect={(item) => {
+          if (item === "chat") setLeftOpen((v) => !v);
+          else setSidePanel((p) => (p === item ? null : item));
+        }}
+        onSettings={() => setSettingsOpen(true)}
+      />
+      <div className="app-col">
+      <header className="titlebar">
         <div className="tb-left">
           <div className="menu-wrap">
             <button className="icon" title={t("nav.menu")} onClick={() => setMenuOpen((v) => !v)}><IconMenu /></button>
@@ -1511,7 +1522,6 @@ export function App() {
               </div>
             ) : null}
           </div>
-          <button className="icon" title={`${t("nav.toggleSidebar")} (Ctrl B)`} onClick={() => setLeftOpen((v) => !v)}><IconSidebar /></button>
           <button className="icon dim" title={t("nav.back")} onClick={navBack}><IconBack /></button>
           <button className="icon dim" title={t("nav.forward")} onClick={navForward}><IconForward /></button>
         </div>
@@ -1538,18 +1548,6 @@ export function App() {
               </div>
             ) : null}
           </div>
-          <button className="icon" title={`${t("nav.newSession")} (Ctrl N)`} onClick={() => void newSession()}><IconNewChat /></button>
-          <button className="icon" title={`${t("nav.toggleFiles")} (Ctrl J)`} onClick={() => setRightOpen((v) => !v)}><IconPanelRight /></button>
-          <button
-            className="icon"
-            title={t("dash.overview")}
-            onClick={() => {
-              setRightOpen(true);
-              setRightTab("overview");
-            }}
-          >
-            <IconDashboard />
-          </button>
           <button className="icon" title={t("nav.toggleTheme")} onClick={() => setTheme((th) => (th === "dark" ? "light" : "dark"))}>
             {theme === "dark" ? <IconSun /> : <IconMoon />}
           </button>
@@ -2086,6 +2084,7 @@ export function App() {
             )}
           </aside>
         ) : null}
+      </div>
       </div>
 
       {viewerOpen && tabs.length ? (

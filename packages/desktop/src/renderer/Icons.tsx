@@ -209,6 +209,19 @@ export const IconStudy = (p: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+export const IconChat = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...p}>
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+);
+
+export const IconAgents = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base} {...p}>
+    <rect x="5" y="7" width="14" height="12" rx="2" />
+    <path d="M12 7V4M8 12h.01M16 12h.01M9 16h6" />
+  </svg>
+);
+
 export const IconDashboard = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base} {...p}>
     <rect x="3" y="12" width="4" height="8" rx="1" />
