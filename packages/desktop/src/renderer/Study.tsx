@@ -107,7 +107,7 @@ export function Study({ port, onClose, inline }: StudyProps) {
             <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 18 }}>{card.front}</div>
             {review.revealed ? (
               <>
-                <div style={{ borderTop: "1px solid var(--line)", paddingTop: 16, fontSize: 16, color: "var(--accent)" }}>
+                <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16, fontSize: 16, color: "var(--accent)" }}>
                   {card.back}
                 </div>
                 <div style={{ display: "flex", gap: 6, marginTop: 20, flexWrap: "wrap" }}>
