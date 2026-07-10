@@ -1,18 +1,32 @@
 {
   "name": "@termcoder/tui",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Ink (React) terminal UI for termcoder — ships the `term`/`termcoder` binary.",
   "license": "MIT",
   "author": "Eduardo <eduardo.wankax@gmail.com>",
-  "keywords": ["ai", "agent", "coding-agent", "tui", "ink", "cli", "termcoder"],
-  "engines": { "node": ">=20" },
-  "publishConfig": { "access": "public" },
+  "keywords": [
+    "ai",
+    "agent",
+    "coding-agent",
+    "tui",
+    "ink",
+    "cli",
+    "termcoder"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "bin": {
     "termcoder": "./dist/cli.js",
     "term": "./dist/cli.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsx src/cli.tsx",

@@ -9,7 +9,12 @@ const fail = (msg) => failures.push(msg);
 
 const EMOJI = /\p{Extended_Pictographic}/u;
 
-const stripCode = (html) => html.replace(/<pre[\s\S]*?<\/pre>/gi, "").replace(/<code[\s\S]*?<\/code>/gi, "");
+const stripCode = (html) =>
+  html
+    .replace(/<pre[\s\S]*?<\/pre>/gi, "")
+    .replace(/<code[\s\S]*?<\/code>/gi, "")
+    .replace(/<svg[\s\S]*?<\/svg>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "");
 const headings = (html) => [
   ...[...html.matchAll(/<h[123][^>]*>([\s\S]*?)<\/h[123]>/gi)].map((m) => m[1]),
   ...[...html.matchAll(/class="(?:k|sec-h|eyebrow|lbl)"[^>]*>([\s\S]*?)</gi)].map((m) => m[1]),
@@ -36,8 +41,8 @@ for (const page of pages) {
     if (/\bfree\b/i.test(h)) fail(`${page}: sells "free" in a heading — say "no API key, no account": ${h.trim()}`);
   }
 
-  const stale = stripCode(html).match(/\bv?0\.(?!8\.0\b)\d+\.\d+\b/g);
-  if (stale) fail(`${page}: stale version string(s): ${[...new Set(stale)].join(", ")}`);
+  const pinned = stripCode(html).match(/\bv?\d+\.\d+\.\d+\b/g);
+  if (pinned) fail(`${page}: pins a version (${[...new Set(pinned)].join(", ")}) — link releases/latest instead`);
 
   if (/subscription|Claude Pro|ChatGPT Plus/i.test(html) && !/experimental/i.test(html)) {
     fail(`${page}: mentions subscription login without labelling it experimental`);

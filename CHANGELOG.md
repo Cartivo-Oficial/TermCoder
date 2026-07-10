@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.8.1
+
+**The keyless model can finally use tools.** `termcoderfree/auto` is the default for
+anyone without an API key. On every follow-up request — once tool results were in the
+history — the upstream endpoint sent a tool-call continuation with a bumped `index` and
+no `id`, and the AI SDK rejected the stream. The free model could chat, but it could
+never edit a file or run a command. If you tried termcoder without a key before now,
+that is why it did nothing. Fixed in `provider/keyless-stream.ts`.
+
+**A real terminal, inside the desktop app.** New `Chat | Terminal` tabs in the centre
+column (or `Ctrl`+`` ` ``). It runs your default shell in the project folder, and shows a
+one-click chip for each coding CLI it finds on your `PATH` — Claude Code, Codex, Gemini
+CLI, termcoder. The shell keeps running while you are on the Chat tab.
+
+**The real brand mark** now appears in the app's rail, hero, and welcome screen.
+
+**A rebuilt website.** One stylesheet instead of four private copies, the real brand
+mark, and a hero that replays a session genuinely recorded with the keyless model
+rather than a mockup of one.
+
 ## 0.8.0 — "O Motor" (The Engine)
 
 The biggest release since 1.0 of the roadmap: termcoder now remembers you, finds

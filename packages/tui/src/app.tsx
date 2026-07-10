@@ -85,7 +85,7 @@ import { TrustPrompt } from "./components/TrustPrompt";
 import { ReviewMode } from "./components/ReviewMode";
 import { Transcript, TranscriptItem } from "./components/Transcript";
 
-const VERSION = "0.8.0";
+const VERSION = "0.8.1";
 
 const AGENTS_TEMPLATE = `# Project instructions for termcoder
 
