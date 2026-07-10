@@ -1,4 +1,3 @@
-import { Logo } from "./Logo";
 import { IconChat, IconFolder, IconStudy, IconAgents, IconGear } from "./Icons";
 import { useI18n } from "./i18n";
 
@@ -27,9 +26,6 @@ export function Rail({
   const { t } = useI18n();
   return (
     <nav className="rail">
-      <div className="rail-logo" aria-hidden="true">
-        <Logo width={22} height={22} />
-      </div>
       {ITEMS.map(({ id, icon: Icon, key }) => (
         <button
           key={id}
