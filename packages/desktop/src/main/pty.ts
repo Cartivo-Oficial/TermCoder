@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
+import { join } from "node:path";
 import { app, BrowserWindow, ipcMain } from "electron";
 import { defaultShell, detectQuickTools, terminalEnv, type QuickTool } from "./shell";
 
@@ -26,10 +27,15 @@ const sessions = new Map<number, Pty>();
 let cached: PtyModule | null = null;
 let loadError = "";
 
+function ptyEntry(): string {
+  if (!app.isPackaged) return "@lydell/node-pty";
+  return join(process.resourcesPath, "pty", "node_modules", "@lydell", "node-pty");
+}
+
 function loadPty(): PtyModule | null {
   if (cached || loadError) return cached;
   try {
-    cached = requireNative("@lydell/node-pty") as PtyModule;
+    cached = requireNative(ptyEntry()) as PtyModule;
   } catch (err) {
     loadError = err instanceof Error ? err.message : String(err);
   }

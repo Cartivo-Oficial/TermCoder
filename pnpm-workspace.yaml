@@ -3,3 +3,11 @@ packages:
 allowBuilds:
   electron: true
   esbuild: true
+supportedArchitectures:
+  os:
+    - win32
+    - darwin
+    - linux
+  cpu:
+    - x64
+    - arm64

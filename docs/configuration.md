@@ -257,8 +257,25 @@ is Ctrl (⌘ on macOS):
 { "keybinds": { "commandPalette": "mod+p", "newSession": "mod+shift+n" } }
 ```
 
-Actions: `commandPalette`, `newSession`, `toggleSessions`, `toggleFiles`, `openFolder`.
-The **Shortcuts** settings tab records these interactively.
+Actions: `commandPalette`, `newSession`, `toggleSessions`, `toggleFiles`, `openFolder`,
+`toggleTerminal`. The **Shortcuts** settings tab records these interactively.
+
+## Terminal
+
+The desktop app embeds a real terminal. Switch to it with the **Chat | Terminal** tabs at the
+top of the center column, with `Ctrl`+`` ` ``, or from the command palette. It runs your default
+shell — `ComSpec` on Windows, `$SHELL -l` elsewhere — in the project folder, so anything you can
+run in a terminal you can run here, including other coding CLIs.
+
+termcoder scans your `PATH` and shows a one-click chip for each CLI it finds: **Claude Code**
+(`claude`), **termcoder** (`term`), **Codex** (`codex`), and **Gemini CLI** (`gemini`). Clicking a
+chip types the command into the shell.
+
+The shell keeps running while you are on the Chat tab, so you can switch back and forth without
+losing scrollback or interrupting a long command. When it exits, a **Restart** chip respawns it.
+
+If your platform's prebuilt PTY binary is missing, the tab says so and prints the underlying
+error instead of failing silently; the rest of the app is unaffected.
 
 ## MCP, LSP, plugins
 

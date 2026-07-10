@@ -15,9 +15,10 @@
     "build": "electron-vite build",
     "build:web": "vite build --config vite.web.config.ts",
     "start": "electron-vite preview",
-    "package": "electron-vite build && electron-builder",
-    "package:ci": "electron-vite build && electron-builder --publish never",
-    "package:dir": "electron-vite build && electron-builder --dir",
+    "stage:pty": "node scripts/stage-pty.mjs",
+    "package": "pnpm stage:pty && electron-vite build && electron-builder",
+    "package:ci": "pnpm stage:pty && electron-vite build && electron-builder --publish never",
+    "package:dir": "pnpm stage:pty && electron-vite build && electron-builder --dir",
     "typecheck": "tsc --noEmit"
   },
   "build": {
@@ -39,6 +40,10 @@
       {
         "from": "build/icon.ico",
         "to": "icon.ico"
+      },
+      {
+        "from": "build/pty/node_modules/@lydell",
+        "to": "pty/node_modules/@lydell"
       }
     ],
     "win": {
@@ -142,6 +147,14 @@
     "react-markdown": "^9.0.1",
     "rehype-highlight": "^7.0.1",
     "remark-gfm": "^4.0.0"
+  },
+  "optionalDependencies": {
+    "@lydell/node-pty-darwin-arm64": "1.1.0",
+    "@lydell/node-pty-darwin-x64": "1.1.0",
+    "@lydell/node-pty-linux-arm64": "1.1.0",
+    "@lydell/node-pty-linux-x64": "1.1.0",
+    "@lydell/node-pty-win32-arm64": "1.1.0",
+    "@lydell/node-pty-win32-x64": "1.1.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",

@@ -932,7 +932,15 @@ git commit -m "feat(desktop): terminal tab with claude code quick-launch"
 **Interfaces:**
 - Consumes: everything above. Produces: a packaged app whose Terminal tab works.
 
-**The pnpm trap:** `packages/desktop/node_modules/@lydell/node-pty` is a symlink into `node_modules/.pnpm/@lydell+node-pty@1.1.0/node_modules/@lydell/`, and the platform binary (`@lydell/node-pty-win32-x64`) lives *beside it in there* — **not** in `packages/desktop/node_modules/@lydell/`. `requireBinary.js` resolves it with a dynamic `require("@lydell/node-pty-" + process.platform + "-" + process.arch)`. The current `build.files` is `["out/**"]`, which excludes `node_modules` entirely, so a packaged app would throw at `loadPty()` and fall into the "unavailable" state. Declaring the six platform packages as direct `optionalDependencies` of `@termcoder/desktop` makes pnpm materialise them under `packages/desktop/node_modules/@lydell/`, where a `node_modules/@lydell/**` glob can see them. pnpm skips the ones whose `os`/`cpu` do not match the host, which is exactly the desired behaviour.
+**The pnpm trap:** `packages/desktop/node_modules/@lydell/node-pty` is a symlink into `node_modules/.pnpm/@lydell+node-pty@1.1.0/node_modules/@lydell/`, and the platform binary (`@lydell/node-pty-win32-x64`) lives *beside it in there* — **not** in `packages/desktop/node_modules/@lydell/`. `requireBinary.js` resolves it with a dynamic `require("@lydell/node-pty-" + process.platform + "-" + process.arch)`. The current `build.files` is `["out/**"]`, which excludes `node_modules` entirely, so a packaged app would throw at `loadPty()` and fall into the "unavailable" state. Declaring the six platform packages as direct `optionalDependencies` of `@termcoder/desktop` makes pnpm materialise them under `packages/desktop/node_modules/@lydell/`. pnpm skips the ones whose `os`/`cpu` do not match the host, which is exactly the desired behaviour.
+
+**Two traps found while executing this task — the obvious approach does not work:**
+
+1. **`asarUnpack` is unusable in this repo.** Adding any `asarUnpack` pattern makes electron-builder 25 run `getRelativePath(file, appDir)` over every file destined for the asar, and that function throws on anything outside `packages/desktop/`. Under pnpm every dependency is a symlink into the root `node_modules/.pnpm/`, so it fails immediately: `packages/core/dist/index.js must be under packages/desktop/`. This is not specific to `@termcoder/core` — `react` and friends resolve out-of-tree too. Do not try to fix it by excluding workspace packages.
+
+2. **`extraResources` copies pnpm symlinks without dereferencing them.** Pointing `extraResources` straight at `node_modules/@lydell` produces seven *dangling junctions* in `resources/pty/node_modules/@lydell/`, each targeting a `release/win-unpacked/node_modules/.pnpm/…` path that does not exist. `ls` lists them, so the mistake looks like success until something tries to read a file.
+
+The working shape: a `stage:pty` prepack script copies the packages into `build/pty/` with `dereference: true` (and drops `*.pdb`, which is 10.5 MB of the 11 MB Windows payload), `extraResources` ships that staged directory, and `loadPty()` requires it by absolute path when `app.isPackaged`. The asar is left completely alone.
 
 - [ ] **Step 1: Declare the platform binaries.** In `packages/desktop/package.json`, add a top-level `optionalDependencies` block (sibling of `dependencies`):
 
@@ -947,19 +955,29 @@ git commit -m "feat(desktop): terminal tab with claude code quick-launch"
   },
 ```
 
-- [ ] **Step 2: Ship them.** In the same file, replace the `build.files` array and add `asarUnpack` right after it:
+- [ ] **Step 2: Stage real files.** `build.files` stays `["out/**"]`. Create `packages/desktop/scripts/stage-pty.mjs` that copies `node_modules/@lydell/*` into `build/pty/node_modules/@lydell/` with `dereference: true` and a `filter` dropping `*.pdb`, then add `"stage:pty": "node scripts/stage-pty.mjs"` and prefix the three `package*` scripts with `pnpm stage:pty &&`. Add this `extraResources` entry beside the icons:
 
 ```json
-    "files": [
-      "out/**",
-      "node_modules/@lydell/**"
-    ],
-    "asarUnpack": [
-      "node_modules/@lydell/**"
-    ],
+      {
+        "from": "build/pty/node_modules/@lydell",
+        "to": "pty/node_modules/@lydell"
+      }
 ```
 
-`asarUnpack` is required, not optional: node-pty loads a `.node` binary, spawns `worker/conoutSocketWorker.js` in a `worker_threads.Worker`, and `child_process.fork`s `conpty_console_list_agent.js` on Windows. None of those work from inside `app.asar`.
+The `to` path matters. Node resolves the dynamic `require("@lydell/node-pty-win32-x64/conpty.node")` by walking parent directories of `resources/pty/node_modules/@lydell/node-pty/`, appending `node_modules` to each prefix whose last segment is not already `node_modules`. That walk reaches `resources/pty/node_modules/` — so the sibling binary is found. Flattening this to `resources/pty/@lydell/` would break it.
+
+The files must be real, not linked: node-pty loads a `.node` binary, spawns `worker/conoutSocketWorker.js` in a `worker_threads.Worker`, and `child_process.fork`s `conpty_console_list_agent.js` on Windows.
+
+Add `packages/desktop/build/pty/` to the root `.gitignore`.
+
+- [ ] **Step 2b: Resolve it at runtime.** In `packages/desktop/src/main/pty.ts`, `loadPty()` must require the staged copy once packaged:
+
+```ts
+function ptyEntry(): string {
+  if (!app.isPackaged) return "@lydell/node-pty";
+  return join(process.resourcesPath, "pty", "node_modules", "@lydell", "node-pty");
+}
+```
 
 - [ ] **Step 3: Make cross-arch release builds fetch every binary.** In `pnpm-workspace.yaml`, append:
 
@@ -976,23 +994,36 @@ supportedArchitectures:
 
 Without this, `release.yml`'s x64 runners never download the arm64 binary, and the arm64 installers ship a terminal that reports "unavailable". Re-run `pnpm install` after editing.
 
-- [ ] **Step 4: Verify the packaged app.** Build an unpacked directory and confirm the binary landed outside the asar:
+- [ ] **Step 4: Verify the packaged app.** Build an unpacked directory, then confirm the files are **real** — `ls` alone will happily list dangling junctions:
 
 ```bash
 env -u ELECTRON_RUN_AS_NODE pnpm --filter @termcoder/desktop package:dir
-ls "packages/desktop/release/win-unpacked/resources/app.asar.unpacked/node_modules/@lydell/"
+ls -la packages/desktop/release/win-unpacked/resources/pty/node_modules/@lydell/node-pty-win32-x64/
 ```
-Expected: both `node-pty` and `node-pty-win32-x64` are listed. Then launch `packages/desktop/release/win-unpacked/termcoder.exe`, open the Terminal tab, and run `echo packaged_ok`. If the tab shows "Terminal unavailable", read the error text it prints — it is the real `require` failure, not a guess.
+Expected: `conpty.node` and `conpty_console_list.node` with real byte counts, no `.pdb`. If you see `<JUNCTION>` entries or `cannot access`, the dereference failed.
+
+Then exercise the real `require` chain from the packaged app's own Electron binary — this proves the resolution walk finds the sibling platform package at its new location:
+
+```bash
+cd packages/desktop/release/win-unpacked
+ELECTRON_RUN_AS_NODE=1 ./termcoder.exe -e "
+const path=require('path');
+const pty=require(path.join(process.cwd(),'resources','pty','node_modules','@lydell','node-pty'));
+const p=pty.spawn('cmd.exe',[],{name:'xterm-256color',cols:80,rows:24,cwd:process.cwd(),env:process.env});
+let out=''; p.onData(d=>{out+=d}); p.write('echo PACKAGED_OK\r');
+setTimeout(()=>{console.log('PACKAGED_RESULT',JSON.stringify({sawEcho:out.includes('PACKAGED_OK')}));p.kill();process.exit(0)},4000);
+"
+```
+Expected: `PACKAGED_RESULT {"sawEcho":true}`. (Task 2's smoke test already covered the real-Electron-main runtime; this one covers the packaged *location*. Together they cover both risks.)
 
 - [ ] **Step 5: Full suite.**
 
 ```bash
-pnpm -r build
 pnpm -r typecheck
 npx vitest run
 git status
 ```
-Expected: build clean, typecheck clean, **300 tests green** (288 existing + 12 from Task 1), and `git status` shows only Phase-C files.
+Expected: typecheck clean, **303 tests green** (291 existing + 12 from Task 1), and `git status` shows only Phase-C files.
 
 - [ ] **Step 6: Document it.** Add to `docs/configuration.md`, after the "Autonomous mode" section:
 
