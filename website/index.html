@@ -6,224 +6,278 @@
 <link rel="icon" type="image/png" href="favicon.png" />
 <link rel="stylesheet" href="style.css" />
 <title>TermCoder — the open source AI coding agent for your terminal</title>
-<meta name="description" content="TermCoder is an open source AI coding agent that lives in your terminal. Bring any model — Anthropic, OpenAI, Gemini — or run it locally with Ollama. A study mode is built in." />
+<meta name="description" content="TermCoder is an open source AI coding agent that lives in your terminal and in a desktop app with a real shell inside it. Runs with no API key. A study tutor is built in." />
 </head>
-<body>
+<body class="sys">
 
-<header class="nav">
-  <div class="wrap nav-in">
-    <a class="brand" href="#"><span class="brand-mark mk" aria-hidden="true"></span><span class="t">Term</span><span class="c">Coder</span></a>
-    <nav class="nav-links">
-      <a href="index.html" class="on">Home</a>
-      <a href="features.html">Features</a>
-      <a href="study.html">Study</a>
-      <a href="install.html">Install</a>
-      <a href="download.html">Download</a>
-      <a href="docs.html">Docs</a>
-      <a href="https://github.com/Cartivo-Oficial/TermCoder" target="_blank" rel="noopener">GitHub</a>
-    </nav>
-    <a class="btn solid" href="install.html">Get started</a>
+<header class="sys-nav">
+  <div class="in-row">
+    <div class="mark-cell"><span class="brand-mark" aria-hidden="true"></span></div>
+    <div class="row">
+      <a class="wordmark" href="index.html">TERMCODER</a>
+      <nav class="links">
+        <a href="index.html" class="on">Home</a>
+        <a href="features.html">Features</a>
+        <a href="study.html">Study</a>
+        <a href="install.html">Install</a>
+        <a href="download.html">Download</a>
+        <a href="docs.html">Docs</a>
+        <a href="https://github.com/Cartivo-Oficial/TermCoder" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
   </div>
 </header>
 
 <main>
-  <!-- HERO -->
-  <section class="hero wrap">
-    <div class="eyebrow">Open source · MIT</div>
-    <h1>An AI coding agent that runs with <span class="a">no API key</span>.</h1>
-    <p class="sub">TermCoder reads your code, runs commands, and ships changes — from your terminal or a
-      desktop app with a real shell inside it. Bring your own model, sign in with a plan you already pay for,
-      or use the keyless one and start now. A study tutor is built in.</p>
 
-    <div class="cmd">
-      <span class="p">$</span>
-      <code id="cmd">npm install -g @termcoder/tui</code>
-      <button class="copy" onclick="copyCmd()" id="copyBtn">Copy</button>
-    </div>
-    <div class="hero-cta">
-      <a class="btn solid" href="download.html">Download the app</a>
-      <a class="btn" href="install.html">Install the CLI</a>
-      <a class="btn" href="docs.html">Read the docs</a>
-    </div>
-    <p class="runline">Then type <b class="mono">term</b> in any folder. It runs free with no API key — add a provider key or a local Ollama model only if you want more.<br>
-      The command line needs <a class="link" href="https://nodejs.org" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">Node.js 18+</a> — no Node? <a href="download.html" style="color:inherit;text-decoration:underline">get the desktop app</a> instead, nothing to install.</p>
-
-    <!-- signature: a real recorded session, not a mockup -->
-    <div class="term" role="img" aria-label="A recorded TermCoder session: a prompt, tool calls, and the result">
-      <div class="term-bar"><i></i><i></i><i></i><span>term — ~/my-project</span></div>
-      <div class="term-body" id="termBody"></div>
-      <div class="term-foot"><span class="b">Build · termcoderfree/auto</span><span>recorded with no API key</span></div>
-    </div>
-  </section>
-  <script src="hero-session.js"></script>
-  <script src="hero.js"></script>
-
-  <!-- PROOF: the desktop app, as it really looks -->
-  <section class="proof">
-    <div class="wrap">
-      <div class="sec-h">The desktop app</div>
-      <h2 class="sec-t">Same agent, with a real terminal inside it.</h2>
-      <p class="sec-p">Chat, an editor, and an embedded terminal in one window. It finds the coding CLIs on
-        your PATH and launches Claude Code, Codex, or any of them in a click — without leaving the app.</p>
-      <img class="shot" src="app.png" width="1280" height="800" loading="lazy"
-           alt="The TermCoder desktop app with the Terminal tab open, running a project's tests in a real shell." />
-    </div>
-  </section>
-
-  <!-- PROVIDERS -->
-  <section class="providers">
-    <div class="wrap">
-      <div class="lbl">Keyless out of the box — or bring any model you like</div>
-      <div class="logos">
-        <span class="logo" title="Anthropic">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.6 3h-3.1l5.6 18h3.2L15.6 3zM7.9 3 2 21h3.3l1.2-3.9h5.9L13.6 21H17L11.1 3H7.9zm-.4 11.3L9.5 8l2 6.3H7.5z"/></svg>
-          <span>Anthropic</span>
-        </span>
-        <span class="logo" title="OpenAI">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22.28 9.82a5.98 5.98 0 0 0-.52-4.91 6.05 6.05 0 0 0-6.51-2.9A6.07 6.07 0 0 0 4.98 4.18a5.98 5.98 0 0 0-3.99 2.9 6.05 6.05 0 0 0 .74 7.1 5.98 5.98 0 0 0 .51 4.91 6.05 6.05 0 0 0 6.52 2.9A5.98 5.98 0 0 0 13.26 22a6.05 6.05 0 0 0 5.77-4.2 5.99 5.99 0 0 0 4-2.9 6.06 6.06 0 0 0-.75-7.08zm-9.02 12.6a4.48 4.48 0 0 1-2.88-1.04l.14-.08 4.78-2.76a.79.79 0 0 0 .39-.68v-6.74l2.02 1.17.01.06v5.58a4.5 4.5 0 0 1-4.46 4.49zM3.6 18.3a4.47 4.47 0 0 1-.54-3.01l.14.09 4.78 2.76c.24.14.54.14.78 0l5.84-3.37v2.33l-.03.06L9.74 22a4.5 4.5 0 0 1-6.14-1.65zM2.34 7.9a4.48 4.48 0 0 1 2.37-1.97v5.68c0 .28.15.54.39.68l5.81 3.35-2.02 1.17-.07.01-4.83-2.79A4.5 4.5 0 0 1 2.34 7.9zm16.6 3.86-5.84-3.39L15.12 7.2l.07.01 4.83 2.79a4.49 4.49 0 0 1-.68 8.1v-5.68a.79.79 0 0 0-.39-.66zm2.01-3.03-.14-.09-4.77-2.78a.78.78 0 0 0-.79 0L9.42 9.24V6.9l.03-.06 4.83-2.78a4.5 4.5 0 0 1 6.68 4.66zM8.31 12.86l-2.02-1.17-.01-.06V6.07a4.5 4.5 0 0 1 7.38-3.45l-.14.08-4.78 2.76a.79.79 0 0 0-.39.68zm1.1-2.36L12 8.99l2.6 1.5v3l-2.6 1.5-2.6-1.5z"/></svg>
-          <span>OpenAI</span>
-        </span>
-        <span class="logo" title="Google Gemini">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c.55 5.06 4.94 9.45 10 10-5.06.55-9.45 4.94-10 10-.55-5.06-4.94-9.45-10-10C7.06 11.45 11.45 7.06 12 2z"/></svg>
-          <span>Gemini</span>
-        </span>
-        <span class="logo" title="Ollama (local)">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.2 2.6c-.9.3-1.4 1.3-1.4 2.6 0 .5.1 1 .2 1.4C4.7 7.9 4 9.8 4 12c0 1.6.4 3 1 4.2-.3.6-.5 1.3-.5 2 0 .5.1 1 .3 1.4.1.3.4.4.7.3.6-.2 1.1-.5 1.5-1 1.3.6 2.9 1 4.6 1s3.3-.4 4.6-1c.4.5.9.8 1.5 1 .3.1.6 0 .7-.3.2-.4.3-.9.3-1.4 0-.7-.2-1.4-.5-2 .6-1.2 1-2.6 1-4.2 0-2.2-.7-4.1-2-5.4.1-.4.2-.9.2-1.4 0-1.3-.5-2.3-1.4-2.6-.8-.3-1.7.1-2.4 1-.6-.1-1.2-.2-1.8-.2s-1.2.1-1.8.2c-.7-.9-1.6-1.3-2.4-1zM9.5 12a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6zm5 0a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6zM12 15.6c.8 0 1.5.3 1.5.8s-.7.9-1.5.9-1.5-.4-1.5-.9.7-.8 1.5-.8z"/></svg>
-          <span>Ollama</span>
-        </span>
-      </div>
-    </div>
-  </section>
-
-  <!-- FEATURES -->
-  <section class="sec" id="features">
-    <div class="wrap">
-      <div class="sec-h">Why TermCoder</div>
-      <h2 class="sec-t">A terminal agent with real tools, and nothing in your way.</h2>
-      <p class="sec-p">An agent loop that reads, edits, and runs — wrapped in a keyboard-driven interface that stays out of the way.</p>
-      <div class="feats">
-        <div class="feat"><h3>No API key</h3><p>Starts on a keyless community-hosted model — no account, no card. It is rate-limited at peak, and prompts go to a third party. Run Ollama locally when you want it private and unlimited.</p></div>
-        <div class="feat"><h3>Bring your own model</h3><p>Anthropic, OpenAI, Google, Ollama, and more. <code class="mono">termcoder/auto</code> routes each turn to the best model for the task.</p></div>
-        <div class="feat"><h3>Sign in with your plan</h3><p>Use an existing Claude Pro/Max or ChatGPT Plus/Pro subscription instead of an API key. Experimental.</p></div>
-        <div class="feat"><h3>It remembers, and it looks</h3><p>Memory across sessions, and retrieval that searches your codebase before it answers.</p></div>
-        <div class="feat"><h3>A terminal, inside the app</h3><p>A real shell in the desktop app. One click launches Claude Code, Codex, or any CLI on your PATH.</p></div>
-        <div class="feat"><h3>Autonomous mode</h3><p>Give it a goal and a verify command. It iterates until the command passes, checkpointing so you can revert.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- STUDY -->
-  <section class="sec" id="study">
-    <div class="wrap study-grid">
-      <div>
-        <div class="sec-h">TermExplorer</div>
-        <h2 class="sec-t">A study companion in the same tool.</h2>
-        <p class="sec-p">Pick the TermExplorer model and TermCoder explains step by step, summarizes your
-          notes, and turns them into spaced-repetition flashcards you review with <code class="mono">/review</code> — plus
-          practice quizzes and study plans, in your language.</p>
-        <div class="chips"><span class="chip">explain</span><span class="chip">summarize</span><span class="chip">flashcards</span><span class="chip">spaced repetition</span><span class="chip">practice quiz</span><span class="chip">study plan</span></div>
-      </div>
-      <div class="study-code">
-        <div><span class="p">❯</span> summarize these notes into key points</div>
-        <div class="c" style="margin-top:10px"># pick the "TermExplorer" model with /model,</div>
-        <div class="c"># then just ask — it replies with headings you can study from.</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- INSTALL -->
-  <section class="sec" id="install">
-    <div class="wrap">
-      <div class="sec-h">Install</div>
-      <h2 class="sec-t">Two ways to run it.</h2>
-      <p class="sec-p">The CLI installs from npm and works everywhere. The desktop app is a download.</p>
-      <div class="cols">
-        <div class="col">
-          <h3>Terminal (CLI)</h3>
-          <p>Install once, then type <b class="mono">term</b> in any project folder.</p>
-          <div class="tabs">
-            <button class="tab on" data-os="win">Windows</button>
-            <button class="tab" data-os="mac">macOS</button>
-            <button class="tab" data-os="linux">Linux</button>
-          </div>
-          <pre class="block" id="installBlock"><span class="c"># PowerShell or CMD</span>
-npm install <span class="p">-g</span> @termcoder/tui
-<span class="c"># then, in any folder:</span>
-term</pre>
-          <a class="btn" href="docs.html#getting-started">Setup guide</a>
+  <!-- 00 -->
+  <section class="sys-sec">
+    <div class="gutter">00</div>
+    <div class="sys-body">
+      <div class="anchor-l">
+        <div class="eyebrow-2">Open source · MIT</div>
+        <h1>Codes with no API key.</h1>
+        <p class="lead">TermCoder reads your code, runs commands, and ships changes — in your terminal,
+          or in a desktop app with a real shell inside it.</p>
+        <div class="cmd-2">
+          <span class="in">$</span>
+          <code id="cmd">npm install -g @termcoder/tui</code>
+          <button class="copy2" id="copyBtn" onclick="copyCmd()">Copy</button>
         </div>
-        <div class="col">
-          <h3>Desktop app</h3>
-          <p>A window with tabs, inline diffs, and a simplified study mode — same engine as the CLI.</p>
-          <pre class="block"><span class="c"># one app, every OS</span>
-<span class="p">›</span> Windows   .exe
-<span class="p">›</span> macOS     .dmg
-<span class="p">›</span> Linux     .AppImage</pre>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-            <a class="btn solid" id="desktopDl" href="https://github.com/Cartivo-Oficial/TermCoder/releases/latest/download/TermCoder-Setup.exe">Download for Windows</a>
-            <a class="btn" href="download.html">Other systems →</a>
-          </div>
+        <div class="row-2">
+          <a class="btn-2 go" href="download.html" id="desktopDl">Download the app</a>
+          <a class="btn-2" href="install.html">Install the CLI</a>
         </div>
       </div>
+      <div class="anchor-full">
+        <div class="term-2" role="img" aria-label="A recorded TermCoder session: a prompt, tool calls, and the result">
+          <div class="bar"><i></i><i></i><i></i><span>term — ~/my-project</span></div>
+          <div class="body-2" id="termBody"></div>
+          <div class="foot-2"><span>Build · termcoderfree/auto</span><span class="out">recorded with no API key</span></div>
+        </div>
+      </div>
+      <div class="sys-end"><span class="brand-mark" aria-hidden="true"></span></div>
     </div>
   </section>
 
-  <!-- SUPPORT -->
-  <section class="sec" id="support">
-    <div class="wrap">
-      <div class="sec-h">Support</div>
-      <h2 class="sec-t">Open source — kept alive by the people it helps.</h2>
-      <p class="sec-p">TermCoder is free for everyone and always will be. There's no paid tier and no company
-        behind it — just students building it in the open. If it helps you code or study, join the community and
-        chip in through our Discord.</p>
-      <div class="hero-cta" style="justify-content:flex-start;margin-top:24px">
-        <a class="btn solid" href="https://github.com/Cartivo-Oficial/TermCoder" target="_blank" rel="noopener">Star the repo</a>
+  <!-- 01 -->
+  <section class="sys-sec">
+    <div class="gutter">01</div>
+    <div class="sys-body">
+      <div class="anchor-l">
+        <div class="eyebrow-2">Start · no account</div>
+        <h2>No API key.</h2>
+        <p>It opens on a keyless, community-hosted model. No sign-up, no card, nothing to configure.
+          Type a task and it works.</p>
+        <p>Two things you should know, because we would rather say them than hide them: that model is
+          rate-limited when it is busy, and your prompts go to a third party we do not run. Point it at
+          a local Ollama model when you want it private and unlimited.</p>
       </div>
+      <div class="sys-end"><span class="brand-mark" aria-hidden="true"></span></div>
     </div>
   </section>
+
+  <!-- 02 -->
+  <section class="sys-sec">
+    <div class="gutter">02</div>
+    <div class="sys-body">
+      <div class="anchor-r">
+        <div class="eyebrow-2">Models</div>
+        <h2>Or bring your own.</h2>
+        <p><code>termcoder/auto</code> routes each turn to the best model for the task — a fast one to
+          read a file, a stronger one to reason about a bug. It is a router and a prompt layer, not a
+          model we trained.</p>
+        <div class="prov">
+          <span>Anthropic</span><span>OpenAI</span><span>Google</span><span class="local">Ollama · local</span><span>and more</span>
+        </div>
+      </div>
+      <div class="sys-end"><span class="brand-mark" aria-hidden="true"></span></div>
+    </div>
+  </section>
+
+  <!-- 03 -->
+  <section class="sys-sec">
+    <div class="gutter">03</div>
+    <div class="sys-body">
+      <div class="anchor-l">
+        <div class="eyebrow-2">Sign in · experimental</div>
+        <h2>Use the plan you pay for.</h2>
+        <p>Sign in with an existing Claude Pro/Max or ChatGPT Plus/Pro subscription instead of buying
+          API credits. This is experimental: it rides the vendors' own login flows, and those can change
+          without warning.</p>
+      </div>
+      <div class="sys-end"><span class="brand-mark" aria-hidden="true"></span></div>
+    </div>
+  </section>
+
+  <!-- 04 -->
+  <section class="sys-sec">
+    <div class="gutter">04</div>
+    <div class="sys-body">
+      <div class="anchor-r">
+        <div class="eyebrow-2">Memory</div>
+        <h2>It remembers.</h2>
+        <p>Tell it once that you use pnpm, that the auth module is fragile, that you hate barrel files.
+          It keeps that across sessions, so you stop re-explaining your own project every morning.</p>
+      </div>
+      <div class="sys-end"><span class="brand-mark" aria-hidden="true"></span></div>
+    </div>
+  </section>
+
+  <!-- 05 -->
+  <section class="sys-sec">
+    <div class="gutter">05</div>
+    <div class="sys-body">
+      <div class="anchor-l">
+        <div class="eyebrow-2">Retrieval</div>
+        <h2>It reads first.</h2>
+        <p>A symbol index and a repo map let it find where a thing is defined and how the project fits
+          together — before it answers, instead of guessing from whatever file you had open.</p>
+      </div>
+      <div class="sys-end"><span class="brand-mark" aria-hidden="true"></span></div>
+    </div>
+  </section>
+
+  <!-- 06 -->
+  <section class="sys-sec">
+    <div class="gutter">06</div>
+    <div class="sys-body">
+      <div class="anchor-l">
+        <div class="eyebrow-2">Desktop</div>
+        <h2>A real shell, inside.</h2>
+        <p>The desktop app embeds a terminal. It scans your PATH and puts a one-click chip on every
+          coding CLI it finds — Claude Code, Codex, Gemini CLI. The shell keeps running while you chat.</p>
+      </div>
+      <div class="anchor-full">
+        <img class="shot-2" src="app.png" width="1280" height="800"
+             alt="The TermCoder desktop app with the Terminal tab open, running a project's tests in a real shell." />
+      </div>
+      <div class="sys-end"><span class="brand-mark" aria-hidden="true"></span></div>
+    </div>
+  </section>
+
+  <!-- 07 -->
+  <section class="sys-sec">
+    <div class="gutter">07</div>
+    <div class="sys-body">
+      <div class="anchor-r">
+        <div class="eyebrow-2">Autonomous</div>
+        <h2>Give it a goal.</h2>
+        <p>Hand it a task and a verify command. It works, runs the command, reads the failure, and goes
+          again — until the command passes. Every turn is checkpointed, so you can walk it back.</p>
+      </div>
+      <div class="sys-end"><span class="brand-mark" aria-hidden="true"></span></div>
+    </div>
+  </section>
+
+  <!-- 08 -->
+  <section class="sys-sec">
+    <div class="gutter">08</div>
+    <div class="sys-body">
+      <div class="anchor-l">
+        <div class="eyebrow-2">TermExplorer</div>
+        <h2>A tutor is built in.</h2>
+        <p>The same engine, pointed at studying instead of shipping. Spaced-repetition flashcards,
+          practice quizzes, worked homework, and a streak that survives your weekends.</p>
+        <div class="row-2"><a class="btn-2" href="study.html">See study mode</a></div>
+      </div>
+      <div class="sys-end"><span class="brand-mark" aria-hidden="true"></span></div>
+    </div>
+  </section>
+
+  <!-- 09 -->
+  <section class="sys-sec">
+    <div class="gutter">09</div>
+    <div class="sys-body">
+      <div class="anchor-full">
+        <div class="eyebrow-2">Make it yours</div>
+        <h2>Agents, skills, commands.</h2>
+      </div>
+      <div class="anchor-full">
+        <div class="cards">
+          <div class="card"><h3>Agents</h3><p>Give an agent its own model, prompt, tools, and the exact paths it may touch.</p></div>
+          <div class="card"><h3>Skills</h3><p>Reusable playbooks it loads only when the task needs them, so they cost nothing otherwise.</p></div>
+          <div class="card"><h3>Commands</h3><p>Your own slash commands, with arguments, shell output, and file mentions baked in.</p></div>
+          <div class="card"><h3>MCP &amp; LSP</h3><p>Bring outside tools and language servers into the same loop.</p></div>
+        </div>
+      </div>
+      <div class="sys-end"><span class="brand-mark" aria-hidden="true"></span></div>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section class="sys-sec">
+    <div class="gutter">10</div>
+    <div class="sys-body">
+      <div class="anchor-l">
+        <div class="eyebrow-2">Install</div>
+        <h2>Two ways to run it.</h2>
+        <dl class="kv">
+          <dt>the CLI</dt>
+          <dd><code>npm install -g @termcoder/tui</code>, then type <code>term</code> in any folder.
+            Needs Node.js 18 or newer.</dd>
+          <dt>the app</dt>
+          <dd>Windows, macOS, and Linux installers. Nothing else to install — Node is bundled.</dd>
+        </dl>
+        <div class="row-2">
+          <a class="btn-2 go" href="download.html">Download</a>
+          <a class="btn-2" href="install.html">Read the guide</a>
+        </div>
+      </div>
+      <div class="sys-end"><span class="brand-mark" aria-hidden="true"></span></div>
+    </div>
+  </section>
+
+  <!-- 11 -->
+  <section class="sys-sec">
+    <div class="gutter">11</div>
+    <div class="sys-body">
+      <div class="anchor-r">
+        <div class="eyebrow-2">Open source</div>
+        <h2>Kept alive by the people it helps.</h2>
+        <p>MIT licensed, no paid tier, no hosted service holding your code. If it saves you an
+          afternoon, sponsor it or send a patch — both count.</p>
+        <div class="row-2">
+          <a class="btn-2" href="https://github.com/Cartivo-Oficial/TermCoder" target="_blank" rel="noopener">Read the source</a>
+          <a class="btn-2" href="docs.html">Read the docs</a>
+        </div>
+      </div>
+      <div class="sys-end"><span class="brand-mark" aria-hidden="true"></span></div>
+    </div>
+  </section>
+
 </main>
 
-<footer>
-  <div class="wrap foot">
-    <div><span class="brand"><span class="t">Term</span><span class="c">Coder</span></span> &nbsp; MIT licensed</div>
-    <div>
+<footer class="sys-foot">
+  <div class="in-row">
+    <span>TERMCODER · MIT</span>
+    <span>
       <a href="docs.html">Docs</a> ·
       <a href="https://www.npmjs.com/package/@termcoder/tui" target="_blank" rel="noopener">npm</a> ·
       <a href="https://github.com/Cartivo-Oficial/TermCoder" target="_blank" rel="noopener">GitHub</a>
-    </div>
+    </span>
   </div>
 </footer>
 
+<script src="hero-session.js"></script>
+<script src="hero.js"></script>
 <script>
   function copyCmd() {
-    var b = document.getElementById('copyBtn');
-    navigator.clipboard && navigator.clipboard.writeText('npm install -g @termcoder/tui').then(function () {
-      b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1400);
+    var text = document.getElementById('cmd').textContent;
+    navigator.clipboard.writeText(text).then(function () {
+      var b = document.getElementById('copyBtn');
+      b.textContent = 'Copied';
+      setTimeout(function () { b.textContent = 'Copy'; }, 1400);
     });
   }
-  var blocks = {
-    win: '<span class="c"># PowerShell or CMD</span>\nnpm install <span class="p">-g</span> @termcoder/tui\n<span class="c"># then, in any folder:</span>\nterm',
-    mac: '<span class="c"># Terminal</span>\nnpm install <span class="p">-g</span> @termcoder/tui\n<span class="c"># then, in any folder:</span>\nterm',
-    linux: '<span class="c"># bash / zsh</span>\nnpm install <span class="p">-g</span> @termcoder/tui\n<span class="c"># then, in any folder:</span>\nterm'
-  };
-  document.querySelectorAll('.tab').forEach(function (t) {
-    t.addEventListener('click', function () {
-      document.querySelectorAll('.tab').forEach(function (x) { x.classList.remove('on'); });
-      t.classList.add('on');
-      document.getElementById('installBlock').innerHTML = blocks[t.dataset.os];
-    });
-  });
-  // Point the desktop button straight at the installer for the visitor's OS,
-  // so one click starts the download — no trip to GitHub.
   (function () {
-    var el = document.getElementById('desktopDl');
-    if (!el) return;
-    var p = navigator.platform.toLowerCase() + ' ' + (navigator.userAgent || '').toLowerCase();
-    var R = 'https://github.com/Cartivo-Oficial/TermCoder/releases/latest/download/';
-    if (p.indexOf('mac') > -1) { el.href = R + 'TermCoder-arm64.dmg'; el.textContent = 'Download for macOS'; }
-    else if (p.indexOf('linux') > -1 || p.indexOf('x11') > -1) { el.href = R + 'TermCoder-x86_64.AppImage'; el.textContent = 'Download for Linux'; }
-    else { el.href = R + 'TermCoder-Setup.exe'; el.textContent = 'Download for Windows'; }
+    var p = navigator.platform || '';
+    var base = 'https://github.com/Cartivo-Oficial/TermCoder/releases/latest/download/';
+    var asset = /Mac/i.test(p) ? 'TermCoder-arm64.dmg' : /Linux/i.test(p) ? 'TermCoder-x86_64.AppImage' : 'TermCoder-Setup.exe';
+    var a = document.getElementById('desktopDl');
+    if (a) { a.href = base + asset; }
   })();
 </script>
+
 </body>
 </html>
