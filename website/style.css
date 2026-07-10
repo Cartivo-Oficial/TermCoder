@@ -295,3 +295,11 @@ body:has(#openBtn) .head h1 { font-size: clamp(24px, 4vw, 34px); letter-spacing:
 iframe.viewer { width: 100%; border: 0; display: block; min-height: 60vh; background: #fff; }
 main:has(#openBtn) ~ footer { padding: 34px 0; font-family: var(--mono); font-size: 13px; color: var(--faint); margin-top: 0; }
 main:has(#openBtn) ~ footer a { color: var(--muted); }
+
+.brand-mark {
+  display: inline-block;
+  background: currentColor;
+  -webkit-mask: url("mark.png") center / contain no-repeat;
+  mask: url("mark.png") center / contain no-repeat;
+}
+.brand .mk { width: 18px; height: 18px; margin-right: 8px; vertical-align: -4px; color: var(--accent); }
