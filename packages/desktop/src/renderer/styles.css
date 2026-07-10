@@ -792,7 +792,6 @@ button.chip { cursor: pointer; }
 }
 @keyframes tw { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.85; } }
 @media (prefers-reduced-motion: reduce) { .stars b { animation: none; } }
-.hero-mark { width: 64px; height: 64px; margin: 0 auto 16px; color: var(--accent); filter: drop-shadow(0 0 14px var(--accent-glow)); position: relative; }
 .hero-art { display: flex; justify-content: center; gap: 11px; position: relative; }
 .hero-art pre { margin: 0; font-family: var(--mono); font-size: 10px; line-height: 1.05; }
 .hero-t {

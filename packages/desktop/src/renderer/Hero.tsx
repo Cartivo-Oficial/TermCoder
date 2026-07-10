@@ -35,7 +35,6 @@ export function Hero({ onSuggest }: { onSuggest: (text: string) => void }) {
           <b key={s.id} style={{ left: s.left, top: s.top, animationDelay: s.delay }}>{s.glyph}</b>
         ))}
       </div>
-      <span className="brand-mark hero-mark" aria-hidden="true" />
       <div className="hero-art" aria-hidden="true">
         <pre className="hero-t">{TERM}</pre>
         <pre className="hero-c">{CODER}</pre>
