@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.8.2
+
+**The keyless model can use its tools again.** GPT-OSS sometimes names a tool
+`bash<|channel|>commentary` — a stray token from its own format leaking into the
+name — so the call matched nothing and the model gave up with the job half done.
+We now strip that, and a new eval measured the effect: a one-line bug-fix task
+that failed every time before now passes every time.
+
+**A nudge when the free tier actually hurts.** The free model is a fine way to
+start, but it is small and gets busy. Now, once per session and only while you
+are on it, a hint appears at the moment the limit bites — after a rate-limit or a
+slow turn — showing how to connect a better model. `/upgrade` and `/connect` also
+stopped calling subscription login "coming soon"; it has been here since 0.8.0.
+
 ## 0.8.1
 
 **The keyless model can finally use tools.** `termcoderfree/auto` is the default for
