@@ -12,7 +12,7 @@ const EMOJI = /\p{Extended_Pictographic}/u;
 const stripCode = (html) => html.replace(/<pre[\s\S]*?<\/pre>/gi, "").replace(/<code[\s\S]*?<\/code>/gi, "");
 const headings = (html) => [
   ...[...html.matchAll(/<h[123][^>]*>([\s\S]*?)<\/h[123]>/gi)].map((m) => m[1]),
-  ...[...html.matchAll(/class="(?:k|sec-h|eyebrow)"[^>]*>([\s\S]*?)</gi)].map((m) => m[1]),
+  ...[...html.matchAll(/class="(?:k|sec-h|eyebrow|lbl)"[^>]*>([\s\S]*?)</gi)].map((m) => m[1]),
 ].map((s) => s.replace(/<[^>]+>/g, " "));
 const REQUIRED_ON_INDEX = [
   ["no API key", /no API key/i],
