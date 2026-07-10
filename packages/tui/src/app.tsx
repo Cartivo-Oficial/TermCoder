@@ -572,10 +572,14 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           text: onKey
             ? "You're already connected to a provider — you're on the good stuff. /model to pick one."
             : [
-                "termcoderfree is free but small. For MUCH better answers — also free — connect Google Gemini:",
-                "  1. Get a free key: https://aistudio.google.com/apikey",
-                "  2. Run:  /key google YOUR_KEY",
-                "That's it — termcoder/auto uses Gemini automatically. (Or install Ollama for unlimited local.)",
+                "termcoderfree is free but small, slow, and rate-limited. Any of these makes it much better —",
+                "pick whichever you already have; termcoder/auto starts using it right away:",
+                "",
+                "  Free Gemini key   1. Get one free: https://aistudio.google.com/apikey",
+                "                    2. Run:  /key google YOUR_KEY",
+                "  Claude Pro/Max    /login-claude     (experimental — your subscription, no API key)",
+                "  ChatGPT Plus/Pro  /login-chatgpt    (experimental)",
+                "  Local & unlimited install Ollama, then /model to pick it",
               ].join("\n"),
         });
         break;
@@ -593,19 +597,22 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           const lines = p.methods.map(
             (m) => `  ${m.available ? "●" : "○"} ${m.label}${m.available ? "" : "  (coming soon)"}`,
           );
+          const loginCmd = arg === "anthropic" ? "\n  Subscription:  /login-claude"
+            : arg === "openai" ? "\n  Subscription:  /login-chatgpt"
+            : "";
           pushHistory({
             kind: "notice",
-            text: `Connect ${p.label}:\n${lines.join("\n")}\n\nUse the API key now:  /key ${arg} <your-key>\n(Subscription login — ChatGPT/Claude — is coming.)`,
+            text: `Connect ${p.label}:\n${lines.join("\n")}\n\n  API key:  /key ${arg} <your-key>${loginCmd}`,
           });
         } else {
           const lines = CONNECTABLE_PROVIDERS.map((p) => {
-            const soon = p.methods.some((m) => !m.available) ? "  (+ subscription login soon)" : "";
+            const sub = p.methods.some((m) => m.available && m.id.startsWith("oauth")) ? "  (or subscription login)" : "";
             const keyUrl = providerInfo(p.provider)?.keyUrl;
-            return `  ${p.provider.padEnd(10)} ${p.label}${soon}${keyUrl ? `  ${keyUrl}` : ""}`;
+            return `  ${p.provider.padEnd(10)} ${p.label}${sub}${keyUrl ? `  ${keyUrl}` : ""}`;
           });
           pushHistory({
             kind: "notice",
-            text: `Connect a provider — /connect <name> for methods:\n${lines.join("\n")}\n\nYou don't need any of these — termcoder already runs on a free model.`,
+            text: `Connect a provider — /connect <name> for methods:\n${lines.join("\n")}\n\nYou don't need any of these — termcoder already runs on a free model. /upgrade for the quickest path.`,
           });
         }
         break;
