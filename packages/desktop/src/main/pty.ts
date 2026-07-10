@@ -88,7 +88,8 @@ export function registerPtyIpc(): void {
           }
         });
         pty.onExit(({ exitCode }) => {
-          if (sessions.get(id) === pty) sessions.delete(id);
+          if (sessions.get(id) !== pty) return;
+          sessions.delete(id);
           if (!event.sender.isDestroyed()) event.sender.send("pty:exit", exitCode);
         });
         return { ok: true as const, pid: pty.pid };
