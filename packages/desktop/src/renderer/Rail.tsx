@@ -26,6 +26,7 @@ export function Rail({
   const { t } = useI18n();
   return (
     <nav className="rail">
+      <span className="brand-mark rail-mark" aria-hidden="true" />
       {ITEMS.map(({ id, icon: Icon, key }) => (
         <button
           key={id}

@@ -105,6 +105,7 @@ svg { display: block; }
   -webkit-app-region: drag;
 }
 .rail button, .rail .dot { -webkit-app-region: no-drag; }
+.rail-mark { width: 26px; height: 26px; margin: 2px 0 12px; color: var(--accent); filter: drop-shadow(0 0 6px var(--accent-glow)); }
 .rail-btn {
   position: relative; width: 36px; height: 36px; border-radius: var(--r-sm);
   background: transparent; border: none; color: var(--muted);
