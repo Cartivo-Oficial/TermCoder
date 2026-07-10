@@ -182,6 +182,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
   const permResolve = useRef<((decision: PermissionDecision) => void) | null>(null);
   const aborted = useRef(false);
   const abortController = useRef<AbortController | null>(null);
+  const nudgedUpgrade = useRef(false);
   const inputHistory = useRef<string[]>([]);
   const histIndex = useRef(-1);
   const lastPrompt = useRef("");
@@ -443,6 +444,8 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     const localLive: ViewItem[] = [];
     let assistantIdx: number | null = null;
     let thoughtShown = false;
+    let rateLimited = false;
+    const onFreeModel = ["termcoderfree", "pollinations"].includes(session.record.model.split("/")[0] ?? "");
     const sync = () => setLive([...localLive]);
 
     const markThought = () => {
@@ -508,7 +511,9 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
             break;
           case "error": {
             localLive.push({ kind: "error", text: event.error });
-            if (/api key|unauthor|401|403|invalid.*key|quota|rate.?limit|no .*credentials/i.test(event.error)) {
+            if (/quota|rate.?limit|too many|429|busy|overload/i.test(event.error)) {
+              rateLimited = true;
+            } else if (/api key|unauthor|401|403|invalid.*key|no .*credentials/i.test(event.error)) {
               localLive.push({ kind: "notice", text: "→ Fix it with /setup (or /key <provider> <key>)." });
             }
             break;
@@ -519,10 +524,20 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         sync();
       }
     } finally {
-      const dur = fmtDuration(Math.round((Date.now() - turnStart) / 1000));
-      const stamped = localLive.map((it) =>
+      const secs = Math.round((Date.now() - turnStart) / 1000);
+      const dur = fmtDuration(secs);
+      const stamped: ViewItem[] = localLive.map((it) =>
         it.kind === "assistant" ? { ...it, time: now(), dur } : it,
       );
+      if (onFreeModel && !nudgedUpgrade.current && !aborted.current && (rateLimited || secs > 90)) {
+        nudgedUpgrade.current = true;
+        stamped.push({
+          kind: "notice",
+          text: rateLimited
+            ? "The free model is busy — that is its main limit. Connect a better one (free options too) in a step or two:  /upgrade"
+            : "The free model is small and slow. For faster, stronger answers — free options included — run  /upgrade",
+        });
+      }
       setHistory((prev) => [...prev, ...stamped]);
       setLive([]);
       setBusy(false);

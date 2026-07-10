@@ -408,6 +408,7 @@ export function App() {
   const wsRef = useRef<WebSocket | null>(null);
   const stopReconnect = useRef(false);
   const appendRef = useRef(false);
+  const nudgedUpgradeRef = useRef(false);
   const currentIdRef = useRef<string | null>(null);
   const started = useRef(false);
   const cwdRef = useRef<string | null>(null);
@@ -1128,7 +1129,14 @@ export function App() {
 
     if (e.type === "error") {
       appendRef.current = false;
-      setMessages((prev) => [...prev, { role: "error", text: e.error }]);
+      const onFree = /^(termcoderfree|pollinations)\//.test(model);
+      const busy = /quota|rate.?limit|too many|429|busy|overload/i.test(e.error);
+      const nudge =
+        onFree && busy && !nudgedUpgradeRef.current
+          ? ((nudgedUpgradeRef.current = true),
+            [{ role: "notice" as const, text: t("upgrade.busy") }])
+          : [];
+      setMessages((prev) => [...prev, { role: "error", text: e.error }, ...nudge]);
     }
   }
 
