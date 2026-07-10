@@ -585,7 +585,7 @@ git commit -m "feat(website): show the real desktop app"
 
 Every claim below is true today. Write them plainly; do not inflate them.
 
-- [ ] **Step 0: Stop selling "free" in headings.** The Task-1 verifier fails on all five of these. They exist today; this is the exhaustive list:
+- [ ] **Step 0: Stop selling "free" in headings.** The Task-1 verifier fails on all six of these. They exist today; this is the exhaustive list:
 
 | File | Heading now | Heading after |
 |---|---|---|

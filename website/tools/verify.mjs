@@ -44,9 +44,18 @@ for (const page of pages) {
   }
 }
 
-const index = readFileSync(join(site, "index.html"), "utf8");
+const readPage = (name) => {
+  const path = join(site, name);
+  if (!existsSync(path)) {
+    fail(`missing page: ${name}`);
+    return "";
+  }
+  return readFileSync(path, "utf8");
+};
+
+const index = readPage("index.html");
 for (const [label, re] of REQUIRED_ON_INDEX) {
-  if (!re.test(index)) fail(`index.html: never mentions ${label}`);
+  if (index && !re.test(index)) fail(`index.html: never mentions ${label}`);
 }
 
 for (const asset of ["mark.png", "app.png", "hero-session.js", "hero.js", "style.css"]) {
@@ -61,10 +70,16 @@ if (existsSync(join(site, "hero-session.js"))) {
 
 if (process.argv.includes("--links")) {
   const urls = [...new Set([...index.matchAll(/https:\/\/github\.com\/[^"']*releases\/latest\/download\/[^"']+/g)].map((m) => m[0]))];
-  const dl = readFileSync(join(site, "download.html"), "utf8");
+  const dl = readPage("download.html");
   for (const m of dl.matchAll(/https:\/\/github\.com\/[^"']*releases\/latest\/download\/[^"']+/g)) urls.push(m[0]);
   for (const url of [...new Set(urls)]) {
-    const res = await fetch(url, { method: "GET", headers: { Range: "bytes=0-0" } });
+    let res;
+    try {
+      res = await fetch(url, { method: "GET", headers: { Range: "bytes=0-0" } });
+    } catch (err) {
+      fail(`download link unreachable: ${url} (${err.message})`);
+      continue;
+    }
     if (!res.ok) fail(`dead download link (${res.status}): ${url}`);
   }
 }
