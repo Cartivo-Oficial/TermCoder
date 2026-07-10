@@ -516,3 +516,40 @@ main:has(#openBtn) ~ footer a { color: var(--muted); }
   font-family: var(--display); font-size: var(--t1); color: var(--faint); }
 .sys-foot a { color: var(--muted); }
 .sys-foot a:hover { color: var(--ember); }
+
+/* ---- v2 filled split: text one side, a real artifact the other. no empty halves. ---- */
+.sys-sec2 {
+  display: grid; grid-template-columns: var(--gutter-w) minmax(0, 1fr);
+  max-width: calc(var(--grid-max) + var(--gutter-w)); margin: 0 auto; padding: 0 24px;
+  border-top: 1px solid var(--rule);
+}
+.sys-sec2 > .gutter { font-family: var(--display); font-size: var(--t1); color: var(--faint); padding-top: 46px; }
+.split { padding: 42px 0 46px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 0 40px; align-items: center; }
+.split > * { min-width: 0; }
+.split .t { grid-column: 1 / span 6; }
+.split .a { grid-column: 7 / span 6; }
+.split.rev .t { grid-column: 7 / span 6; }
+.split.rev .a { grid-column: 1 / span 6; grid-row: 1; }
+.split .t h2 { font-family: var(--display); font-size: clamp(24px, 3vw, var(--t5)); line-height: 1.1; margin: 8px 0 12px; color: var(--text); }
+.split .t p { font-family: var(--prose); font-size: var(--t3); line-height: 1.6; color: var(--muted); margin: 0 0 12px; max-width: 46ch; }
+.split .full { grid-column: 1 / -1; }
+@media (max-width: 900px) {
+  .sys-sec2 { grid-template-columns: minmax(0, 1fr); border-left: 2px solid var(--ember); }
+  .sys-sec2 > .gutter { padding: 28px 0 0; }
+  .split { padding-top: 8px; grid-template-columns: minmax(0, 1fr); gap: 22px 0; }
+  .split .t, .split .a, .split.rev .t, .split.rev .a { grid-column: 1; }
+  .split.rev .a { grid-row: auto; }
+}
+
+/* the artifact card — a snippet of the real thing */
+.snip { border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); overflow: hidden; }
+.snip .sbar { display: flex; align-items: center; gap: 7px; padding: 9px 14px; border-bottom: 1px solid var(--rule);
+  font-family: var(--code); font-size: 11px; color: var(--faint); }
+.snip .sbar i { width: 8px; height: 8px; border-radius: 50%; background: var(--rule); display: inline-block; }
+.snip .sbar span { margin-left: 6px; }
+.snip pre { margin: 0; padding: 16px 18px; overflow-x: auto; font-family: var(--code); font-size: var(--t2);
+  line-height: 1.95; color: var(--muted); }
+.snip .in { color: var(--ember); }
+.snip .out { color: var(--signal); }
+.snip .c { color: var(--faint); }
+.snip .k { color: var(--text); }
