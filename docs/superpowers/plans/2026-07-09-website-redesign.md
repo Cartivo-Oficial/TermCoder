@@ -321,14 +321,19 @@ git commit -m "feat(website): brand mark in the nav"
 
 **This transcript must be real.** `record-session.mjs` starts the actual `@termcoder/server` in-process, creates a session, and streams a real turn over the documented WebSocket (`WS /sessions/:id/stream`, `docs/server-api.md:74`). If the model is unreachable, the script exits non-zero. **Do not hand-write a transcript.** If you cannot record one, stop and ask the user.
 
+**Two resolution facts, verified — do not "simplify" them back:**
+- `website/` is not a package. Bare specifiers (`@termcoder/core`) do **not** resolve from `website/tools/`; those packages live only under `packages/*/node_modules/@termcoder/`. Import the built ESM by relative path instead, as the code below does. Their own internal imports still resolve, because Node resolves from *their* location, not the importer's.
+- Therefore `pnpm --filter @termcoder/core --filter @termcoder/server build` must run before the recorder. Confirmed: `packages/core/dist/index.js` exports `builtinTools`, `ToolRegistry`, `loadConfig`; `packages/server/dist/index.js` exports `createServer`.
+- `WebSocket` is a global on Node ≥ 22. No `ws` dependency is needed.
+
 - [ ] **Step 1: Write the recorder.** Create `website/tools/record-session.mjs`:
 
 ```js
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { builtinTools, loadConfig, ToolRegistry } from "@termcoder/core";
-import { createServer } from "@termcoder/server";
+import { builtinTools, loadConfig, ToolRegistry } from "../../packages/core/dist/index.js";
+import { createServer } from "../../packages/server/dist/index.js";
 
 const cwd = process.argv[2] ?? mkdtempSync(join(tmpdir(), "tc-hero-"));
 const prompt = process.argv[3] ?? "add a --version flag to src/cli.js and run the tests";
