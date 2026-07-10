@@ -53,6 +53,8 @@
     <a href="#web">Run in the browser</a>
     <div class="grp">Reference</div>
     <a href="#config">Configuration</a>
+    <a href="#terminal">Terminal</a>
+    <a href="#subscription">Subscription login</a>
     <a href="#shortcuts">Keyboard shortcuts</a>
     <a href="#sdk">SDK and server</a>
     <a href="#troubleshooting">Troubleshooting</a>
@@ -220,7 +222,7 @@ term
       <p>The default. It routes each task by difficulty — a quick model for simple edits, a stronger one for
         harder work — and reviews its own changes before finishing. With no key it runs on the free, keyless
         model; connect a key and it routes to that automatically.</p>
-      <h3>A reliable free tier</h3>
+      <h3>A reliable keyless tier</h3>
       <p>The free model is community-hosted and can get busy. When a request fails, TermCoder retries it and — if
         you have connected a key — falls back to it, so a hiccup does not kill your turn. Run
         <code class="i">/upgrade</code> to connect a free Gemini key in two steps for faster, steadier answers.</p>
@@ -397,6 +399,27 @@ termcoder-server
       <div class="note"><p><b>Secrets stay out of git.</b> Keys are written to your user config directory, never
         to the project. Keep <code class="i">.termcoder/</code> in your <code class="i">.gitignore</code> if it holds anything local.</p></div>
       <p>Change the theme any time with <code class="i">/theme</code>; your choice is saved for next time.</p>
+    </section>
+
+    <!-- TERMINAL -->
+    <section class="doc" id="terminal">
+      <h2>Terminal</h2>
+      <p>The desktop app embeds a real terminal. Open it with the <b>Chat | Terminal</b> tabs at the top of
+        the centre column, or press <code class="i">Ctrl</code> + <code class="i">`</code>. It runs your
+        default shell in the project folder.</p>
+      <p>TermCoder scans your <code class="i">PATH</code> and shows a one-click chip for each coding CLI it
+        finds: Claude Code, termcoder, Codex, and Gemini CLI. The shell keeps running while you are on the
+        Chat tab.</p>
+    </section>
+
+    <!-- SUBSCRIPTION -->
+    <section class="doc" id="subscription">
+      <h2>Subscription login</h2>
+      <p>Instead of an API key, you can sign in with a plan you already have.</p>
+      <pre class="block"><span class="p">/login-claude</span>   <span class="c"># Claude Pro or Max</span>
+<span class="p">/login-chatgpt</span>  <span class="c"># ChatGPT Plus or Pro</span></pre>
+      <p class="note"><b>Experimental.</b> These use the vendors' own login flows. They can break when those
+        flows change, and they are not covered by any support agreement.</p>
     </section>
 
     <!-- SHORTCUTS -->
