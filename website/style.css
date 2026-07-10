@@ -298,3 +298,6 @@ main:has(#openBtn) ~ footer a { color: var(--muted); }
   -webkit-mask: url("mark.png") center / contain no-repeat;
   mask: url("mark.png") center / contain no-repeat;
 }
+
+/* index — proof shot */
+.proof .shot { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 12px; margin-top: 24px; display: block; }
