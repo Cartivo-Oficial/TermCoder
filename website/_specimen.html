@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="stylesheet" href="style.css" />
+<title>TermCoder — type specimen and grid</title>
+<meta name="robots" content="noindex" />
+<meta name="description" content="Internal specimen. Every token, both faces, the grid at four widths. Not linked from the site." />
+</head>
+<body class="sys">
+
+<section class="sys-sec">
+  <div class="gutter">00</div>
+  <div class="sys-body">
+    <div class="anchor-l">
+      <div class="eyebrow-2">Specimen · not a page</div>
+      <h1>TERMCODER</h1>
+      <p class="lead">The site is an editor, not a brochure. A numbered gutter, an asymmetric grid,
+        one face with a voice and one that gets out of the way.</p>
+      <p>Nothing here is marketing copy. This page exists so the system can be judged before a single
+        sentence is written on top of it, and so a regression can be seen.</p>
+    </div>
+    <div class="sys-end"><span class="brand-mark" aria-hidden="true"></span></div>
+  </div>
+</section>
+
+<section class="sys-sec">
+  <div class="gutter">01</div>
+  <div class="sys-body">
+    <div class="anchor-l">
+      <div class="eyebrow-2">Type scale · fifth</div>
+      <h2>Departure Mono carries the structure</h2>
+      <p>Headlines, the gutter index, eyebrows. It is a pixel grid, which is what the app's wordmark
+        already is. Below, every step of the scale in the display face.</p>
+    </div>
+    <div class="anchor-full">
+      <div class="spec-row"><span class="spec-lbl">72</span><span class="spec-d spec-72">Ships changes</span></div>
+      <div class="spec-row"><span class="spec-lbl">48</span><span class="spec-d spec-48">Ships changes</span></div>
+      <div class="spec-row"><span class="spec-lbl">32</span><span class="spec-d spec-32">Ships changes</span></div>
+      <div class="spec-row"><span class="spec-lbl">21</span><span class="spec-d spec-21">Ships changes</span></div>
+      <div class="spec-row"><span class="spec-lbl">16</span><span class="spec-d spec-16">Ships changes</span></div>
+      <div class="spec-row"><span class="spec-lbl">14</span><span class="spec-d spec-14">Ships changes</span></div>
+      <div class="spec-row"><span class="spec-lbl">12</span><span class="spec-d spec-12">Ships changes</span></div>
+    </div>
+    <div class="sys-end"><span class="brand-mark" aria-hidden="true"></span></div>
+  </div>
+</section>
+
+<section class="sys-sec">
+  <div class="gutter">02</div>
+  <div class="sys-body">
+    <div class="anchor-r">
+      <div class="eyebrow-2">Prose · Inter</div>
+      <h2>The body face gets out of the way</h2>
+      <p>This paragraph is set in Inter at 16px on a 1.65 leading, capped at 62 characters. It is a
+        neutral grotesk on purpose: the personality of this site lives in the display face, the grid,
+        and the two colours. A body face with opinions would fight all three.</p>
+      <p>This block is right-anchored — columns 6 through 12. The section above it is left-anchored.
+        Alternating the two is the rhythm of the page. Nothing is centred except the mark in the hero,
+        and that is the point: a centred column is what every terminal-flavoured site does.</p>
+    </div>
+    <div class="sys-end"><span class="brand-mark" aria-hidden="true"></span></div>
+  </div>
+</section>
+
+<section class="sys-sec">
+  <div class="gutter">03</div>
+  <div class="sys-body">
+    <div class="anchor-l">
+      <div class="eyebrow-2">Colour · two states</div>
+      <h2>Ember is input. Signal is output.</h2>
+      <p>A terminal has exactly two things in it: what you typed, and what came back. Ember marks the
+        prompt, the accent, the one call to action per screen. Signal marks a success the product
+        actually earned. Neither is ever used to decorate.</p>
+    </div>
+    <div class="anchor-full">
+      <div class="swatches">
+        <div class="sw"><i class="sw-ink"></i><b>--ink</b><span>#0A0A0B · page</span></div>
+        <div class="sw"><i class="sw-panel"></i><b>--panel</b><span>#0F0F11 · raised</span></div>
+        <div class="sw"><i class="sw-rule"></i><b>--rule</b><span>#1E1E22 · hairline</span></div>
+        <div class="sw"><i class="sw-text"></i><b>--text</b><span>prose</span></div>
+        <div class="sw"><i class="sw-muted"></i><b>--muted</b><span>secondary</span></div>
+        <div class="sw"><i class="sw-faint"></i><b>--faint</b><span>gutter, captions</span></div>
+        <div class="sw"><i class="sw-ember"></i><b>--ember</b><span>#FF7A45 · input</span></div>
+        <div class="sw"><i class="sw-signal"></i><b>--signal</b><span>#5FD3A0 · output</span></div>
+      </div>
+      <pre class="spec-term"><span class="in">&#10095;</span> add a --version flag, then run the tests
+<span class="out">&#10003;</span> read cli.js
+<span class="out">&#10003;</span> edit cli.js
+<span class="out">&#10003;</span> npm test
+<span class="out">all tests passed</span></pre>
+    </div>
+    <div class="sys-end"><span class="brand-mark" aria-hidden="true"></span></div>
+  </div>
+</section>
+
+<section class="sys-sec">
+  <div class="gutter">04</div>
+  <div class="sys-body">
+    <div class="anchor-full">
+      <div class="eyebrow-2">Grid · 12 columns</div>
+      <h2>Every column, so a misalignment is visible</h2>
+      <div class="colcheck">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <p>At 900px the gutter collapses into an ember hairline and the index moves inline. At 600px the
+        grid becomes a single column. At 320px there is no horizontal scroll. All four are asserted by
+        the harness, not by eye.</p>
+    </div>
+    <div class="sys-end"><span class="brand-mark" aria-hidden="true"></span></div>
+  </div>
+</section>
+
+</body>
+</html>

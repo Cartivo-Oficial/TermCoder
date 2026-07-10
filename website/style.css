@@ -306,3 +306,130 @@ main:has(#openBtn) ~ footer a { color: var(--muted); }
 
 /* index — proof shot */
 .proof .shot { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 12px; margin-top: 24px; display: block; }
+
+/* ============================================================
+   IDENTITY SYSTEM v2 — additive. Pages migrate onto it one at a
+   time; nothing below overrides the tokens the old pages use.
+   ============================================================ */
+
+@font-face {
+  font-family: "Departure Mono";
+  src: url("fonts/departure-mono.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter v";
+  src: url("fonts/inter-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter v";
+  src: url("fonts/inter-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --ink: #0A0A0B;
+  --rule: #1E1E22;
+  --ember: #FF7A45;
+  --signal: #5FD3A0;
+
+  --display: "Departure Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  --prose: "Inter v", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --code: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  --t1: 12px;
+  --t2: 14px;
+  --t3: 16px;
+  --t4: 21px;
+  --t5: 32px;
+  --t6: 48px;
+  --t7: 72px;
+
+  --gutter-w: 72px;
+  --grid-max: 1180px;
+}
+
+/* the numbered gutter — a section is a line, and lines have numbers */
+.sys { background: var(--ink); }
+.sys-sec {
+  display: grid;
+  grid-template-columns: var(--gutter-w) minmax(0, 1fr);
+  max-width: calc(var(--grid-max) + var(--gutter-w));
+  margin: 0 auto;
+  padding: 0 24px;
+  border-top: 1px solid var(--rule);
+}
+.sys-sec > .gutter {
+  font-family: var(--display);
+  font-size: var(--t1);
+  color: var(--faint);
+  padding-top: 34px;
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: min-content;
+}
+.sys-body { padding: 30px 0 56px; min-width: 0; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 0 20px; }
+.sys-body > * { min-width: 0; }
+
+/* asymmetry is the rule: a section anchors left or right, never centre */
+.anchor-l { grid-column: 1 / span 7; }
+.anchor-r { grid-column: 6 / span 7; }
+.anchor-full { grid-column: 1 / -1; }
+
+.sys h1, .sys h2, .sys h3, .sys .eyebrow-2, .sys .chip-2 { font-family: var(--display); }
+.sys h1 { font-size: clamp(34px, 7.2vw, var(--t7)); line-height: 1.02; letter-spacing: 0; margin: 0 0 18px; }
+.sys h2 { font-size: clamp(24px, 3.4vw, var(--t5)); line-height: 1.1; margin: 0 0 12px; }
+.sys h3 { font-size: var(--t4); line-height: 1.2; margin: 0 0 8px; }
+.sys p { font-family: var(--prose); font-size: var(--t3); line-height: 1.65; color: var(--muted); max-width: 62ch; margin: 0 0 14px; }
+.sys .lead { font-size: var(--t4); color: var(--text); }
+.sys .eyebrow-2 { font-size: var(--t1); letter-spacing: .16em; text-transform: uppercase; color: var(--ember); }
+.sys code, .sys pre { font-family: var(--code); font-size: var(--t2); }
+
+/* ember means input. signal means output. neither ever decorates. */
+.sys .in { color: var(--ember); }
+.sys .out { color: var(--signal); }
+
+/* the mark is punctuation: it closes a section, it does not garnish it */
+.sys-end { grid-column: 1 / -1; display: flex; justify-content: flex-end; padding-top: 26px; }
+.sys-end .brand-mark { width: 10px; height: 10px; color: var(--faint); }
+
+@media (max-width: 900px) {
+  .sys-sec { grid-template-columns: minmax(0, 1fr); border-left: 2px solid var(--ember); }
+  .sys-sec > .gutter { position: static; padding: 26px 0 0; }
+  .sys-body { padding-top: 10px; }
+  .anchor-l, .anchor-r { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .sys-body { grid-template-columns: minmax(0, 1fr); }
+  .sys h1 { font-size: var(--t6); }
+}
+
+/* specimen-only helpers — never used by a real page */
+.spec-row { display: flex; align-items: baseline; gap: 20px; border-top: 1px solid var(--rule); padding: 10px 0; min-width: 0; }
+.spec-lbl { font-family: var(--code); font-size: var(--t1); color: var(--faint); width: 34px; flex-shrink: 0; }
+.spec-d { font-family: var(--display); color: var(--text); white-space: nowrap; overflow: hidden; min-width: 0; flex: 1; }
+.spec-72 { font-size: clamp(34px, 7.2vw, var(--t7)); } .spec-48 { font-size: clamp(28px, 5vw, var(--t6)); } .spec-32 { font-size: var(--t5); }
+.spec-21 { font-size: var(--t4); } .spec-16 { font-size: var(--t3); } .spec-14 { font-size: var(--t2); }
+.spec-12 { font-size: var(--t1); }
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 8px 0 26px; }
+.sw { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.sw i { height: 42px; border-radius: 6px; border: 1px solid var(--rule); }
+.sw b { font-family: var(--code); font-size: var(--t1); color: var(--text); font-weight: 400; }
+.sw span { font-family: var(--code); font-size: 11px; color: var(--faint); }
+.sw-ink { background: var(--ink); } .sw-panel { background: var(--panel); } .sw-rule { background: var(--rule); }
+.sw-text { background: var(--text); } .sw-muted { background: var(--muted); } .sw-faint { background: var(--faint); }
+.sw-ember { background: var(--ember); } .sw-signal { background: var(--signal); }
+.spec-term { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 18px 20px;
+  line-height: 1.9; color: var(--text); overflow-x: auto; margin: 0; }
+.colcheck { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 0 20px; margin: 18px 0 22px; }
+@media (max-width: 900px) { .colcheck { gap: 0 8px; } }
+.colcheck span { height: 56px; background: color-mix(in srgb, var(--ember) 10%, transparent); border-top: 1px solid var(--ember); }
+@media (max-width: 600px) { .colcheck { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 6px; } }
