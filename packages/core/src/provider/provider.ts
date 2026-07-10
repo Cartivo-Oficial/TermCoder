@@ -6,6 +6,7 @@ import { anthropicOAuthModel } from "../auth/oauth";
 import { chatgptModel } from "../auth/chatgpt-oauth";
 import type { Config } from "../config/config";
 import { markProvider, providerMarkedBad } from "./health";
+import { repairToolCallStream } from "./keyless-stream";
 import { providerInfo } from "./registry";
 
 export interface ResolveModelOptions {
@@ -157,6 +158,7 @@ export function resolveModel(
       return createOpenAI({
         baseURL: cfg.baseURL ?? "https://text.pollinations.ai/openai",
         apiKey: cfg.apiKey ?? "free",
+        fetch: repairToolCallStream(),
       }).chat(model);
 
     default: {

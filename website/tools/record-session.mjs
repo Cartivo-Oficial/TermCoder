@@ -53,7 +53,7 @@ const flush = () => {
 const ws = new WebSocket(`ws://localhost:${port}/sessions/${rec.id}/stream`);
 
 await new Promise((resolve, reject) => {
-  const timer = setTimeout(() => reject(new Error("timed out after 240s")), 240_000);
+  const timer = setTimeout(() => reject(new Error("timed out after 900s")), 900_000);
   ws.addEventListener("open", () => ws.send(JSON.stringify({ type: "prompt", text: prompt })));
   ws.addEventListener("message", (e) => {
     const ev = JSON.parse(e.data);
