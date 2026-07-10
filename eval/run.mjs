@@ -15,7 +15,15 @@ const arg = (name, def) => {
 
 const MODEL = arg("model", "termcoderfree/auto");
 const ONLY = arg("task", "");
-const TURN_TIMEOUT = Number(arg("timeout", "600")) * 1000;
+const RUNS = Number(arg("runs", "1"));
+const TURN_TIMEOUT = Number(arg("timeout", "300")) * 1000;
+
+function median(nums) {
+  if (nums.length === 0) return 0;
+  const s = [...nums].sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 ? s[mid] : Math.round((s[mid - 1] + s[mid]) / 2);
+}
 
 function hashFile(path) {
   return createHash("sha256").update(readFileSync(path)).digest("hex");
@@ -129,25 +137,43 @@ async function runTask(task) {
 }
 
 const tasks = loadTasks();
-console.log(`\neval · model=${MODEL} · ${tasks.length} task(s)\n`);
+console.log(`\neval · model=${MODEL} · ${tasks.length} task(s) × ${RUNS} run(s)\n`);
 
-const results = [];
+const summary = [];
+const raw = [];
 for (const task of tasks) {
-  process.stdout.write(`  ${task.name} … `);
-  const r = await runTask(task);
-  results.push(r);
-  const mark = r.pass ? "PASS" : "FAIL";
-  const why = r.pass
-    ? ""
-    : r.tamperedTest
-    ? " (edited the test)"
-    : r.error
-    ? ` (${r.error.slice(0, 40)})`
-    : " (verify failed)";
-  console.log(`${mark}${why} · ${r.toolCalls} tools · ${r.seconds}s · leak=${r.leakedToolNames}`);
+  const runs = [];
+  for (let i = 0; i < RUNS; i++) {
+    process.stdout.write(`  ${task.name} #${i + 1} … `);
+    const r = await runTask(task);
+    raw.push(r);
+    runs.push(r);
+    const mark = r.pass ? "PASS" : "FAIL";
+    const why = r.pass
+      ? ""
+      : r.tamperedTest
+      ? " (edited the test)"
+      : r.error
+      ? ` (${r.error.slice(0, 40)})`
+      : " (verify failed)";
+    console.log(`${mark}${why} · ${r.toolCalls} tools · ${r.seconds}s · leak=${r.leakedToolNames}`);
+  }
+  const passes = runs.filter((r) => r.pass).length;
+  summary.push({
+    task: task.name,
+    passes,
+    runs: RUNS,
+    medianSeconds: median(runs.map((r) => r.seconds)),
+    leaks: runs.reduce((n, r) => n + r.leakedToolNames, 0),
+  });
 }
 
-const passed = results.filter((r) => r.pass).length;
-console.log(`\nSCORE ${passed}/${results.length} · model=${MODEL}`);
-console.log(JSON.stringify({ model: MODEL, passed, total: results.length, results }));
+console.log(`\n  model=${MODEL}`);
+for (const s of summary) {
+  console.log(`  ${s.task.padEnd(18)} ${s.passes}/${s.runs} pass · median ${s.medianSeconds}s · leaks ${s.leaks}`);
+}
+const totalPass = summary.reduce((n, s) => n + s.passes, 0);
+const totalRuns = summary.reduce((n, s) => n + s.runs, 0);
+console.log(`\nSCORE ${totalPass}/${totalRuns} · model=${MODEL}`);
+console.log(JSON.stringify({ model: MODEL, totalPass, totalRuns, summary, raw }));
 process.exit(0);
