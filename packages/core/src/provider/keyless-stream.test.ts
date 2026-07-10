@@ -77,4 +77,25 @@ describe("repairToolCallStream", () => {
 
     expect(JSON.parse(lines[0]!.slice(6)).choices[0].delta.tool_calls[0].index).toBe(2);
   });
+
+  it("strips a leaked harmony channel token from a tool name", async () => {
+    const upstream = async () =>
+      sse([
+        delta([{ index: 0, id: "c1", function: { name: "bash<|channel|>commentary", arguments: "{}" } }]),
+        "data: [DONE]",
+      ]);
+
+    const lines = await drain(await repairToolCallStream(upstream as unknown as typeof fetch)("https://x", {}));
+
+    expect(JSON.parse(lines[0]!.slice(6)).choices[0].delta.tool_calls[0].function.name).toBe("bash");
+  });
+
+  it("leaves a clean tool name untouched", async () => {
+    const upstream = async () =>
+      sse([delta([{ index: 0, id: "c1", function: { name: "read", arguments: "{}" } }]), "data: [DONE]"]);
+
+    const lines = await drain(await repairToolCallStream(upstream as unknown as typeof fetch)("https://x", {}));
+
+    expect(JSON.parse(lines[0]!.slice(6)).choices[0].delta.tool_calls[0].function.name).toBe("read");
+  });
 });

@@ -30,7 +30,15 @@ export function repairToolCallStream(base: typeof fetch = fetch): typeof fetch {
 
       let changed = false;
       for (const call of calls) {
-        if (call.id != null || call.function?.name != null) {
+        const fn = call.function;
+        if (fn && fn.name != null) {
+          const clean = fn.name.replace(/<\|.*$/s, "").trim();
+          if (clean !== fn.name) {
+            fn.name = clean;
+            changed = true;
+          }
+        }
+        if (call.id != null || fn?.name != null) {
           if (call.index != null) activeIndex = call.index;
           continue;
         }
