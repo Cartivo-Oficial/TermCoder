@@ -20,7 +20,7 @@ a { color: inherit; text-decoration: none; }
 .nav-in { display: flex; align-items: center; height: 58px; gap: 24px; max-width: 1000px; margin: 0 auto; padding: 0 24px; }
 .brand { font-family: var(--mono); font-weight: 700; font-size: 16px; letter-spacing: -.3px; }
 .brand .t { color: var(--accent); } .brand .c { color: var(--fg); }
-.brand .mk { width: 18px; height: 18px; margin-right: 8px; vertical-align: -4px; }
+.brand .mk { width: 18px; height: 18px; margin-right: 8px; vertical-align: -4px; color: var(--accent); }
 .nav-links { display: flex; gap: 20px; margin-left: auto; font-family: var(--mono); font-size: 13px; color: var(--muted); }
 .nav-links a:hover, .nav-links a.on { color: var(--fg); }
 .btn { font-family: var(--mono); font-size: 13px; padding: 7px 14px; border: 1px solid var(--line);
@@ -302,4 +302,3 @@ main:has(#openBtn) ~ footer a { color: var(--muted); }
   -webkit-mask: url("mark.png") center / contain no-repeat;
   mask: url("mark.png") center / contain no-repeat;
 }
-.brand .mk { width: 18px; height: 18px; margin-right: 8px; vertical-align: -4px; color: var(--accent); }
