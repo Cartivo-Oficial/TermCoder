@@ -44,7 +44,7 @@ section { padding: 44px 0; }
 
 /* command + code */
 .cmd { display: inline-flex; align-items: center; gap: 14px; border: 1px solid var(--line); border-radius: 8px;
-  padding: 13px 15px; font-family: var(--mono); font-size: 14.5px; background: var(--panel); max-width: 460px; }
+  padding: 13px 15px; font-family: var(--mono); font-size: 14.5px; background: var(--panel); max-width: min(460px, 100%); }
 .cmd .p { color: var(--accent); } .cmd code { color: var(--fg); flex: 1; overflow-x: auto; }
 .cmd .copy { font-family: var(--mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted);
   background: transparent; border: 1px solid var(--line); border-radius: 5px; padding: 4px 9px; cursor: pointer; }
@@ -54,7 +54,7 @@ pre.block { background: #08080a; border: 1px solid var(--line); border-radius: 8
 pre.block .c { color: var(--faint); } pre.block .p { color: var(--accent); }
 
 /* os tabs */
-.tabs { display: flex; gap: 6px; margin: 20px 0 12px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 20px 0 12px; }
 .tab { font-family: var(--mono); font-size: 12.5px; padding: 5px 11px; border-radius: 6px; cursor: pointer;
   border: 1px solid var(--line); color: var(--muted); background: transparent; }
 .tab.on { color: var(--fg); border-color: var(--muted); }
@@ -71,7 +71,8 @@ pre.block .c { color: var(--faint); } pre.block .p { color: var(--accent); }
 
 /* numbered steps (a real sequence, so numbers carry meaning) */
 .steps { margin-top: 20px; }
-.step { display: grid; grid-template-columns: 46px 1fr; gap: 18px; padding: 22px 0; align-items: start; }
+.step { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 18px; padding: 22px 0; align-items: start; }
+.step > * { min-width: 0; }
 .step .n { font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--accent);
   border: 1px solid var(--line); border-radius: 8px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
 .step h3 { font-size: 17px; margin: 0 0 8px; font-family: var(--mono); }
@@ -165,8 +166,12 @@ body:has(.hero) .nav-links { gap: 22px; }
 /* index — footer sits flush after the home page (no extra top margin) */
 main:has(.hero) ~ footer { margin-top: 0; }
 
+/* grid children default to min-width:auto, so a wide <pre> forces the track wider than the page */
+.cols, .feats, .study-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.col, .feat, .os { min-width: 0; }
+
 @media (max-width: 780px) {
-  .feats, .study-grid, .cols { grid-template-columns: 1fr; }
+  .feats, .study-grid, .cols { grid-template-columns: minmax(0, 1fr); }
   .logos { gap: 26px 34px; }
 }
 
