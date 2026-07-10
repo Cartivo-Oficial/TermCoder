@@ -24,6 +24,7 @@ export function Welcome({ onChoose }: { onChoose: (mode: "code" | "study") => vo
         ))}
       </div>
       <div className="welcome-inner">
+        <span className="brand-mark welcome-mark" aria-hidden="true" />
         <div className="welcome-logo">
           <span className="wl-term">term</span>
           <span className="wl-coder">coder</span>

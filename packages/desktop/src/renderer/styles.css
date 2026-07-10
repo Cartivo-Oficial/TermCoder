@@ -240,6 +240,13 @@ svg { display: block; }
     radial-gradient(140% 140% at 50% 40%, var(--bg) 55%, color-mix(in srgb, var(--bg) 75%, #000) 100%);
 }
 .welcome-inner { width: min(680px, 92vw); text-align: center; animation: wc-in 0.28s var(--ease) both; position: relative; }
+.brand-mark {
+  display: block;
+  background: currentColor;
+  -webkit-mask: url("./assets/mark.png") center / contain no-repeat;
+  mask: url("./assets/mark.png") center / contain no-repeat;
+}
+.welcome-mark { width: 76px; height: 76px; margin: 0 auto 20px; color: var(--accent); filter: drop-shadow(0 0 26px var(--accent-glow)); }
 .welcome-logo { font-size: 40px; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 4px; }
 .welcome-logo .wl-term { background: linear-gradient(90deg, #ff9a3d, #ff6a2b); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .welcome-logo .wl-coder { color: var(--text); }
@@ -784,6 +791,7 @@ button.chip { cursor: pointer; }
 }
 @keyframes tw { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.85; } }
 @media (prefers-reduced-motion: reduce) { .stars b { animation: none; } }
+.hero-mark { width: 64px; height: 64px; margin: 0 auto 16px; color: var(--accent); filter: drop-shadow(0 0 14px var(--accent-glow)); position: relative; }
 .hero-art { display: flex; justify-content: center; gap: 11px; position: relative; }
 .hero-art pre { margin: 0; font-family: var(--mono); font-size: 10px; line-height: 1.05; }
 .hero-t {
