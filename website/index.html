@@ -30,7 +30,7 @@
 
 <main>
 
-  <!-- 00 · hero -->
+  <!-- 00 · hero: the live recorded session -->
   <section class="sys-sec2">
     <div class="gutter">00</div>
     <div class="split">
@@ -59,94 +59,97 @@
     </div>
   </section>
 
-  <!-- 01 · no key -->
+  <!-- 01 · no key: a checklist of what you DON'T need -->
   <section class="sys-sec2">
     <div class="gutter">01</div>
     <div class="split">
       <div class="t">
         <div class="eyebrow-2">Start · no account</div>
         <h2>No API key.</h2>
-        <p>It opens on a keyless, community-hosted model. No sign-up, no card, nothing to configure.</p>
-        <p>Two caveats we would rather state than hide: that model is rate-limited when busy, and prompts
-          go to a third party we do not run. Point it at a local Ollama model to make it private.</p>
+        <p>It opens on a keyless, community-hosted model. Two caveats we would rather state than hide: it
+          is rate-limited when busy, and prompts go to a third party we do not run. Point it at a local
+          Ollama model to make it private and unlimited.</p>
       </div>
       <div class="a">
-        <div class="snip"><div class="sbar"><i></i><i></i><i></i><span>term — first run</span></div><pre><span class="in">&#10095;</span> term
-<span class="out">&#9679;</span> termcoderfree/auto  <span class="c">free · no key</span>
-<span class="in">&#10095;</span> fix the flaky test in date.js
-<span class="out">&#10003;</span> read date.test.js
-<span class="out">&#10003;</span> edit date.js
-<span class="out">&#10003;</span> npm test  <span class="c">&#8594;</span> <span class="out">passing</span></pre></div>
+        <div class="reqs">
+          <div class="no"><span class="x">&#10007;</span> <s>a credit card</s></div>
+          <div class="no"><span class="x">&#10007;</span> <s>an account to sign up for</s></div>
+          <div class="no"><span class="x">&#10007;</span> <s>an API key to paste</s></div>
+          <div class="no"><span class="x">&#10007;</span> <s>a config file to write</s></div>
+          <div class="yes"><span class="p">&#10095;</span> just run it</div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- 02 · models -->
+  <!-- 02 · models: a routing table -->
   <section class="sys-sec2">
     <div class="gutter">02</div>
     <div class="split rev">
       <div class="t">
         <div class="eyebrow-2">Models</div>
         <h2>Or bring your own.</h2>
-        <p><code>termcoder/auto</code> sends each turn to the right model — a fast one to read a file, a
-          stronger one to reason about a bug. A router and a prompt layer, not a model we trained.</p>
-        <div class="prov">
-          <span>Anthropic</span><span>OpenAI</span><span>Google</span><span class="local">Ollama · local</span>
-        </div>
+        <p><code>termcoder/auto</code> sends each turn to the right model — a fast one to read, a stronger
+          one to reason. It is a router and a prompt layer, not a model we trained. Anthropic, OpenAI,
+          Google, and local Ollama.</p>
       </div>
       <div class="a">
-        <div class="snip"><div class="sbar"><span>.termcoder/config.json</span></div><pre><span class="k">{</span> <span class="c">"model"</span>: <span class="out">"termcoder/auto"</span> <span class="k">}</span>
-
-<span class="c"># routes each turn</span>
-  read a file   <span class="c">&#8594;</span> fast model
-  reason a bug  <span class="c">&#8594;</span> strong model
-  no key set    <span class="c">&#8594;</span> <span class="out">free tier</span></pre></div>
+        <div class="route">
+          <div class="rhead">termcoder/auto</div>
+          <div class="rrow"><span class="task">read a file</span><span class="arr">&#8594;</span><span class="model">gemini-flash</span></div>
+          <div class="rrow"><span class="task">reason about a bug</span><span class="arr">&#8594;</span><span class="model">claude-sonnet</span></div>
+          <div class="rrow"><span class="task">write &amp; run tests</span><span class="arr">&#8594;</span><span class="model">gpt</span></div>
+          <div class="rrow"><span class="task">no key set</span><span class="arr">&#8594;</span><span class="model free">free tier</span></div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- 03 · sign in -->
+  <!-- 03 · sign in: an auth picker -->
   <section class="sys-sec2">
     <div class="gutter">03</div>
     <div class="split">
       <div class="t">
-        <div class="eyebrow-2">Sign in · experimental</div>
+        <div class="eyebrow-2">Sign in</div>
         <h2>Use the plan you pay for.</h2>
-        <p>Sign in with an existing Claude Pro/Max or ChatGPT Plus/Pro subscription instead of buying API
-          credits. Experimental: it rides the vendors' own login flows, which can change without warning.</p>
+        <p>Sign in with a subscription you already have instead of buying API credits. Experimental: it
+          rides the vendors' own login flows, which can change without warning.</p>
       </div>
       <div class="a">
-        <div class="snip"><div class="sbar"><span>subscription login</span></div><pre><span class="in">&#10095;</span> /login-claude
-<span class="c">&#8594;</span> opens claude.ai to authorize
-<span class="out">&#10003;</span> signed in
-  <span class="c">using your Claude Pro plan,</span>
-  <span class="c">no API key spent</span></pre></div>
+        <div class="auth">
+          <div class="auth-row"><div class="who"><b>API key</b><span>bring your own, any provider</span></div><span class="tag plain">standard</span></div>
+          <div class="auth-row pick"><div class="who"><b>Claude Pro / Max</b><span>/login-claude</span></div><span class="tag">experimental</span></div>
+          <div class="auth-row pick"><div class="who"><b>ChatGPT Plus / Pro</b><span>/login-chatgpt</span></div><span class="tag">experimental</span></div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- 04 · memory -->
+  <!-- 04 · memory: a document that persists -->
   <section class="sys-sec2">
     <div class="gutter">04</div>
     <div class="split rev">
       <div class="t">
         <div class="eyebrow-2">Memory</div>
         <h2>It remembers.</h2>
-        <p>Tell it once that you use pnpm, that the auth module is fragile, that you hate barrel files. It
-          keeps that across sessions, so you stop re-explaining your own project every morning.</p>
+        <p>Tell it once — your stack, the fragile module, the thing you always forget. It keeps that across
+          sessions, so you stop re-explaining your own project every morning.</p>
       </div>
       <div class="a">
-        <div class="snip"><div class="sbar"><span>term</span></div><pre><span class="in">&#10095;</span> /remember pnpm, never npm
-<span class="out">&#10003;</span> saved to memory
-
-<span class="c"># a week later, unprompted</span>
-<span class="in">&#10095;</span> add zod as a dependency
-<span class="out">&#10003;</span> pnpm add zod  <span class="c">(remembered)</span></pre></div>
+        <div class="memo">
+          <div class="mhead"><span>~/.termcoder/memory</span><span class="persist">persists across sessions</span></div>
+          <ul>
+            <li>uses pnpm, never npm</li>
+            <li>the auth module is fragile — tread carefully</li>
+            <li>no barrel files</li>
+            <li>tests run with <code>npm test</code>, not a watcher</li>
+          </ul>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- 05 · retrieval -->
+  <!-- 05 · retrieval: go to definition -->
   <section class="sys-sec2">
     <div class="gutter">05</div>
     <div class="split">
@@ -157,16 +160,19 @@
           together — before it answers, instead of guessing from whatever file you had open.</p>
       </div>
       <div class="a">
-        <div class="snip"><div class="sbar"><span>term</span></div><pre><span class="in">&#10095;</span> where is resolveModel defined?
-<span class="out">&#10003;</span> indexed the repo
-  <span class="k">provider.ts:98</span>
-  <span class="c">resolveModel(id, { config, env })</span>
-  <span class="c">called from session.ts:411</span></pre></div>
+        <div class="find">
+          <div class="field"><span class="q">find:</span><span class="typed">where is resolveModel defined?</span><span class="caret"></span></div>
+          <div class="hit">
+            <span class="loc">provider.ts:98</span>
+            <span class="sig">resolveModel(id, { config, env })</span>
+            <span class="from">called from session.ts:411</span>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- 06 · desktop -->
+  <!-- 06 · desktop: the product shot, full width -->
   <section class="sys-sec2">
     <div class="gutter">06</div>
     <div class="split">
@@ -174,17 +180,19 @@
         <div class="eyebrow-2">Desktop</div>
         <h2>A real shell, inside the app.</h2>
         <p>Chat, an editor, and an embedded terminal in one window. It scans your PATH and drops a
-          one-click chip on every coding CLI it finds — Claude Code, Codex, Gemini CLI. The shell keeps
-          running while you chat.</p>
+          one-click chip on every coding CLI it finds. The shell keeps running while you chat.</p>
       </div>
       <div class="a full">
-        <img class="shot-2" src="app.png" width="1280" height="800"
-             alt="The TermCoder desktop app with the Terminal tab open, running a project's tests in a real shell." />
+        <figure class="figure">
+          <img src="app.png" width="1280" height="800"
+               alt="The TermCoder desktop app with the Terminal tab open, running a project's tests in a real shell." />
+          <figcaption><b>Terminal tab</b> a real shell <span>·</span> <b>chips</b> Claude Code, Codex, Gemini, detected on your PATH</figcaption>
+        </figure>
       </div>
     </div>
   </section>
 
-  <!-- 07 · autonomous -->
+  <!-- 07 · autonomous: the loop, as a stepper -->
   <section class="sys-sec2">
     <div class="gutter">07</div>
     <div class="split rev">
@@ -195,16 +203,16 @@
           again — until it passes. Every turn is checkpointed, so you can walk it back.</p>
       </div>
       <div class="a">
-        <div class="snip"><div class="sbar"><span>term</span></div><pre><span class="in">&#10095;</span> /background make the build pass
-<span class="out">&#9679;</span> round 1 <span class="c">&#8594; npm run build</span>
-  <span class="k">&#10007; 2 type errors</span>
-<span class="out">&#9679;</span> round 2 <span class="c">&#8594; fixed, ran again</span>
-  <span class="out">&#10003; build passed</span></pre></div>
+        <div class="loop">
+          <div class="rnd"><span class="dot"></span><div class="body-r"><span class="r">round 1</span> <span class="cmd">edit → npm run build</span><span class="res">&#10007; 2 type errors</span></div></div>
+          <div class="rnd"><span class="dot"></span><div class="body-r"><span class="r">round 2</span> <span class="cmd">fix types → build</span><span class="res">&#10007; 1 test failing</span></div></div>
+          <div class="rnd ok"><span class="dot"></span><div class="body-r"><span class="r">round 3</span> <span class="cmd">fix test → build</span><span class="res">&#10003; build passed</span></div></div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- 08 · study -->
+  <!-- 08 · study: a flashcard -->
   <section class="sys-sec2">
     <div class="gutter">08</div>
     <div class="split">
@@ -216,17 +224,18 @@
         <div class="row-2"><a class="btn-2" href="study.html">See study mode</a></div>
       </div>
       <div class="a">
-        <div class="snip"><div class="sbar"><span>termexplorer</span></div><pre><span class="in">&#10095;</span> /flashcards the krebs cycle
-<span class="out">&#10003;</span> made 8 cards
-<span class="in">&#10095;</span> /review
-  <span class="k">1/8 &#183; what does the cycle produce?</span>
-  <span class="c">[space to flip]</span>
-  streak: <span class="out">4 days</span></pre></div>
+        <div class="deck">
+          <div class="card-f">
+            <div class="kicker">Flashcard · 1 of 8</div>
+            <p class="q">What does the Krebs cycle produce for the electron transport chain?</p>
+            <div class="meta"><span>space to flip</span><span class="streak">streak: 4 days</span></div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- 09 · extensibility -->
+  <!-- 09 · extensibility: 2x2 cards -->
   <section class="sys-sec2">
     <div class="gutter">09</div>
     <div class="split">
@@ -235,66 +244,68 @@
         <h2>Agents, skills, commands.</h2>
       </div>
       <div class="a full">
-        <div class="cards">
-          <div class="card"><h3>Agents</h3><p>Give an agent its own model, prompt, tools, and the exact paths it may touch.</p></div>
-          <div class="card"><h3>Skills</h3><p>Reusable playbooks it loads only when the task needs them, so they cost nothing otherwise.</p></div>
-          <div class="card"><h3>Commands</h3><p>Your own slash commands, with arguments, shell output, and file mentions baked in.</p></div>
-          <div class="card"><h3>MCP &amp; LSP</h3><p>Bring outside tools and language servers into the same loop.</p></div>
+        <div class="cards2">
+          <div class="card"><div class="sig">@</div><h3>Agents</h3><p>Give an agent its own model, prompt, tools, and the exact paths it may touch.</p></div>
+          <div class="card"><div class="sig">::</div><h3>Skills</h3><p>Reusable playbooks it loads only when a task needs them, so they cost nothing otherwise.</p></div>
+          <div class="card"><div class="sig">/</div><h3>Commands</h3><p>Your own slash commands, with arguments, shell output, and file mentions baked in.</p></div>
+          <div class="card"><div class="sig">&#8644;</div><h3>MCP &amp; LSP</h3><p>Bring outside tools and language servers into the same loop.</p></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- 10 · install -->
+  <!-- 10 · install: the fork -->
   <section class="sys-sec2">
     <div class="gutter">10</div>
     <div class="split rev">
       <div class="t">
         <div class="eyebrow-2">Install</div>
         <h2>Two ways to run it.</h2>
-        <dl class="kv">
-          <dt>the CLI</dt>
-          <dd><code>npm i -g @termcoder/tui</code>, then <code>term</code> in any folder. Needs Node 18+.</dd>
-          <dt>the app</dt>
-          <dd>Windows, macOS, and Linux installers. Node is bundled — nothing else to install.</dd>
-        </dl>
-        <div class="row-2">
-          <a class="btn-2 go" href="download.html">Download</a>
-          <a class="btn-2" href="install.html">Read the guide</a>
-        </div>
+        <p>Live in the terminal, or open a window. Same agent, same config, same sessions — pick whichever
+          fits how you work.</p>
       </div>
       <div class="a">
-        <div class="snip"><div class="sbar"><span>any OS</span></div><pre><span class="c"># the terminal</span>
-<span class="in">$</span> npm install -g @termcoder/tui
-<span class="in">$</span> term
-
-<span class="c"># or grab the desktop app —</span>
-<span class="c"># no Node, nothing to set up</span></pre></div>
+        <div class="fork">
+          <div class="opt">
+            <div class="k">the CLI</div>
+            <h3>term</h3>
+            <p class="line"><span class="in">$</span> npm i -g @termcoder/tui</p>
+            <p class="line"><span class="in">$</span> term</p>
+            <div class="grow"></div>
+            <a class="btn-2" href="install.html">Install guide</a>
+          </div>
+          <div class="opt">
+            <div class="k">the app</div>
+            <h3>desktop</h3>
+            <p class="line">Windows · macOS · Linux</p>
+            <p class="line">Node bundled — nothing to set up</p>
+            <div class="grow"></div>
+            <a class="btn-2 go" href="download.html">Download</a>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- 11 · open source -->
+  <!-- 11 · open source: closing stats -->
   <section class="sys-sec2">
     <div class="gutter">11</div>
     <div class="split">
-      <div class="t">
+      <div class="t full">
         <div class="eyebrow-2">Open source</div>
         <h2>Kept alive by the people it helps.</h2>
-        <p>MIT licensed. No paid tier, no hosted service holding your code. If it saves you an afternoon,
-          sponsor it or send a patch — both count.</p>
+      </div>
+      <div class="a full">
+        <div class="stats">
+          <div class="stat"><b>MIT</b><span>licensed, forever</span></div>
+          <div class="stat"><b>12</b><span>providers supported</span></div>
+          <div class="stat"><b><span class="em">$</span>0</b><span>no paid tier</span></div>
+          <div class="stat"><b>0</b><span>servers holding your code</span></div>
+        </div>
         <div class="row-2">
-          <a class="btn-2" href="https://github.com/Cartivo-Oficial/TermCoder" target="_blank" rel="noopener">Read the source</a>
+          <a class="btn-2 go" href="https://github.com/Cartivo-Oficial/TermCoder" target="_blank" rel="noopener">Read the source</a>
           <a class="btn-2" href="docs.html">Read the docs</a>
         </div>
-      </div>
-      <div class="a">
-        <div class="snip"><div class="sbar"><span>~</span></div><pre><span class="in">$</span> git clone github.com/
-    Cartivo-Oficial/TermCoder
-
-<span class="c">MIT &#183; no paid tier</span>
-<span class="c">no server holding your code</span>
-<span class="out">&#10003;</span> yours to run and change</pre></div>
       </div>
     </div>
   </section>
