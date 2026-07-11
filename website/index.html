@@ -6,7 +6,7 @@
 <link rel="icon" type="image/png" href="favicon.png" />
 <link rel="stylesheet" href="style.css" />
 <title>TermCoder — the open source AI coding agent for your terminal</title>
-<meta name="description" content="TermCoder is an open source AI coding agent that lives in your terminal and in a desktop app with a real shell inside it. Runs with no API key. A study tutor is built in." />
+<meta name="description" content="TermCoder is an open source AI coding agent for your terminal and a desktop app with a real shell inside it. Runs with no API key. Routes each turn to the right model. A study tutor is built in." />
 </head>
 <body class="sys">
 
@@ -30,15 +30,15 @@
 
 <main>
 
-  <!-- 00 · hero: the live recorded session -->
+  <!-- 00 · hero -->
   <section class="sys-sec2">
     <div class="gutter">00</div>
     <div class="split">
       <div class="t">
-        <div class="eyebrow-2">Open source · MIT</div>
+        <div class="eyebrow-2">open source · MIT</div>
         <h1>Codes with no API key.</h1>
-        <p class="lead">Reads your code, runs commands, ships changes — in your terminal, or a desktop app
-          with a real shell inside it.</p>
+        <p class="lead">An agent loop with real tools — read, edit, run — in your terminal, or a desktop
+          app with a shell inside it. It routes each turn to the right model on its own.</p>
         <div class="cmd-2">
           <span class="in">$</span>
           <code id="cmd">npm install -g @termcoder/tui</code>
@@ -59,16 +59,28 @@
     </div>
   </section>
 
-  <!-- 01 · no key: a checklist of what you DON'T need -->
+  <!-- thesis -->
+  <section class="sys-sec2">
+    <div class="gutter">—</div>
+    <div class="split">
+      <div class="t full">
+        <div class="mono-eyebrow"><span class="slash">//</span> HOW IT WORKS</div>
+        <h2>Not a chatbot in a terminal.</h2>
+        <p>It reads the repo, edits files, runs commands, and checks its own work — a real agent loop, not
+          a prompt box with autocomplete. The rest of this page is the machinery, shown as it actually is.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 01 · keyless -->
   <section class="sys-sec2">
     <div class="gutter">01</div>
     <div class="split">
       <div class="t">
-        <div class="eyebrow-2">Start · no account</div>
+        <div class="num-head"><span class="nn">01</span><span class="lbl">KEYLESS START</span><span class="live">LIVE</span></div>
         <h2>No API key.</h2>
-        <p>It opens on a keyless, community-hosted model. Two caveats we would rather state than hide: it
-          is rate-limited when busy, and prompts go to a third party we do not run. Point it at a local
-          Ollama model to make it private and unlimited.</p>
+        <p>Opens on a keyless, community-hosted model. No sign-up, no card. It is rate-limited when busy and
+          prompts go to a third party we do not run — point it at local Ollama to make it private.</p>
       </div>
       <div class="a">
         <div class="reqs">
@@ -82,55 +94,77 @@
     </div>
   </section>
 
-  <!-- 02 · models: a routing table -->
+  <!-- 02 · routing — the real formula -->
   <section class="sys-sec2">
     <div class="gutter">02</div>
     <div class="split rev">
       <div class="t">
-        <div class="eyebrow-2">Models</div>
-        <h2>Or bring your own.</h2>
-        <p><code>termcoder/auto</code> sends each turn to the right model — a fast one to read, a stronger
-          one to reason. It is a router and a prompt layer, not a model we trained. Anthropic, OpenAI,
-          Google, and local Ollama.</p>
+        <div class="num-head"><span class="nn">02</span><span class="lbl">MODEL ROUTING</span><span class="live">LIVE</span></div>
+        <h2>The right model per turn.</h2>
+        <p><code>termcoder/auto</code> classifies each prompt and sends a simple one to a fast model, a hard
+          one to a strong model. No LLM in the routing loop — it is a regex and a tier table. A router and
+          a prompt layer, not a model we trained.</p>
       </div>
       <div class="a">
-        <div class="route">
-          <div class="rhead">termcoder/auto</div>
-          <div class="rrow"><span class="task">read a file</span><span class="arr">&#8594;</span><span class="model">gemini-flash</span></div>
-          <div class="rrow"><span class="task">reason about a bug</span><span class="arr">&#8594;</span><span class="model">claude-sonnet</span></div>
-          <div class="rrow"><span class="task">write &amp; run tests</span><span class="arr">&#8594;</span><span class="model">gpt</span></div>
-          <div class="rrow"><span class="task">no key set</span><span class="arr">&#8594;</span><span class="model free">free tier</span></div>
+        <div class="formula">
+          <div class="fh">provider/routing.ts</div>
+          <pre><span class="cm">// classify(prompt)</span>
+len &gt; 600                 <span class="arr">&#8594;</span> <span class="strong">complex</span>
+/architect|debug|race|
+ security|refactor|
+ migrate|optimize/        <span class="arr">&#8594;</span> <span class="strong">complex</span>
+/across|codebase|
+ multiple files/          <span class="arr">&#8594;</span> <span class="strong">complex</span>
+else                      <span class="arr">&#8594;</span> <span class="fast">simple</span>
+
+<span class="cm">// route(complexity)</span>
+<span class="fast">simple</span>  <span class="arr">&#8594;</span> tier.fast   <span class="cm">gemini-flash / haiku</span>
+<span class="strong">complex</span> <span class="arr">&#8594;</span> tier.strong <span class="cm">gemini-pro / sonnet</span></pre>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- 03 · sign in: an auth picker -->
+  <!-- 03 · toolbox — the real 16 tools -->
   <section class="sys-sec2">
     <div class="gutter">03</div>
     <div class="split">
-      <div class="t">
-        <div class="eyebrow-2">Sign in</div>
-        <h2>Use the plan you pay for.</h2>
-        <p>Sign in with a subscription you already have instead of buying API credits. Experimental: it
-          rides the vendors' own login flows, which can change without warning.</p>
+      <div class="t full">
+        <div class="num-head"><span class="nn">03</span><span class="lbl">THE TOOLBOX</span></div>
+        <h2>Sixteen real tools.</h2>
+        <p>Every one runs on your machine, behind a permission prompt you can make sticky. Retrieval is
+          built in — <code>symbols</code> and <code>repomap</code> let it find where a thing is defined
+          before it answers. No hidden capabilities, nothing calling home.</p>
       </div>
-      <div class="a">
-        <div class="auth">
-          <div class="auth-row"><div class="who"><b>API key</b><span>bring your own, any provider</span></div><span class="tag plain">standard</span></div>
-          <div class="auth-row pick"><div class="who"><b>Claude Pro / Max</b><span>/login-claude</span></div><span class="tag">experimental</span></div>
-          <div class="auth-row pick"><div class="who"><b>ChatGPT Plus / Pro</b><span>/login-chatgpt</span></div><span class="tag">experimental</span></div>
+      <div class="a full">
+        <div class="toolgrid">
+          <div class="tl"><b>read</b><span>open a file</span></div>
+          <div class="tl"><b>edit</b><span>change a file</span></div>
+          <div class="tl"><b>write</b><span>create a file</span></div>
+          <div class="tl"><b>bash</b><span>run a command</span></div>
+          <div class="tl"><b>grep</b><span>search contents</span></div>
+          <div class="tl"><b>glob</b><span>find by pattern</span></div>
+          <div class="tl"><b>ls</b><span>list a folder</span></div>
+          <div class="tl"><b>symbols</b><span>go to definition</span></div>
+          <div class="tl"><b>repomap</b><span>map the project</span></div>
+          <div class="tl"><b>memory</b><span>recall &amp; save facts</span></div>
+          <div class="tl"><b>skill</b><span>load a playbook</span></div>
+          <div class="tl"><b>arch</b><span>plan before editing</span></div>
+          <div class="tl"><b>webfetch</b><span>read a URL</span></div>
+          <div class="tl"><b>websearch</b><span>search the web</span></div>
+          <div class="tl"><b>diagnostics</b><span>read LSP errors</span></div>
+          <div class="tl"><b>task</b><span>spawn a sub-agent</span></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- 04 · memory: a document that persists -->
+  <!-- 04 · memory -->
   <section class="sys-sec2">
     <div class="gutter">04</div>
     <div class="split rev">
       <div class="t">
-        <div class="eyebrow-2">Memory</div>
+        <div class="num-head"><span class="nn">04</span><span class="lbl">MEMORY</span><span class="live">LIVE</span></div>
         <h2>It remembers.</h2>
         <p>Tell it once — your stack, the fragile module, the thing you always forget. It keeps that across
           sessions, so you stop re-explaining your own project every morning.</p>
@@ -149,55 +183,12 @@
     </div>
   </section>
 
-  <!-- 05 · retrieval: go to definition -->
+  <!-- 05 · autonomous -->
   <section class="sys-sec2">
     <div class="gutter">05</div>
     <div class="split">
       <div class="t">
-        <div class="eyebrow-2">Retrieval</div>
-        <h2>It reads first.</h2>
-        <p>A symbol index and a repo map let it find where a thing is defined and how the project fits
-          together — before it answers, instead of guessing from whatever file you had open.</p>
-      </div>
-      <div class="a">
-        <div class="find">
-          <div class="field"><span class="q">find:</span><span class="typed">where is resolveModel defined?</span><span class="caret"></span></div>
-          <div class="hit">
-            <span class="loc">provider.ts:98</span>
-            <span class="sig">resolveModel(id, { config, env })</span>
-            <span class="from">called from session.ts:411</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 06 · desktop: the product shot, full width -->
-  <section class="sys-sec2">
-    <div class="gutter">06</div>
-    <div class="split">
-      <div class="t full">
-        <div class="eyebrow-2">Desktop</div>
-        <h2>A real shell, inside the app.</h2>
-        <p>Chat, an editor, and an embedded terminal in one window. It scans your PATH and drops a
-          one-click chip on every coding CLI it finds. The shell keeps running while you chat.</p>
-      </div>
-      <div class="a full">
-        <figure class="figure">
-          <img src="app.png" width="1280" height="800"
-               alt="The TermCoder desktop app with the Terminal tab open, running a project's tests in a real shell." />
-          <figcaption><b>Terminal tab</b> a real shell <span>·</span> <b>chips</b> Claude Code, Codex, Gemini, detected on your PATH</figcaption>
-        </figure>
-      </div>
-    </div>
-  </section>
-
-  <!-- 07 · autonomous: the loop, as a stepper -->
-  <section class="sys-sec2">
-    <div class="gutter">07</div>
-    <div class="split rev">
-      <div class="t">
-        <div class="eyebrow-2">Autonomous</div>
+        <div class="num-head"><span class="nn">05</span><span class="lbl">AUTONOMOUS</span><span class="live">LIVE</span></div>
         <h2>Give it a goal.</h2>
         <p>Hand it a task and a verify command. It works, runs the command, reads the failure, and goes
           again — until it passes. Every turn is checkpointed, so you can walk it back.</p>
@@ -212,12 +203,125 @@
     </div>
   </section>
 
-  <!-- 08 · study: a flashcard -->
+  <!-- 06 · desktop -->
   <section class="sys-sec2">
-    <div class="gutter">08</div>
+    <div class="gutter">06</div>
     <div class="split">
+      <div class="t full">
+        <div class="num-head"><span class="nn">06</span><span class="lbl">DESKTOP</span></div>
+        <h2>A real shell, inside the app.</h2>
+        <p>Chat, an editor, and an embedded terminal in one window. It scans your PATH and drops a one-click
+          chip on every coding CLI it finds — Claude Code, Codex, Gemini CLI. The shell keeps running while
+          you chat.</p>
+      </div>
+      <div class="a full">
+        <figure class="figure">
+          <img src="app.png" width="1280" height="800"
+               alt="The TermCoder desktop app with the Terminal tab open, running a project's tests in a real shell." />
+          <figcaption><b>Terminal tab</b> a real shell <span>·</span> <b>chips</b> detected on your PATH</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- symbology -->
+  <section class="sys-sec2">
+    <div class="gutter">—</div>
+    <div class="split">
+      <div class="t full">
+        <div class="mono-eyebrow"><span class="slash">//</span> SYMBOLOGY</div>
+        <h2>Three states, derived not guessed.</h2>
+        <p>The status dot is read from what the session is actually doing, not from a spinner. Learn it once
+          and the UI stops needing tooltips.</p>
+      </div>
+      <div class="a full">
+        <div class="pills">
+          <div class="pill-row">
+            <span class="pill idle"><span class="d"></span>IDLE</span>
+            <p>Prompt waiting, nothing in flight. The dot is dim.</p>
+          </div>
+          <div class="pill-row">
+            <span class="pill gen"><span class="d"></span>GENERATING</span>
+            <p>A turn is running — reading, editing, thinking. The dot is ember and pulses.</p>
+          </div>
+          <div class="pill-row">
+            <span class="pill err"><span class="d"></span>ERROR</span>
+            <p>The last turn failed — a bad key, a rate limit, a tool that threw. <code>/retry</code> or fix and go again.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- on-disk -->
+  <section class="sys-sec2">
+    <div class="gutter">—</div>
+    <div class="split rev">
       <div class="t">
-        <div class="eyebrow-2">TermExplorer</div>
+        <div class="mono-eyebrow"><span class="slash">//</span> ON-DISK LAYOUT</div>
+        <h2>Files are the source of truth.</h2>
+        <p>No database, no cloud. Your config, memory, sessions, and custom agents are plain files you can
+          read, edit, diff, and delete. Nothing about your project leaves your machine.</p>
+      </div>
+      <div class="a">
+        <div class="tree2">
+          <div class="row"><span class="dir">project/</span></div>
+          <div class="row">├─ <span class="file">AGENTS.md</span>          <span class="cm">// project instructions</span></div>
+          <div class="row">└─ <span class="dir">.termcoder/</span></div>
+          <div class="row">   ├─ <span class="dir">agents/</span>        <span class="cm">// custom sub-agents</span></div>
+          <div class="row">   ├─ <span class="dir">commands/</span>      <span class="cm">// your slash commands</span></div>
+          <div class="row">   └─ <span class="dir">skills/</span>        <span class="cm">// loaded on demand</span></div>
+          <div class="row"> </div>
+          <div class="row"><span class="dir">~/.termcoder/</span>          <span class="cm">// global</span></div>
+          <div class="row">├─ <span class="file">config.json</span>        <span class="cm">// providers, model, keys</span></div>
+          <div class="row">├─ <span class="dir">memory/</span>            <span class="cm">// remembered facts</span></div>
+          <div class="row">└─ <span class="dir">sessions/</span>          <span class="cm">// saved transcripts</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- keyboard -->
+  <section class="sys-sec2">
+    <div class="gutter">—</div>
+    <div class="split">
+      <div class="t full">
+        <div class="mono-eyebrow"><span class="slash">//</span> KEYBOARD</div>
+        <h2>Hands on keys, not mouse.</h2>
+        <p>Every panel and action is one chord away. Shown with Ctrl — on macOS swap for &#8984;. Rebind any
+          of them in Settings.</p>
+      </div>
+      <div class="a full">
+        <div class="chordgrid">
+          <div class="chordcol">
+            <h4>SESSION</h4>
+            <div class="chord">Command palette <span class="keys"><span class="kbd">Ctrl</span><span class="kbd">K</span></span></div>
+            <div class="chord">New session <span class="keys"><span class="kbd">Ctrl</span><span class="kbd">N</span></span></div>
+            <div class="chord">Toggle sessions <span class="keys"><span class="kbd">Ctrl</span><span class="kbd">B</span></span></div>
+          </div>
+          <div class="chordcol">
+            <h4>VIEW</h4>
+            <div class="chord">Toggle terminal <span class="keys"><span class="kbd">Ctrl</span><span class="kbd">`</span></span></div>
+            <div class="chord">Toggle files <span class="keys"><span class="kbd">Ctrl</span><span class="kbd">J</span></span></div>
+            <div class="chord">Open folder <span class="keys"><span class="kbd">Ctrl</span><span class="kbd">O</span></span></div>
+          </div>
+          <div class="chordcol">
+            <h4>MODEL</h4>
+            <div class="chord">Pick model <span class="keys"><span class="kbd">/model</span></span></div>
+            <div class="chord">Connect one <span class="keys"><span class="kbd">/upgrade</span></span></div>
+            <div class="chord">Autonomous run <span class="keys"><span class="kbd">/background</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 · study -->
+  <section class="sys-sec2">
+    <div class="gutter">07</div>
+    <div class="split rev">
+      <div class="t">
+        <div class="num-head"><span class="nn">07</span><span class="lbl">TERMEXPLORER</span><span class="live">LIVE</span></div>
         <h2>A tutor is built in.</h2>
         <p>The same engine, pointed at studying instead of shipping. Spaced-repetition flashcards, practice
           quizzes, worked homework, and a streak that survives your weekends.</p>
@@ -235,12 +339,12 @@
     </div>
   </section>
 
-  <!-- 09 · extensibility: 2x2 cards -->
+  <!-- extend -->
   <section class="sys-sec2">
-    <div class="gutter">09</div>
+    <div class="gutter">08</div>
     <div class="split">
       <div class="t full">
-        <div class="eyebrow-2">Make it yours</div>
+        <div class="num-head"><span class="nn">08</span><span class="lbl">MAKE IT YOURS</span></div>
         <h2>Agents, skills, commands.</h2>
       </div>
       <div class="a full">
@@ -254,15 +358,15 @@
     </div>
   </section>
 
-  <!-- 10 · install: the fork -->
+  <!-- install -->
   <section class="sys-sec2">
-    <div class="gutter">10</div>
+    <div class="gutter">—</div>
     <div class="split rev">
       <div class="t">
-        <div class="eyebrow-2">Install</div>
-        <h2>Two ways to run it.</h2>
-        <p>Live in the terminal, or open a window. Same agent, same config, same sessions — pick whichever
-          fits how you work.</p>
+        <div class="mono-eyebrow"><span class="slash">//</span> INSTALL</div>
+        <h2>One command, every platform.</h2>
+        <p>No accounts, no API keys, no telemetry. The CLI runs on Linux, macOS, and Windows; the app ships
+          installers for all three with Node bundled.</p>
       </div>
       <div class="a">
         <div class="fork">
@@ -287,12 +391,12 @@
     </div>
   </section>
 
-  <!-- 11 · open source: closing stats -->
+  <!-- open source -->
   <section class="sys-sec2">
-    <div class="gutter">11</div>
+    <div class="gutter">—</div>
     <div class="split">
       <div class="t full">
-        <div class="eyebrow-2">Open source</div>
+        <div class="mono-eyebrow"><span class="slash">//</span> OPEN SOURCE</div>
         <h2>Kept alive by the people it helps.</h2>
       </div>
       <div class="a full">

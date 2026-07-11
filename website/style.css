@@ -671,3 +671,71 @@ main:has(#openBtn) ~ footer a { color: var(--muted); }
 .stats .stat b { font-family: var(--display); font-size: clamp(28px, 4vw, var(--t6)); color: var(--text); display: block; line-height: 1; }
 .stats .stat b .em { color: var(--ember); }
 .stats .stat span { font-family: var(--code); font-size: 11px; color: var(--faint); }
+
+/* ============================================================
+   HYDRA-FLAVORED CHROME — dense technical artifacts, the real
+   internals surfaced as the page. Built on the same identity
+   tokens; adds numbered LIVE sections, // eyebrows, and panels
+   that show what termcoder actually does.
+   ============================================================ */
+
+.mono-eyebrow { font-family: var(--display); font-size: var(--t1); letter-spacing: .12em; color: var(--faint); }
+.mono-eyebrow .slash { color: var(--ember); }
+
+.num-head { display: flex; align-items: baseline; gap: 12px; }
+.num-head .nn { font-family: var(--display); font-size: var(--t1); color: var(--ember); }
+.num-head .lbl { font-family: var(--display); font-size: var(--t1); letter-spacing: .12em; color: var(--faint); }
+.live { margin-left: auto; font-family: var(--display); font-size: 10px; letter-spacing: .14em; color: var(--signal);
+  border: 1px solid color-mix(in srgb, var(--signal) 45%, var(--rule)); border-radius: 3px; padding: 2px 7px; display: inline-flex; align-items: center; gap: 6px; }
+.live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--signal); }
+
+/* the real termcoder/auto routing — a formula, not prose */
+.formula { border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); overflow: hidden; }
+.formula .fh { padding: 9px 16px; border-bottom: 1px solid var(--rule); font-family: var(--code); font-size: 11px; color: var(--faint); }
+.formula pre { margin: 0; padding: 16px 18px; overflow-x: auto; font-family: var(--code); font-size: var(--t2); line-height: 1.95; color: var(--muted); }
+.formula .kw { color: var(--ember); }
+.formula .arr { color: var(--faint); }
+.formula .fast { color: var(--text); }
+.formula .strong { color: var(--signal); }
+.formula .cm { color: var(--faint); }
+
+/* the toolbox — the real 16 builtin tools, as symbology */
+.toolgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1px;
+  background: var(--rule); border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+.toolgrid .tl { background: var(--ink); padding: 12px 14px; min-width: 0; }
+.toolgrid .tl b { font-family: var(--code); font-size: var(--t2); color: var(--ember); font-weight: 400; display: block; }
+.toolgrid .tl span { font-family: var(--prose); font-size: 11px; color: var(--faint); }
+
+/* status pills — the 3 real session states, derived not guessed */
+.pills { display: grid; gap: 10px; }
+.pill-row { display: grid; grid-template-columns: 130px 1fr; gap: 16px; align-items: start;
+  border-top: 1px solid var(--rule); padding: 12px 0; }
+.pill-row:first-child { border-top: none; }
+.pill { display: inline-flex; align-items: center; gap: 8px; font-family: var(--display); font-size: var(--t1);
+  letter-spacing: .1em; color: var(--text); }
+.pill .d { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.pill.idle .d { background: var(--faint); }
+.pill.gen .d { background: var(--ember); box-shadow: 0 0 8px var(--ember); }
+.pill.err .d { background: var(--bad); }
+.pill-row p { font-family: var(--prose); font-size: var(--t2); color: var(--muted); margin: 0; }
+.pill-row code { font-family: var(--code); font-size: 11px; color: var(--faint); }
+
+/* on-disk layout — files are the source of truth */
+.tree2 { border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); padding: 16px 18px;
+  font-family: var(--code); font-size: var(--t2); line-height: 1.95; overflow-x: auto; }
+.tree2 .row { white-space: pre; color: var(--muted); }
+.tree2 .dir { color: var(--ember); }
+.tree2 .file { color: var(--text); }
+.tree2 .cm { color: var(--faint); }
+
+/* keyboard chords — hands on keys */
+.chordgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 40px; }
+.chordcol h4 { font-family: var(--display); font-size: var(--t1); letter-spacing: .12em; color: var(--faint); margin: 0 0 12px; }
+.chord { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0;
+  border-top: 1px solid var(--rule); font-family: var(--prose); font-size: var(--t2); color: var(--muted); }
+.chord:first-of-type { border-top: none; }
+.chord .keys { display: flex; gap: 4px; flex-shrink: 0; }
+.kbd { font-family: var(--code); font-size: 11px; color: var(--text); background: var(--panel);
+  border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; padding: 2px 7px; }
+@media (max-width: 900px) { .chordgrid { grid-template-columns: 1fr; gap: 22px 0; } }
+@media (max-width: 600px) { .toolgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pill-row { grid-template-columns: 1fr; gap: 6px; } }
