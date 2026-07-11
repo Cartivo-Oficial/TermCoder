@@ -739,3 +739,14 @@ main:has(#openBtn) ~ footer a { color: var(--muted); }
   border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; padding: 2px 7px; }
 @media (max-width: 900px) { .chordgrid { grid-template-columns: 1fr; gap: 22px 0; } }
 @media (max-width: 600px) { .toolgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pill-row { grid-template-columns: 1fr; gap: 6px; } }
+
+/* feature grid — dense capability cards (features page) */
+.feat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--rule);
+  border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; margin-top: 8px; }
+.feat-grid .fc { background: var(--ink); padding: 22px 22px; min-width: 0; }
+.feat-grid .fc .k { font-family: var(--display); font-size: var(--t1); letter-spacing: .08em; color: var(--ember); }
+.feat-grid .fc h3 { font-family: var(--display); font-size: var(--t3); color: var(--text); margin: 8px 0 6px; }
+.feat-grid .fc p { font-family: var(--prose); font-size: var(--t2); color: var(--muted); margin: 0; max-width: none; }
+.feat-grid .fc p code { font-family: var(--code); font-size: 12px; color: var(--text); }
+.feat-grid .fc p a { color: var(--ember); }
+@media (max-width: 700px) { .feat-grid { grid-template-columns: 1fr; } }
