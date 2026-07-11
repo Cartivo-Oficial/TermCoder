@@ -5,143 +5,156 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" type="image/png" href="favicon.png" />
 <link rel="stylesheet" href="style.css" />
-<title>Install — TermCoder</title>
-<meta name="description" content="Install TermCoder in a minute: one npm command, run term in any folder, connect a model or run locally with Ollama, and ask your first task." />
+<title>TermCoder — install</title>
+<meta name="description" content="Install TermCoder from npm on Linux, macOS, or Windows, or download the desktop app. One command, no account, no API key." />
 </head>
-<body>
+<body class="sys">
 
-<header class="nav">
-  <div class="nav-in">
-    <a class="brand" href="index.html"><span class="brand-mark mk" aria-hidden="true"></span><span class="t">Term</span><span class="c">Coder</span></a>
-    <nav class="nav-links">
-      <a href="index.html">Home</a>
-      <a href="features.html">Features</a>
-      <a href="study.html">Study</a>
-      <a href="install.html" class="on">Install</a>
-      <a href="download.html">Download</a>
-      <a href="docs.html">Docs</a>
-      <a href="https://github.com/Cartivo-Oficial/TermCoder" target="_blank" rel="noopener">GitHub</a>
-    </nav>
-    <a class="btn solid" href="#step1">Install now</a>
+<header class="sys-nav">
+  <div class="in-row">
+    <div class="mark-cell"><span class="brand-mark" aria-hidden="true"></span></div>
+    <div class="row">
+      <a class="wordmark" href="index.html">TERMCODER</a>
+      <nav class="links">
+        <a href="index.html">Home</a>
+        <a href="features.html">Features</a>
+        <a href="study.html">Study</a>
+        <a href="install.html" class="on">Install</a>
+        <a href="download.html">Download</a>
+        <a href="docs.html">Docs</a>
+        <a href="https://github.com/Cartivo-Oficial/TermCoder" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
   </div>
 </header>
 
-<main class="wrap">
-  <div class="head">
-    <div class="eyebrow">Install</div>
-    <h1>Up and running in a minute.</h1>
-    <p>The CLI installs from npm and works the same on Windows, macOS, and Linux. Prefer a window?
-      <a class="mono" style="color:var(--accent)" href="download.html">Download the desktop app →</a></p>
-  </div>
+<main>
 
-  <section>
-    <div class="steps">
-      <div class="step" id="step1">
-        <div class="n">1</div>
-        <div>
-          <h3>Install from npm</h3>
-          <p>One command, on any system:</p>
-          <div class="cmd">
-            <span class="p">$</span>
-            <code id="cmd">npm install -g @termcoder/tui</code>
-            <button class="copy" onclick="copyCmd()" id="copyBtn">Copy</button>
-          </div>
-          <div class="tabs">
-            <button class="tab on" data-os="win">Windows</button>
-            <button class="tab" data-os="mac">macOS</button>
-            <button class="tab" data-os="linux">Linux</button>
-          </div>
-          <pre class="block" id="osBlock"><span class="c"># PowerShell or CMD</span>
-npm install <span class="p">-g</span> @termcoder/tui</pre>
-          <p class="req">Requires <b>Node.js 18 or newer</b>. Verify with <b>node --version</b>.</p>
-        </div>
+  <section class="sys-sec2">
+    <div class="gutter">//</div>
+    <div class="split">
+      <div class="t full">
+        <div class="mono-eyebrow"><span class="slash">//</span> INSTALL</div>
+        <h2>One command, every platform.</h2>
+        <p>No accounts, no API keys, no telemetry. The CLI installs from npm and runs the same on Linux,
+          macOS, and Windows. Prefer a window? <a class="link" href="download.html">Download the app</a> —
+          Node is bundled, nothing else to set up.</p>
       </div>
+    </div>
+  </section>
 
-      <div class="step">
-        <div class="n">2</div>
-        <div>
-          <h3>Run it in your project</h3>
-          <p>Open a terminal in any folder and type:</p>
-          <pre class="block">term</pre>
-          <p class="req">Two commands are installed — <b>term</b> and <b>termcoder</b> — they do the same thing.</p>
-        </div>
+  <section class="sys-sec2">
+    <div class="gutter">01</div>
+    <div class="split">
+      <div class="t">
+        <div class="num-head"><span class="nn">01</span><span class="lbl">INSTALL FROM NPM</span></div>
+        <h2>One command.</h2>
+        <p>Needs Node.js 18 or newer. No Node? Grab the desktop app instead — it bundles its own.</p>
       </div>
-
-      <div class="step">
-        <div class="n">3</div>
-        <div>
-          <h3>Trust the folder</h3>
-          <p>On first open, TermCoder asks whether you trust the current folder before it reads or runs
-            anything in it. Answer once and it remembers per folder.</p>
-        </div>
+      <div class="a">
+        <div class="cmd-2"><span class="in">$</span><code>npm install -g @termcoder/tui</code></div>
       </div>
+    </div>
+  </section>
 
-      <div class="step">
-        <div class="n">4</div>
-        <div>
-          <h3>Start with no key — or connect a model</h3>
-          <p>Nothing required here: TermCoder runs on a free, keyless model out of the box. Want faster, stronger
-            answers?</p>
-          <pre class="block"><span class="p">❯</span> /upgrade                        <span class="c"># connect a free Gemini key in two steps</span>
-<span class="p">❯</span> /setup                          <span class="c"># the full guided walkthrough</span>
-<span class="p">❯</span> /key anthropic sk-ant-...        <span class="c"># or set a key yourself</span></pre>
-          <p>Prefer local? Install <a class="mono" style="color:var(--accent)" href="https://ollama.com" target="_blank" rel="noopener">Ollama</a>,
-            pull a model, and pick it under "Local" in <code class="mono">/model</code>.</p>
-        </div>
+  <section class="sys-sec2">
+    <div class="gutter">02</div>
+    <div class="split rev">
+      <div class="t">
+        <div class="num-head"><span class="nn">02</span><span class="lbl">RUN IT</span></div>
+        <h2>Type term anywhere.</h2>
+        <p>Open a terminal in any project folder and start. Two commands install — <code>term</code> and
+          <code>termcoder</code> — they do the same thing.</p>
       </div>
+      <div class="a">
+        <div class="snip"><div class="sbar"><span>~/my-project</span></div><pre><span class="in">$</span> term
+<span class="out">&#9679;</span> termcoderfree/auto  <span class="c">free · no key</span>
+<span class="in">&#10095;</span> _</pre></div>
+      </div>
+    </div>
+  </section>
 
-      <div class="step">
-        <div class="n">5</div>
-        <div>
-          <h3>Ask your first task</h3>
-          <p>Describe what you want in plain language. TermCoder reads the code, proposes edits, and runs
-            commands — asking before anything that changes your machine.</p>
-          <pre class="block"><span class="p">❯</span> add input validation to the signup form and run the tests</pre>
+  <section class="sys-sec2">
+    <div class="gutter">03</div>
+    <div class="split">
+      <div class="t">
+        <div class="num-head"><span class="nn">03</span><span class="lbl">TRUST THE FOLDER</span></div>
+        <h2>Once per folder.</h2>
+        <p>On first open, TermCoder asks whether you trust the current folder before it reads or runs
+          anything in it. Answer once; it remembers per folder.</p>
+      </div>
+      <div class="a">
+        <div class="snip"><div class="sbar"><span>trust</span></div><pre>Trust the files in this folder?
+<span class="in">&#10095;</span> yes, this is my project
+  no, exit</pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sys-sec2">
+    <div class="gutter">04</div>
+    <div class="split rev">
+      <div class="t">
+        <div class="num-head"><span class="nn">04</span><span class="lbl">START, OR CONNECT A MODEL</span></div>
+        <h2>Nothing required.</h2>
+        <p>It runs on a free, keyless model out of the box. Want faster, stronger answers? Connect one —
+          all free options included:</p>
+      </div>
+      <div class="a">
+        <div class="snip"><div class="sbar"><span>graduate when you want</span></div><pre><span class="in">&#10095;</span> /upgrade        <span class="c"># free Gemini key, 2 steps</span>
+<span class="in">&#10095;</span> /login-claude   <span class="c"># Claude Pro/Max (experimental)</span>
+<span class="in">&#10095;</span> /login-chatgpt  <span class="c"># ChatGPT Plus/Pro (experimental)</span>
+<span class="in">&#10095;</span> /key google &lt;key&gt;  <span class="c"># or paste one</span></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sys-sec2">
+    <div class="gutter">05</div>
+    <div class="split">
+      <div class="t">
+        <div class="num-head"><span class="nn">05</span><span class="lbl">ASK YOUR FIRST TASK</span></div>
+        <h2>Plain language.</h2>
+        <p>Describe what you want. It reads the code, proposes edits, and runs commands — asking before
+          anything that changes your machine.</p>
+      </div>
+      <div class="a">
+        <div class="snip"><div class="sbar"><span>~/my-project</span></div><pre><span class="in">&#10095;</span> add input validation to the signup form,
+  then run the tests
+<span class="out">&#10003;</span> read signup.ts
+<span class="out">&#10003;</span> edit signup.ts
+<span class="out">&#10003;</span> npm test  <span class="c">&#8594;</span> <span class="out">passing</span></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sys-sec2">
+    <div class="gutter">—</div>
+    <div class="split">
+      <div class="t full">
+        <div class="mono-eyebrow"><span class="slash">//</span> OR SKIP NODE</div>
+        <h2>Grab the desktop app.</h2>
+        <p>Windows, macOS, and Linux installers with Node bundled — nothing to configure.</p>
+        <div class="row-2">
+          <a class="btn-2 go" href="download.html">Download</a>
+          <a class="btn-2" href="docs.html">Read the docs</a>
         </div>
       </div>
     </div>
   </section>
 
-  <div class="cta">
-    <h2>That's it.</h2>
-    <p>Learn the commands, modes, and shortcuts in the docs — or grab the desktop app.</p>
-    <div class="row">
-      <a class="btn solid" href="docs.html">Read the docs</a>
-      <a class="btn" href="download.html">Download the app</a>
-    </div>
-  </div>
 </main>
 
-<footer>
-  <div class="wrap foot">
-    <div><span class="brand"><span class="t">Term</span><span class="c">Coder</span></span> &nbsp; MIT licensed</div>
-    <div>
+<footer class="sys-foot">
+  <div class="in-row">
+    <span><span class="brand-mark" aria-hidden="true" style="display:inline-block;width:11px;height:11px;color:var(--faint);vertical-align:-1px;margin-right:8px;"></span>TERMCODER · MIT</span>
+    <span>
       <a href="docs.html">Docs</a> ·
       <a href="https://www.npmjs.com/package/@termcoder/tui" target="_blank" rel="noopener">npm</a> ·
       <a href="https://github.com/Cartivo-Oficial/TermCoder" target="_blank" rel="noopener">GitHub</a>
-    </div>
+    </span>
   </div>
 </footer>
 
-<script>
-  function copyCmd() {
-    var b = document.getElementById('copyBtn');
-    navigator.clipboard && navigator.clipboard.writeText('npm install -g @termcoder/tui').then(function () {
-      b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1400);
-    });
-  }
-  var blocks = {
-    win: '<span class="c"># PowerShell or CMD</span>\nnpm install <span class="p">-g</span> @termcoder/tui',
-    mac: '<span class="c"># Terminal</span>\nnpm install <span class="p">-g</span> @termcoder/tui',
-    linux: '<span class="c"># bash / zsh</span>\nnpm install <span class="p">-g</span> @termcoder/tui'
-  };
-  document.querySelectorAll('.tab').forEach(function (t) {
-    t.addEventListener('click', function () {
-      document.querySelectorAll('.tab').forEach(function (x) { x.classList.remove('on'); });
-      t.classList.add('on');
-      document.getElementById('osBlock').innerHTML = blocks[t.dataset.os];
-    });
-  });
-</script>
 </body>
 </html>

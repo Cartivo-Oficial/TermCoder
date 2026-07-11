@@ -750,3 +750,18 @@ main:has(#openBtn) ~ footer a { color: var(--muted); }
 .feat-grid .fc p code { font-family: var(--code); font-size: 12px; color: var(--text); }
 .feat-grid .fc p a { color: var(--ember); }
 @media (max-width: 700px) { .feat-grid { grid-template-columns: 1fr; } }
+
+/* install / download page bits */
+.in-word { font-family: var(--code); color: var(--ember); }
+.cmd-2 code { flex: 1; }
+.dlgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 8px; }
+.dlcol { border: 1px solid var(--rule); border-radius: 4px; padding: 16px 16px 10px; min-width: 0; }
+.dlcol .k { font-family: var(--display); font-size: 11px; letter-spacing: .12em; color: var(--faint); margin-bottom: 8px; }
+.dlrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0;
+  border-top: 1px solid var(--rule); font-family: var(--prose); font-size: var(--t2); color: var(--muted); }
+.dlrow:hover { color: var(--ember); }
+.dlrow .ext { font-family: var(--code); font-size: 11px; color: var(--faint); }
+.dlrow:hover .ext { color: var(--ember); }
+.dl-note { font-family: var(--prose); font-size: var(--t2); color: var(--muted); margin-top: 18px; max-width: none; }
+.dl-note a, .split .t p a.link { color: var(--ember); }
+@media (max-width: 700px) { .dlgrid { grid-template-columns: 1fr; } }
