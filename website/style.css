@@ -798,13 +798,15 @@ main:has(#openBtn) ~ footer a { color: var(--muted); }
 .dash-panel h2 { margin-top: 10px; }
 .dash-sub { font-family: var(--prose); color: var(--muted); font-size: var(--t3); max-width: 60ch; margin: 0 0 22px; }
 .dash-h3 { font-family: var(--display); font-size: var(--t3); color: var(--text); margin: 28px 0 12px; }
-.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr)); gap: 12px; margin: 0 0 8px; }
-.stat { border: 1px solid var(--rule); border-radius: 8px; padding: 14px 16px; background: var(--panel);
-  display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr)); gap: 12px; margin: 0 0 8px; }
+.stat { border: 1px solid var(--rule); border-top: 2px solid color-mix(in srgb, var(--ember) 55%, var(--rule)); border-radius: 8px; padding: 14px 16px; background: var(--panel);
+  display: flex; flex-direction: column; gap: 8px; min-width: 0; transition: border-color .12s; }
+.stat:hover { border-top-color: var(--ember); }
 .stat-k { font-family: var(--display); font-size: var(--t1); letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
-.stat-v { font-family: var(--display); font-size: var(--t4); color: var(--text); }
+.stat-v { font-family: var(--display); font-size: var(--t3); color: var(--text); line-height: 1.15; overflow-wrap: anywhere; }
 .dash-list { display: flex; flex-direction: column; margin: 6px 0; border-top: 1px solid var(--rule); }
-.dash-row { display: flex; align-items: center; gap: 14px; padding: 12px 2px; border-bottom: 1px solid var(--rule); min-width: 0; }
+.dash-row { display: flex; align-items: center; gap: 14px; padding: 12px 8px; margin: 0 -8px; border-radius: 6px; border-bottom: 1px solid var(--rule); min-width: 0; transition: background .12s; }
+.dash-row:hover { background: color-mix(in srgb, var(--text) 4%, transparent); }
 .dash-c1 { font-family: var(--display); font-size: var(--t2); color: var(--text); flex: 0 0 auto; min-width: 170px; }
 .dash-c2 { font-family: var(--prose); font-size: var(--t2); color: var(--muted); flex: 1; min-width: 0; }
 .dash-c3 { font-family: var(--code); font-size: var(--t1); color: var(--faint); white-space: nowrap; }
