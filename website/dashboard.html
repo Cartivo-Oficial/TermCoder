@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" type="image/png" href="favicon.png" />
-<link rel="stylesheet" href="style.css?v=3" />
+<link rel="stylesheet" href="style.css?v=4" />
 <title>TermCoder — dashboard</title>
 <meta name="description" content="Your TermCoder dashboard — models, synced sessions, recipes, MCP connectors, and study decks in one place." />
 </head>
@@ -21,6 +21,7 @@
         <a href="docs.html">Docs</a>
       </nav>
       <div class="acct">
+        <img class="acct-avatar" alt="" />
         <span class="acct-name">you@example.com</span>
         <a class="acct-out" href="login.html" data-signout>Sign out</a>
       </div>
@@ -43,13 +44,13 @@
 
     <div class="dash-panel on" data-panel="overview">
       <div class="mono-eyebrow"><span class="slash">//</span> OVERVIEW</div>
-      <h2>Welcome back.</h2>
+      <h2>Welcome back<span data-greet></span>.</h2>
       <p class="dash-sub">Everything you sync from the app and CLI, in one place. Nothing here is billed —
         TermCoder runs with no API key and no account; this only mirrors your own data.</p>
       <div class="stat-grid">
         <div class="stat"><span class="stat-k">Default model</span><span class="stat-v">termcoder/auto</span></div>
         <div class="stat"><span class="stat-k">Synced sessions</span><span class="stat-v">14</span></div>
-        <div class="stat"><span class="stat-k">Study streak</span><span class="stat-v">6 days</span></div>
+        <div class="stat"><span class="stat-k">Study streak</span><span class="stat-v" data-stat="streak">6 days</span></div>
         <div class="stat"><span class="stat-k">Saved recipes</span><span class="stat-v">5</span></div>
       </div>
       <h3 class="dash-h3">Recent activity</h3>
@@ -121,9 +122,9 @@
       <p class="dash-sub">TermExplorer turns the same engine into a tutor — spaced-repetition flashcards that
         resurface at the right time. Your decks and streak sync here.</p>
       <div class="stat-grid">
-        <div class="stat"><span class="stat-k">Current streak</span><span class="stat-v">6 days</span></div>
-        <div class="stat"><span class="stat-k">Due today</span><span class="stat-v">12 cards</span></div>
-        <div class="stat"><span class="stat-k">Decks</span><span class="stat-v">4</span></div>
+        <div class="stat"><span class="stat-k">Current streak</span><span class="stat-v" data-stat="study-streak">6 days</span></div>
+        <div class="stat"><span class="stat-k">Due today</span><span class="stat-v" data-stat="study-due">12 cards</span></div>
+        <div class="stat"><span class="stat-k">Decks</span><span class="stat-v" data-stat="study-decks">4</span></div>
       </div>
       <div class="dash-list">
         <div class="dash-row"><span class="dash-c1">Cell biology</span><span class="dash-c2">28 cards</span><span class="badge-2">5 due</span></div>
@@ -166,7 +167,7 @@
   })();
 </script>
 <script src="config.js?v=3"></script>
-<script src="auth.js?v=3"></script>
+<script src="auth.js?v=4"></script>
 
 </body>
 </html>

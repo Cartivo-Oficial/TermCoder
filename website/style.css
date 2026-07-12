@@ -781,7 +781,8 @@ main:has(#openBtn) ~ footer a { color: var(--muted); }
 .auth-note .link:hover { border-bottom-color: var(--ember); }
 
 /* ---- dashboard (body.dash) ---- */
-.dash .acct { display: flex; align-items: center; gap: 14px; margin-left: auto; }
+.dash .acct { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+.dash .acct-avatar { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--rule); object-fit: cover; display: none; }
 .dash .acct-name { font-family: var(--code); font-size: var(--t1); color: var(--muted); }
 .dash .acct-out { font-family: var(--display); font-size: var(--t1); color: var(--faint); }
 .dash .acct-out:hover { color: var(--ember); }

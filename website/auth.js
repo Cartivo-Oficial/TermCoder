@@ -27,7 +27,7 @@
     if (provider === "github") {
       return "https://github.com/login/oauth/authorize?client_id=" + encodeURIComponent(CFG.github.clientId) +
         "&redirect_uri=" + encodeURIComponent(redirect) +
-        "&scope=" + encodeURIComponent("read:user user:email") +
+        "&scope=" + encodeURIComponent("read:user user:email gist") +
         "&state=" + encodeURIComponent(state);
     }
     if (provider === "google") {
@@ -75,6 +75,7 @@
         name: profile.name || profile.login || "",
         email: profile.email || "",
         avatar: profile.avatar || "",
+        token: provider === "github" ? (profile.token || "") : "",
       }));
       sessionStorage.removeItem(STATE_KEY);
       location.href = "dashboard.html";
@@ -97,10 +98,55 @@
     if (s) {
       var nameEl = document.querySelector(".acct-name");
       if (nameEl && (s.email || s.name)) nameEl.textContent = s.email || s.name;
+      var avatarEl = document.querySelector(".acct-avatar");
+      if (avatarEl && s.avatar) { avatarEl.src = s.avatar; avatarEl.style.display = "inline-block"; }
+      var greetEl = document.querySelector("[data-greet]");
+      if (greetEl && s.name) greetEl.textContent = ", " + s.name.split(" ")[0];
+      if (s.provider === "github" && s.token) void loadSyncedData(s.token);
     }
     document.querySelectorAll("[data-signout]").forEach(function (el) {
       el.addEventListener("click", function (e) { e.preventDefault(); signOut(); });
     });
+  }
+
+  // Read the user's own private "termcoder:sync" gist (decks + progress) and
+  // fill the real Study numbers. Best-effort: any failure leaves the sample.
+  async function loadSyncedData(token) {
+    try {
+      var headers = { authorization: "Bearer " + token, accept: "application/vnd.github+json" };
+      var gists = await (await fetch("https://api.github.com/gists?per_page=100", { headers })).json();
+      if (!Array.isArray(gists)) return;
+      var sync = gists.find(function (g) { return (g.description || "").indexOf("termcoder:sync") === 0; });
+      if (!sync) return;
+      var full = await (await fetch("https://api.github.com/gists/" + sync.id, { headers })).json();
+      var files = full.files || {};
+      var decks = parseEnvelope(files["decks.json"]);
+      var progress = parseEnvelope(files["progress.json"]);
+      var deckNames = decks && typeof decks === "object" ? Object.keys(decks) : [];
+      var due = 0, now = Date.now();
+      deckNames.forEach(function (n) {
+        var cards = (decks[n] && decks[n].cards) || [];
+        due += cards.filter(function (c) { return !c.due || c.due <= now; }).length;
+      });
+      var streak = (progress && (progress.streak || progress.currentStreak)) || 0;
+      var streakText = streak + (streak === 1 ? " day" : " days");
+      setStat("streak", streakText);
+      setStat("study-streak", streakText);
+      setStat("study-due", due + " cards");
+      setStat("study-decks", String(deckNames.length));
+    } catch (e) { /* leave the sample data in place */ }
+  }
+  function parseEnvelope(file) {
+    if (!file || !file.content) return null;
+    try {
+      var env = JSON.parse(file.content);
+      return env && typeof env === "object" && "data" in env ? env.data : env;
+    } catch (e) {
+      return null;
+    }
+  }
+  function setStat(id, value) {
+    document.querySelectorAll('[data-stat="' + id + '"]').forEach(function (el) { el.textContent = value; });
   }
 
   window.TCAuth = {

@@ -80,7 +80,18 @@ async function github(code, redirect_uri, env) {
       email = primary && primary.email;
     }
   }
-  return { provider: "github", login: u.login, name: u.name || u.login || "", email: email || "", avatar: u.avatar_url || "" };
+  // token is returned so the dashboard can read the user's own synced gist
+  // (decks/progress) client-side. It carries only read:user/user:email/gist.
+  // Trade-off: it lives in the browser's localStorage — acceptable for a
+  // personal dashboard reading your own data; not returned for Google.
+  return {
+    provider: "github",
+    login: u.login,
+    name: u.name || u.login || "",
+    email: email || "",
+    avatar: u.avatar_url || "",
+    token: tok.access_token,
+  };
 }
 
 async function google(code, redirect_uri, env) {
