@@ -32,7 +32,7 @@ for (const page of pages) {
   const html = readFileSync(join(site, page), "utf8");
 
   if (/<style[\s>]/i.test(html)) fail(`${page}: has an inline <style> block`);
-  if (!/href="style\.css"/.test(html)) fail(`${page}: does not link style.css`);
+  if (!/href="style\.css(\?[^"]*)?"/.test(html)) fail(`${page}: does not link style.css`);
   if (EMOJI.test(html)) fail(`${page}: contains an emoji`);
 
   if (/\btrained model\b/i.test(html)) fail(`${page}: claims termcoder/auto is a trained model`);
