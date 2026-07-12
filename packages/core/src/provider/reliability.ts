@@ -2,6 +2,31 @@ import type { Config } from "../config/config";
 import { providerMarkedBad } from "./health";
 
 export const MODEL_RETRIES = 1;
+export const KEYLESS_RETRIES = 3;
+
+const TRANSIENT_RE =
+  /\b(429|too\s*many\s*requests|rate[\s-]*limit\w*|overload\w*|capacity|timed?\s*out|timeout|temporar\w*|unavailable|try\s*again|502|503|504|econnreset|etimedout|econnrefused|enotfound|fetch\s*failed|network|socket)\b/i;
+
+export function isTransientError(message: string): boolean {
+  return TRANSIENT_RE.test(message);
+}
+
+export function backoffMs(attemptIndex: number): number {
+  return Math.min(700 * 2 ** Math.max(0, attemptIndex), 6000);
+}
+
+export function abortableDelay(ms: number, signal?: AbortSignal): Promise<void> {
+  if (ms <= 0 || signal?.aborted) return Promise.resolve();
+  return new Promise((resolve) => {
+    const timer = setTimeout(done, ms);
+    function done() {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", done);
+      resolve();
+    }
+    signal?.addEventListener("abort", done, { once: true });
+  });
+}
 
 export function firstKeyedModel(config: Config, env: NodeJS.ProcessEnv): string | undefined {
   const has = (provider: string, ...vars: string[]) =>

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="stylesheet" href="style.css" />
+<title>TermCoder — sign in</title>
+<meta name="description" content="Sign in to your TermCoder dashboard with GitHub or Google. Optional — TermCoder runs with no account and no API key." />
+</head>
+<body class="sys login">
+
+<header class="sys-nav">
+  <div class="in-row">
+    <div class="mark-cell"><span class="brand-mark" aria-hidden="true"></span></div>
+    <div class="row">
+      <a class="wordmark" href="index.html">TERMCODER</a>
+      <nav class="links">
+        <a href="index.html">Home</a>
+        <a href="features.html">Features</a>
+        <a href="study.html">Study</a>
+        <a href="install.html">Install</a>
+        <a href="download.html">Download</a>
+        <a href="docs.html">Docs</a>
+        <a href="https://github.com/Cartivo-Oficial/TermCoder" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main class="auth-wrap">
+  <div class="auth-card">
+    <div class="mono-eyebrow"><span class="slash">//</span> SIGN IN</div>
+    <h1>Your dashboard.</h1>
+    <p class="auth-lead">Two ways in — no passwords, no forms. Sign in only if you want your sessions,
+      decks, and recipes in one place across machines.</p>
+
+    <div class="auth-actions">
+      <a class="auth-btn" href="dashboard.html" data-provider="github">
+        <span class="auth-mk" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17 4.6 18 4.9 18 4.9c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
+        </span>
+        Continue with GitHub
+      </a>
+      <a class="auth-btn" href="dashboard.html" data-provider="google">
+        <span class="auth-mk" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path fill="#4285F4" d="M23 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.2a5.3 5.3 0 0 1-2.3 3.5v2.9h3.7c2.2-2 3.4-5 3.4-8.6z"/>
+            <path fill="#34A853" d="M12 24c3.1 0 5.7-1 7.6-2.8l-3.7-2.9c-1 .7-2.3 1.1-3.9 1.1-3 0-5.5-2-6.4-4.8H1.8v3C3.7 21.4 7.6 24 12 24z"/>
+            <path fill="#FBBC05" d="M5.6 14.6a7.2 7.2 0 0 1 0-4.6v-3H1.8a12 12 0 0 0 0 10.6l3.8-3z"/>
+            <path fill="#EA4335" d="M12 4.8c1.7 0 3.2.6 4.4 1.7l3.3-3.3C17.7 1.2 15.1 0 12 0 7.6 0 3.7 2.6 1.8 6.4l3.8 3C6.5 6.7 9 4.8 12 4.8z"/>
+          </svg>
+        </span>
+        Continue with Google
+      </a>
+    </div>
+
+    <p class="auth-note">Sign-in is optional. The CLI and app run with no account and no API key —
+      an account only syncs your own data. <a class="link" href="download.html">Get the app</a>.</p>
+  </div>
+</main>
+
+<footer class="sys-foot">
+  <div class="in-row">
+    <span><span class="brand-mark" aria-hidden="true" style="display:inline-block;width:11px;height:11px;color:var(--faint);vertical-align:-1px;margin-right:8px;"></span>TERMCODER · MIT</span>
+    <span>
+      <a href="docs.html">Docs</a> ·
+      <a href="https://www.npmjs.com/package/@termcoder/tui" target="_blank" rel="noopener">npm</a> ·
+      <a href="https://github.com/Cartivo-Oficial/TermCoder" target="_blank" rel="noopener">GitHub</a>
+    </span>
+  </div>
+</footer>
+
+<script src="config.js"></script>
+<script src="auth.js"></script>
+
+</body>
+</html>

@@ -22,10 +22,15 @@ interface PtyModule {
 }
 
 const requireNative = createRequire(__filename);
-const sessions = new Map<number, Pty>();
+// Keyed by `${webContentsId}:${terminalId}` so one window can hold many terminals.
+const sessions = new Map<string, Pty>();
 
 let cached: PtyModule | null = null;
 let loadError = "";
+
+function key(webContentsId: number, terminalId: number): string {
+  return `${webContentsId}:${terminalId}`;
+}
 
 function ptyEntry(): string {
   if (!app.isPackaged) return "@lydell/node-pty";
@@ -47,13 +52,26 @@ function safeCwd(cwd: string | null | undefined): string {
   return app.getPath("home");
 }
 
-export function disposePty(webContentsId: number): void {
-  const pty = sessions.get(webContentsId);
+function disposeSession(webContentsId: number, terminalId: number): void {
+  const k = key(webContentsId, terminalId);
+  const pty = sessions.get(k);
   if (!pty) return;
-  sessions.delete(webContentsId);
+  sessions.delete(k);
   try {
     pty.kill();
   } catch {
+  }
+}
+
+export function disposePty(webContentsId: number): void {
+  const prefix = `${webContentsId}:`;
+  for (const [k, pty] of [...sessions]) {
+    if (!k.startsWith(prefix)) continue;
+    sessions.delete(k);
+    try {
+      pty.kill();
+    } catch {
+    }
   }
 }
 
@@ -67,11 +85,12 @@ export function registerPtyIpc(): void {
 
   ipcMain.handle(
     "pty:start",
-    (event, options: { cwd: string | null; cols: number; rows: number }) => {
+    (event, options: { id: number; cwd: string | null; cols: number; rows: number }) => {
       const mod = loadPty();
       if (!mod) return { ok: false as const, error: loadError };
-      const id = event.sender.id;
-      disposePty(id);
+      const wc = event.sender.id;
+      const k = key(wc, options.id);
+      disposeSession(wc, options.id);
       const shell = defaultShell(process.platform, process.env);
       try {
         const pty = mod.spawn(shell.file, shell.args, {
@@ -81,16 +100,16 @@ export function registerPtyIpc(): void {
           cwd: safeCwd(options.cwd),
           env: terminalEnv(process.env),
         });
-        sessions.set(id, pty);
+        sessions.set(k, pty);
         pty.onData((data) => {
-          if (sessions.get(id) === pty && !event.sender.isDestroyed()) {
-            event.sender.send("pty:data", data);
+          if (sessions.get(k) === pty && !event.sender.isDestroyed()) {
+            event.sender.send("pty:data", { id: options.id, data });
           }
         });
         pty.onExit(({ exitCode }) => {
-          if (sessions.get(id) !== pty) return;
-          sessions.delete(id);
-          if (!event.sender.isDestroyed()) event.sender.send("pty:exit", exitCode);
+          if (sessions.get(k) !== pty) return;
+          sessions.delete(k);
+          if (!event.sender.isDestroyed()) event.sender.send("pty:exit", { id: options.id, code: exitCode });
         });
         return { ok: true as const, pid: pty.pid };
       } catch (err) {
@@ -99,16 +118,18 @@ export function registerPtyIpc(): void {
     },
   );
 
-  ipcMain.on("pty:input", (event, data: string) => sessions.get(event.sender.id)?.write(data));
+  ipcMain.on("pty:input", (event, payload: { id: number; data: string }) =>
+    sessions.get(key(event.sender.id, payload.id))?.write(payload.data),
+  );
 
-  ipcMain.on("pty:resize", (event, cols: number, rows: number) => {
+  ipcMain.on("pty:resize", (event, payload: { id: number; cols: number; rows: number }) => {
     try {
-      sessions.get(event.sender.id)?.resize(Math.max(2, cols), Math.max(1, rows));
+      sessions.get(key(event.sender.id, payload.id))?.resize(Math.max(2, payload.cols), Math.max(1, payload.rows));
     } catch {
     }
   });
 
-  ipcMain.on("pty:kill", (event) => disposePty(event.sender.id));
+  ipcMain.on("pty:kill", (event, payload: { id: number }) => disposeSession(event.sender.id, payload.id));
 
   app.on("browser-window-created", (_e, win: BrowserWindow) => {
     const id = win.webContents.id;

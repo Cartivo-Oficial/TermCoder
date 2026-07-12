@@ -23,10 +23,12 @@ function readTheme() {
 }
 
 export function TerminalPane({
+  id,
   cwd,
   hidden,
   themeKey,
 }: {
+  id: number;
   cwd: string | null;
   hidden: boolean;
   themeKey: string;
@@ -71,25 +73,25 @@ export function TerminalPane({
     termRef.current = term;
     fitRef.current = fit;
 
-    const offData = api.onData((data) => term.write(data));
-    const offExit = api.onExit((code) => {
+    const offData = api.onData(id, (data) => term.write(data));
+    const offExit = api.onExit(id, (code) => {
       setExited(code);
       startedRef.current = false;
       term.write(`\r\n\x1b[2m${t("term.exited", { code })}\x1b[0m\r\n`);
     });
-    const disposeInput = term.onData((data) => api.write(data));
+    const disposeInput = term.onData((data) => api.write(id, data));
 
     return () => {
       offData();
       offExit();
       disposeInput.dispose();
-      api.kill();
+      api.kill(id);
       term.dispose();
       termRef.current = null;
       fitRef.current = null;
       startedRef.current = false;
     };
-  }, [error, t]);
+  }, [error, t, id]);
 
   useEffect(() => {
     if (hidden || error) return;
@@ -101,7 +103,7 @@ export function TerminalPane({
     fit.fit();
     if (!startedRef.current) {
       startedRef.current = true;
-      void api.start({ cwd, cols: term.cols, rows: term.rows }).then((r) => {
+      void api.start(id, { cwd, cols: term.cols, rows: term.rows }).then((r) => {
         if (!r.ok) {
           startedRef.current = false;
           setError(r.error);
@@ -111,10 +113,10 @@ export function TerminalPane({
         }
       });
     } else {
-      api.resize(term.cols, term.rows);
+      api.resize(id, term.cols, term.rows);
       term.focus();
     }
-  }, [hidden, cwd, error]);
+  }, [hidden, cwd, error, id]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -125,11 +127,11 @@ export function TerminalPane({
       const fit = fitRef.current;
       if (!term || !fit) return;
       fit.fit();
-      window.api?.pty?.resize(term.cols, term.rows);
+      window.api?.pty?.resize(id, term.cols, term.rows);
     });
     observer.observe(host);
     return () => observer.disconnect();
-  }, [hidden, error]);
+  }, [hidden, error, id]);
 
   useEffect(() => {
     const term = termRef.current;
@@ -142,7 +144,7 @@ export function TerminalPane({
     const api = window.api?.pty;
     if (!term || !api) return false;
     startedRef.current = true;
-    const r = await api.start({ cwd, cols: term.cols, rows: term.rows });
+    const r = await api.start(id, { cwd, cols: term.cols, rows: term.rows });
     if (!r.ok) {
       startedRef.current = false;
       setError(r.error);
@@ -156,7 +158,7 @@ export function TerminalPane({
 
   const run = async (command: string) => {
     if (exited !== null && !(await restart())) return;
-    window.api?.pty?.write(`${command}\r`);
+    window.api?.pty?.write(id, `${command}\r`);
     termRef.current?.focus();
   };
 

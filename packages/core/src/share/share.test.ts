@@ -9,7 +9,7 @@ function sampleRecord(): SessionRecord {
     createdAt: Date.parse("2026-06-26T12:00:00Z"),
     updatedAt: Date.parse("2026-06-26T12:05:00Z"),
     cwd: "/work",
-    model: "anthropic/claude-sonnet-4-6",
+    model: "anthropic/claude-sonnet-5",
     messages: [
       { role: "user", content: "Hello <script>alert(1)</script>" },
       {
@@ -34,7 +34,7 @@ describe("renderSessionMarkdown", () => {
   it("renders user, assistant, tool-call and tool-result segments", () => {
     const md = renderSessionMarkdown(sampleRecord());
     expect(md).toContain("# My session");
-    expect(md).toContain("anthropic/claude-sonnet-4-6");
+    expect(md).toContain("anthropic/claude-sonnet-5");
     expect(md).toContain("Hello <script>alert(1)</script>"); // markdown is not HTML-escaped
     expect(md).toContain("Hi! Creating a file.");
     expect(md).toContain("→ write");

@@ -9,11 +9,12 @@ import { Hero } from "./Hero";
 import { useI18n } from "./i18n";
 import { COLOR_THEMES, THEME_VARS } from "./themes";
 import { KEYBIND_ACTIONS, comboFor, matchCombo } from "./keybinds";
-import { IconStop, IconShare, IconCopy, IconEdit, IconMic, IconUndo, IconBolt } from "./Icons";
+import { IconStop, IconShare, IconCopy, IconEdit, IconMic, IconUndo, IconBolt, IconAgents } from "./Icons";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { RoomPanel } from "./RoomPanel";
 import { ModelBrowser } from "./ModelBrowser";
 import { Rail } from "./Rail";
-import { TerminalPane } from "./TerminalPane";
+import { TerminalDeck } from "./TerminalDeck";
 import { SidePanel } from "./SidePanel";
 import { SessionsPanel } from "./SessionsPanel";
 import { DiffBlock, DiffBody, ToolCard } from "./ToolCard";
@@ -61,14 +62,14 @@ declare global {
       pty: {
         available: () => Promise<{ ok: boolean; error?: string }>;
         tools: () => Promise<Array<{ id: string; label: string; command: string }>>;
-        start: (options: { cwd: string | null; cols: number; rows: number }) => Promise<
+        start: (id: number, options: { cwd: string | null; cols: number; rows: number }) => Promise<
           { ok: true; pid: number } | { ok: false; error: string }
         >;
-        write: (data: string) => void;
-        resize: (cols: number, rows: number) => void;
-        kill: () => void;
-        onData: (cb: (data: string) => void) => () => void;
-        onExit: (cb: (code: number) => void) => () => void;
+        write: (id: number, data: string) => void;
+        resize: (id: number, cols: number, rows: number) => void;
+        kill: (id: number) => void;
+        onData: (id: number, cb: (data: string) => void) => () => void;
+        onExit: (id: number, cb: (code: number) => void) => () => void;
       };
     };
   }
@@ -98,7 +99,7 @@ const MODELS = [
   "google/gemini-2.0-flash",
   "google/gemini-2.5-pro",
   "anthropic/claude-opus-4-8",
-  "anthropic/claude-sonnet-4-6",
+  "anthropic/claude-sonnet-5",
   "anthropic/claude-haiku-4-5",
   "openai/gpt-4o",
   "openai/gpt-4o-mini",
@@ -320,6 +321,15 @@ export function App() {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [leftOpen, setLeftOpen] = useState(true);
   const [sidePanel, setSidePanel] = useState<null | "files" | "study" | "agents">(null);
+  const [roomOpen, setRoomOpen] = useState(false);
+  const [roomParticipants, setRoomParticipants] = useState<string[]>([]);
+  const [roomChat, setRoomChat] = useState<Array<{ from: string; text: string; kind: "chat" | "prompt" }>>([]);
+  const [myName, setMyName] = useState<string>(() => localStorage.getItem("tc-name") || "You");
+  const myNameRef = useRef(myName);
+  useEffect(() => {
+    myNameRef.current = myName;
+    localStorage.setItem("tc-name", myName);
+  }, [myName]);
   const [onboarded, setOnboarded] = useState(() => localStorage.getItem("tc-onboarded") === "1");
   const [studentMode, setStudentMode] = useState(() => localStorage.getItem("tc-student") === "1");
   const [theme, setTheme] = useState<"dark" | "light">(
@@ -695,7 +705,7 @@ export function App() {
   }
 
   function openSocket(id: string) {
-    const ws = new WebSocket(`${wsBase}/sessions/${id}/stream`);
+    const ws = new WebSocket(`${wsBase}/sessions/${id}/stream?name=${encodeURIComponent(myNameRef.current)}`);
     wsRef.current = ws;
     ws.onopen = () => setConnected(true);
     ws.onmessage = (ev) => onEvent(JSON.parse(ev.data) as StreamEvent);
@@ -715,6 +725,12 @@ export function App() {
         }, 500);
       }
     };
+  }
+
+  function sendRoomChat(text: string) {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    wsRef.current?.send(JSON.stringify({ type: "chat", text: trimmed }));
   }
 
   function setWorkingDir(rawDir: string) {
@@ -1008,6 +1024,18 @@ export function App() {
   }
 
   function onEvent(e: StreamEvent) {
+    if (e.type === "room-welcome" || e.type === "room-presence") {
+      setRoomParticipants(Array.isArray(e.participants) ? e.participants : []);
+      return;
+    }
+    if (e.type === "room-chat") {
+      setRoomChat((prev) => [...prev, { from: String(e.from ?? "?"), text: String(e.text ?? ""), kind: "chat" }]);
+      return;
+    }
+    if (e.type === "room-prompt") {
+      setRoomChat((prev) => [...prev, { from: String(e.from ?? "?"), text: String(e.text ?? ""), kind: "prompt" }]);
+      return;
+    }
     if (e.type === "permission-request") {
       if (autoApproveRef.current) {
         wsRef.current?.send(JSON.stringify({ type: "permission-decision", id: e.id, decision: "allow" }));
@@ -1577,6 +1605,14 @@ export function App() {
                   <span className="muted">{fmtTokens(tokens)} {t("chat.tok")}</span>
                 </span>
               ) : null}
+              <button
+                className={`icon sm${roomParticipants.length > 1 ? " live" : ""}`}
+                title={t("room.title")}
+                onClick={() => setRoomOpen(true)}
+              >
+                <IconAgents />
+                {roomParticipants.length > 1 ? <span className="room-count">{roomParticipants.length}</span> : null}
+              </button>
               {canRevert ? (
                 <button className="icon sm" title={t("revert.title")} onClick={() => void revertTurn()}>
                   <IconUndo />
@@ -1921,7 +1957,7 @@ export function App() {
           </div>
 
           {termMounted ? (
-            <TerminalPane
+            <TerminalDeck
               cwd={cwd}
               hidden={centerTab !== "terminal"}
               themeKey={`${theme}:${colorTheme}:${accent}`}
@@ -1950,6 +1986,18 @@ export function App() {
         ) : null}
       </div>
       </div>
+
+      {roomOpen ? (
+        <RoomPanel
+          port={port}
+          myName={myName}
+          onChangeName={setMyName}
+          participants={roomParticipants}
+          messages={roomChat}
+          onSendChat={sendRoomChat}
+          onClose={() => setRoomOpen(false)}
+        />
+      ) : null}
 
       {viewerOpen && tabs.length ? (
         <TabbedViewer

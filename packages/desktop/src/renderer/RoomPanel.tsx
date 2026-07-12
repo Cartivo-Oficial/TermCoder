@@ -1,0 +1,129 @@
+import { useEffect, useRef, useState } from "react";
+import { useI18n } from "./i18n";
+
+interface RoomMessage {
+  from: string;
+  text: string;
+  kind: "chat" | "prompt";
+}
+
+interface RoomPanelProps {
+  port: number;
+  myName: string;
+  onChangeName: (name: string) => void;
+  participants: string[];
+  messages: RoomMessage[];
+  onSendChat: (text: string) => void;
+  onClose: () => void;
+}
+
+export function RoomPanel({ port, myName, onChangeName, participants, messages, onSendChat, onClose }: RoomPanelProps) {
+  const { t } = useI18n();
+  const httpBase = `http://localhost:${port}`;
+  const [addresses, setAddresses] = useState<{ addresses: string[]; port: string } | null>(null);
+  const [draft, setDraft] = useState("");
+  const [copied, setCopied] = useState<string | null>(null);
+  const logRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    fetch(`${httpBase}/room/addresses`)
+      .then((r) => r.json())
+      .then((d) => setAddresses(d as { addresses: string[]; port: string }))
+      .catch(() => {});
+  }, [httpBase]);
+
+  useEffect(() => {
+    logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
+  }, [messages.length]);
+
+  function send() {
+    const text = draft.trim();
+    if (!text) return;
+    onSendChat(text);
+    setDraft("");
+  }
+
+  function copyLink(url: string) {
+    void navigator.clipboard?.writeText(url).then(() => {
+      setCopied(url);
+      setTimeout(() => setCopied((c) => (c === url ? null : c)), 1200);
+    });
+  }
+
+  const links = (addresses?.addresses ?? []).map((a) => `${httpBase.startsWith("https") ? "https" : "http"}://${a}:${addresses?.port || port}`);
+
+  return (
+    <div className="settings" onClick={onClose}>
+      <div className="settings-card room-card" style={{ maxWidth: 560, width: "92%", minHeight: 0 }} onClick={(e) => e.stopPropagation()}>
+        <div className="room-head">
+          <h3>{t("room.title")}</h3>
+          <button className="icon sm" title={t("room.close")} onClick={onClose}>×</button>
+        </div>
+
+        <label className="room-label">{t("room.you")}</label>
+        <input
+          className="settings-input"
+          value={myName}
+          maxLength={40}
+          onChange={(e) => onChangeName(e.target.value)}
+          placeholder={t("room.you")}
+        />
+        <p className="hint" style={{ marginTop: 4 }}>{t("room.nameHint")}</p>
+
+        <label className="room-label">{t("room.invite")}</label>
+        {links.length ? (
+          <div className="room-links">
+            {links.map((url) => (
+              <div className="room-link" key={url}>
+                <code>{url}</code>
+                <button className="settings-btn sm" onClick={() => copyLink(url)}>
+                  {copied === url ? t("room.copied") : t("room.copy")}
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="hint">{t("room.noLan")}</p>
+        )}
+
+        <label className="room-label">{t("room.participants")} · {participants.length}</label>
+        <div className="room-people">
+          {participants.length ? (
+            participants.map((p, i) => (
+              <span key={`${p}-${i}`} className={`room-chip ${p === myName ? "me" : ""}`}>{p}</span>
+            ))
+          ) : (
+            <span className="hint">{t("room.alone")}</span>
+          )}
+        </div>
+
+        <label className="room-label">{t("room.chat")}</label>
+        <div className="room-log" ref={logRef}>
+          {messages.length === 0 ? (
+            <p className="hint">{t("room.chatEmpty")}</p>
+          ) : (
+            messages.map((m, i) => (
+              <div key={i} className={`room-msg ${m.kind}`}>
+                <span className="room-from">{m.from}</span>
+                {m.kind === "prompt" ? <span className="room-tag">{t("room.asked")}</span> : null}
+                <span className="room-text">{m.text}</span>
+              </div>
+            ))
+          )}
+        </div>
+        <div className="room-compose">
+          <input
+            className="settings-input"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") send();
+            }}
+            placeholder={t("room.chatPlaceholder")}
+          />
+          <button className="settings-btn" onClick={send}>{t("room.send")}</button>
+        </div>
+      </div>
+    </div>
+  );
+}

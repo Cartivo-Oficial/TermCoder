@@ -49,7 +49,7 @@ export function classifyTaskComplexity(text: string): TaskComplexity {
 
 const TIERS: Record<string, { fast: string; strong: string }> = {
   google: { fast: "google/gemini-2.5-flash", strong: "google/gemini-2.5-pro" },
-  anthropic: { fast: "anthropic/claude-haiku-4-5-20251001", strong: "anthropic/claude-sonnet-4-6" },
+  anthropic: { fast: "anthropic/claude-haiku-4-5-20251001", strong: "anthropic/claude-sonnet-5" },
   openai: { fast: "openai/gpt-4o-mini", strong: "openai/gpt-4o" },
   ollama: { fast: "ollama/llama3.1", strong: "ollama/llama3.1" },
   pollinations: { fast: FREE_MODEL, strong: FREE_MODEL },

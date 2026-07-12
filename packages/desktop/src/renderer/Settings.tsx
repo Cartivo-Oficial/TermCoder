@@ -41,6 +41,24 @@ interface ProviderAuthInfo {
   freeTier?: string;
   health?: "ok" | "bad" | "unknown";
 }
+interface ConnectorInput {
+  key: string;
+  label: string;
+  kind: string;
+  required?: boolean;
+  secret?: boolean;
+  placeholder?: string;
+}
+interface Connector {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  transport: string;
+  runtime?: string;
+  inputs?: ConnectorInput[];
+  docsUrl?: string;
+}
 
 export type SettingsTab =
   | "general"
@@ -436,6 +454,17 @@ export function Settings(p: Props) {
   const [mcpType, setMcpType] = useState<"stdio" | "http">("stdio");
   const [mcpCommand, setMcpCommand] = useState("");
   const [mcpUrl, setMcpUrl] = useState("");
+  const [connectors, setConnectors] = useState<Connector[]>([]);
+  const [pickedConnector, setPickedConnector] = useState<string | null>(null);
+  const [connectorValues, setConnectorValues] = useState<Record<string, string>>({});
+
+  function loadConnectors() {
+    if (connectors.length) return;
+    fetch(`${httpBase}/connectors`)
+      .then((r) => r.json())
+      .then((d) => setConnectors(Array.isArray(d?.connectors) ? (d.connectors as Connector[]) : []))
+      .catch(() => {});
+  }
 
   function loadConfig() {
     fetch(`${httpBase}/config`)
@@ -484,6 +513,7 @@ export function Settings(p: Props) {
     if (p.tab === "servers" || p.tab === "providers") p.refreshStatus();
     if (p.tab === "providers") loadProviderAuth();
     if (p.tab === "permissions" || p.tab === "providers" || p.tab === "integrations" || p.tab === "files" || p.tab === "behavior") loadConfig();
+    if (p.tab === "integrations") loadConnectors();
     if (p.tab === "agents") loadAgents();
     if (p.tab === "skills") loadSkills();
     if (p.tab === "memory") loadMemories();
@@ -541,6 +571,21 @@ export function Settings(p: Props) {
     setMcpName("");
     setMcpCommand("");
     setMcpUrl("");
+    loadConfig();
+  }
+  async function addConnector(c: Connector) {
+    const missing = (c.inputs ?? []).filter((i) => i.required && !((connectorValues[i.key] ?? "").trim()));
+    if (missing.length) return;
+    try {
+      await fetch(`${httpBase}/mcp`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ connectorId: c.id, values: connectorValues }),
+      });
+    } catch {
+    }
+    setPickedConnector(null);
+    setConnectorValues({});
     loadConfig();
   }
   async function toggleMcp(name: string) {
@@ -937,6 +982,41 @@ export function Settings(p: Props) {
                   </Row>
                 ))}
                 {Object.keys(cfg?.mcp ?? {}).length === 0 ? <p className="hint">{t("settings.noMcpYet")}</p> : null}
+                <h4 className="sub eyebrow">{t("settings.connectors")}</h4>
+                <div className="connector-grid">
+                  {connectors.map((c) => (
+                    <div key={c.id} className={`connector-card ${pickedConnector === c.id ? "on" : ""}`}>
+                      <button
+                        className="connector-head"
+                        onClick={() => {
+                          setPickedConnector(pickedConnector === c.id ? null : c.id);
+                          setConnectorValues({});
+                        }}
+                      >
+                        <span className="connector-name">{c.name}</span>
+                        {c.runtime ? <span className="connector-meta">{c.runtime}</span> : null}
+                      </button>
+                      <p className="connector-desc">{c.description}</p>
+                      {pickedConnector === c.id ? (
+                        <div className="connector-form">
+                          {(c.inputs ?? []).map((i) => (
+                            <input
+                              key={i.key}
+                              className="settings-input"
+                              type={i.secret ? "password" : "text"}
+                              placeholder={`${i.label}${i.required ? " *" : ""}`}
+                              value={connectorValues[i.key] ?? ""}
+                              onChange={(e) => setConnectorValues((v) => ({ ...v, [i.key]: e.target.value }))}
+                            />
+                          ))}
+                          <button className="settings-btn" onClick={() => void addConnector(c)}>
+                            {t("settings.add")}
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
                 <h4 className="sub eyebrow">{t("settings.addMcp")}</h4>
                 <div className="mcp-form">
                   <input

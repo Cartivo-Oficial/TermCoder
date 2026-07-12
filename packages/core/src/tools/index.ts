@@ -12,6 +12,7 @@ import { webfetchTool } from "./webfetch";
 import { websearchTool } from "./websearch";
 import { skillTool } from "./skill";
 import { memoryTool } from "./memory";
+import { recipeTool } from "./recipe";
 import { repomapTool } from "./repomap";
 import { symbolsTool } from "./symbols";
 
@@ -30,6 +31,7 @@ export const builtinTools: TermTool[] = [
   websearchTool,
   skillTool,
   memoryTool,
+  recipeTool,
   repomapTool,
   symbolsTool,
 ];

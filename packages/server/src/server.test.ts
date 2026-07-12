@@ -307,6 +307,67 @@ describe("server", () => {
     expect(existsSync(join(dir, "hello.ts"))).toBe(true);
   });
 
+  it("broadcasts one participant's run, chat, and presence to the whole room", async () => {
+    const record = (await (
+      await fetch(`${base()}/sessions`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ cwd: dir }),
+      })
+    ).json()) as { id: string };
+
+    const ws1 = new WebSocket(`ws://localhost:${port}/sessions/${record.id}/stream?name=Alice`);
+    const ws2 = new WebSocket(`ws://localhost:${port}/sessions/${record.id}/stream?name=Bob`);
+    const seen2: Array<{ type: string; from?: string; count?: number; id?: string }> = [];
+
+    // ws1 (the driver) answers permission prompts.
+    ws1.on("message", (raw) => {
+      const e = JSON.parse(raw.toString()) as { type: string; id?: string };
+      if (e.type === "permission-request") {
+        ws1.send(JSON.stringify({ type: "permission-decision", id: e.id, decision: "allow" }));
+      }
+    });
+
+    // Attach Bob's collector before open so the join-time presence event is captured.
+    const done = new Promise<void>((resolve, reject) => {
+      ws2.on("message", (raw) => {
+        const e = JSON.parse(raw.toString()) as { type: string; from?: string; count?: number; id?: string };
+        seen2.push(e);
+        if (e.type === "done") resolve();
+        if (e.type === "error") reject(new Error("unexpected error event"));
+      });
+    });
+
+    await Promise.all([
+      new Promise<void>((r) => ws1.on("open", () => r())),
+      new Promise<void>((r) => ws2.on("open", () => r())),
+    ]);
+
+    // Both are registered now — Bob chats and Alice drives the agent.
+    ws2.send(JSON.stringify({ type: "chat", text: "hey team" }));
+    ws1.send(JSON.stringify({ type: "prompt", text: "create file" }));
+    await done;
+
+    ws1.close();
+    ws2.close();
+
+    const types = seen2.map((e) => e.type);
+    // Bob (who did not drive) still sees the agent's run:
+    expect(types).toContain("tool-result");
+    expect(types).toContain("done");
+    // …and the room signals:
+    expect(seen2.some((e) => e.type === "room-prompt" && e.from === "Alice")).toBe(true);
+    expect(seen2.some((e) => e.type === "room-chat" && e.from === "Bob")).toBe(true);
+    expect(seen2.some((e) => e.type === "room-presence" && (e.count ?? 0) >= 2)).toBe(true);
+  });
+
+  it("reports LAN addresses for sharing a room", async () => {
+    const res = await fetch(`${base()}/room/addresses`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { addresses: string[]; port: string };
+    expect(Array.isArray(body.addresses)).toBe(true);
+  });
+
   it("serves a shareable transcript as HTML and Markdown", async () => {
     const record = store.create({ cwd: dir, model: "m", title: "Shared" });
     record.messages.push({ role: "user", content: "hi <b>there</b>" });

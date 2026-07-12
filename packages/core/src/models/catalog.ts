@@ -21,7 +21,7 @@ const FALLBACK: ModelEntry[] = [
   { id: "termexplorer/auto", provider: "termexplorer", model: "auto", name: "termexplorer — study & schoolwork tutor", vision: true, free: true },
   { id: "termcoderfree/auto", provider: "termcoderfree", model: "auto", name: "termcoderfree — free, no API key needed", contextK: 128, free: true },
   { id: "anthropic/claude-opus-4-8", provider: "anthropic", model: "claude-opus-4-8", name: "Claude Opus 4.8", contextK: 200, vision: true },
-  { id: "anthropic/claude-sonnet-4-6", provider: "anthropic", model: "claude-sonnet-4-6", name: "Claude Sonnet 4.6", contextK: 200, vision: true },
+  { id: "anthropic/claude-sonnet-5", provider: "anthropic", model: "claude-sonnet-5", name: "Claude Sonnet 5", contextK: 1000, vision: true },
   { id: "anthropic/claude-haiku-4-5", provider: "anthropic", model: "claude-haiku-4-5", name: "Claude Haiku 4.5", contextK: 200, vision: true },
   { id: "openai/gpt-4o", provider: "openai", model: "gpt-4o", name: "GPT-4o", contextK: 128, vision: true },
   { id: "openai/gpt-4o-mini", provider: "openai", model: "gpt-4o-mini", name: "GPT-4o mini", contextK: 128, vision: true },

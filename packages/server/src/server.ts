@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { networkInterfaces } from "node:os";
 import { extname, join, normalize } from "node:path";
 import {
   createServer as createHttpServer,
@@ -26,6 +27,10 @@ import {
   saveConfig,
   readGlobalConfig,
   writeGlobalConfig,
+  listConnectors,
+  getConnector,
+  connectorToServerConfig,
+  missingRequiredInputs,
   PermissionManager,
   renderSessionHtml,
   renderSessionMarkdown,
@@ -92,6 +97,20 @@ export interface ServerDeps {
   webDir?: string;
 }
 
+// A live room = every socket attached to one session. One shared agent runner;
+// its events, presence, and chat broadcast to all participants. Enables
+// "salas ao vivo" with the host running this server (LAN / tunnel) — no new infra.
+interface Room {
+  id: string;
+  sockets: Set<WebSocket>;
+  names: Map<WebSocket, string>;
+  running: boolean;
+  controller: AbortController | null;
+  pending: Map<string, (decision: PermissionDecision) => void>;
+  permission: PermissionManager;
+  registry: ToolRegistry;
+}
+
 interface Ctx {
   config: Config;
   store: SessionStore;
@@ -100,6 +119,7 @@ interface Ctx {
   cwd: string;
   status: ServerStatus;
   webDir?: string;
+  rooms: Map<string, Room>;
 }
 
 export function createServer(deps: ServerDeps = {}): Server {
@@ -111,6 +131,7 @@ export function createServer(deps: ServerDeps = {}): Server {
     cwd: deps.cwd ?? process.cwd(),
     status: deps.status ?? { mcp: [], lsp: [], plugins: [] },
     webDir: deps.webDir,
+    rooms: new Map(),
   };
 
   const http = createHttpServer((req, res) => {
@@ -606,20 +627,51 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 200, redactConfig(ctx.config));
   }
 
+  if (req.method === "GET" && parts.length === 1 && parts[0] === "connectors") {
+    return sendJson(res, 200, { connectors: listConnectors() });
+  }
+
+  if (req.method === "GET" && parts.length === 2 && parts[0] === "room" && parts[1] === "addresses") {
+    const host = typeof req.headers.host === "string" ? req.headers.host : "";
+    const port = host.includes(":") ? host.split(":").pop() ?? "" : "";
+    return sendJson(res, 200, { addresses: lanAddresses(), port, rooms: ctx.rooms.size });
+  }
+
   if (req.method === "POST" && parts.length === 1 && parts[0] === "mcp") {
     const body = await readJson(req);
-    const name = typeof body.name === "string" ? body.name.trim() : "";
-    if (!name) return sendJson(res, 400, { error: "missing name" });
     try {
-      const entry =
-        body.type === "http"
-          ? { type: "http", url: String(body.url ?? ""), enabled: true }
-          : {
-              type: "stdio",
-              command: String(body.command ?? ""),
-              args: Array.isArray(body.args) ? body.args.map(String) : [],
-              enabled: true,
-            };
+      let name: string;
+      let entry: Record<string, unknown>;
+      if (typeof body.connectorId === "string") {
+        // One-click connector: build the server config from the catalog.
+        const connector = getConnector(body.connectorId);
+        if (!connector) return sendJson(res, 400, { error: `unknown connector "${body.connectorId}"` });
+        const values = (body.values ?? {}) as Record<string, string>;
+        const missing = missingRequiredInputs(connector, values);
+        if (missing.length) {
+          return sendJson(res, 400, { error: `missing required input(s): ${missing.map((i) => i.key).join(", ")}` });
+        }
+        entry = connectorToServerConfig(connector, values) as unknown as Record<string, unknown>;
+        name = (typeof body.name === "string" && body.name.trim()) || connector.id;
+      } else {
+        name = typeof body.name === "string" ? body.name.trim() : "";
+        if (!name) return sendJson(res, 400, { error: "missing name" });
+        entry =
+          body.type === "http"
+            ? {
+                type: "http",
+                url: String(body.url ?? ""),
+                enabled: true,
+                ...(body.headers && typeof body.headers === "object" ? { headers: body.headers } : {}),
+              }
+            : {
+                type: "stdio",
+                command: String(body.command ?? ""),
+                args: Array.isArray(body.args) ? body.args.map(String) : [],
+                enabled: true,
+                ...(body.env && typeof body.env === "object" ? { env: body.env } : {}),
+              };
+      }
       const raw = readGlobalConfig();
       const mcp = { ...(raw.mcp as Record<string, unknown> | undefined), [name]: entry };
       writeGlobalConfig({ ...raw, mcp });
@@ -846,6 +898,125 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
   sendJson(res, 404, { error: "not found" });
 }
 
+function lanAddresses(): string[] {
+  const out: string[] = [];
+  for (const iface of Object.values(networkInterfaces())) {
+    for (const info of iface ?? []) {
+      if (info.family === "IPv4" && !info.internal) out.push(info.address);
+    }
+  }
+  return out;
+}
+
+function roomBroadcast(room: Room, msg: unknown): void {
+  const data = JSON.stringify(msg);
+  for (const s of room.sockets) {
+    if (s.readyState === 1 /* OPEN */) s.send(data);
+  }
+}
+
+function roomPresence(room: Room): void {
+  roomBroadcast(room, {
+    type: "room-presence",
+    participants: [...room.names.values()],
+    count: room.sockets.size,
+  });
+}
+
+function getRoom(ctx: Ctx, sessionId: string): Room {
+  const existing = ctx.rooms.get(sessionId);
+  if (existing) return existing;
+  const pending = new Map<string, (decision: PermissionDecision) => void>();
+  const room = {
+    id: sessionId,
+    sockets: new Set<WebSocket>(),
+    names: new Map<WebSocket, string>(),
+    running: false,
+    controller: null as AbortController | null,
+    pending,
+  } as Room;
+  room.permission = new PermissionManager(
+    ctx.config.permission,
+    (request) =>
+      new Promise<PermissionDecision>((resolve) => {
+        const id = randomUUID();
+        pending.set(id, resolve);
+        // Any participant may answer a permission prompt; first response wins.
+        roomBroadcast(room, { type: "permission-request", id, request });
+      }),
+  );
+  room.registry = new ToolRegistry([
+    ...ctx.registry.list(),
+    createSubagentTool({
+      store: ctx.store,
+      registry: ctx.registry,
+      config: ctx.config,
+      permission: room.permission,
+      runner: ctx.runner,
+    }),
+  ]);
+  ctx.rooms.set(sessionId, room);
+  return room;
+}
+
+async function roomRunPrompt(
+  ctx: Ctx,
+  room: Room,
+  text: string,
+  attachments?: Array<{ dataUrl: string; mediaType: string }>,
+): Promise<void> {
+  if (room.running) {
+    roomBroadcast(room, { type: "error", error: "a prompt is already running" });
+    return;
+  }
+  room.running = true;
+  room.controller = new AbortController();
+  const signal = room.controller.signal;
+  try {
+    const session = Session.resume({ ...ctx, registry: room.registry, permission: room.permission }, room.id);
+    for await (const event of session.prompt(text, { signal, attachments })) {
+      roomBroadcast(room, event);
+    }
+    if (signal.aborted) roomBroadcast(room, { type: "stopped" });
+  } catch (err) {
+    roomBroadcast(room, { type: "error", error: String(err) });
+  } finally {
+    room.running = false;
+    room.controller = null;
+  }
+}
+
+async function roomRunBackground(ctx: Ctx, room: Room, goal: string): Promise<void> {
+  if (room.running) {
+    roomBroadcast(room, { type: "error", error: "a prompt is already running" });
+    return;
+  }
+  room.running = true;
+  room.controller = new AbortController();
+  const signal = room.controller.signal;
+  room.permission.setAutoApprove(true);
+  try {
+    const session = Session.resume({ ...ctx, registry: room.registry, permission: room.permission }, room.id);
+    const verifyCommand = detectVerifyCommand(session.record.cwd);
+    roomBroadcast(room, { type: "background-start", verify: verifyCommand ?? null });
+    for await (const ae of runAutonomous({ session, goal, verifyCommand, signal })) {
+      if (ae.type === "session") roomBroadcast(room, ae.event);
+      else if (ae.type === "round") roomBroadcast(room, { type: "background-round", round: ae.round });
+      else if (ae.type === "verify")
+        roomBroadcast(room, { type: "background-verify", ok: ae.ok, output: ae.output.slice(-2000) });
+      else if (ae.type === "finished")
+        roomBroadcast(room, { type: "background-done", status: ae.status, rounds: ae.rounds });
+    }
+    if (signal.aborted) roomBroadcast(room, { type: "stopped" });
+  } catch (err) {
+    roomBroadcast(room, { type: "error", error: String(err) });
+  } finally {
+    room.permission.setAutoApprove(false);
+    room.running = false;
+    room.controller = null;
+  }
+}
+
 function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
   const url = new URL(req.url ?? "/", "http://localhost");
   const parts = url.pathname.split("/").filter(Boolean);
@@ -860,86 +1031,14 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
     return;
   }
 
-  const pending = new Map<string, (decision: PermissionDecision) => void>();
-  const permission = new PermissionManager(
-    ctx.config.permission,
-    (request) =>
-      new Promise<PermissionDecision>((resolve) => {
-        const id = randomUUID();
-        pending.set(id, resolve);
-        ws.send(JSON.stringify({ type: "permission-request", id, request }));
-      }),
-  );
-
-  const registry = new ToolRegistry([
-    ...ctx.registry.list(),
-    createSubagentTool({
-      store: ctx.store,
-      registry: ctx.registry,
-      config: ctx.config,
-      permission,
-      runner: ctx.runner,
-    }),
-  ]);
-
-  let running = false;
-  let controller: AbortController | null = null;
-
-  async function runPrompt(
-    text: string,
-    attachments?: Array<{ dataUrl: string; mediaType: string }>,
-  ): Promise<void> {
-    if (running) {
-      ws.send(JSON.stringify({ type: "error", error: "a prompt is already running" }));
-      return;
-    }
-    running = true;
-    controller = new AbortController();
-    const signal = controller.signal;
-    try {
-      const session = Session.resume({ ...ctx, registry, permission }, sessionId);
-      for await (const event of session.prompt(text, { signal, attachments })) {
-        ws.send(JSON.stringify(event));
-      }
-      if (signal.aborted) ws.send(JSON.stringify({ type: "stopped" }));
-    } catch (err) {
-      ws.send(JSON.stringify({ type: "error", error: String(err) }));
-    } finally {
-      running = false;
-      controller = null;
-    }
-  }
-
-  async function runBackground(goal: string): Promise<void> {
-    if (running) {
-      ws.send(JSON.stringify({ type: "error", error: "a prompt is already running" }));
-      return;
-    }
-    running = true;
-    controller = new AbortController();
-    const signal = controller.signal;
-    permission.setAutoApprove(true);
-    try {
-      const session = Session.resume({ ...ctx, registry, permission }, sessionId);
-      const verifyCommand = detectVerifyCommand(session.record.cwd);
-      ws.send(JSON.stringify({ type: "background-start", verify: verifyCommand ?? null }));
-      for await (const ae of runAutonomous({ session, goal, verifyCommand, signal })) {
-        if (ae.type === "session") ws.send(JSON.stringify(ae.event));
-        else if (ae.type === "round") ws.send(JSON.stringify({ type: "background-round", round: ae.round }));
-        else if (ae.type === "verify")
-          ws.send(JSON.stringify({ type: "background-verify", ok: ae.ok, output: ae.output.slice(-2000) }));
-        else if (ae.type === "finished")
-          ws.send(JSON.stringify({ type: "background-done", status: ae.status, rounds: ae.rounds }));
-      }
-      if (signal.aborted) ws.send(JSON.stringify({ type: "stopped" }));
-    } catch (err) {
-      ws.send(JSON.stringify({ type: "error", error: String(err) }));
-    } finally {
-      permission.setAutoApprove(false);
-      running = false;
-      controller = null;
-    }
-  }
+  const room = getRoom(ctx, sessionId);
+  const rawName = (url.searchParams.get("name") ?? "").trim().slice(0, 40);
+  const name = rawName || `Guest ${room.sockets.size + 1}`;
+  room.sockets.add(ws);
+  room.names.set(ws, name);
+  // Tell the joiner who they are + who's already here, then announce to everyone.
+  ws.send(JSON.stringify({ type: "room-welcome", you: name, participants: [...room.names.values()] }));
+  roomPresence(room);
 
   ws.on("message", (raw) => {
     let msg: {
@@ -957,23 +1056,38 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
       return;
     }
     if (msg.type === "prompt" && typeof msg.text === "string") {
-      void runPrompt(msg.text, Array.isArray(msg.images) ? msg.images : undefined);
+      // Echo the driver's prompt to everyone so the room sees who asked what.
+      roomBroadcast(room, { type: "room-prompt", from: name, text: msg.text });
+      void roomRunPrompt(ctx, room, msg.text, Array.isArray(msg.images) ? msg.images : undefined);
     } else if (msg.type === "background" && typeof msg.goal === "string") {
-      void runBackground(msg.goal);
+      roomBroadcast(room, { type: "room-prompt", from: name, text: msg.goal });
+      void roomRunBackground(ctx, room, msg.goal);
+    } else if (msg.type === "chat" && typeof msg.text === "string") {
+      roomBroadcast(room, { type: "room-chat", from: name, text: msg.text.slice(0, 4000) });
     } else if (msg.type === "stop") {
-      controller?.abort();
-      for (const [id, resolve] of pending) {
-        pending.delete(id);
+      room.controller?.abort();
+      for (const [id, resolve] of room.pending) {
+        room.pending.delete(id);
         resolve("deny");
       }
     } else if (msg.type === "permission-decision" && msg.id && msg.decision) {
-      const resolve = pending.get(msg.id);
+      const resolve = room.pending.get(msg.id);
       if (resolve) {
-        pending.delete(msg.id);
+        room.pending.delete(msg.id);
         resolve(msg.decision);
       }
     }
   });
 
-  ws.on("close", () => controller?.abort());
+  ws.on("close", () => {
+    room.sockets.delete(ws);
+    room.names.delete(ws);
+    if (room.sockets.size === 0) {
+      // Last participant left — abort any run and drop the room.
+      room.controller?.abort();
+      ctx.rooms.delete(sessionId);
+    } else {
+      roomPresence(room);
+    }
+  });
 }

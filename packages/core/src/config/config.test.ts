@@ -23,7 +23,7 @@ describe("loadConfig", () => {
 
   it("returns schema defaults when nothing is configured", () => {
     const config = loadConfig({ cwd, configDir, env: {} });
-    expect(config.model).toBe("anthropic/claude-sonnet-4-6");
+    expect(config.model).toBe("anthropic/claude-sonnet-5");
     expect(config.theme).toBe("default");
     expect(config.permission.bash).toBe("ask");
   });

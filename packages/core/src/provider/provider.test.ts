@@ -53,7 +53,7 @@ describe("resolveModel", () => {
   });
 
   it("throws a clear error when a cloud provider has no key", () => {
-    expect(() => resolveModel("anthropic/claude-sonnet-4-6", { config: baseConfig(), env: {} })).toThrow(
+    expect(() => resolveModel("anthropic/claude-sonnet-5", { config: baseConfig(), env: {} })).toThrow(
       /ANTHROPIC_API_KEY/,
     );
     expect(() => resolveModel("google/gemini-2.0-flash", { config: baseConfig(), env: {} })).toThrow(

@@ -1,0 +1,11 @@
+name = "termcoder-auth"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Public client IDs (safe here). The matching SECRETS are NOT stored in this
+# file — set them with `wrangler secret put` (see README.md):
+#   wrangler secret put GITHUB_CLIENT_SECRET
+#   wrangler secret put GOOGLE_CLIENT_SECRET
+[vars]
+GITHUB_CLIENT_ID = "Ov23liSR2sI4lUCrZNtb"
+GOOGLE_CLIENT_ID = "811964169804-05orndflh9nljq5pj2uvg08q52h2fdn2.apps.googleusercontent.com"

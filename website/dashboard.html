@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="stylesheet" href="style.css" />
+<title>TermCoder — dashboard</title>
+<meta name="description" content="Your TermCoder dashboard — models, synced sessions, recipes, MCP connectors, and study decks in one place." />
+</head>
+<body class="sys dash">
+
+<header class="sys-nav">
+  <div class="in-row">
+    <div class="mark-cell"><span class="brand-mark" aria-hidden="true"></span></div>
+    <div class="row">
+      <a class="wordmark" href="index.html">TERMCODER</a>
+      <nav class="links">
+        <a href="index.html">Home</a>
+        <a href="features.html">Features</a>
+        <a href="docs.html">Docs</a>
+      </nav>
+      <div class="acct">
+        <span class="acct-name">you@example.com</span>
+        <a class="acct-out" href="login.html" data-signout>Sign out</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="dash-wrap">
+  <aside class="dash-side">
+    <button class="dash-tab on" data-tab="overview">Overview</button>
+    <button class="dash-tab" data-tab="models">Models</button>
+    <button class="dash-tab" data-tab="sessions">Sessions</button>
+    <button class="dash-tab" data-tab="recipes">Recipes</button>
+    <button class="dash-tab" data-tab="connectors">Connectors</button>
+    <button class="dash-tab" data-tab="study">Study</button>
+    <button class="dash-tab" data-tab="settings">Settings</button>
+  </aside>
+
+  <section class="dash-main">
+
+    <div class="dash-panel on" data-panel="overview">
+      <div class="mono-eyebrow"><span class="slash">//</span> OVERVIEW</div>
+      <h2>Welcome back.</h2>
+      <p class="dash-sub">Everything you sync from the app and CLI, in one place. Nothing here is billed —
+        TermCoder runs with no API key and no account; this only mirrors your own data.</p>
+      <div class="stat-grid">
+        <div class="stat"><span class="stat-k">Default model</span><span class="stat-v">termcoder/auto</span></div>
+        <div class="stat"><span class="stat-k">Synced sessions</span><span class="stat-v">14</span></div>
+        <div class="stat"><span class="stat-k">Study streak</span><span class="stat-v">6 days</span></div>
+        <div class="stat"><span class="stat-k">Saved recipes</span><span class="stat-v">5</span></div>
+      </div>
+      <h3 class="dash-h3">Recent activity</h3>
+      <div class="dash-list">
+        <div class="dash-row"><span class="dash-c1">Refactor auth middleware</span><span class="dash-c2">termcoder/auto</span><span class="dash-c3">2h ago</span></div>
+        <div class="dash-row"><span class="dash-c1">Krebs cycle — review</span><span class="dash-c2">termexplorer/auto</span><span class="dash-c3">yesterday</span></div>
+        <div class="dash-row"><span class="dash-c1">Add rate limiting</span><span class="dash-c2">anthropic/claude-sonnet-5</span><span class="dash-c3">2 days ago</span></div>
+      </div>
+    </div>
+
+    <div class="dash-panel" data-panel="models">
+      <div class="mono-eyebrow"><span class="slash">//</span> MODELS</div>
+      <h2>Pick your engine.</h2>
+      <p class="dash-sub">Start on the keyless model with no setup, then connect a stronger one whenever you
+        want. TermCoder never downgrades your choice.</p>
+      <div class="dash-list">
+        <div class="dash-row"><span class="dash-c1">termcoder/auto</span><span class="dash-c2">routes to your best available</span><span class="badge-2 ok">ready</span></div>
+        <div class="dash-row"><span class="dash-c1">termexplorer/auto</span><span class="dash-c2">study &amp; schoolwork tutor</span><span class="badge-2 ok">ready</span></div>
+        <div class="dash-row"><span class="dash-c1">termcoderfree/auto</span><span class="dash-c2">keyless — no API key needed</span><span class="badge-2 ok">ready</span></div>
+        <div class="dash-row"><span class="dash-c1">anthropic/claude-sonnet-5</span><span class="dash-c2">complex tasks</span><span class="badge-2">needs key</span></div>
+        <div class="dash-row"><span class="dash-c1">google/gemini-2.5-pro</span><span class="dash-c2">free tier available</span><span class="badge-2">needs key</span></div>
+        <div class="dash-row"><span class="dash-c1">ollama/llama3.1</span><span class="dash-c2">local · unlimited · private</span><span class="badge-2 local">local</span></div>
+      </div>
+    </div>
+
+    <div class="dash-panel" data-panel="sessions">
+      <div class="mono-eyebrow"><span class="slash">//</span> SESSIONS</div>
+      <h2>Your work, synced.</h2>
+      <p class="dash-sub">Sessions you sync via GitHub show up here so you can pick up on any machine.
+        Open one to resume it in the app.</p>
+      <div class="dash-list">
+        <div class="dash-row"><span class="dash-c1">Refactor auth middleware</span><span class="dash-c2">termcoder/auto · 42 turns</span><a class="dash-open" href="download.html">Open</a></div>
+        <div class="dash-row"><span class="dash-c1">Payment webhook debugging</span><span class="dash-c2">anthropic/claude-sonnet-5 · 18 turns</span><a class="dash-open" href="download.html">Open</a></div>
+        <div class="dash-row"><span class="dash-c1">Krebs cycle — review</span><span class="dash-c2">termexplorer/auto · 9 cards</span><a class="dash-open" href="download.html">Open</a></div>
+        <div class="dash-row"><span class="dash-c1">Migrate build to esbuild</span><span class="dash-c2">termcoder/auto · 27 turns</span><a class="dash-open" href="download.html">Open</a></div>
+      </div>
+    </div>
+
+    <div class="dash-panel" data-panel="recipes">
+      <div class="mono-eyebrow"><span class="slash">//</span> RECIPES</div>
+      <h2>Saved workflows.</h2>
+      <p class="dash-sub">Named, shareable multi-step tasks — dev automations that run in order, or study
+        lessons taught one step at a time. Kept in your project and synced.</p>
+      <div class="dash-list">
+        <div class="dash-row"><span class="dash-c1">open-pr</span><span class="dash-c2">branch, push, open a PR</span><span class="badge-2 tag">dev · 3 steps</span></div>
+        <div class="dash-row"><span class="dash-c1">test-and-fix</span><span class="dash-c2">run tests, fix failures, re-run</span><span class="badge-2 tag">dev · 3 steps</span></div>
+        <div class="dash-row"><span class="dash-c1">release</span><span class="dash-c2">bump, tag, publish</span><span class="badge-2 tag">dev · 3 steps</span></div>
+        <div class="dash-row"><span class="dash-c1">photosynthesis</span><span class="dash-c2">guided lesson, one step at a time</span><span class="badge-2 tag">study · 5 steps</span></div>
+      </div>
+    </div>
+
+    <div class="dash-panel" data-panel="connectors">
+      <div class="mono-eyebrow"><span class="slash">//</span> CONNECTORS</div>
+      <h2>One-click MCP.</h2>
+      <p class="dash-sub">Add a Model Context Protocol server without memorizing commands. Pick a connector,
+        fill in what it needs, and its tools appear to the agent.</p>
+      <div class="dash-list">
+        <div class="dash-row"><span class="dash-c1">GitHub</span><span class="dash-c2">issues, PRs, code · hosted</span><span class="badge-2 ok">added</span></div>
+        <div class="dash-row"><span class="dash-c1">Filesystem</span><span class="dash-c2">read &amp; write a chosen folder</span><a class="dash-open" href="docs.html">Add</a></div>
+        <div class="dash-row"><span class="dash-c1">Web fetch</span><span class="dash-c2">fetch a URL as clean markdown</span><a class="dash-open" href="docs.html">Add</a></div>
+        <div class="dash-row"><span class="dash-c1">PostgreSQL</span><span class="dash-c2">query a database, read-only</span><a class="dash-open" href="docs.html">Add</a></div>
+        <div class="dash-row"><span class="dash-c1">Brave Search</span><span class="dash-c2">web &amp; local search</span><a class="dash-open" href="docs.html">Add</a></div>
+      </div>
+    </div>
+
+    <div class="dash-panel" data-panel="study">
+      <div class="mono-eyebrow"><span class="slash">//</span> STUDY</div>
+      <h2>Decks &amp; streak.</h2>
+      <p class="dash-sub">TermExplorer turns the same engine into a tutor — spaced-repetition flashcards that
+        resurface at the right time. Your decks and streak sync here.</p>
+      <div class="stat-grid">
+        <div class="stat"><span class="stat-k">Current streak</span><span class="stat-v">6 days</span></div>
+        <div class="stat"><span class="stat-k">Due today</span><span class="stat-v">12 cards</span></div>
+        <div class="stat"><span class="stat-k">Decks</span><span class="stat-v">4</span></div>
+      </div>
+      <div class="dash-list">
+        <div class="dash-row"><span class="dash-c1">Cell biology</span><span class="dash-c2">28 cards</span><span class="badge-2">5 due</span></div>
+        <div class="dash-row"><span class="dash-c1">World history</span><span class="dash-c2">41 cards</span><span class="badge-2">4 due</span></div>
+        <div class="dash-row"><span class="dash-c1">Spanish verbs</span><span class="dash-c2">60 cards</span><span class="badge-2">3 due</span></div>
+      </div>
+    </div>
+
+    <div class="dash-panel" data-panel="settings">
+      <div class="mono-eyebrow"><span class="slash">//</span> SETTINGS</div>
+      <h2>Your preferences.</h2>
+      <p class="dash-sub">These travel with your account. Everything is optional — sensible defaults are
+        already set.</p>
+      <div class="dash-list">
+        <div class="dash-row"><span class="dash-c1">Display name</span><span class="dash-c2">shown in live rooms</span><span class="set-val">you</span></div>
+        <div class="dash-row"><span class="dash-c1">Theme</span><span class="dash-c2">app color theme</span><span class="set-val">ember</span></div>
+        <div class="dash-row"><span class="dash-c1">Default model</span><span class="dash-c2">used for new sessions</span><span class="set-val">termcoder/auto</span></div>
+        <div class="dash-row"><span class="dash-c1">Sync via GitHub</span><span class="dash-c2">mirror sessions, decks, recipes</span><span class="badge-2 ok">on</span></div>
+      </div>
+      <div class="row-2">
+        <a class="btn-2" href="docs.html">Read the docs</a>
+        <a class="btn-2" href="login.html" data-signout>Sign out</a>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<script>
+  (function () {
+    var tabs = document.querySelectorAll(".dash-tab");
+    var panels = document.querySelectorAll(".dash-panel");
+    function show(name) {
+      tabs.forEach(function (t) { t.classList.toggle("on", t.dataset.tab === name); });
+      panels.forEach(function (p) { p.classList.toggle("on", p.dataset.panel === name); });
+    }
+    tabs.forEach(function (t) {
+      t.addEventListener("click", function () { show(t.dataset.tab); });
+    });
+  })();
+</script>
+<script src="config.js"></script>
+<script src="auth.js"></script>
+
+</body>
+</html>

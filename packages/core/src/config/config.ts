@@ -24,6 +24,7 @@ export const McpServerSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("http"),
     url: z.string().url(),
+    headers: z.record(z.string(), z.string()).optional(),
     enabled: z.boolean().default(true),
   }),
 ]);
@@ -67,7 +68,7 @@ export const FormatterSchema = z.object({
 export type FormatterConfig = z.infer<typeof FormatterSchema>;
 
 export const ConfigSchema = z.object({
-  model: z.string().default("anthropic/claude-sonnet-4-6"),
+  model: z.string().default("anthropic/claude-sonnet-5"),
   theme: z.string().default("default"),
   keybinds: z.record(z.string(), z.string()).default({}),
   permission: z

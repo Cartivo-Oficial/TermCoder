@@ -38,22 +38,25 @@ contextBridge.exposeInMainWorld("api", {
     available: (): Promise<{ ok: boolean; error?: string }> => ipcRenderer.invoke("pty:available"),
     tools: (): Promise<Array<{ id: string; label: string; command: string }>> =>
       ipcRenderer.invoke("pty:tools"),
-    start: (options: {
-      cwd: string | null;
-      cols: number;
-      rows: number;
-    }): Promise<{ ok: true; pid: number } | { ok: false; error: string }> =>
-      ipcRenderer.invoke("pty:start", options),
-    write: (data: string) => ipcRenderer.send("pty:input", data),
-    resize: (cols: number, rows: number) => ipcRenderer.send("pty:resize", cols, rows),
-    kill: () => ipcRenderer.send("pty:kill"),
-    onData: (cb: (data: string) => void) => {
-      const handler = (_e: unknown, data: string) => cb(data);
+    start: (
+      id: number,
+      options: { cwd: string | null; cols: number; rows: number },
+    ): Promise<{ ok: true; pid: number } | { ok: false; error: string }> =>
+      ipcRenderer.invoke("pty:start", { id, ...options }),
+    write: (id: number, data: string) => ipcRenderer.send("pty:input", { id, data }),
+    resize: (id: number, cols: number, rows: number) => ipcRenderer.send("pty:resize", { id, cols, rows }),
+    kill: (id: number) => ipcRenderer.send("pty:kill", { id }),
+    onData: (id: number, cb: (data: string) => void) => {
+      const handler = (_e: unknown, payload: { id: number; data: string }) => {
+        if (payload.id === id) cb(payload.data);
+      };
       ipcRenderer.on("pty:data", handler);
       return () => ipcRenderer.off("pty:data", handler);
     },
-    onExit: (cb: (code: number) => void) => {
-      const handler = (_e: unknown, code: number) => cb(code);
+    onExit: (id: number, cb: (code: number) => void) => {
+      const handler = (_e: unknown, payload: { id: number; code: number }) => {
+        if (payload.id === id) cb(payload.code);
+      };
       ipcRenderer.on("pty:exit", handler);
       return () => ipcRenderer.off("pty:exit", handler);
     },

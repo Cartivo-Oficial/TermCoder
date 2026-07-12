@@ -42,9 +42,9 @@ describe("pickAutoModel tiering", () => {
   });
 
   it("honours an explicit route as [fast, strong]", () => {
-    const cfg = ConfigSchema.parse({ termcoder: { route: ["ollama/llama3.1", "anthropic/claude-sonnet-4-6"] } });
+    const cfg = ConfigSchema.parse({ termcoder: { route: ["ollama/llama3.1", "anthropic/claude-sonnet-5"] } });
     expect(pickAutoModel(cfg, {}, "simple")).toBe("ollama/llama3.1");
-    expect(pickAutoModel(cfg, {}, "complex")).toBe("anthropic/claude-sonnet-4-6");
+    expect(pickAutoModel(cfg, {}, "complex")).toBe("anthropic/claude-sonnet-5");
   });
 
   it("resolves the free keyless model (and auto → free) without any key", () => {

@@ -7,7 +7,7 @@ import { formatFile } from "../format/formatters";
 import type { Config } from "../config/config";
 import type { PermissionManager } from "../permission/permission";
 import { classifyTaskComplexity, pickAutoModel, resolveModel } from "../provider/provider";
-import { firstKeyedModel, nextModelOnError, streamWithIdleTimeout, MODEL_RETRIES, type RetryState } from "../provider/reliability";
+import { firstKeyedModel, nextModelOnError, streamWithIdleTimeout, MODEL_RETRIES, KEYLESS_RETRIES, isTransientError, backoffMs, abortableDelay, type RetryState } from "../provider/reliability";
 import { markProvider } from "../provider/health";
 import { projectSummary } from "../knowledge/repomap";
 import { buildRetrievalIndex, retrievalContext, type RetrievalIndex } from "../knowledge/retrieval";
@@ -409,11 +409,13 @@ export class Session {
     try {
       for (let step = 0; step < maxSteps; step++) {
         if (signal?.aborted) return;
+        const keyedFallback = firstKeyedModel(this.deps.config, this.deps.env ?? process.env);
         let attempt: RetryState = {
           model: modelToUse,
-          retriesLeft: MODEL_RETRIES,
-          fallback: firstKeyedModel(this.deps.config, this.deps.env ?? process.env),
+          retriesLeft: keyedFallback ? MODEL_RETRIES : KEYLESS_RETRIES,
+          fallback: keyedFallback,
         };
+        let sameModelAttempts = 0;
         let result!: ModelStreamResult;
         let stepFailed = false;
 
@@ -455,16 +457,41 @@ export class Session {
           }
           markProvider(healthIdOf(modelToUse), false, streamError);
 
-          const next = emittedText ? null : nextModelOnError(attempt);
+          // Text already streamed to the user — a retry would duplicate output.
+          if (emittedText) {
+            yield { type: "error", error: streamError };
+            stepFailed = true;
+            break;
+          }
+
+          const transient = isTransientError(streamError);
+          let next = nextModelOnError(attempt);
+          // Don't burn same-model retries on a non-transient failure (auth, 400,
+          // malformed request) — jump straight to a fallback model or give up.
+          if (next && next.model === attempt.model && !transient) {
+            next =
+              attempt.fallback && attempt.fallback !== attempt.model
+                ? { model: attempt.fallback, retriesLeft: 0 }
+                : null;
+          }
           if (!next) {
             yield { type: "error", error: streamError };
             stepFailed = true;
             break;
           }
+
+          if (next.model === modelToUse) {
+            // Same-model retry on a transient error (rate limit / overload):
+            // back off with escalating delay so the limit can clear.
+            await abortableDelay(backoffMs(sameModelAttempts), signal);
+            if (signal?.aborted) return;
+            sameModelAttempts++;
+          }
           attempt = next;
           if (attempt.model !== modelToUse) {
             activeRunner = this.deps.runner ?? this.buildRunner(agent, attempt.model);
             modelToUse = attempt.model;
+            sameModelAttempts = 0;
             yield { type: "text-delta", text: `\n\n⚠️ Switching to ${attempt.model}…\n\n` };
           }
         }

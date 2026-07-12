@@ -77,7 +77,10 @@ function makeTransport(cfg: McpServerConfig) {
       env: cfg.env,
     });
   }
-  return new StreamableHTTPClientTransport(new URL(cfg.url));
+  return new StreamableHTTPClientTransport(
+    new URL(cfg.url),
+    cfg.headers ? { requestInit: { headers: cfg.headers } } : undefined,
+  );
 }
 
 export async function connectMcpServers(config: Config): Promise<McpConnectResult> {

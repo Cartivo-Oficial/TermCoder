@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { ConfigSchema } from "../config/config";
 import { clearProviderHealth, markProvider } from "./health";
-import { firstKeyedModel, nextModelOnError, streamWithIdleTimeout } from "./reliability";
+import { firstKeyedModel, nextModelOnError, streamWithIdleTimeout, isTransientError, backoffMs, abortableDelay } from "./reliability";
 
 afterEach(() => clearProviderHealth());
 
@@ -34,6 +34,61 @@ describe("nextModelOnError", () => {
   it("gives up when no retries and no distinct fallback", () => {
     expect(nextModelOnError({ model: "a", retriesLeft: 0 })).toBeNull();
     expect(nextModelOnError({ model: "a", retriesLeft: 0, fallback: "a" })).toBeNull();
+  });
+});
+
+describe("isTransientError", () => {
+  it("flags rate limits, overload, timeouts, and network faults as transient", () => {
+    for (const m of [
+      "429 Too Many Requests",
+      "rate limit exceeded",
+      "The model is overloaded",
+      "at capacity, try again later",
+      "request timed out",
+      "503 Service Unavailable",
+      "fetch failed",
+      "ECONNRESET",
+      "socket hang up",
+    ]) {
+      expect(isTransientError(m)).toBe(true);
+    }
+  });
+  it("does not flag genuine client errors as transient", () => {
+    for (const m of [
+      "401 invalid api key",
+      "400 malformed request",
+      "no API key configured for provider \"anthropic\"",
+      "model not found",
+    ]) {
+      expect(isTransientError(m)).toBe(false);
+    }
+  });
+});
+
+describe("backoffMs", () => {
+  it("escalates and caps at 6s", () => {
+    expect(backoffMs(0)).toBe(700);
+    expect(backoffMs(1)).toBe(1400);
+    expect(backoffMs(2)).toBe(2800);
+    expect(backoffMs(10)).toBe(6000);
+    expect(backoffMs(-1)).toBe(700);
+  });
+});
+
+describe("abortableDelay", () => {
+  it("resolves immediately when already aborted", async () => {
+    const ac = new AbortController();
+    ac.abort();
+    const start = Date.now();
+    await abortableDelay(5000, ac.signal);
+    expect(Date.now() - start).toBeLessThan(200);
+  });
+  it("resolves early when aborted mid-wait", async () => {
+    const ac = new AbortController();
+    const start = Date.now();
+    setTimeout(() => ac.abort(), 20);
+    await abortableDelay(5000, ac.signal);
+    expect(Date.now() - start).toBeLessThan(500);
   });
 });
 

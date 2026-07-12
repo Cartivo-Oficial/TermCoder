@@ -27,6 +27,16 @@ export {
 } from "./mcp/mcp";
 
 export {
+  listConnectors,
+  getConnector,
+  connectorToServerConfig,
+  missingRequiredInputs,
+  type McpConnector,
+  type ConnectorInput,
+  type ConnectorInputKind,
+} from "./mcp/catalog";
+
+export {
   connectLspServers,
   LspClient,
   LspManager,
@@ -78,7 +88,7 @@ export {
 
 export { generateFlashcards, parseCards } from "./study/generate";
 
-export { firstKeyedModel, nextModelOnError, MODEL_RETRIES, type RetryState } from "./provider/reliability";
+export { firstKeyedModel, nextModelOnError, MODEL_RETRIES, KEYLESS_RETRIES, isTransientError, backoffMs, abortableDelay, type RetryState } from "./provider/reliability";
 
 export { PROVIDERS, providerInfo, type ProviderInfo } from "./provider/registry";
 
@@ -104,6 +114,21 @@ export {
   type MemoryType,
   type DiscoverMemoriesOptions,
 } from "./memory/memory";
+
+export {
+  discoverRecipes,
+  getRecipe,
+  saveRecipe,
+  deleteRecipe,
+  recipeIndex,
+  composeRecipeRun,
+  parseSteps,
+  slugifyRecipeName,
+  type RecipeEntry,
+  type RecipeScope,
+  type RecipeAudience,
+  type DiscoverRecipesOptions,
+} from "./recipe/recipe";
 
 export {
   runAutonomous,

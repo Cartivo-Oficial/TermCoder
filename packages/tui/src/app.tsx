@@ -59,6 +59,14 @@ import {
   discoverMemories,
   deleteMemory,
   slugifyMemoryName,
+  discoverRecipes,
+  getRecipe,
+  recipeIndex,
+  composeRecipeRun,
+  listConnectors,
+  getConnector,
+  connectorToServerConfig,
+  missingRequiredInputs,
   beginClaudeLogin,
   completeClaudeLogin,
   saveClaudeOAuth,
@@ -1292,6 +1300,103 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
       case "quit":
         exit();
         break;
+      case "connectors": {
+        const lines = listConnectors().map((c) => {
+          const needs = (c.inputs ?? []).filter((i) => i.required).map((i) => i.key);
+          const req = needs.length ? `  · needs ${needs.join(", ")}` : "";
+          return `  ${c.id.padEnd(20)} ${c.name} — ${c.runtime ?? ""}${req}`;
+        });
+        pushHistory({
+          kind: "notice",
+          text: ["One-click MCP connectors. Add one with  /mcp add <id> [key=value …]", "", ...lines].join("\n"),
+        });
+        break;
+      }
+      case "mcp": {
+        const sub = rest[0];
+        if (!sub) {
+          const entries = Object.entries(config.mcp ?? {});
+          if (entries.length === 0) {
+            pushHistory({
+              kind: "notice",
+              text: "No MCP servers configured. Browse ready-made ones with /connectors, then /mcp add <id>.",
+            });
+            break;
+          }
+          const lines = entries.map(([name, s]) => {
+            const where = s.type === "http" ? s.url : `${s.command} ${(s.args ?? []).join(" ")}`.trim();
+            return `  ${s.enabled === false ? "○" : "●"} ${name.padEnd(16)} ${where}`;
+          });
+          pushHistory({
+            kind: "notice",
+            text: ["Configured MCP servers (● on / ○ off) — they connect on next start:", ...lines].join("\n"),
+          });
+          break;
+        }
+        if (sub === "add") {
+          const connector = rest[1] ? getConnector(rest[1]) : undefined;
+          if (!connector) {
+            pushHistory({ kind: "notice", text: `Unknown connector "${rest[1] ?? ""}". /connectors to list them.` });
+            break;
+          }
+          const values: Record<string, string> = {};
+          for (const pair of rest.slice(2)) {
+            const eq = pair.indexOf("=");
+            if (eq > 0) values[pair.slice(0, eq)] = pair.slice(eq + 1);
+          }
+          const missing = missingRequiredInputs(connector, values);
+          if (missing.length) {
+            const hint = missing.map((i) => `${i.key}=<${i.label}>`).join(" ");
+            pushHistory({
+              kind: "notice",
+              text: `"${connector.name}" needs: ${hint}\nExample:  /mcp add ${connector.id} ${hint}`,
+            });
+            break;
+          }
+          const name = connector.id;
+          const serverCfg = connectorToServerConfig(connector, values);
+          saveConfig({ mcp: { [name]: serverCfg } });
+          config.mcp = { ...config.mcp, [name]: serverCfg };
+          forceRender((n) => n + 1);
+          pushHistory({
+            kind: "notice",
+            text: `Added MCP server "${name}" (${connector.name}). Restart termcoder to connect it — its tools then appear to the agent.`,
+          });
+          break;
+        }
+        pushHistory({ kind: "notice", text: "Usage: /mcp (list) · /mcp add <id> [key=value …] · /connectors (browse)" });
+        break;
+      }
+      case "recipes": {
+        const idx = recipeIndex(discoverRecipes({ cwd }));
+        pushHistory({
+          kind: "notice",
+          text: idx
+            ? `Saved recipes — run one with /recipe <name>:\n${idx}`
+            : "No recipes yet. Ask the agent to save one with the recipe tool, or add a markdown file under .termcoder/recipes/.",
+        });
+        break;
+      }
+      case "recipe": {
+        if (!arg) {
+          const idx = recipeIndex(discoverRecipes({ cwd }));
+          pushHistory({
+            kind: "notice",
+            text: idx ? `Usage: /recipe <name>\n\n${idx}` : "No recipes yet. Ask the agent to save one with the recipe tool.",
+          });
+          break;
+        }
+        const r = getRecipe(arg, { cwd });
+        if (!r) {
+          pushHistory({ kind: "notice", text: `No recipe named "${arg}". /recipes to list.` });
+          break;
+        }
+        const composed = composeRecipeRun(r);
+        lastPrompt.current = composed;
+        pushHistory({ kind: "user", text: `/recipe ${r.name}`, time: now() });
+        void runPrompt(composed);
+        break;
+      }
       default:
         pushHistory({ kind: "notice", text: `Unknown command: /${cmd} (try /help)` });
     }
