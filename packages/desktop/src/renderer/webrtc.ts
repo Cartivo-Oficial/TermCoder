@@ -1,8 +1,8 @@
-// Mesh WebRTC for live rooms — voice + screen share, peer-to-peer. The room
-// WebSocket only relays signaling (offer/answer/ICE); media never touches a
+// Mesh WebRTC for live rooms — voice + camera + screen share, peer-to-peer. The
+// room WebSocket only relays signaling (offer/answer/ICE); media never touches a
 // server. Free Google STUN for NAT discovery; no TURN (LAN/tunnel works P2P).
-// Uses the MDN "perfect negotiation" pattern so adding/removing the screen
-// track renegotiates cleanly without glare (polite peer = higher id).
+// MDN "perfect negotiation" (polite = higher id) so adding/removing camera or
+// screen tracks renegotiates cleanly without glare.
 const ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
 
 interface Signal {
@@ -21,8 +21,9 @@ export interface CallPeerView {
   name: string;
   connected: boolean;
 }
-export interface RemoteScreen {
-  id: string;
+export interface RemoteVideo {
+  key: string;
+  peerId: string;
   name: string;
   stream: MediaStream;
 }
@@ -30,13 +31,15 @@ export interface RemoteScreen {
 export class CallManager {
   private conns = new Map<string, PeerConn>();
   private audioEls = new Map<string, HTMLAudioElement>();
-  private remoteScreenStreams = new Map<string, MediaStream>();
+  private remoteVids = new Map<string, { peerId: string; stream: MediaStream }>(); // key: stream id
   private names = new Map<string, string>();
-  private local: MediaStream | null = null;
+  private mic: MediaStream | null = null;
+  private camera: MediaStream | null = null;
   private screen: MediaStream | null = null;
   private myId = "";
   inCall = false;
   muted = false;
+  cameraOn = false;
   sharing = false;
   error: string | null = null;
 
@@ -62,7 +65,7 @@ export class CallManager {
   async joinVoice(): Promise<void> {
     if (this.inCall) return;
     try {
-      this.local = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      this.mic = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     } catch (e) {
       this.error = "Microphone permission denied.";
       this.onChange();
@@ -81,8 +84,9 @@ export class CallManager {
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     const conn: PeerConn = { pc, makingOffer: false };
     this.conns.set(peerId, conn);
-    if (this.local) for (const t of this.local.getTracks()) pc.addTrack(t, this.local);
-    if (this.screen) for (const t of this.screen.getTracks()) pc.addTrack(t, this.screen);
+    for (const media of [this.mic, this.camera, this.screen]) {
+      if (media) for (const t of media.getTracks()) pc.addTrack(t, media);
+    }
     pc.onicecandidate = (e) => {
       if (e.candidate) this.send(peerId, { kind: "ice", candidate: e.candidate.toJSON() });
     };
@@ -93,7 +97,7 @@ export class CallManager {
         await pc.setLocalDescription();
         this.send(peerId, { kind: "offer", sdp: pc.localDescription });
       } catch (err) {
-        /* transient; will retry on next change */
+        /* transient; retries on next change */
       } finally {
         conn.makingOffer = false;
       }
@@ -110,13 +114,13 @@ export class CallManager {
     if (!from || !data) return;
     const conn = this.ensure(from);
     const pc = conn.pc;
-    const polite = this.myId > from; // higher id yields on collisions
+    const polite = this.myId > from;
     try {
       if (data.kind === "offer" && data.sdp) {
         const collision = conn.makingOffer || pc.signalingState !== "stable";
-        if (collision && !polite) return; // impolite peer ignores the offer
-        await pc.setRemoteDescription(data.sdp); // implicit rollback if colliding+polite
-        await pc.setLocalDescription(); // creates the answer
+        if (collision && !polite) return;
+        await pc.setRemoteDescription(data.sdp);
+        await pc.setLocalDescription();
         this.send(from, { kind: "answer", sdp: pc.localDescription });
       } else if (data.kind === "answer" && data.sdp) {
         if (pc.signalingState === "have-local-offer") await pc.setRemoteDescription(data.sdp);
@@ -141,18 +145,44 @@ export class CallManager {
       }
       if (stream) el.srcObject = stream;
     } else if (e.track.kind === "video" && stream) {
-      this.remoteScreenStreams.set(peerId, stream);
-      e.track.addEventListener("ended", () => {
-        this.remoteScreenStreams.delete(peerId);
+      this.remoteVids.set(stream.id, { peerId, stream });
+      const cleanup = () => {
+        if (!stream.getVideoTracks().some((t) => t.readyState === "live")) {
+          this.remoteVids.delete(stream.id);
+        }
         this.onChange();
-      });
+      };
+      e.track.addEventListener("ended", cleanup);
+      stream.addEventListener("removetrack", cleanup);
     }
     this.onChange();
   }
 
   toggleMute(): void {
     this.muted = !this.muted;
-    if (this.local) for (const t of this.local.getAudioTracks()) t.enabled = !this.muted;
+    if (this.mic) for (const t of this.mic.getAudioTracks()) t.enabled = !this.muted;
+    this.onChange();
+  }
+
+  async toggleCamera(): Promise<void> {
+    if (!this.inCall) return;
+    if (this.cameraOn) {
+      this.removeLocalVideo(this.camera);
+      if (this.camera) for (const t of this.camera.getTracks()) t.stop();
+      this.camera = null;
+      this.cameraOn = false;
+    } else {
+      try {
+        this.camera = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      } catch (e) {
+        this.error = "Camera permission denied.";
+        this.onChange();
+        return;
+      }
+      this.error = null;
+      this.cameraOn = true;
+      this.addLocalVideo(this.camera);
+    }
     this.onChange();
   }
 
@@ -168,18 +198,34 @@ export class CallManager {
     this.error = null;
     this.sharing = true;
     const track = this.screen.getVideoTracks()[0];
-    if (track) track.addEventListener("ended", () => this.stopShare()); // OS "Stop sharing"
-    for (const [, conn] of this.conns) {
-      if (this.screen) for (const t of this.screen.getTracks()) conn.pc.addTrack(t, this.screen);
-    }
+    if (track) track.addEventListener("ended", () => this.stopShare());
+    this.addLocalVideo(this.screen);
     this.onChange();
   }
 
   stopShare(): void {
     if (!this.sharing) return;
+    this.removeLocalVideo(this.screen);
+    if (this.screen) for (const t of this.screen.getTracks()) t.stop();
+    this.screen = null;
+    this.sharing = false;
+    this.onChange();
+  }
+
+  // Add a local media's tracks to every peer (triggers renegotiation per pc).
+  private addLocalVideo(media: MediaStream | null): void {
+    if (!media) return;
+    for (const [, conn] of this.conns) {
+      for (const t of media.getTracks()) conn.pc.addTrack(t, media);
+    }
+  }
+  // Remove exactly the senders whose track belongs to this media, nothing else.
+  private removeLocalVideo(media: MediaStream | null): void {
+    if (!media) return;
+    const tracks = media.getTracks();
     for (const [, conn] of this.conns) {
       for (const sender of conn.pc.getSenders()) {
-        if (sender.track && sender.track.kind === "video") {
+        if (sender.track && tracks.includes(sender.track)) {
           try {
             conn.pc.removeTrack(sender);
           } catch {
@@ -187,10 +233,6 @@ export class CallManager {
         }
       }
     }
-    if (this.screen) for (const t of this.screen.getTracks()) t.stop();
-    this.screen = null;
-    this.sharing = false;
-    this.onChange();
   }
 
   onPeerLeft(peerId: string): void {
@@ -212,7 +254,7 @@ export class CallManager {
       el.remove();
       this.audioEls.delete(peerId);
     }
-    this.remoteScreenStreams.delete(peerId);
+    for (const [key, v] of this.remoteVids) if (v.peerId === peerId) this.remoteVids.delete(key);
     this.onChange();
   }
 
@@ -229,17 +271,16 @@ export class CallManager {
       el.remove();
     }
     this.audioEls.clear();
-    this.remoteScreenStreams.clear();
-    if (this.local) {
-      for (const t of this.local.getTracks()) t.stop();
-      this.local = null;
+    this.remoteVids.clear();
+    for (const media of [this.mic, this.camera, this.screen]) {
+      if (media) for (const t of media.getTracks()) t.stop();
     }
-    if (this.screen) {
-      for (const t of this.screen.getTracks()) t.stop();
-      this.screen = null;
-    }
+    this.mic = null;
+    this.camera = null;
+    this.screen = null;
     this.inCall = false;
     this.muted = false;
+    this.cameraOn = false;
     this.sharing = false;
     this.onChange();
   }
@@ -253,10 +294,15 @@ export class CallManager {
     return out;
   }
 
-  remoteScreens(): RemoteScreen[] {
-    const out: RemoteScreen[] = [];
-    for (const [id, stream] of this.remoteScreenStreams) {
-      out.push({ id, name: this.names.get(id) ?? "", stream });
+  // Local self-view: whichever of camera / screen you are sending.
+  localVideo(): MediaStream | null {
+    return this.camera ?? this.screen ?? null;
+  }
+
+  remoteVideos(): RemoteVideo[] {
+    const out: RemoteVideo[] = [];
+    for (const [key, v] of this.remoteVids) {
+      out.push({ key, peerId: v.peerId, name: this.names.get(v.peerId) ?? "", stream: v.stream });
     }
     return out;
   }

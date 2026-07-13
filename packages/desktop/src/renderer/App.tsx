@@ -2027,13 +2027,16 @@ export function App() {
           call={{
             inCall: callRef.current?.inCall ?? false,
             muted: callRef.current?.muted ?? false,
+            cameraOn: callRef.current?.cameraOn ?? false,
             sharing: callRef.current?.sharing ?? false,
             error: callRef.current?.error ?? null,
             peers: callRef.current?.callPeers() ?? [],
-            screens: callRef.current?.remoteScreens() ?? [],
+            videos: callRef.current?.remoteVideos() ?? [],
+            localVideo: callRef.current?.localVideo() ?? null,
             onJoin: () => void call().joinVoice(),
             onLeave: () => call().leave(),
             onToggleMute: () => call().toggleMute(),
+            onToggleCamera: () => void call().toggleCamera(),
             onShareScreen: () => void call().shareScreen(),
             onStopShare: () => call().stopShare(),
           }}

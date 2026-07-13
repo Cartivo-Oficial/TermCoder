@@ -10,13 +10,16 @@ interface RoomMessage {
 interface CallState {
   inCall: boolean;
   muted: boolean;
+  cameraOn: boolean;
   sharing: boolean;
   error: string | null;
   peers: Array<{ id: string; name: string; connected: boolean }>;
-  screens: Array<{ id: string; name: string; stream: MediaStream }>;
+  videos: Array<{ key: string; peerId: string; name: string; stream: MediaStream }>;
+  localVideo: MediaStream | null;
   onJoin: () => void;
   onLeave: () => void;
   onToggleMute: () => void;
+  onToggleCamera: () => void;
   onShareScreen: () => void;
   onStopShare: () => void;
 }
@@ -122,6 +125,9 @@ export function RoomPanel({ port, myName, onChangeName, participants, messages, 
               <button className={`btn-2 ${call.muted ? "" : "go"}`} onClick={call.onToggleMute}>
                 {call.muted ? t("room.unmute") : t("room.mute")}
               </button>
+              <button className={`btn-2 ${call.cameraOn ? "sharing" : ""}`} onClick={call.onToggleCamera}>
+                {call.cameraOn ? t("room.cameraOff") : t("room.cameraOn")}
+              </button>
               <button
                 className={`btn-2 ${call.sharing ? "sharing" : ""}`}
                 onClick={call.sharing ? call.onStopShare : call.onShareScreen}
@@ -141,19 +147,32 @@ export function RoomPanel({ port, myName, onChangeName, participants, messages, 
                 ))
               )}
             </div>
-            {call.screens.length ? (
+            {call.localVideo || call.videos.length ? (
               <div className="room-screens">
-                {call.screens.map((s) => (
-                  <div className="room-screen" key={s.id}>
+                {call.localVideo ? (
+                  <div className="room-screen" key="self">
                     <video
                       autoPlay
                       playsInline
                       muted
                       ref={(el) => {
-                        if (el && el.srcObject !== s.stream) el.srcObject = s.stream;
+                        if (el && el.srcObject !== call.localVideo) el.srcObject = call.localVideo;
                       }}
                     />
-                    <span className="room-screen-name">{s.name}</span>
+                    <span className="room-screen-name">{t("room.me")}</span>
+                  </div>
+                ) : null}
+                {call.videos.map((v) => (
+                  <div className="room-screen" key={v.key}>
+                    <video
+                      autoPlay
+                      playsInline
+                      muted
+                      ref={(el) => {
+                        if (el && el.srcObject !== v.stream) el.srcObject = v.stream;
+                      }}
+                    />
+                    <span className="room-screen-name">{v.name}</span>
                   </div>
                 ))}
               </div>
