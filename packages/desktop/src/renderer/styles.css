@@ -637,6 +637,13 @@ svg { display: block; }
 .room-compose .settings-input { flex: 1; }
 .icon.sm.live { color: var(--accent); position: relative; }
 .room-count { position: absolute; top: -3px; right: -3px; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 999px; background: var(--accent); color: #0b0b0d; font-size: 9px; line-height: 14px; text-align: center; font-weight: 700; }
+.room-call-join { width: 100%; justify-content: center; }
+.room-call { display: flex; flex-direction: column; gap: 8px; }
+.room-call-ctl { display: flex; gap: 8px; }
+.room-call-peers { display: flex; flex-wrap: wrap; gap: 6px; }
+.call-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--faint); vertical-align: middle; }
+.call-dot.live { background: var(--accent); box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 55%, transparent); }
+.room-call-err { color: var(--accent); font-size: 12px; margin: 2px 0; }
 
 :root[data-wrap="on"] .markdown pre,
 :root[data-wrap="on"] .diff,

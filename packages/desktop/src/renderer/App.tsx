@@ -12,6 +12,7 @@ import { KEYBIND_ACTIONS, comboFor, matchCombo } from "./keybinds";
 import { IconStop, IconShare, IconCopy, IconEdit, IconMic, IconUndo, IconBolt, IconAgents } from "./Icons";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { RoomPanel } from "./RoomPanel";
+import { CallManager } from "./webrtc";
 import { ModelBrowser } from "./ModelBrowser";
 import { Rail } from "./Rail";
 import { TerminalDeck } from "./TerminalDeck";
@@ -322,6 +323,8 @@ export function App() {
   const [leftOpen, setLeftOpen] = useState(true);
   const [sidePanel, setSidePanel] = useState<null | "files" | "study" | "agents">(null);
   const [roomOpen, setRoomOpen] = useState(false);
+  const [, setCallTick] = useState(0);
+  const callRef = useRef<CallManager | null>(null);
   const [roomParticipants, setRoomParticipants] = useState<string[]>([]);
   const [roomChat, setRoomChat] = useState<Array<{ from: string; text: string; kind: "chat" | "prompt" }>>([]);
   const [myName, setMyName] = useState<string>(() => localStorage.getItem("tc-name") || "You");
@@ -733,6 +736,16 @@ export function App() {
     wsRef.current?.send(JSON.stringify({ type: "chat", text: trimmed }));
   }
 
+  function call(): CallManager {
+    if (!callRef.current) {
+      callRef.current = new CallManager(
+        (to, data) => wsRef.current?.send(JSON.stringify({ type: "signal", to, data })),
+        () => setCallTick((t) => t + 1),
+      );
+    }
+    return callRef.current;
+  }
+
   function setWorkingDir(rawDir: string) {
     const dir = cleanDir(rawDir) ?? rawDir; // never root the tree in the home dir
     setCwd(dir);
@@ -1024,8 +1037,23 @@ export function App() {
   }
 
   function onEvent(e: StreamEvent) {
-    if (e.type === "room-welcome" || e.type === "room-presence") {
+    if (e.type === "room-welcome") {
       setRoomParticipants(Array.isArray(e.participants) ? e.participants : []);
+      call().setSelf(e.peerId || "");
+      call().setPeers(Array.isArray(e.peers) ? e.peers : []);
+      return;
+    }
+    if (e.type === "room-presence") {
+      setRoomParticipants(Array.isArray(e.participants) ? e.participants : []);
+      call().setPeers(Array.isArray(e.peers) ? e.peers : []);
+      return;
+    }
+    if (e.type === "signal") {
+      void call().onSignal(String(e.from ?? ""), e.data);
+      return;
+    }
+    if (e.type === "peer-left") {
+      call().onPeerLeft(String(e.peerId ?? ""));
       return;
     }
     if (e.type === "room-chat") {
@@ -1996,6 +2024,15 @@ export function App() {
           messages={roomChat}
           onSendChat={sendRoomChat}
           onClose={() => setRoomOpen(false)}
+          call={{
+            inCall: callRef.current?.inCall ?? false,
+            muted: callRef.current?.muted ?? false,
+            error: callRef.current?.error ?? null,
+            peers: callRef.current?.callPeers() ?? [],
+            onJoin: () => void call().joinVoice(),
+            onLeave: () => call().leave(),
+            onToggleMute: () => call().toggleMute(),
+          }}
         />
       ) : null}
 

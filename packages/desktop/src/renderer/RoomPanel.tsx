@@ -7,6 +7,16 @@ interface RoomMessage {
   kind: "chat" | "prompt";
 }
 
+interface CallState {
+  inCall: boolean;
+  muted: boolean;
+  error: string | null;
+  peers: Array<{ id: string; name: string; connected: boolean }>;
+  onJoin: () => void;
+  onLeave: () => void;
+  onToggleMute: () => void;
+}
+
 interface RoomPanelProps {
   port: number;
   myName: string;
@@ -15,9 +25,10 @@ interface RoomPanelProps {
   messages: RoomMessage[];
   onSendChat: (text: string) => void;
   onClose: () => void;
+  call: CallState;
 }
 
-export function RoomPanel({ port, myName, onChangeName, participants, messages, onSendChat, onClose }: RoomPanelProps) {
+export function RoomPanel({ port, myName, onChangeName, participants, messages, onSendChat, onClose, call }: RoomPanelProps) {
   const { t } = useI18n();
   const httpBase = `http://localhost:${port}`;
   const [addresses, setAddresses] = useState<{ addresses: string[]; port: string } | null>(null);
@@ -96,6 +107,32 @@ export function RoomPanel({ port, myName, onChangeName, participants, messages, 
             <span className="hint">{t("room.alone")}</span>
           )}
         </div>
+
+        <label className="room-label">{t("room.call")}</label>
+        {call.error ? <p className="room-call-err">{call.error}</p> : null}
+        {!call.inCall ? (
+          <button className="btn-2 go room-call-join" onClick={call.onJoin}>{t("room.joinCall")}</button>
+        ) : (
+          <div className="room-call">
+            <div className="room-call-ctl">
+              <button className={`btn-2 ${call.muted ? "" : "go"}`} onClick={call.onToggleMute}>
+                {call.muted ? t("room.unmute") : t("room.mute")}
+              </button>
+              <button className="btn-2" onClick={call.onLeave}>{t("room.leaveCall")}</button>
+            </div>
+            <div className="room-call-peers">
+              {call.peers.length === 0 ? (
+                <span className="hint">{t("room.callAlone")}</span>
+              ) : (
+                call.peers.map((p) => (
+                  <span key={p.id} className="room-chip">
+                    <span className={`call-dot ${p.connected ? "live" : ""}`} aria-hidden="true" /> {p.name}
+                  </span>
+                ))
+              )}
+            </div>
+          </div>
+        )}
 
         <label className="room-label">{t("room.chat")}</label>
         <div className="room-log" ref={logRef}>
