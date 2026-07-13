@@ -368,6 +368,50 @@ describe("server", () => {
     expect(Array.isArray(body.addresses)).toBe(true);
   });
 
+  it("relays a WebRTC signal peer-to-peer between two room members", async () => {
+    const record = (await (
+      await fetch(`${base()}/sessions`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ cwd: dir }),
+      })
+    ).json()) as { id: string };
+
+    const wsA = new WebSocket(`ws://localhost:${port}/sessions/${record.id}/stream?name=Alice`);
+    const wsB = new WebSocket(`ws://localhost:${port}/sessions/${record.id}/stream?name=Bob`);
+    let aPeerId = "";
+    let bPeerId = "";
+    let resolveSignal: (v: { from?: string; data?: { kind?: string; sdp?: string } }) => void = () => {};
+    const gotSignal = new Promise<{ from?: string; data?: { kind?: string; sdp?: string } }>((res) => {
+      resolveSignal = res;
+    });
+
+    const aReady = new Promise<void>((ra) => {
+      wsA.on("message", (raw) => {
+        const e = JSON.parse(raw.toString()) as { type: string; peerId?: string };
+        if (e.type === "room-welcome") { aPeerId = e.peerId || ""; ra(); }
+      });
+    });
+    const bReady = new Promise<void>((rb) => {
+      wsB.on("message", (raw) => {
+        const e = JSON.parse(raw.toString()) as { type: string; peerId?: string; from?: string; data?: { kind?: string; sdp?: string } };
+        if (e.type === "room-welcome") { bPeerId = e.peerId || ""; rb(); }
+        if (e.type === "signal") resolveSignal(e);
+      });
+    });
+
+    await Promise.all([aReady, bReady]);
+    // Alice sends a WebRTC offer targeted at Bob's peer id.
+    wsA.send(JSON.stringify({ type: "signal", to: bPeerId, data: { kind: "offer", sdp: "test-sdp" } }));
+    const sig = await gotSignal;
+    wsA.close();
+    wsB.close();
+
+    expect(sig.from).toBe(aPeerId);          // Bob sees it came from Alice
+    expect(sig.data?.kind).toBe("offer");    // payload relayed intact
+    expect(sig.data?.sdp).toBe("test-sdp");
+  });
+
   it("serves a shareable transcript as HTML and Markdown", async () => {
     const record = store.create({ cwd: dir, model: "m", title: "Shared" });
     record.messages.push({ role: "user", content: "hi <b>there</b>" });

@@ -104,6 +104,7 @@ interface Room {
   id: string;
   sockets: Set<WebSocket>;
   names: Map<WebSocket, string>;
+  peers: Map<WebSocket, string>; // per-socket peer id, for WebRTC signaling
   running: boolean;
   controller: AbortController | null;
   pending: Map<string, (decision: PermissionDecision) => void>;
@@ -915,12 +916,31 @@ function roomBroadcast(room: Room, msg: unknown): void {
   }
 }
 
+function roomPeerList(room: Room): Array<{ id: string; name: string }> {
+  const out: Array<{ id: string; name: string }> = [];
+  for (const s of room.sockets) {
+    out.push({ id: room.peers.get(s) ?? "", name: room.names.get(s) ?? "" });
+  }
+  return out;
+}
+
 function roomPresence(room: Room): void {
   roomBroadcast(room, {
     type: "room-presence",
     participants: [...room.names.values()],
+    peers: roomPeerList(room),
     count: room.sockets.size,
   });
+}
+
+function roomSendTo(room: Room, peerId: string, msg: unknown): void {
+  const data = JSON.stringify(msg);
+  for (const s of room.sockets) {
+    if (room.peers.get(s) === peerId && s.readyState === 1 /* OPEN */) {
+      s.send(data);
+      return;
+    }
+  }
 }
 
 function getRoom(ctx: Ctx, sessionId: string): Room {
@@ -931,6 +951,7 @@ function getRoom(ctx: Ctx, sessionId: string): Room {
     id: sessionId,
     sockets: new Set<WebSocket>(),
     names: new Map<WebSocket, string>(),
+    peers: new Map<WebSocket, string>(),
     running: false,
     controller: null as AbortController | null,
     pending,
@@ -1034,10 +1055,20 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
   const room = getRoom(ctx, sessionId);
   const rawName = (url.searchParams.get("name") ?? "").trim().slice(0, 40);
   const name = rawName || `Guest ${room.sockets.size + 1}`;
+  const peerId = randomUUID();
   room.sockets.add(ws);
   room.names.set(ws, name);
+  room.peers.set(ws, peerId);
   // Tell the joiner who they are + who's already here, then announce to everyone.
-  ws.send(JSON.stringify({ type: "room-welcome", you: name, participants: [...room.names.values()] }));
+  ws.send(
+    JSON.stringify({
+      type: "room-welcome",
+      you: name,
+      peerId,
+      participants: [...room.names.values()],
+      peers: roomPeerList(room),
+    }),
+  );
   roomPresence(room);
 
   ws.on("message", (raw) => {
@@ -1048,6 +1079,8 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
       id?: string;
       decision?: PermissionDecision;
       images?: Array<{ dataUrl: string; mediaType: string }>;
+      to?: string;
+      data?: unknown;
     };
     try {
       msg = JSON.parse(raw.toString());
@@ -1064,6 +1097,9 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
       void roomRunBackground(ctx, room, msg.goal);
     } else if (msg.type === "chat" && typeof msg.text === "string") {
       roomBroadcast(room, { type: "room-chat", from: name, text: msg.text.slice(0, 4000) });
+    } else if (msg.type === "signal" && typeof msg.to === "string") {
+      // WebRTC signaling (offer/answer/ICE) — relayed peer-to-peer, never stored.
+      roomSendTo(room, msg.to, { type: "signal", from: room.peers.get(ws), data: msg.data });
     } else if (msg.type === "stop") {
       room.controller?.abort();
       for (const [id, resolve] of room.pending) {
@@ -1080,8 +1116,12 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
   });
 
   ws.on("close", () => {
+    const leftPeer = room.peers.get(ws);
     room.sockets.delete(ws);
     room.names.delete(ws);
+    room.peers.delete(ws);
+    // Tell the room a peer left so others can tear down its WebRTC connection.
+    if (leftPeer) roomBroadcast(room, { type: "peer-left", peerId: leftPeer });
     if (room.sockets.size === 0) {
       // Last participant left — abort any run and drop the room.
       room.controller?.abort();
