@@ -10,11 +10,15 @@ interface RoomMessage {
 interface CallState {
   inCall: boolean;
   muted: boolean;
+  sharing: boolean;
   error: string | null;
   peers: Array<{ id: string; name: string; connected: boolean }>;
+  screens: Array<{ id: string; name: string; stream: MediaStream }>;
   onJoin: () => void;
   onLeave: () => void;
   onToggleMute: () => void;
+  onShareScreen: () => void;
+  onStopShare: () => void;
 }
 
 interface RoomPanelProps {
@@ -118,6 +122,12 @@ export function RoomPanel({ port, myName, onChangeName, participants, messages, 
               <button className={`btn-2 ${call.muted ? "" : "go"}`} onClick={call.onToggleMute}>
                 {call.muted ? t("room.unmute") : t("room.mute")}
               </button>
+              <button
+                className={`btn-2 ${call.sharing ? "sharing" : ""}`}
+                onClick={call.sharing ? call.onStopShare : call.onShareScreen}
+              >
+                {call.sharing ? t("room.stopShare") : t("room.shareScreen")}
+              </button>
               <button className="btn-2" onClick={call.onLeave}>{t("room.leaveCall")}</button>
             </div>
             <div className="room-call-peers">
@@ -131,6 +141,23 @@ export function RoomPanel({ port, myName, onChangeName, participants, messages, 
                 ))
               )}
             </div>
+            {call.screens.length ? (
+              <div className="room-screens">
+                {call.screens.map((s) => (
+                  <div className="room-screen" key={s.id}>
+                    <video
+                      autoPlay
+                      playsInline
+                      muted
+                      ref={(el) => {
+                        if (el && el.srcObject !== s.stream) el.srcObject = s.stream;
+                      }}
+                    />
+                    <span className="room-screen-name">{s.name}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
         )}
 

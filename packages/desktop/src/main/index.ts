@@ -4,6 +4,7 @@ import { join } from "node:path";
 import {
   app,
   BrowserWindow,
+  desktopCapturer,
   dialog,
   globalShortcut,
   ipcMain,
@@ -402,6 +403,18 @@ app.whenReady().then(async () => {
   session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => {
     cb(permission === "media" || permission === "mediaKeySystem" || permission === "notifications");
   });
+
+  // Screen share for live-room calls: prefer the OS picker; otherwise grant the
+  // primary screen. Required for getDisplayMedia() to work inside Electron.
+  session.defaultSession.setDisplayMediaRequestHandler(
+    (_request, callback) => {
+      desktopCapturer
+        .getSources({ types: ["screen", "window"] })
+        .then((sources) => callback(sources[0] ? { video: sources[0] } : {}))
+        .catch(() => callback({}));
+    },
+    { useSystemPicker: true },
+  );
 
   registerPtyIpc();
   await startServer();
