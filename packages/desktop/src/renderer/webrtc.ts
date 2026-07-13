@@ -20,6 +20,7 @@ export interface CallPeerView {
   id: string;
   name: string;
   connected: boolean;
+  speaking: boolean;
 }
 export interface RemoteVideo {
   key: string;
@@ -37,6 +38,10 @@ export class CallManager {
   private camera: MediaStream | null = null;
   private screen: MediaStream | null = null;
   private myId = "";
+  private audioCtx: AudioContext | null = null;
+  private analysers = new Map<string, AnalyserNode>();
+  private speaking = new Set<string>();
+  private levelTimer: ReturnType<typeof setInterval> | null = null;
   inCall = false;
   muted = false;
   cameraOn = false;
@@ -74,8 +79,51 @@ export class CallManager {
     this.error = null;
     this.inCall = true;
     this.muted = false;
+    this.setupAnalyser("self", this.mic);
+    this.startLevelLoop();
     for (const [id] of this.names) if (id !== this.myId) this.ensure(id);
     this.onChange();
+  }
+
+  private setupAnalyser(key: string, stream: MediaStream | null): void {
+    if (!stream || !stream.getAudioTracks().length) return;
+    try {
+      if (!this.audioCtx) this.audioCtx = new AudioContext();
+      const source = this.audioCtx.createMediaStreamSource(stream);
+      const analyser = this.audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      source.connect(analyser);
+      this.analysers.set(key, analyser);
+    } catch (e) {
+      void e;
+    }
+  }
+
+  private startLevelLoop(): void {
+    if (this.levelTimer) return;
+    this.levelTimer = setInterval(() => {
+      let changed = false;
+      for (const [key, analyser] of this.analysers) {
+        const data = new Uint8Array(analyser.fftSize);
+        analyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (const b of data) {
+          const v = (b - 128) / 128;
+          sum += v * v;
+        }
+        const rms = Math.sqrt(sum / data.length);
+        const loud = key === "self" ? rms > 0.05 && !this.muted : rms > 0.05;
+        const was = this.speaking.has(key);
+        if (loud && !was) {
+          this.speaking.add(key);
+          changed = true;
+        } else if (!loud && was) {
+          this.speaking.delete(key);
+          changed = true;
+        }
+      }
+      if (changed) this.onChange();
+    }, 250);
   }
 
   private ensure(peerId: string): PeerConn {
@@ -143,7 +191,10 @@ export class CallManager {
         document.body.appendChild(el);
         this.audioEls.set(peerId, el);
       }
-      if (stream) el.srcObject = stream;
+      if (stream) {
+        el.srcObject = stream;
+        this.setupAnalyser(peerId, stream);
+      }
     } else if (e.track.kind === "video" && stream) {
       this.remoteVids.set(stream.id, { peerId, stream });
       const cleanup = () => {
@@ -255,6 +306,8 @@ export class CallManager {
       this.audioEls.delete(peerId);
     }
     for (const [key, v] of this.remoteVids) if (v.peerId === peerId) this.remoteVids.delete(key);
+    this.analysers.delete(peerId);
+    this.speaking.delete(peerId);
     this.onChange();
   }
 
@@ -272,6 +325,16 @@ export class CallManager {
     }
     this.audioEls.clear();
     this.remoteVids.clear();
+    if (this.levelTimer) {
+      clearInterval(this.levelTimer);
+      this.levelTimer = null;
+    }
+    this.analysers.clear();
+    this.speaking.clear();
+    if (this.audioCtx) {
+      void this.audioCtx.close().catch(() => undefined);
+      this.audioCtx = null;
+    }
     for (const media of [this.mic, this.camera, this.screen]) {
       if (media) for (const t of media.getTracks()) t.stop();
     }
@@ -289,9 +352,18 @@ export class CallManager {
     const out: CallPeerView[] = [];
     for (const [id, name] of this.names) {
       if (id === this.myId) continue;
-      out.push({ id, name, connected: this.conns.get(id)?.pc.connectionState === "connected" });
+      out.push({
+        id,
+        name,
+        connected: this.conns.get(id)?.pc.connectionState === "connected",
+        speaking: this.speaking.has(id),
+      });
     }
     return out;
+  }
+
+  selfSpeaking(): boolean {
+    return this.speaking.has("self");
   }
 
   // Local self-view: whichever of camera / screen you are sending.

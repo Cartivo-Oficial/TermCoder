@@ -13,7 +13,8 @@ interface CallState {
   cameraOn: boolean;
   sharing: boolean;
   error: string | null;
-  peers: Array<{ id: string; name: string; connected: boolean }>;
+  selfSpeaking: boolean;
+  peers: Array<{ id: string; name: string; connected: boolean; speaking: boolean }>;
   videos: Array<{ key: string; peerId: string; name: string; stream: MediaStream }>;
   localVideo: MediaStream | null;
   onJoin: () => void;
@@ -141,7 +142,7 @@ export function RoomPanel({ port, myName, onChangeName, participants, messages, 
                 <span className="hint">{t("room.callAlone")}</span>
               ) : (
                 call.peers.map((p) => (
-                  <span key={p.id} className="room-chip">
+                  <span key={p.id} className={`room-chip ${p.speaking ? "speaking" : ""}`}>
                     <span className={`call-dot ${p.connected ? "live" : ""}`} aria-hidden="true" /> {p.name}
                   </span>
                 ))
@@ -150,7 +151,7 @@ export function RoomPanel({ port, myName, onChangeName, participants, messages, 
             {call.localVideo || call.videos.length ? (
               <div className="room-screens">
                 {call.localVideo ? (
-                  <div className="room-screen" key="self">
+                  <div className={`room-screen ${call.selfSpeaking ? "speaking" : ""}`} key="self">
                     <video
                       autoPlay
                       playsInline
@@ -163,7 +164,10 @@ export function RoomPanel({ port, myName, onChangeName, participants, messages, 
                   </div>
                 ) : null}
                 {call.videos.map((v) => (
-                  <div className="room-screen" key={v.key}>
+                  <div
+                    className={`room-screen ${call.peers.find((p) => p.id === v.peerId)?.speaking ? "speaking" : ""}`}
+                    key={v.key}
+                  >
                     <video
                       autoPlay
                       playsInline

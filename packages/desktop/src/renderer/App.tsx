@@ -2030,6 +2030,7 @@ export function App() {
             cameraOn: callRef.current?.cameraOn ?? false,
             sharing: callRef.current?.sharing ?? false,
             error: callRef.current?.error ?? null,
+            selfSpeaking: callRef.current?.selfSpeaking() ?? false,
             peers: callRef.current?.callPeers() ?? [],
             videos: callRef.current?.remoteVideos() ?? [],
             localVideo: callRef.current?.localVideo() ?? null,
