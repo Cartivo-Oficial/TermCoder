@@ -29,6 +29,15 @@ export {
 } from "./mcp/mcp";
 
 export {
+  verifyLicenseKey,
+  licenseStatus,
+  saveLicenseKey,
+  clearLicense,
+  PRO_PUBLIC_KEY,
+  type LicenseInfo,
+} from "./license/license";
+
+export {
   listConnectors,
   getConnector,
   connectorToServerConfig,
