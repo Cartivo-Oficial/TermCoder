@@ -1255,6 +1255,10 @@ export function App() {
   }
 
   function onEvent(e: StreamEvent) {
+    if (e.type === "room-locked") {
+      setMessages((prev) => [...prev, { role: "notice", text: t("pro.roomLocked") }]);
+      return;
+    }
     if (e.type === "room-welcome") {
       setRoomParticipants(Array.isArray(e.participants) ? e.participants : []);
       call().setSelf(e.peerId || "");

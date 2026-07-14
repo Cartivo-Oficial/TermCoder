@@ -62,6 +62,7 @@ interface Connector {
 
 export type SettingsTab =
   | "general"
+  | "pro"
   | "appearance"
   | "shortcuts"
   | "servers"
@@ -233,6 +234,7 @@ const TABS: Array<{ groupKey: string; items: Array<[SettingsTab, string]> }> = [
     groupKey: "settings.group.desktop",
     items: [
       ["general", "settings.general"],
+      ["pro", "settings.pro"],
       ["appearance", "settings.appearance"],
       ["shortcuts", "settings.shortcuts"],
       ["servers", "settings.servers"],
@@ -264,6 +266,7 @@ const TABS: Array<{ groupKey: string; items: Array<[SettingsTab, string]> }> = [
 
 const TITLE_KEYS: Record<SettingsTab, string> = {
   general: "settings.general",
+  pro: "settings.pro",
   appearance: "settings.appearance",
   shortcuts: "settings.shortcuts",
   servers: "settings.servers",
@@ -298,6 +301,36 @@ export function Settings(p: Props) {
   const [chatgptCode, setChatgptCode] = useState<{ userCode: string; url: string } | null>(null);
   const [chatgptStatus, setChatgptStatus] = useState<string | null>(null);
   const [chatgptBusy, setChatgptBusy] = useState(false);
+  const [license, setLicense] = useState<{ active: boolean; email?: string; expires?: number; reason?: string } | null>(null);
+  const [licenseKey, setLicenseKey] = useState("");
+  const [activating, setActivating] = useState(false);
+
+  function loadLicense() {
+    fetch(`${httpBase}/license`)
+      .then((r) => r.json())
+      .then((info) => setLicense(info as { active: boolean }))
+      .catch(() => setLicense({ active: false }));
+  }
+
+  async function activateLicense() {
+    const key = licenseKey.trim();
+    if (!key) return;
+    setActivating(true);
+    try {
+      const res = await fetch(`${httpBase}/license`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key }),
+      });
+      const info = (await res.json()) as { active: boolean; email?: string; reason?: string };
+      setLicense(info);
+      if (info.active) setLicenseKey("");
+    } catch {
+      setLicense({ active: false, reason: "network error" });
+    } finally {
+      setActivating(false);
+    }
+  }
 
   useEffect(() => {
     if (!chatgptCode) return;
@@ -510,6 +543,7 @@ export function Settings(p: Props) {
   }, [recording]);
 
   useEffect(() => {
+    if (p.tab === "pro") loadLicense();
     if (p.tab === "servers" || p.tab === "providers") p.refreshStatus();
     if (p.tab === "providers") loadProviderAuth();
     if (p.tab === "permissions" || p.tab === "providers" || p.tab === "integrations" || p.tab === "files" || p.tab === "behavior") loadConfig();
@@ -657,6 +691,47 @@ export function Settings(p: Props) {
                   <Switch on={p.confirmDelete} onChange={p.setConfirmDelete} />
                 </Row>
               </>
+            )}
+
+            {p.tab === "pro" && (
+              <div className="pro-pane">
+                {license?.active ? (
+                  <div className="pro-status on">
+                    <div className="pro-badge">termcoder Pro</div>
+                    <p className="pro-line">{t("pro.activeFor", { email: license.email ?? "" })}</p>
+                    {license.expires ? (
+                      <p className="hint">{t("pro.expires", { date: new Date(license.expires).toLocaleDateString() })}</p>
+                    ) : null}
+                    <p className="hint">{t("pro.thanks")}</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="pro-status">
+                      <div className="pro-badge free">{t("pro.free")}</div>
+                      <p className="pro-line">{t("pro.freeDesc")}</p>
+                    </div>
+                    <label className="room-label">{t("pro.activate")}</label>
+                    <input
+                      className="settings-input"
+                      value={licenseKey}
+                      placeholder={t("pro.keyPlaceholder")}
+                      onChange={(e) => setLicenseKey(e.target.value)}
+                    />
+                    {license?.reason && !license.active ? (
+                      <p className="pro-err">{t("pro.invalidKey")}</p>
+                    ) : null}
+                    <div className="pro-actions">
+                      <button className="settings-btn primary" disabled={activating || !licenseKey.trim()} onClick={() => void activateLicense()}>
+                        {activating ? t("pro.activating") : t("pro.activateBtn")}
+                      </button>
+                      <a className="settings-btn" href="https://cartivo-oficial.github.io/TermCoder/pricing.html" target="_blank" rel="noopener">
+                        {t("pro.getPro")}
+                      </a>
+                    </div>
+                    <p className="hint">{t("pro.hostNote")}</p>
+                  </>
+                )}
+              </div>
             )}
 
             {p.tab === "appearance" && (
