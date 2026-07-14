@@ -27,6 +27,7 @@ interface CallState {
 
 interface RoomPanelProps {
   port: number;
+  sessionId: string;
   myName: string;
   onChangeName: (name: string) => void;
   participants: string[];
@@ -36,7 +37,7 @@ interface RoomPanelProps {
   call: CallState;
 }
 
-export function RoomPanel({ port, myName, onChangeName, participants, messages, onSendChat, onClose, call }: RoomPanelProps) {
+export function RoomPanel({ port, sessionId, myName, onChangeName, participants, messages, onSendChat, onClose, call }: RoomPanelProps) {
   const { t } = useI18n();
   const httpBase = `http://localhost:${port}`;
   const [addresses, setAddresses] = useState<{ addresses: string[]; port: string } | null>(null);
@@ -69,7 +70,10 @@ export function RoomPanel({ port, myName, onChangeName, participants, messages, 
     });
   }
 
-  const links = (addresses?.addresses ?? []).map((a) => `${httpBase.startsWith("https") ? "https" : "http"}://${a}:${addresses?.port || port}`);
+  const joinQuery = sessionId ? `?session=${encodeURIComponent(sessionId)}` : "";
+  const links = (addresses?.addresses ?? []).map(
+    (a) => `${httpBase.startsWith("https") ? "https" : "http"}://${a}:${addresses?.port || port}${joinQuery}`,
+  );
 
   return (
     <div className="settings" onClick={onClose}>

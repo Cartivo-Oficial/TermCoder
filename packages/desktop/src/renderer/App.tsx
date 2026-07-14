@@ -89,6 +89,7 @@ const wsBase = `${wsScheme}//${host}:${port}`;
 
 const HOME_DIR = decodeURIComponent(new URLSearchParams(location.search).get("home") || "");
 const DEFAULT_DIR = decodeURIComponent(new URLSearchParams(location.search).get("docs") || "") || HOME_DIR;
+const JOIN_SESSION = new URLSearchParams(location.search).get("session") || "";
 function cleanDir(dir?: string | null): string | undefined {
   if (!dir) return undefined;
   return HOME_DIR && dir === HOME_DIR ? DEFAULT_DIR || undefined : dir;
@@ -634,6 +635,11 @@ export function App() {
       try {
         const list = (await (await fetch(`${httpBase}/sessions`)).json()) as SessionSummary[];
         setSessions(list);
+        if (JOIN_SESSION && list.some((s) => s.id === JOIN_SESSION)) {
+          await openSession(JOIN_SESSION);
+          setRoomOpen(true);
+          return;
+        }
         const savedCwd = cleanDir(localStorage.getItem("tc-cwd"));
         const blank = list.find((s) => s.messageCount === 0 && !(HOME_DIR && s.cwd === HOME_DIR));
         if (blank) await openSession(blank.id);
@@ -2018,6 +2024,7 @@ export function App() {
       {roomOpen ? (
         <RoomPanel
           port={port}
+          sessionId={currentId ?? ""}
           myName={myName}
           onChangeName={setMyName}
           participants={roomParticipants}
