@@ -1,4 +1,5 @@
 {
+  "category": "feature",
   "prompt": "add a --version flag to the CLI that prints the name and version from package.json, then run the tests to confirm",
   "verify": "node test/cli.test.js",
   "protect": ["test/cli.test.js"]

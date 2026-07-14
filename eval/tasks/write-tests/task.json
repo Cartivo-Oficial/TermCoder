@@ -1,0 +1,9 @@
+{
+  "category": "testing",
+  "prompt": "the multiply function in src/multiply.js has no tests. write a test file at test/multiply.test.js using node:assert that covers two positive numbers, multiplication by zero, and a negative number. end the file by printing 'all tests passed'. then run it with `node test/multiply.test.js` and make sure it passes.",
+  "verify": "node test/multiply.test.js",
+  "check": [
+    { "file": "test/multiply.test.js", "contains": "multiply" },
+    { "file": "test/multiply.test.js", "minCount": 3, "of": "assert" }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "category": "debug",
+  "prompt": "loadTotals in src/totals.js returns NaN because it never awaits the async fetchOne call. fix it so the tests pass. do not change the tests.",
+  "verify": "node test/totals.test.js",
+  "protect": ["test/totals.test.js"]
+}

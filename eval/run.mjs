@@ -1,11 +1,12 @@
 import { execFileSync } from "node:child_process";
-import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { builtinTools, loadConfig, ToolRegistry } from "../packages/core/dist/index.js";
 import { createServer } from "../packages/server/dist/index.js";
+import { compareToBaseline, gradeChecks } from "./grade.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const arg = (name, def) => {
@@ -15,8 +16,11 @@ const arg = (name, def) => {
 
 const MODEL = arg("model", "termcoderfree/auto");
 const ONLY = arg("task", "");
+const CATEGORY = arg("category", "");
 const RUNS = Number(arg("runs", "1"));
 const TURN_TIMEOUT = Number(arg("timeout", "300")) * 1000;
+const BASELINE = arg("baseline", "");
+const SAVE = process.argv.includes("--save");
 
 function median(nums) {
   if (nums.length === 0) return 0;
@@ -32,11 +36,13 @@ function hashFile(path) {
 function loadTasks() {
   const root = join(here, "tasks");
   return readdirSync(root)
+    .filter((name) => statSync(join(root, name)).isDirectory())
     .filter((name) => !ONLY || name === ONLY)
     .map((name) => {
       const spec = JSON.parse(readFileSync(join(root, name, "task.json"), "utf8"));
-      return { name, dir: join(root, name), ...spec };
-    });
+      return { name, dir: join(root, name), category: spec.category ?? "general", ...spec };
+    })
+    .filter((task) => !CATEGORY || task.category === CATEGORY);
 }
 
 async function runTurn(port, sessionId, prompt) {
@@ -72,9 +78,21 @@ async function runTurn(port, sessionId, prompt) {
   return stats;
 }
 
+function runShell(command, cwd, timeoutMs) {
+  const [cmd, ...cmdArgs] = command.split(" ");
+  try {
+    const out = execFileSync(cmd, cmdArgs, { cwd, encoding: "utf8", timeout: timeoutMs });
+    return { ok: true, out };
+  } catch (err) {
+    return { ok: false, out: (err.stdout || "") + (err.stderr || err.message || "") };
+  }
+}
+
 async function runTask(task) {
   const cwd = mkdtempSync(join(tmpdir(), `tc-eval-${task.name}-`));
   cpSync(join(task.dir, "seed"), cwd, { recursive: true });
+
+  if (task.setup) runShell(task.setup, cwd, 120_000);
 
   const before = Object.fromEntries((task.protect ?? []).map((p) => [p, hashFile(join(cwd, p))]));
 
@@ -110,23 +128,19 @@ async function runTask(task) {
 
   const tamperedTest = (task.protect ?? []).some((p) => hashFile(join(cwd, p)) !== before[p]);
 
-  let verifyPass = false;
-  let verifyOut = "";
-  try {
-    const [cmd, ...cmdArgs] = task.verify.split(" ");
-    verifyOut = execFileSync(cmd, cmdArgs, { cwd, encoding: "utf8", timeout: 30_000 });
-    verifyPass = true;
-  } catch (err) {
-    verifyOut = (err.stdout || "") + (err.stderr || err.message || "");
-  }
+  const verifyPass = task.verify ? runShell(task.verify, cwd, 30_000).ok : true;
+  const checkResult = gradeChecks(cwd, task.check ?? []);
 
   rmSync(cwd, { recursive: true, force: true });
 
-  const pass = verifyPass && !tamperedTest && !error;
+  const pass = verifyPass && checkResult.pass && !tamperedTest && !error;
   return {
     task: task.name,
+    category: task.category,
     pass,
     verifyPass,
+    checkPass: checkResult.pass,
+    checkFailures: checkResult.failures,
     tamperedTest,
     error,
     toolCalls: stats.toolCalls,
@@ -137,6 +151,16 @@ async function runTask(task) {
 }
 
 const tasks = loadTasks();
+
+if (process.argv.includes("--list")) {
+  console.log(`\n${tasks.length} task(s):\n`);
+  for (const t of tasks) {
+    const grade = [t.verify ? "verify" : null, (t.check ?? []).length ? "check" : null].filter(Boolean).join("+");
+    console.log(`  ${t.name.padEnd(22)} [${String(t.category).padEnd(10)}] ${grade}`);
+  }
+  process.exit(0);
+}
+
 console.log(`\neval · model=${MODEL} · ${tasks.length} task(s) × ${RUNS} run(s)\n`);
 
 const summary = [];
@@ -152,15 +176,18 @@ for (const task of tasks) {
     const why = r.pass
       ? ""
       : r.tamperedTest
-      ? " (edited the test)"
+      ? " (edited a protected file)"
       : r.error
       ? ` (${r.error.slice(0, 40)})`
-      : " (verify failed)";
+      : !r.verifyPass
+      ? " (verify failed)"
+      : ` (check: ${(r.checkFailures ?? []).join("; ").slice(0, 60)})`;
     console.log(`${mark}${why} · ${r.toolCalls} tools · ${r.seconds}s · leak=${r.leakedToolNames}`);
   }
   const passes = runs.filter((r) => r.pass).length;
   summary.push({
     task: task.name,
+    category: task.category,
     passes,
     runs: RUNS,
     medianSeconds: median(runs.map((r) => r.seconds)),
@@ -170,10 +197,44 @@ for (const task of tasks) {
 
 console.log(`\n  model=${MODEL}`);
 for (const s of summary) {
-  console.log(`  ${s.task.padEnd(18)} ${s.passes}/${s.runs} pass · median ${s.medianSeconds}s · leaks ${s.leaks}`);
+  console.log(`  ${s.task.padEnd(20)} ${s.passes}/${s.runs} pass · ${String(s.category).padEnd(10)} · median ${s.medianSeconds}s · leaks ${s.leaks}`);
 }
+
+const byCategory = {};
+for (const s of summary) {
+  const c = (byCategory[s.category] ??= { passes: 0, runs: 0 });
+  c.passes += s.passes;
+  c.runs += s.runs;
+}
+console.log("");
+for (const [cat, c] of Object.entries(byCategory)) {
+  console.log(`  [${cat}] ${c.passes}/${c.runs}`);
+}
+
 const totalPass = summary.reduce((n, s) => n + s.passes, 0);
 const totalRuns = summary.reduce((n, s) => n + s.runs, 0);
 console.log(`\nSCORE ${totalPass}/${totalRuns} · model=${MODEL}`);
-console.log(JSON.stringify({ model: MODEL, totalPass, totalRuns, summary, raw }));
+
+const report = { model: MODEL, totalPass, totalRuns, summary, raw };
+
+if (BASELINE && existsSync(BASELINE)) {
+  const baseline = JSON.parse(readFileSync(BASELINE, "utf8"));
+  const { regressions, improvements } = compareToBaseline(report, baseline);
+  console.log(`\nvs baseline (${baseline.model ?? "?"}):`);
+  for (const r of regressions) console.log(`  ↓ REGRESSION ${r.task}: ${r.from} → ${r.to}`);
+  for (const i of improvements) console.log(`  ↑ improved   ${i.task}: ${i.from} → ${i.to}`);
+  if (!regressions.length && !improvements.length) console.log("  no change");
+}
+
+if (SAVE) {
+  const resultsDir = join(here, "results");
+  mkdirSync(resultsDir, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const safeModel = MODEL.replace(/[^a-z0-9]+/gi, "-");
+  writeFileSync(join(resultsDir, `${stamp}_${safeModel}.json`), JSON.stringify(report, null, 2));
+  writeFileSync(join(resultsDir, "latest.json"), JSON.stringify(report, null, 2));
+  console.log(`\nsaved → eval/results/latest.json`);
+}
+
+console.log(JSON.stringify(report));
 process.exit(0);

@@ -1,0 +1,6 @@
+{
+  "category": "multi-file",
+  "prompt": "the checkout tests in test/checkout.test.js are failing. the total is wrong because applyDiscount treats the percentage as a flat amount instead of a percentage of the price. trace the bug across the files and fix it so the tests pass. do not change the tests.",
+  "verify": "node test/checkout.test.js",
+  "protect": ["test/checkout.test.js"]
+}

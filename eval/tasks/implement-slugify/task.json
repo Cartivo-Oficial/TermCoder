@@ -1,0 +1,6 @@
+{
+  "category": "implement",
+  "prompt": "implement the slugify function in src/slugify.js so all the tests pass. it should lowercase the text, trim it, and turn any run of non-alphanumeric characters into a single hyphen (no leading or trailing hyphens). do not change the tests.",
+  "verify": "node test/slugify.test.js",
+  "protect": ["test/slugify.test.js"]
+}

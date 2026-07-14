@@ -12,7 +12,8 @@
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
-    "dev": "pnpm --filter @termcoder/tui dev"
+    "dev": "pnpm --filter @termcoder/tui dev",
+    "eval": "node eval/run.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
