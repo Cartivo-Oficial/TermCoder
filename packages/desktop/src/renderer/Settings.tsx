@@ -304,6 +304,26 @@ export function Settings(p: Props) {
   const [license, setLicense] = useState<{ active: boolean; email?: string; expires?: number; reason?: string } | null>(null);
   const [licenseKey, setLicenseKey] = useState("");
   const [activating, setActivating] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
+
+  async function syncSessions() {
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await fetch(`${httpBase}/sessions/sync`, { method: "POST" });
+      const d = (await res.json().catch(() => ({}))) as { pulled?: number; pushed?: number; error?: string };
+      if (!res.ok) {
+        setSyncResult(d.error ?? t("pro.syncFailed"));
+        return;
+      }
+      setSyncResult(t("pro.syncDone", { pulled: d.pulled ?? 0, pushed: d.pushed ?? 0 }));
+    } catch {
+      setSyncResult(t("pro.syncFailed"));
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   function loadLicense() {
     fetch(`${httpBase}/license`)
@@ -703,6 +723,12 @@ export function Settings(p: Props) {
                       <p className="hint">{t("pro.expires", { date: new Date(license.expires).toLocaleDateString() })}</p>
                     ) : null}
                     <p className="hint">{t("pro.thanks")}</p>
+                    <div className="pro-actions">
+                      <button className="settings-btn" disabled={syncing} onClick={() => void syncSessions()}>
+                        {syncing ? t("pro.syncing") : t("pro.syncSessions")}
+                      </button>
+                    </div>
+                    {syncResult ? <p className="hint">{syncResult}</p> : null}
                   </div>
                 ) : (
                   <>

@@ -41,6 +41,8 @@ import {
   publishPack,
   installPack,
   syncAll,
+  pushSessions,
+  pullSessions,
   CONNECTABLE_PROVIDERS,
   probeProvider,
   providerHealthSnapshot,
@@ -952,6 +954,17 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
         return { pulled };
       }
       throw new GitHubError(400, "unknown sync op (expected push|pull)");
+    });
+  }
+
+  if (req.method === "POST" && parts.length === 2 && parts[0] === "sessions" && parts[1] === "sync") {
+    if (!ctx.license().active) {
+      return sendJson(res, 402, { error: "termcoder Pro is required to sync sessions across devices.", upgrade: true });
+    }
+    return withGitHub(res, ctx, async (client) => {
+      const pulled = await pullSessions(ctx.store, client);
+      const pushed = await pushSessions(ctx.store, client);
+      return { pulled, pushed };
     });
   }
 

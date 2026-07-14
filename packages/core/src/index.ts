@@ -218,6 +218,8 @@ export {
   pushSync,
   pullSync,
   syncAll,
+  pushSessions,
+  pullSessions,
   isSyncConfigured,
   DEFAULT_SYNC_STORES,
   type SyncEnvelope,

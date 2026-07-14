@@ -94,6 +94,11 @@ export class SessionStore {
     writeFileSync(this.file(record.id), JSON.stringify(record, null, 2), "utf8");
   }
 
+  import(record: SessionRecord): void {
+    this.ensureDir();
+    writeFileSync(this.file(record.id), JSON.stringify(record, null, 2), "utf8");
+  }
+
   load(id: string): SessionRecord {
     if (!this.exists(id)) throw new Error(`Session not found: ${id}`);
     return JSON.parse(readFileSync(this.file(id), "utf8")) as SessionRecord;

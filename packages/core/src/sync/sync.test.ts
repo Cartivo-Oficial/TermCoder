@@ -2,7 +2,8 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { pullSync, pushSync, syncAll } from "./sync";
+import { pullSessions, pullSync, pushSessions, pushSync, syncAll } from "./sync";
+import { SessionStore } from "../storage/storage";
 import type { Gist, GitHubClient } from "../github/github";
 
 function fakeClient() {
@@ -100,5 +101,90 @@ describe("sync store", () => {
     writeFav(cfgA, ["a"]);
     const res = await syncAll(client, ["favorites"], envA);
     expect(res.pushed).toContain("favorites");
+  });
+});
+
+function discoverableClient() {
+  const store: Record<string, { description: string; files: Record<string, string> }> = {};
+  let n = 0;
+  const toGist = (id: string): Gist => ({
+    id,
+    html_url: `https://gist.github.com/${id}`,
+    description: store[id]!.description,
+    public: false,
+    updated_at: "",
+    files: Object.fromEntries(Object.entries(store[id]!.files).map(([k, v]) => [k, { filename: k, content: v }])),
+  });
+  return {
+    async createGist({ files, description }: { files: Record<string, { content: string }>; description?: string }) {
+      const id = `g${++n}`;
+      store[id] = { description: description ?? "", files: {} };
+      for (const [k, v] of Object.entries(files)) store[id]!.files[k] = v.content;
+      return toGist(id);
+    },
+    async updateGist(id: string, files: Record<string, { content: string }>) {
+      for (const [k, v] of Object.entries(files)) if (v) store[id]!.files[k] = v.content;
+      return toGist(id);
+    },
+    async getGist(id: string) {
+      return toGist(id);
+    },
+    async gistFileContent(g: Gist, name: string) {
+      return g.files[name]?.content;
+    },
+    async listGists() {
+      return Object.keys(store).map((id) => toGist(id));
+    },
+  } as unknown as GitHubClient;
+}
+
+describe("session sync", () => {
+  let dirA: string;
+  let dirB: string;
+  let envA: NodeJS.ProcessEnv;
+  let envB: NodeJS.ProcessEnv;
+  beforeEach(() => {
+    dirA = mkdtempSync(join(tmpdir(), "tc-ssA-"));
+    dirB = mkdtempSync(join(tmpdir(), "tc-ssB-"));
+    envA = { XDG_CONFIG_HOME: join(dirA, "cfg") };
+    envB = { XDG_CONFIG_HOME: join(dirB, "cfg") };
+  });
+  afterEach(() => {
+    rmSync(dirA, { recursive: true, force: true });
+    rmSync(dirB, { recursive: true, force: true });
+  });
+
+  it("carries sessions to a fresh device that discovers the gist by description", async () => {
+    const client = discoverableClient();
+    const storeA = new SessionStore(join(dirA, "sessions"));
+    const s1 = storeA.create({ cwd: "/a", model: "m", title: "First" });
+    s1.messages.push({ role: "user", content: "hi" } as never);
+    storeA.save(s1);
+    storeA.create({ cwd: "/a", model: "m", title: "Second" });
+    expect(await pushSessions(storeA, client, envA)).toBe(2);
+
+    const storeB = new SessionStore(join(dirB, "sessions"));
+    expect(storeB.list()).toHaveLength(0);
+    const merged = await pullSessions(storeB, client, envB);
+    expect(merged).toBe(2);
+    expect(storeB.list().map((s) => s.title).sort()).toEqual(["First", "Second"]);
+    expect(storeB.load(s1.id).messages).toHaveLength(1);
+  });
+
+  it("does not overwrite a locally newer session on pull", async () => {
+    const client = discoverableClient();
+    const storeA = new SessionStore(join(dirA, "sessions"));
+    const s = storeA.create({ cwd: "/a", model: "m", title: "Old" });
+    await pushSessions(storeA, client, envA);
+
+    const storeB = new SessionStore(join(dirB, "sessions"));
+    await pullSessions(storeB, client, envB);
+    const local = storeB.load(s.id);
+    local.title = "Edited on B";
+    storeB.save(local); // bumps updatedAt to now (newer than remote)
+
+    const merged = await pullSessions(storeB, client, envB);
+    expect(merged).toBe(0);
+    expect(storeB.load(s.id).title).toBe("Edited on B");
   });
 });

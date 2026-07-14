@@ -2,6 +2,10 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "no
 import { dirname } from "node:path";
 import { configFile } from "../util/paths";
 import type { GitHubClient } from "../github/github";
+import type { SessionRecord, SessionStore } from "../storage/storage";
+
+const SESSIONS_FILE = "sessions.json";
+const SESSION_SYNC_LIMIT = 50;
 
 
 const SYNC_DESCRIPTION = "termcoder:sync — private synced settings";
@@ -104,4 +108,69 @@ export async function syncAll(
     if (await pushSync(name, client, env)) pushed.push(name);
   }
   return { pulled, pushed };
+}
+
+async function resolveSyncGistId(
+  client: GitHubClient,
+  env: NodeJS.ProcessEnv,
+): Promise<string | undefined> {
+  const meta = loadMeta(env);
+  if (meta.gistId) return meta.gistId;
+  try {
+    const gists = await client.listGists();
+    const found = gists.find((g) => (g.description ?? "").startsWith("termcoder:sync"));
+    if (found) {
+      saveMeta({ ...meta, gistId: found.id }, env);
+      return found.id;
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}
+
+export async function pushSessions(
+  store: SessionStore,
+  client: GitHubClient,
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<number> {
+  const recent = store
+    .list()
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, SESSION_SYNC_LIMIT);
+  const sessions = recent.map((s) => store.load(s.id));
+  const updatedAt = sessions.reduce((max, s) => Math.max(max, s.updatedAt), 0);
+  const envelope: SyncEnvelope = { updatedAt, data: { sessions } };
+  const files = { [SESSIONS_FILE]: { content: JSON.stringify(envelope) } };
+  const gistId = await resolveSyncGistId(client, env);
+  if (gistId) {
+    await client.updateGist(gistId, files);
+  } else {
+    const gist = await client.createGist({ description: SYNC_DESCRIPTION, public: false, files });
+    saveMeta({ ...loadMeta(env), gistId: gist.id }, env);
+  }
+  return sessions.length;
+}
+
+export async function pullSessions(
+  store: SessionStore,
+  client: GitHubClient,
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<number> {
+  const gistId = await resolveSyncGistId(client, env);
+  if (!gistId) return 0;
+  const gist = await client.getGist(gistId);
+  const raw = await client.gistFileContent(gist, SESSIONS_FILE);
+  if (!raw) return 0;
+  const envelope = JSON.parse(raw) as SyncEnvelope;
+  const remote = (envelope.data as { sessions?: SessionRecord[] })?.sessions ?? [];
+  let merged = 0;
+  for (const record of remote) {
+    if (!record?.id) continue;
+    const localNewer = store.exists(record.id) && store.load(record.id).updatedAt >= record.updatedAt;
+    if (localNewer) continue;
+    store.import(record);
+    merged += 1;
+  }
+  return merged;
 }
