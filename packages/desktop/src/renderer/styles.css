@@ -719,6 +719,29 @@ svg { display: block; }
 .pro-actions { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
 .pro-actions .settings-btn { margin-top: 0; text-decoration: none; display: inline-flex; align-items: center; }
 
+.class-list { display: flex; flex-direction: column; gap: 6px; max-height: 40vh; overflow-y: auto; margin: 6px 0 12px; }
+.class-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--elev); cursor: pointer; }
+.class-row:hover { background: var(--elev2); border-color: var(--accent); }
+.class-name { font-weight: 600; color: var(--text); }
+.class-role { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--faint); }
+.class-forms { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 4px; }
+.class-inline { display: flex; gap: 8px; align-items: center; }
+.class-inline .settings-input { flex: 1; }
+.class-inline .btn-2 { flex-shrink: 0; }
+.class-due { max-width: 120px; }
+.class-back { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12.5px; padding: 0; margin: 2px 0 8px; }
+.class-back:hover { color: var(--text); }
+.class-detail-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.class-assignment { border: 1px solid var(--border); border-radius: 9px; padding: 10px 12px; background: var(--elev); }
+.class-arow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.class-count { font-family: var(--mono); font-size: 10.5px; color: var(--accent); margin-left: auto; }
+.class-subs { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+.class-sub { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.class-sub-user { font-family: var(--mono); color: var(--text); }
+.class-sub-link { color: var(--accent); }
+.class-sub-note { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 600px) { .class-forms { grid-template-columns: 1fr; } }
+
 :root[data-wrap="on"] .markdown pre,
 :root[data-wrap="on"] .diff,
 :root[data-wrap="on"] .detail,
