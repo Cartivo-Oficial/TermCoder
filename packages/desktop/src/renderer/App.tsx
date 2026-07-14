@@ -18,7 +18,7 @@ import { Rail } from "./Rail";
 import { TerminalDeck } from "./TerminalDeck";
 import { SidePanel } from "./SidePanel";
 import { SessionsPanel } from "./SessionsPanel";
-import { DiffBlock, DiffBody, ToolCard } from "./ToolCard";
+import { DiffBlock, DiffBody, ToolCard, type DiffComment } from "./ToolCard";
 import { CodeEditor } from "./CodeEditor";
 import { blobToWav, blobToBase64 } from "./audio";
 import {
@@ -50,8 +50,9 @@ declare global {
       saveFile: (defaultName: string, content: string) => Promise<{ ok: boolean; path?: string; error?: string }>;
       notify: (title: string, body: string) => void;
       checkUpdate: () => Promise<{ current: string; latest: string; hasUpdate: boolean }>;
-      gitStatus: (dir: string) => Promise<{ map: Record<string, string>; count: number }>;
-      gitDiff: (dir: string, path: string) => Promise<{ diff: string }>;
+      gitStatus: (dir: string, base?: string) => Promise<{ map: Record<string, string>; count: number }>;
+      gitDiff: (dir: string, path: string, base?: string) => Promise<{ diff: string }>;
+      gitBranches: (dir: string) => Promise<{ branches: string[]; current: string }>;
       minimize: () => void;
       maximize: () => void;
       closeWindow: () => void;
@@ -204,6 +205,16 @@ function TabbedViewer({
   onAskAI,
   aiSuggest,
   codeTheme,
+  comments,
+  onAddComment,
+  onRemoveComment,
+  hunkIndex,
+  hunkCount,
+  onHunkCount,
+  onPrevHunk,
+  onNextHunk,
+  onSendComments,
+  compareBase,
 }: {
   tabs: Tab[];
   activeTab: string | null;
@@ -215,6 +226,16 @@ function TabbedViewer({
   onAskAI: (tab: Tab) => void;
   aiSuggest: boolean;
   codeTheme: string;
+  comments: DiffComment[];
+  onAddComment: (key: string, text: string) => void;
+  onRemoveComment: (id: string) => void;
+  hunkIndex: number;
+  hunkCount: number;
+  onHunkCount: (n: number) => void;
+  onPrevHunk: () => void;
+  onNextHunk: () => void;
+  onSendComments: () => void;
+  compareBase: string;
 }) {
   const { t } = useI18n();
   const tab = tabs.find((tt) => tt.id === activeTab) ?? tabs[0];
@@ -269,7 +290,46 @@ function TabbedViewer({
             />
           </div>
         ) : (
-          <DiffBody content={tab.content} />
+          <div className="editor-pane">
+            <div className="editor-bar">
+              <span className="editor-path">
+                {tab.name}
+                {compareBase ? <span className="diff-base-badge">vs {compareBase}</span> : null}
+              </span>
+              <div className="editor-actions">
+                {hunkCount > 0 ? (
+                  <span className="hunk-nav">
+                    <button className="icon sm" title={t("review.prevHunk")} disabled={hunkIndex <= 0} onClick={onPrevHunk}>
+                      <IconBack />
+                    </button>
+                    <span className="hunk-count">{t("review.hunkOf", { n: hunkIndex + 1, total: hunkCount })}</span>
+                    <button
+                      className="icon sm"
+                      title={t("review.nextHunk")}
+                      disabled={hunkIndex >= hunkCount - 1}
+                      onClick={onNextHunk}
+                    >
+                      <IconForward />
+                    </button>
+                  </span>
+                ) : null}
+                {comments.length ? (
+                  <button className="settings-btn" onClick={onSendComments}>
+                    {t("review.sendComments")} ({comments.length})
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            <DiffBody
+              content={tab.content}
+              path={tab.path}
+              comments={comments}
+              onAddComment={onAddComment}
+              onRemoveComment={onRemoveComment}
+              hunkIndex={hunkIndex}
+              onHunkCount={onHunkCount}
+            />
+          </div>
         )}
       </div>
     </div>
@@ -331,6 +391,12 @@ export function App() {
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [compareBase, setCompareBaseState] = useState("");
+  const compareBaseRef = useRef("");
+  const [branches, setBranches] = useState<string[]>([]);
+  const [reviewComments, setReviewComments] = useState<DiffComment[]>([]);
+  const [hunkIndex, setHunkIndex] = useState(0);
+  const [hunkCount, setHunkCount] = useState(0);
   const [leftOpen, setLeftOpen] = useState(true);
   const [sidePanel, setSidePanel] = useState<null | "files" | "study" | "agents">(null);
   const [roomOpen, setRoomOpen] = useState(false);
@@ -471,6 +537,10 @@ export function App() {
   useEffect(() => {
     localStorage.setItem("tc-open-tabs", JSON.stringify(openTabs));
   }, [openTabs]);
+
+  useEffect(() => {
+    setHunkIndex(0);
+  }, [activeTab]);
 
   useEffect(() => {
     if (!sessions.length) return;
@@ -695,7 +765,7 @@ export function App() {
   async function refreshGit() {
     const dir = cwdRef.current;
     if (!dir) return;
-    const res = await window.api?.gitStatus(dir);
+    const res = await window.api?.gitStatus(dir, compareBaseRef.current || undefined);
     if (res) {
       setStatus(res.map);
       setChanges(res.count);
@@ -784,8 +854,57 @@ export function App() {
     setCwd(dir);
     cwdRef.current = dir;
     localStorage.setItem("tc-cwd", dir);
+    compareBaseRef.current = "";
+    setCompareBaseState("");
     void refreshGit();
     void window.api?.allFiles(dir).then(setFileList);
+    void window.api?.gitBranches(dir).then((r) => setBranches(r?.branches ?? []));
+    try {
+      const saved = JSON.parse(localStorage.getItem(`tc-review-comments:${dir}`) || "[]");
+      setReviewComments(Array.isArray(saved) ? saved : []);
+    } catch {
+      setReviewComments([]);
+    }
+  }
+
+  function setCompareBase(base: string) {
+    compareBaseRef.current = base;
+    setCompareBaseState(base);
+    void refreshGit();
+  }
+
+  function persistReviewComments(list: DiffComment[]) {
+    const dir = cwdRef.current;
+    if (dir) localStorage.setItem(`tc-review-comments:${dir}`, JSON.stringify(list));
+  }
+
+  function addReviewComment(key: string, text: string) {
+    setReviewComments((prev) => {
+      const next = [...prev, { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, key, text }];
+      persistReviewComments(next);
+      return next;
+    });
+  }
+
+  function removeReviewComment(id: string) {
+    setReviewComments((prev) => {
+      const next = prev.filter((c) => c.id !== id);
+      persistReviewComments(next);
+      return next;
+    });
+  }
+
+  function sendReviewComments() {
+    if (!reviewComments.length) return;
+    const lines = reviewComments.map((c) => {
+      const [file, linePart] = c.key.split("::");
+      const label = linePart?.startsWith("old") ? `line ${linePart.slice(3)} (removed)` : `line ${linePart}`;
+      return `${file} ${label}: ${c.text}`;
+    });
+    const text = `Please address these review comments:\n\n${lines.join("\n")}`;
+    setInput((v) => (v.trim() ? `${v.trim()}\n\n${text}` : text));
+    setViewerOpen(false);
+    requestAnimationFrame(() => inputRef.current?.focus());
   }
 
   function resetTokenMeters() {
@@ -1098,10 +1217,11 @@ export function App() {
   async function openDiff(relPath: string) {
     const dir = cwdRef.current;
     if (!dir) return;
-    const res = await window.api?.gitDiff(dir, relPath);
+    const base = compareBaseRef.current || undefined;
+    const res = await window.api?.gitDiff(dir, relPath, base);
     if (res && res.diff.trim()) {
-      addTab({ id: `diff:${relPath}`, name: baseName(relPath), kind: "diff", content: res.diff });
-    } else {
+      addTab({ id: `diff:${relPath}`, name: baseName(relPath), kind: "diff", content: res.diff, path: relPath });
+    } else if (!base) {
       await openFile(`${dir}/${relPath}`);
     }
   }
@@ -1109,7 +1229,7 @@ export function App() {
   async function openAllDiffs() {
     const dir = cwdRef.current;
     if (!dir) return;
-    const res = await window.api?.gitDiff(dir, "");
+    const res = await window.api?.gitDiff(dir, "", compareBaseRef.current || undefined);
     if (res && res.diff.trim()) {
       addTab({ id: "diff:__all__", name: "All changes", kind: "diff", content: res.diff });
     }
@@ -2131,6 +2251,9 @@ export function App() {
             onOpenFile={(p) => void openFile(p)}
             onOpenDiff={(p) => void openDiff(p)}
             onOpenAllDiffs={() => void openAllDiffs()}
+            branches={branches}
+            compareBase={compareBase}
+            onChangeCompareBase={setCompareBase}
             sessions={sessions}
             port={port}
             agents={agents}
@@ -2184,6 +2307,16 @@ export function App() {
           onAskAI={askAboutFile}
           aiSuggest={aiSuggest}
           codeTheme={codeTheme}
+          comments={reviewComments}
+          onAddComment={addReviewComment}
+          onRemoveComment={removeReviewComment}
+          hunkIndex={hunkIndex}
+          hunkCount={hunkCount}
+          onHunkCount={setHunkCount}
+          onPrevHunk={() => setHunkIndex((i) => Math.max(0, i - 1))}
+          onNextHunk={() => setHunkIndex((i) => Math.min(hunkCount - 1, i + 1))}
+          onSendComments={sendReviewComments}
+          compareBase={compareBase}
         />
       ) : null}
       {paletteOpen ? <CommandPalette items={paletteItems} onClose={() => setPaletteOpen(false)} /> : null}

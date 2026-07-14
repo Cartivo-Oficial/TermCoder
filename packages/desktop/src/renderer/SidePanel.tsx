@@ -15,6 +15,9 @@ export function SidePanel({
   onOpenFile,
   onOpenDiff,
   onOpenAllDiffs,
+  branches,
+  compareBase,
+  onChangeCompareBase,
   sessions,
   port,
   agents,
@@ -31,6 +34,9 @@ export function SidePanel({
   onOpenFile: (p: string) => void;
   onOpenDiff: (p: string) => void;
   onOpenAllDiffs: () => void;
+  branches: string[];
+  compareBase: string;
+  onChangeCompareBase: (base: string) => void;
   sessions: SessionCardData[];
   port: number;
   agents: Array<{ name: string; description?: string; builtin: boolean; readOnly: boolean; mode?: string }>;
@@ -74,25 +80,42 @@ export function SidePanel({
               <Dashboard sessions={sessions} t={t} />
             ) : tab === "files" ? (
               <FileTree root={cwd} status={status} onOpen={onOpenFile} />
-            ) : changedFiles.length === 0 ? (
-              <div className="muted tree-empty">{t("right.noChanges")}</div>
             ) : (
-              <div className="tree">
-                <button className="view-all" onClick={onOpenAllDiffs}>
-                  {t("right.viewAllDiffs")}
-                </button>
-                {changedFiles.map(([path, letter]) => (
-                  <div key={path} className="tree-row" onClick={() => onOpenDiff(path)}>
-                    <span
-                      className="git-badge"
-                      style={{ color: letter === "A" ? "var(--ok)" : letter === "D" ? "var(--bad)" : "var(--warn)" }}
-                    >
-                      {letter}
-                    </span>
-                    <span className="fname">{path}</span>
+              <>
+                {branches.length ? (
+                  <div className="compare-base">
+                    <label>{t("review.compareWith")}</label>
+                    <select value={compareBase} onChange={(e) => onChangeCompareBase(e.target.value)}>
+                      <option value="">{t("review.uncommitted")}</option>
+                      {branches.map((b) => (
+                        <option key={b} value={b}>
+                          {b}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                ))}
-              </div>
+                ) : null}
+                {changedFiles.length === 0 ? (
+                  <div className="muted tree-empty">{t("right.noChanges")}</div>
+                ) : (
+                  <div className="tree">
+                    <button className="view-all" onClick={onOpenAllDiffs}>
+                      {t("right.viewAllDiffs")}
+                    </button>
+                    {changedFiles.map(([path, letter]) => (
+                      <div key={path} className="tree-row" onClick={() => onOpenDiff(path)}>
+                        <span
+                          className="git-badge"
+                          style={{ color: letter === "A" ? "var(--ok)" : letter === "D" ? "var(--bad)" : "var(--warn)" }}
+                        >
+                          {letter}
+                        </span>
+                        <span className="fname">{path}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </>
         ) : kind === "study" ? (

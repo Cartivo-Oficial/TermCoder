@@ -571,6 +571,44 @@ svg { display: block; }
 .viewer-body.diff .hunk { color: #58a6ff; }
 .viewer-body.diff .ctx { color: var(--muted); }
 
+.diff-file-header { font-family: ui-monospace, monospace; font-size: 12px; font-weight: 600; color: var(--text); padding: 8px 4px 4px; }
+.diff-hunk { margin-bottom: 4px; }
+.diff-hunk-head { color: #58a6ff; padding: 2px 0 2px 26px; }
+.diff-line { position: relative; display: flex; align-items: flex-start; padding-left: 26px; white-space: pre-wrap; word-break: break-word; }
+.diff-line.add { color: var(--ok); }
+.diff-line.del { color: var(--bad); }
+.diff-line.ctx { color: var(--muted); }
+.diff-gutter {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 4px;
+  background: var(--elev2);
+  color: var(--faint);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  cursor: pointer;
+  opacity: 0;
+}
+.diff-line:hover .diff-gutter { opacity: 1; }
+.diff-gutter:hover { color: var(--text); background: var(--accent); }
+.diff-comment { margin: 2px 0 4px 26px; padding: 6px 8px; border-radius: 7px; background: var(--elev); border: 1px solid var(--border); display: flex; align-items: flex-start; gap: 8px; font-family: var(--mono); }
+.diff-comment-text { flex: 1; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+.diff-comment-x { background: none; border: none; color: var(--faint); cursor: pointer; }
+.diff-comment-x:hover { color: var(--text); }
+.diff-composer { display: flex; gap: 6px; margin: 2px 0 6px 26px; }
+.diff-composer .settings-input { flex: 1; font-size: 12px; }
+.hunk-nav { display: flex; align-items: center; gap: 4px; }
+.hunk-count { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+.diff-base-badge { margin-left: 8px; font-size: 10.5px; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 1px 7px; }
+.compare-base { display: flex; align-items: center; gap: 8px; padding: 6px 8px; }
+.compare-base label { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.compare-base select { flex: 1; background: var(--elev); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; font-size: 12px; }
+
 .bubble.assistant.streaming { border-left: none; padding-left: 0; white-space: pre-wrap; word-break: break-word; }
 
 .perm { position: absolute; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 20; }

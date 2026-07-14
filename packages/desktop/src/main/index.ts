@@ -259,10 +259,14 @@ ipcMain.handle("all-files", (_event, dir: string) => {
   return results;
 });
 
-ipcMain.handle("git-diff", (_event, dir: string, path: string) => {
+ipcMain.handle("git-diff", (_event, dir: string, path: string, base?: string) => {
   try {
     const opts = { cwd: dir, encoding: "utf8" as const, maxBuffer: 10_000_000 };
     const pathArgs = path ? ["--", path] : [];
+    if (base && base.trim()) {
+      const diff = spawnSync("git", ["diff", "--no-color", `${base}...HEAD`, ...pathArgs], opts).stdout ?? "";
+      return { diff };
+    }
     let diff = spawnSync("git", ["diff", "--no-color", ...pathArgs], opts).stdout ?? "";
     if (!diff.trim()) {
       diff = spawnSync("git", ["diff", "--no-color", "--staged", ...pathArgs], opts).stdout ?? "";
@@ -270,6 +274,17 @@ ipcMain.handle("git-diff", (_event, dir: string, path: string) => {
     return { diff };
   } catch {
     return { diff: "" };
+  }
+});
+
+ipcMain.handle("git-branches", (_event, dir: string) => {
+  try {
+    const out = spawnSync("git", ["branch", "--format=%(refname:short)"], { cwd: dir, encoding: "utf8" });
+    const current = spawnSync("git", ["branch", "--show-current"], { cwd: dir, encoding: "utf8" });
+    const branches = out.status === 0 ? out.stdout.split("\n").map((s) => s.trim()).filter(Boolean) : [];
+    return { branches, current: current.status === 0 ? current.stdout.trim() : "" };
+  } catch {
+    return { branches: [], current: "" };
   }
 });
 
@@ -377,8 +392,20 @@ ipcMain.on("window-maximize", (e) => {
 });
 ipcMain.on("window-close", (e) => BrowserWindow.fromWebContents(e.sender)?.close());
 
-ipcMain.handle("git-status", (_event, dir: string) => {
+ipcMain.handle("git-status", (_event, dir: string, base?: string) => {
   try {
+    if (base && base.trim()) {
+      const out = spawnSync("git", ["diff", "--name-status", `${base}...HEAD`], { cwd: dir, encoding: "utf8" });
+      if (out.status !== 0 || !out.stdout) return { map: {}, count: 0 };
+      const map: Record<string, string> = {};
+      for (const line of out.stdout.split("\n")) {
+        if (!line.trim()) continue;
+        const [code, ...rest] = line.split("\t");
+        const path = rest.join("\t").trim();
+        if (path) map[path] = (code ?? "M")[0] ?? "M";
+      }
+      return { map, count: Object.keys(map).length };
+    }
     const out = spawnSync("git", ["status", "--porcelain"], { cwd: dir, encoding: "utf8" });
     if (out.status !== 0 || !out.stdout) return { map: {}, count: 0 };
     const map: Record<string, string> = {};

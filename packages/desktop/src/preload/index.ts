@@ -17,10 +17,12 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.invoke("write-file", path, content),
   saveFile: (defaultName: string, content: string): Promise<{ ok: boolean; path?: string; error?: string }> =>
     ipcRenderer.invoke("save-file", defaultName, content),
-  gitStatus: (dir: string): Promise<{ map: Record<string, string>; count: number }> =>
-    ipcRenderer.invoke("git-status", dir),
-  gitDiff: (dir: string, path: string): Promise<{ diff: string }> =>
-    ipcRenderer.invoke("git-diff", dir, path),
+  gitStatus: (dir: string, base?: string): Promise<{ map: Record<string, string>; count: number }> =>
+    ipcRenderer.invoke("git-status", dir, base),
+  gitDiff: (dir: string, path: string, base?: string): Promise<{ diff: string }> =>
+    ipcRenderer.invoke("git-diff", dir, path, base),
+  gitBranches: (dir: string): Promise<{ branches: string[]; current: string }> =>
+    ipcRenderer.invoke("git-branches", dir),
   minimize: () => ipcRenderer.send("window-minimize"),
   maximize: () => ipcRenderer.send("window-maximize"),
   closeWindow: () => ipcRenderer.send("window-close"),
