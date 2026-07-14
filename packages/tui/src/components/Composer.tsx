@@ -15,6 +15,7 @@ interface ComposerProps {
   disabled: boolean;
   status?: string;
   elapsed?: number;
+  tokens?: number;
   onHistory?: (dir: "up" | "down") => void;
   commandMenu?: TuiCommand[];
   mentionMenu?: string[];
@@ -25,8 +26,13 @@ interface ComposerProps {
   cwd: string;
 }
 
+function fmtTok(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+}
+
 export function Composer(props: ComposerProps) {
-  const { theme, value, onChange, onSubmit, busy, disabled, status, elapsed } = props;
+  const { theme, value, onChange, onSubmit, busy, disabled, status, elapsed, tokens } = props;
   const showCommands = !busy && (props.commandMenu?.length ?? 0) > 0;
   const showMentions = !busy && !showCommands && (props.mentionMenu?.length ?? 0) > 0;
   const cols = useStdout().stdout?.columns ?? 80;
@@ -50,6 +56,7 @@ export function Composer(props: ComposerProps) {
               </Text>
               <Text color={theme.assistant}>{` ${status ?? "Thinking…"}`}</Text>
               {elapsed && elapsed > 0 ? <Text color={theme.muted}>{`  ${elapsed}s`}</Text> : null}
+              {tokens && tokens > 0 ? <Text color={theme.muted}>{`  ${fmtTok(tokens)} tok`}</Text> : null}
               <Text color={theme.border}>{"  ·  "}</Text>
               <Text color={theme.muted}>esc to interrupt</Text>
             </Box>

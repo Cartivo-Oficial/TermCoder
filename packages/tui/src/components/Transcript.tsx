@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Box, Text } from "ink";
 import type { Theme } from "../theme";
 import type { ViewItem } from "../types";
@@ -7,21 +8,37 @@ import { Markdown } from "./Markdown";
 interface TranscriptProps {
   theme: Theme;
   items: ViewItem[];
+  streaming?: boolean;
 }
 
 const STATUS_ICON = { running: "•", done: "✓", error: "✗" } as const;
 
-export function Transcript({ theme, items }: TranscriptProps) {
+function Caret({ theme }: { theme: Theme }) {
+  const [on, setOn] = useState(true);
+  useEffect(() => {
+    const id = setInterval(() => setOn((v) => !v), 500);
+    return () => clearInterval(id);
+  }, []);
+  return <Text color={theme.accent}>{on ? "▋" : " "}</Text>;
+}
+
+export function Transcript({ theme, items, streaming }: TranscriptProps) {
+  const lastIdx = items.length - 1;
   return (
     <Box flexDirection="column">
       {items.map((item, i) => (
-        <TranscriptItem key={i} theme={theme} item={item} />
+        <TranscriptItem
+          key={i}
+          theme={theme}
+          item={item}
+          caret={Boolean(streaming) && i === lastIdx && item.kind === "assistant"}
+        />
       ))}
     </Box>
   );
 }
 
-export function TranscriptItem({ theme, item }: { theme: Theme; item: ViewItem }) {
+export function TranscriptItem({ theme, item, caret }: { theme: Theme; item: ViewItem; caret?: boolean }) {
   switch (item.kind) {
     case "user":
       return (
@@ -40,6 +57,7 @@ export function TranscriptItem({ theme, item }: { theme: Theme; item: ViewItem }
           <Text color={theme.accent}>{"● "}</Text>
           <Box flexDirection="column">
             <Markdown theme={theme} text={item.text} />
+            {caret ? <Caret theme={theme} /> : null}
             {item.time ? (
               <Text color={theme.border}>{item.dur ? `${item.time} · ${item.dur}` : item.time}</Text>
             ) : null}

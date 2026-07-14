@@ -1529,6 +1529,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
       disabled={busy}
       status={status}
       elapsed={elapsed}
+      tokens={tokens}
       onHistory={onHistory}
       commandMenu={commandMatches}
       mentionMenu={mentionMatches}
@@ -1574,7 +1575,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         {(item, index) => <TranscriptItem key={index} theme={theme} item={item} />}
       </Static>
 
-      {live.length > 0 ? <Transcript theme={theme} items={live} /> : null}
+      {live.length > 0 ? <Transcript theme={theme} items={live} streaming={busy} /> : null}
 
       {inputArea}
       {footer}

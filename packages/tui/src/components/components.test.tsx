@@ -11,6 +11,7 @@ import { PermissionModal } from "./PermissionModal";
 import { TrustPrompt } from "./TrustPrompt";
 import { CommandMenu } from "./CommandMenu";
 import { StatusBar } from "./StatusBar";
+import { Composer } from "./Composer";
 import { CodeBlock } from "./CodeBlock";
 import { MentionMenu } from "./MentionMenu";
 import { MultilineInput } from "./MultilineInput";
@@ -71,6 +72,51 @@ describe("Transcript", () => {
       <Transcript theme={theme} items={[{ kind: "user", text: "hi", time: "14:07" }]} />,
     );
     expect(lastFrame()).toContain("14:07");
+  });
+
+  it("shows a streaming caret only on the last assistant item when streaming", () => {
+    const items: ViewItem[] = [
+      { kind: "user", text: "hi" },
+      { kind: "assistant", text: "typing" },
+    ];
+    const on = render(<Transcript theme={theme} items={items} streaming />);
+    expect(on.lastFrame()).toContain("▋");
+    const off = render(<Transcript theme={theme} items={items} />);
+    expect(off.lastFrame() ?? "").not.toContain("▋");
+  });
+
+  it("does not put the caret on a trailing tool item", () => {
+    const items: ViewItem[] = [
+      { kind: "assistant", text: "done thinking" },
+      { kind: "tool", id: "t", name: "bash", status: "running" },
+    ];
+    const { lastFrame } = render(<Transcript theme={theme} items={items} streaming />);
+    expect(lastFrame() ?? "").not.toContain("▋");
+  });
+});
+
+describe("Composer busy line", () => {
+  it("shows elapsed and a live token count while busy", () => {
+    const { lastFrame } = render(
+      <Composer
+        theme={theme}
+        value=""
+        onChange={() => {}}
+        onSubmit={() => {}}
+        busy
+        disabled
+        status="Thinking…"
+        elapsed={12}
+        tokens={3400}
+        model="m"
+        agent="build"
+        cwd="/x"
+      />,
+    );
+    const frame = lastFrame() ?? "";
+    expect(frame).toContain("12s");
+    expect(frame).toContain("3.4k tok");
+    expect(frame).toContain("esc to interrupt");
   });
 });
 
