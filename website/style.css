@@ -819,6 +819,12 @@ main:has(#openBtn) ~ footer a { color: var(--muted); }
   border: 1px solid color-mix(in srgb, var(--ember) 40%, transparent); border-radius: 5px; padding: 4px 11px; white-space: nowrap; }
 .dash-open:hover { background: color-mix(in srgb, var(--ember) 12%, transparent); }
 .set-val { font-family: var(--code); font-size: var(--t2); color: var(--text); white-space: nowrap; }
+.dash-sample { font-family: var(--code); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint);
+  border: 1px solid var(--rule); border-radius: 999px; padding: 2px 8px; margin-left: 10px; vertical-align: middle; }
+.dash-empty { font-family: var(--prose); font-size: var(--t2); color: var(--muted); padding: 16px 8px; }
+@keyframes dashIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.dash-panel.on { animation: dashIn .32s cubic-bezier(.22, 1, .36, 1) both; }
+@media (prefers-reduced-motion: reduce) { .dash-panel.on { animation: none; } }
 @media (max-width: 780px) {
   .dash-wrap { grid-template-columns: minmax(0, 1fr); }
   .dash-side { flex-direction: row; flex-wrap: wrap; gap: 4px; border-right: none; border-bottom: 1px solid var(--rule); padding: 12px 0; }

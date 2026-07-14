@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" type="image/png" href="favicon.png" />
-<link rel="stylesheet" href="style.css?v=4" />
+<link rel="stylesheet" href="style.css?v=5" />
 <title>TermCoder — dashboard</title>
 <meta name="description" content="Your TermCoder dashboard — models, synced sessions, recipes, MCP connectors, and study decks in one place." />
 </head>
@@ -49,15 +49,13 @@
         TermCoder runs with no API key and no account; this only mirrors your own data.</p>
       <div class="stat-grid">
         <div class="stat"><span class="stat-k">Default model</span><span class="stat-v">termcoder/auto</span></div>
-        <div class="stat"><span class="stat-k">Synced sessions</span><span class="stat-v">14</span></div>
-        <div class="stat"><span class="stat-k">Study streak</span><span class="stat-v" data-stat="streak">6 days</span></div>
-        <div class="stat"><span class="stat-k">Saved recipes</span><span class="stat-v">5</span></div>
+        <div class="stat"><span class="stat-k">Study streak</span><span class="stat-v" data-stat="streak">—</span></div>
+        <div class="stat"><span class="stat-k">Due today</span><span class="stat-v" data-stat="study-due">—</span></div>
+        <div class="stat"><span class="stat-k">Decks</span><span class="stat-v" data-stat="study-decks">—</span></div>
       </div>
-      <h3 class="dash-h3">Recent activity</h3>
-      <div class="dash-list">
-        <div class="dash-row"><span class="dash-c1">Refactor auth middleware</span><span class="dash-c2">termcoder/auto</span><span class="dash-c3">2h ago</span></div>
-        <div class="dash-row"><span class="dash-c1">Krebs cycle — review</span><span class="dash-c2">termexplorer/auto</span><span class="dash-c3">yesterday</span></div>
-        <div class="dash-row"><span class="dash-c1">Add rate limiting</span><span class="dash-c2">anthropic/claude-sonnet-5</span><span class="dash-c3">2 days ago</span></div>
+      <h3 class="dash-h3">Your decks</h3>
+      <div class="dash-list" data-deck-list>
+        <div class="dash-empty">Sign in and sync from the app to see your study decks here.</div>
       </div>
     </div>
 
@@ -77,10 +75,10 @@
     </div>
 
     <div class="dash-panel" data-panel="sessions">
-      <div class="mono-eyebrow"><span class="slash">//</span> SESSIONS</div>
+      <div class="mono-eyebrow"><span class="slash">//</span> SESSIONS <span class="dash-sample">sample</span></div>
       <h2>Your work, synced.</h2>
-      <p class="dash-sub">Sessions you sync via GitHub show up here so you can pick up on any machine.
-        Open one to resume it in the app.</p>
+      <p class="dash-sub">Session sync is on the way — once it lands, the sessions you sync via GitHub will
+        show up here so you can resume on any machine. Below is a sample of how it looks.</p>
       <div class="dash-list">
         <div class="dash-row"><span class="dash-c1">Refactor auth middleware</span><span class="dash-c2">termcoder/auto · 42 turns</span><a class="dash-open" href="download.html">Open</a></div>
         <div class="dash-row"><span class="dash-c1">Payment webhook debugging</span><span class="dash-c2">anthropic/claude-sonnet-5 · 18 turns</span><a class="dash-open" href="download.html">Open</a></div>
@@ -90,10 +88,11 @@
     </div>
 
     <div class="dash-panel" data-panel="recipes">
-      <div class="mono-eyebrow"><span class="slash">//</span> RECIPES</div>
+      <div class="mono-eyebrow"><span class="slash">//</span> RECIPES <span class="dash-sample">sample</span></div>
       <h2>Saved workflows.</h2>
       <p class="dash-sub">Named, shareable multi-step tasks — dev automations that run in order, or study
-        lessons taught one step at a time. Kept in your project and synced.</p>
+        lessons taught one step at a time. You create and run these in the app today; syncing them here is
+        on the way. Below is a sample.</p>
       <div class="dash-list">
         <div class="dash-row"><span class="dash-c1">open-pr</span><span class="dash-c2">branch, push, open a PR</span><span class="badge-2 tag">dev · 3 steps</span></div>
         <div class="dash-row"><span class="dash-c1">test-and-fix</span><span class="dash-c2">run tests, fix failures, re-run</span><span class="badge-2 tag">dev · 3 steps</span></div>
@@ -108,7 +107,7 @@
       <p class="dash-sub">Add a Model Context Protocol server without memorizing commands. Pick a connector,
         fill in what it needs, and its tools appear to the agent.</p>
       <div class="dash-list">
-        <div class="dash-row"><span class="dash-c1">GitHub</span><span class="dash-c2">issues, PRs, code · hosted</span><span class="badge-2 ok">added</span></div>
+        <div class="dash-row"><span class="dash-c1">GitHub</span><span class="dash-c2">issues, PRs, code · hosted</span><a class="dash-open" href="docs.html">Add</a></div>
         <div class="dash-row"><span class="dash-c1">Filesystem</span><span class="dash-c2">read &amp; write a chosen folder</span><a class="dash-open" href="docs.html">Add</a></div>
         <div class="dash-row"><span class="dash-c1">Web fetch</span><span class="dash-c2">fetch a URL as clean markdown</span><a class="dash-open" href="docs.html">Add</a></div>
         <div class="dash-row"><span class="dash-c1">PostgreSQL</span><span class="dash-c2">query a database, read-only</span><a class="dash-open" href="docs.html">Add</a></div>
@@ -126,18 +125,16 @@
         <div class="stat"><span class="stat-k">Due today</span><span class="stat-v" data-stat="study-due">12 cards</span></div>
         <div class="stat"><span class="stat-k">Decks</span><span class="stat-v" data-stat="study-decks">4</span></div>
       </div>
-      <div class="dash-list">
-        <div class="dash-row"><span class="dash-c1">Cell biology</span><span class="dash-c2">28 cards</span><span class="badge-2">5 due</span></div>
-        <div class="dash-row"><span class="dash-c1">World history</span><span class="dash-c2">41 cards</span><span class="badge-2">4 due</span></div>
-        <div class="dash-row"><span class="dash-c1">Spanish verbs</span><span class="dash-c2">60 cards</span><span class="badge-2">3 due</span></div>
+      <div class="dash-list" data-deck-list>
+        <div class="dash-empty">Sign in and sync from the app to see your study decks here.</div>
       </div>
     </div>
 
     <div class="dash-panel" data-panel="settings">
-      <div class="mono-eyebrow"><span class="slash">//</span> SETTINGS</div>
+      <div class="mono-eyebrow"><span class="slash">//</span> SETTINGS <span class="dash-sample">sample</span></div>
       <h2>Your preferences.</h2>
       <p class="dash-sub">These travel with your account. Everything is optional — sensible defaults are
-        already set.</p>
+        already set. Editing them here is on the way; the values below are the defaults.</p>
       <div class="dash-list">
         <div class="dash-row"><span class="dash-c1">Display name</span><span class="dash-c2">shown in live rooms</span><span class="set-val">you</span></div>
         <div class="dash-row"><span class="dash-c1">Theme</span><span class="dash-c2">app color theme</span><span class="set-val">ember</span></div>
@@ -167,7 +164,7 @@
   })();
 </script>
 <script src="config.js?v=3"></script>
-<script src="auth.js?v=4"></script>
+<script src="auth.js?v=5"></script>
 
 </body>
 </html>

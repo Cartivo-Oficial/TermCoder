@@ -124,9 +124,16 @@
       var progress = parseEnvelope(files["progress.json"]);
       var deckNames = decks && typeof decks === "object" ? Object.keys(decks) : [];
       var due = 0, now = Date.now();
+      var rows = [];
       deckNames.forEach(function (n) {
         var cards = (decks[n] && decks[n].cards) || [];
-        due += cards.filter(function (c) { return !c.due || c.due <= now; }).length;
+        var deckDue = cards.filter(function (c) { return !c.due || c.due <= now; }).length;
+        due += deckDue;
+        rows.push(
+          '<div class="dash-row"><span class="dash-c1">' + escapeHtml(n) +
+          '</span><span class="dash-c2">' + cards.length + (cards.length === 1 ? " card" : " cards") +
+          '</span><span class="badge-2">' + deckDue + " due</span></div>"
+        );
       });
       var streak = (progress && (progress.streak || progress.currentStreak)) || 0;
       var streakText = streak + (streak === 1 ? " day" : " days");
@@ -134,7 +141,16 @@
       setStat("study-streak", streakText);
       setStat("study-due", due + " cards");
       setStat("study-decks", String(deckNames.length));
+      setDeckList(rows.length ? rows.join("") : '<div class="dash-empty">No synced decks yet. Create some in the app.</div>');
     } catch (e) { /* leave the sample data in place */ }
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function setDeckList(html) {
+    document.querySelectorAll("[data-deck-list]").forEach(function (el) { el.innerHTML = html; });
   }
   function parseEnvelope(file) {
     if (!file || !file.content) return null;
