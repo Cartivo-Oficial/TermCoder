@@ -4,10 +4,20 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { jsonSchema } from "ai";
 import type { Config, McpServerConfig } from "../config/config";
 import type { TermTool } from "../tools/types";
+import { abortableDelay, backoffMs } from "../provider/reliability";
+
+export interface McpServerStatus {
+  name: string;
+  ok: boolean;
+  toolCount: number;
+  error?: string;
+  connected: boolean;
+  reconnects: number;
+}
 
 export interface McpConnectResult {
   tools: TermTool[];
-  servers: Array<{ name: string; ok: boolean; toolCount: number; error?: string }>;
+  servers: McpServerStatus[];
   close: () => Promise<void>;
 }
 
@@ -83,22 +93,130 @@ function makeTransport(cfg: McpServerConfig) {
   );
 }
 
+const DISCONNECT_RE =
+  /\bclosed|not\s*connected|econnreset|epipe|socket\s*hang\s*up|disconnect\w*|terminated|transport|broken\s*pipe|econnrefused\b/i;
+
+function looksLikeDisconnect(err: unknown): boolean {
+  return DISCONNECT_RE.test(String((err as { message?: string })?.message ?? err));
+}
+
+const MAX_RECONNECT_ATTEMPTS = 4;
+
+export class ManagedMcpClient implements McpClientLike {
+  private client: Client | null = null;
+  private connecting: Promise<Client> | null = null;
+  private closed = false;
+  private connectCount = 0;
+
+  constructor(
+    private readonly cfg: McpServerConfig,
+    private readonly makeClient: () => Client = () => new Client({ name: "termcoder", version: "0.0.0" }),
+    private readonly connectClient: (client: Client, cfg: McpServerConfig) => Promise<void> = (client, c) =>
+      client.connect(makeTransport(c)),
+  ) {}
+
+  get connected(): boolean {
+    return this.client !== null;
+  }
+
+  get reconnects(): number {
+    return Math.max(0, this.connectCount - 1);
+  }
+
+  private async ensure(): Promise<Client> {
+    if (this.closed) throw new Error("MCP client closed");
+    if (this.client) return this.client;
+    if (this.connecting) return this.connecting;
+    this.connecting = (async () => {
+      const client = this.makeClient();
+      await this.connectClient(client, this.cfg);
+      client.onclose = () => {
+        if (this.client === client) this.client = null;
+      };
+      this.client = client;
+      this.connectCount++;
+      return client;
+    })().finally(() => {
+      this.connecting = null;
+    });
+    return this.connecting;
+  }
+
+  private async reconnect(): Promise<Client> {
+    this.client = null;
+    let lastErr: unknown;
+    for (let attempt = 0; attempt < MAX_RECONNECT_ATTEMPTS; attempt++) {
+      if (this.closed) throw new Error("MCP client closed");
+      if (attempt > 0) await abortableDelay(backoffMs(attempt - 1));
+      try {
+        return await this.ensure();
+      } catch (err) {
+        lastErr = err;
+        this.client = null;
+      }
+    }
+    throw lastErr;
+  }
+
+  async listTools(): Promise<{ tools: RemoteTool[] }> {
+    const client = await this.ensure();
+    return client.listTools() as unknown as Promise<{ tools: RemoteTool[] }>;
+  }
+
+  async callTool(params: { name: string; arguments?: Record<string, unknown> }): Promise<{
+    content?: Array<{ type: string; text?: string }>;
+    isError?: boolean;
+  }> {
+    try {
+      const client = await this.ensure();
+      return (await client.callTool(params)) as {
+        content?: Array<{ type: string; text?: string }>;
+        isError?: boolean;
+      };
+    } catch (err) {
+      if (this.closed || (this.client !== null && !looksLikeDisconnect(err))) throw err;
+      const client = await this.reconnect();
+      return (await client.callTool(params)) as {
+        content?: Array<{ type: string; text?: string }>;
+        isError?: boolean;
+      };
+    }
+  }
+
+  async close(): Promise<void> {
+    this.closed = true;
+    const client = this.client;
+    this.client = null;
+    if (client) await client.close().catch(() => undefined);
+  }
+}
+
 export async function connectMcpServers(config: Config): Promise<McpConnectResult> {
   const entries = Object.entries(config.mcp).filter(([, cfg]) => cfg.enabled);
-  const clients: Client[] = [];
-  const servers: McpConnectResult["servers"] = [];
+  const managed: ManagedMcpClient[] = [];
+  const servers: McpServerStatus[] = [];
   const tools: TermTool[] = [];
 
   for (const [name, cfg] of entries) {
+    const client = new ManagedMcpClient(cfg);
+    managed.push(client);
     try {
-      const client = new Client({ name: "termcoder", version: "0.0.0" });
-      await client.connect(makeTransport(cfg));
-      clients.push(client);
-      const wrapped = await wrapClientTools(name, client as unknown as McpClientLike);
+      const wrapped = await wrapClientTools(name, client);
       tools.push(...wrapped);
-      servers.push({ name, ok: true, toolCount: wrapped.length });
+      servers.push({
+        name,
+        ok: true,
+        toolCount: wrapped.length,
+        get connected() {
+          return client.connected;
+        },
+        get reconnects() {
+          return client.reconnects;
+        },
+      } as McpServerStatus);
     } catch (err) {
-      servers.push({ name, ok: false, toolCount: 0, error: String(err) });
+      await client.close().catch(() => undefined);
+      servers.push({ name, ok: false, toolCount: 0, error: String(err), connected: false, reconnects: 0 });
     }
   }
 
@@ -106,7 +224,7 @@ export async function connectMcpServers(config: Config): Promise<McpConnectResul
     tools,
     servers,
     close: async () => {
-      await Promise.all(clients.map((c) => c.close().catch(() => undefined)));
+      await Promise.all(managed.map((c) => c.close()));
     },
   };
 }

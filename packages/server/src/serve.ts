@@ -52,7 +52,12 @@ async function main() {
   ]);
 
   const webDir = findWebDir();
-  const server = createServer({ config, registry, cwd, webDir });
+  const status = {
+    mcp: mcp.servers,
+    lsp: lsp.servers,
+    plugins: plugins.plugins,
+  };
+  const server = createServer({ config, registry, cwd, webDir, status });
   server.listen(port, () => {
     process.stdout.write(`termcoder server listening on http://localhost:${port}\n`);
     if (webDir) {

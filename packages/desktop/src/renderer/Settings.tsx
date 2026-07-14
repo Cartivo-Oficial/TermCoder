@@ -82,7 +82,7 @@ export type SettingsTab =
 export interface ServerStatus {
   model: string;
   providers: Array<{ name: string; configured: boolean }>;
-  mcp: Array<{ name: string; ok: boolean; toolCount: number; error?: string }>;
+  mcp: Array<{ name: string; ok: boolean; toolCount: number; error?: string; connected?: boolean; reconnects?: number }>;
   lsp: Array<{ name: string; ok: boolean; error?: string }>;
   plugins: Array<{ name: string; ok: boolean; toolCount: number; error?: string }>;
 }

@@ -543,6 +543,12 @@ export function App() {
   }, [activeTab]);
 
   useEffect(() => {
+    if (!serversOpen) return;
+    const timer = setInterval(() => void refreshStatus(), 2500);
+    return () => clearInterval(timer);
+  }, [serversOpen]);
+
+  useEffect(() => {
     if (!sessions.length) return;
     const ids = new Set(sessions.map((s) => s.id));
     setOpenTabs((prev) => prev.filter((id) => ids.has(id)));
@@ -1743,7 +1749,22 @@ export function App() {
             {serversOpen ? (
               <div className="menu servers-pop" onMouseLeave={() => setServersOpen(false)}>
                 <div className="sp-row"><span className="dot on" /> {t("servers.local")} <span className="muted">{t("servers.running")}</span></div>
-                <div className="sp-line"><span>MCP</span><span className="muted">{serverStatus?.mcp.length ?? 0}</span></div>
+                {(serverStatus?.mcp ?? []).length ? (
+                  (serverStatus?.mcp ?? []).map((s) => {
+                    const live = s.ok && s.connected !== false;
+                    return (
+                      <div className="sp-line" key={s.name} title={s.error ?? ""}>
+                        <span><span className={`dot ${live ? "on" : "off"}`} /> {s.name}</span>
+                        <span className="muted">
+                          {live ? `${s.toolCount}` : t("servers.down")}
+                          {s.reconnects ? ` · ↻${s.reconnects}` : ""}
+                        </span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="sp-line"><span>MCP</span><span className="muted">{serverStatus?.mcp.length ?? 0}</span></div>
+                )}
                 <div className="sp-line"><span>LSP</span><span className="muted">{serverStatus?.lsp.length ?? 0}</span></div>
                 <div className="sp-line"><span>Plugins</span><span className="muted">{serverStatus?.plugins.length ?? 0}</span></div>
                 <button className="sp-manage" onClick={() => { setServersOpen(false); setSettingsTab("servers"); setSettingsOpen(true); }}>{t("servers.manage")}</button>

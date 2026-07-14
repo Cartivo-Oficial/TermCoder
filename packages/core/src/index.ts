@@ -22,8 +22,10 @@ export {
 export {
   connectMcpServers,
   wrapClientTools,
+  ManagedMcpClient,
   type McpConnectResult,
   type McpClientLike,
+  type McpServerStatus,
 } from "./mcp/mcp";
 
 export {
