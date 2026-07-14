@@ -301,6 +301,16 @@ export function App() {
   const { t } = useI18n();
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
+  const [openTabs, setOpenTabs] = useState<string[]>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("tc-open-tabs") || "[]");
+      return Array.isArray(saved) ? saved.filter((x): x is string => typeof x === "string") : [];
+    } catch {
+      return [];
+    }
+  });
+  const closedTabsRef = useRef<string[]>([]);
+  const dragTabRef = useRef<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
@@ -459,6 +469,17 @@ export function App() {
   }, [currentId]);
 
   useEffect(() => {
+    localStorage.setItem("tc-open-tabs", JSON.stringify(openTabs));
+  }, [openTabs]);
+
+  useEffect(() => {
+    if (!sessions.length) return;
+    const ids = new Set(sessions.map((s) => s.id));
+    setOpenTabs((prev) => prev.filter((id) => ids.has(id)));
+    closedTabsRef.current = closedTabsRef.current.filter((id) => ids.has(id));
+  }, [sessions]);
+
+  useEffect(() => {
     if (defaultModel) localStorage.setItem("tc-model", defaultModel);
   }, [defaultModel]);
 
@@ -610,6 +631,12 @@ export function App() {
         e.preventDefault();
         setTermMounted(true);
         setCenterTab((tab) => (tab === "terminal" ? "chat" : "terminal"));
+      } else if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "t") {
+        e.preventDefault();
+        reopenClosedTab();
+      } else if ((e.metaKey || e.ctrlKey) && /^[1-9]$/.test(e.key)) {
+        e.preventDefault();
+        jumpToTab(Number(e.key) - 1);
       } else if (e.key === "Escape") {
         setPaletteOpen(false);
         setViewerOpen(false);
@@ -617,7 +644,7 @@ export function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [keybinds]);
+  }, [keybinds, openTabs, sessions]);
 
   useEffect(() => {
     fetch(`${httpBase}/config`)
@@ -793,6 +820,7 @@ export function App() {
       await fetch(`${httpBase}/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body })
     ).json()) as { id: string; cwd: string; model: string };
     setCurrentId(record.id);
+    addOpenTab(record.id);
     resetTokenMeters();
     localStorage.setItem("tc-session", record.id);
     const dm = localStorage.getItem("tc-model") || "termcoder/auto";
@@ -823,7 +851,8 @@ export function App() {
   }
 
   async function openSession(id: string) {
-    if (id === currentId) return;
+    addOpenTab(id);
+    if (id === currentIdRef.current) return;
     try {
       const [record, segments] = await Promise.all([
         fetch(`${httpBase}/sessions/${id}`).then((r) => r.json()) as Promise<{ cwd: string; model: string }>,
@@ -841,6 +870,57 @@ export function App() {
     }
   }
 
+  function addOpenTab(id: string) {
+    setOpenTabs((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  }
+
+  function closeSessionTab(id: string) {
+    const idx = openTabs.indexOf(id);
+    if (idx === -1) return;
+    const next = openTabs.filter((x) => x !== id);
+    setOpenTabs(next);
+    closedTabsRef.current = [id, ...closedTabsRef.current].slice(0, 10);
+    if (id !== currentId) return;
+    const neighbor = next[idx] ?? next[idx - 1];
+    if (neighbor) void openSession(neighbor);
+    else {
+      const other = sessions.find((s) => s.id !== id);
+      if (other) void openSession(other.id);
+      else void createSession(cwdRef.current ?? undefined);
+    }
+  }
+
+  function reopenClosedTab() {
+    while (closedTabsRef.current.length) {
+      const id = closedTabsRef.current.shift()!;
+      if (sessions.some((s) => s.id === id)) {
+        void openSession(id);
+        return;
+      }
+    }
+  }
+
+  function jumpToTab(index: number) {
+    if (!openTabs.length) return;
+    const id = index >= openTabs.length ? openTabs[openTabs.length - 1] : openTabs[index];
+    if (id) void openSession(id);
+  }
+
+  function reorderTabs(targetId: string) {
+    const draggedId = dragTabRef.current;
+    dragTabRef.current = null;
+    if (!draggedId || draggedId === targetId) return;
+    setOpenTabs((prev) => {
+      const from = prev.indexOf(draggedId);
+      const to = prev.indexOf(targetId);
+      if (from === -1 || to === -1) return prev;
+      const next = [...prev];
+      next.splice(from, 1);
+      next.splice(to, 0, draggedId);
+      return next;
+    });
+  }
+
   async function chooseFolder() {
     const folder = await window.api?.pickFolder();
     if (folder) await createSession(folder);
@@ -853,6 +933,8 @@ export function App() {
     }
     const remaining = sessions.filter((s) => s.id !== id);
     setSessions(remaining);
+    setOpenTabs((prev) => prev.filter((x) => x !== id));
+    closedTabsRef.current = closedTabsRef.current.filter((x) => x !== id);
     if (id === currentId) {
       wsRef.current?.close();
       const next = remaining[0];
@@ -870,6 +952,8 @@ export function App() {
     wsRef.current?.close();
     setSessions([]);
     setCurrentId(null);
+    setOpenTabs([]);
+    closedTabsRef.current = [];
     localStorage.removeItem("tc-session");
     navStack.current = [];
     navPos.current = -1;
@@ -1575,6 +1659,43 @@ export function App() {
         ) : null}
 
         <main className="center">
+          {openTabs.length ? (
+            <div className="session-tabs">
+              {openTabs.map((id) => {
+                const s = sessions.find((x) => x.id === id);
+                if (!s) return null;
+                return (
+                  <div
+                    key={id}
+                    className={`stab ${id === currentId ? "active" : ""}`}
+                    draggable
+                    onDragStart={() => {
+                      dragTabRef.current = id;
+                    }}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => reorderTabs(id)}
+                    onClick={() => void openSession(id)}
+                    title={sessionLabel(s)}
+                  >
+                    <span className="stab-name">{sessionLabel(s)}</span>
+                    <button
+                      className="stab-close"
+                      title={t("session.closeTab")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        closeSessionTab(id);
+                      }}
+                    >
+                      <IconClose />
+                    </button>
+                  </div>
+                );
+              })}
+              <button className="stab-new" title={t("nav.newSession")} onClick={() => void newSession()}>
+                +
+              </button>
+            </div>
+          ) : null}
           <div className="center-tabs">
             <button
               className={centerTab === "chat" ? "active" : ""}

@@ -856,6 +856,16 @@ button.chip { cursor: pointer; }
 }
 .suggest-chip:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); box-shadow: 0 0 18px var(--accent-glow); }
 
+.session-tabs { display: flex; align-items: center; gap: 2px; padding: 6px 10px 0; overflow-x: auto; flex-shrink: 0; }
+.stab { display: flex; align-items: center; gap: 6px; padding: 5px 8px 5px 10px; border-radius: 8px 8px 0 0; color: var(--muted); cursor: pointer; white-space: nowrap; font-size: 12px; max-width: 180px; border-bottom: 2px solid transparent; }
+.stab:hover { background: var(--elev); }
+.stab.active { background: var(--elev2); color: var(--text); border-bottom-color: var(--accent); }
+.stab-name { overflow: hidden; text-overflow: ellipsis; }
+.stab-close { background: transparent; border: none; color: var(--faint); width: 16px; height: 16px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.stab-close:hover { background: var(--border); color: var(--text); }
+.stab-close svg { width: 11px; height: 11px; }
+.stab-new { background: none; border: none; color: var(--faint); padding: 5px 10px; border-radius: 7px; cursor: pointer; font-size: 14px; }
+.stab-new:hover { color: var(--text); background: var(--elev); }
 .center-tabs { display: flex; gap: 2px; padding: 6px 10px 0; flex-shrink: 0; }
 .center-tabs button { font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); background: none; border: none; border-radius: 7px; padding: 5px 10px; cursor: pointer; }
 .center-tabs button:hover { color: var(--text); background: var(--elev); }
