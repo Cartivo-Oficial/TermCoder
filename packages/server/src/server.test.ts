@@ -63,6 +63,7 @@ describe("server", () => {
       registry: new ToolRegistry(),
       runner: scriptedRunner(),
       cwd: dir,
+      license: () => ({ active: true, tier: "pro" }),
     });
     await new Promise<void>((resolve) => server.listen(0, resolve));
     port = (server.address() as AddressInfo).port;
@@ -494,5 +495,72 @@ describe("server", () => {
       body: JSON.stringify({ name: "empty", steps: [], cwd: dir }),
     });
     expect(res.status).toBe(400);
+  });
+
+  it("reports license status and rejects an invalid activation key", async () => {
+    const status = (await (await fetch(`${base()}/license`)).json()) as { active: boolean; tier?: string };
+    expect(status.active).toBe(true); // this server is injected as licensed
+    const bad = await fetch(`${base()}/license`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ key: "not-a-real-key" }),
+    });
+    expect(bad.status).toBe(400);
+    expect(((await bad.json()) as { active: boolean }).active).toBe(false);
+  });
+
+  it("lets a licensed host admit a second room participant", async () => {
+    const record = (await (
+      await fetch(`${base()}/sessions`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ cwd: dir }),
+      })
+    ).json()) as { id: string };
+    const ws1 = new WebSocket(`ws://localhost:${port}/sessions/${record.id}/stream?name=Host`);
+    await new Promise<void>((r) => ws1.on("message", (raw) => { if (JSON.parse(raw.toString()).type === "room-welcome") r(); }));
+    const ws2 = new WebSocket(`ws://localhost:${port}/sessions/${record.id}/stream?name=Guest`);
+    const type = await new Promise<string>((r) => ws2.on("message", (raw) => r(JSON.parse(raw.toString()).type as string)));
+    ws1.close();
+    ws2.close();
+    expect(type).toBe("room-welcome");
+  });
+
+  it("blocks a second room participant and gates classroom hosting when unlicensed", async () => {
+    const free = createServer({
+      config,
+      store,
+      registry: new ToolRegistry(),
+      runner: scriptedRunner(),
+      cwd: dir,
+      license: () => ({ active: false }),
+    });
+    await new Promise<void>((r) => free.listen(0, r));
+    const fport = (free.address() as AddressInfo).port;
+    const fbase = `http://localhost:${fport}`;
+
+    const create = await fetch(`${fbase}/classroom`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "create", name: "Bio 101" }),
+    });
+    expect(create.status).toBe(402);
+
+    const record = (await (
+      await fetch(`${fbase}/sessions`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ cwd: dir }),
+      })
+    ).json()) as { id: string };
+    const ws1 = new WebSocket(`ws://localhost:${fport}/sessions/${record.id}/stream?name=Host`);
+    await new Promise<void>((r) => ws1.on("message", (raw) => { if (JSON.parse(raw.toString()).type === "room-welcome") r(); }));
+    const ws2 = new WebSocket(`ws://localhost:${fport}/sessions/${record.id}/stream?name=Guest`);
+    const type = await new Promise<string>((r) => ws2.on("message", (raw) => r(JSON.parse(raw.toString()).type as string)));
+    ws1.close();
+    ws2.close();
+    expect(type).toBe("room-locked");
+
+    await new Promise<void>((r) => free.close(() => r()));
   });
 });

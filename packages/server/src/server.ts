@@ -81,6 +81,9 @@ import {
   deleteRecipe,
   getRecipe,
   composeRecipeRun,
+  licenseStatus,
+  saveLicenseKey,
+  type LicenseInfo,
   type RecipeAudience,
   type RecipeScope,
   type Config,
@@ -102,6 +105,7 @@ export interface ServerDeps {
   cwd?: string;
   status?: ServerStatus;
   webDir?: string;
+  license?: () => LicenseInfo;
 }
 
 // A live room = every socket attached to one session. One shared agent runner;
@@ -128,6 +132,7 @@ interface Ctx {
   status: ServerStatus;
   webDir?: string;
   rooms: Map<string, Room>;
+  license: () => LicenseInfo;
 }
 
 export function createServer(deps: ServerDeps = {}): Server {
@@ -140,6 +145,7 @@ export function createServer(deps: ServerDeps = {}): Server {
     status: deps.status ?? { mcp: [], lsp: [], plugins: [] },
     webDir: deps.webDir,
     rooms: new Map(),
+    license: deps.license ?? (() => licenseStatus()),
   };
 
   const http = createHttpServer((req, res) => {
@@ -361,6 +367,16 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     return sendJson(res, 200, { model: ctx.config.model, providers: providerStatus(ctx), ...ctx.status });
   }
 
+  if (req.method === "GET" && parts.length === 1 && parts[0] === "license") {
+    return sendJson(res, 200, ctx.license());
+  }
+  if (req.method === "POST" && parts.length === 1 && parts[0] === "license") {
+    const body = await readJson(req);
+    const key = typeof body.key === "string" ? body.key : "";
+    const info = saveLicenseKey(key);
+    return sendJson(res, info.active ? 200 : 400, info);
+  }
+
   if (req.method === "GET" && parts.length === 1 && parts[0] === "agents") {
     const agents = discoverAgents({ config: ctx.config, cwd: ctx.cwd }).map((a) => ({
       name: a.name,
@@ -470,6 +486,10 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     const body = await readJson(req);
     const action = body.action;
     const code = typeof body.code === "string" ? body.code : "";
+    const needsPro = action === "create" || action === "assign";
+    if (needsPro && !ctx.license().active) {
+      return sendJson(res, 402, { error: "termcoder Pro is required to host a classroom.", upgrade: true });
+    }
     return withGitHub(res, ctx, async (client) => {
       if (action === "create") {
         if (!body.name) throw new GitHubError(400, "missing 'name'");
@@ -1102,6 +1122,11 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
   }
 
   const room = getRoom(ctx, sessionId);
+  if (room.sockets.size >= 1 && !ctx.license().active) {
+    ws.send(JSON.stringify({ type: "room-locked", error: "The host needs termcoder Pro to host a room." }));
+    ws.close(1008, "host needs termcoder Pro");
+    return;
+  }
   const rawName = (url.searchParams.get("name") ?? "").trim().slice(0, 40);
   const name = rawName || `Guest ${room.sockets.size + 1}`;
   const peerId = randomUUID();
