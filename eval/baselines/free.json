@@ -1,0 +1,163 @@
+{
+  "model": "termcoderfree/auto",
+  "totalPass": 6,
+  "totalRuns": 7,
+  "summary": [
+    {
+      "task": "add-version-flag",
+      "category": "feature",
+      "passes": 0,
+      "runs": 1,
+      "medianSeconds": 300,
+      "leaks": 0
+    },
+    {
+      "task": "already-passing",
+      "category": "restraint",
+      "passes": 1,
+      "runs": 1,
+      "medianSeconds": 63,
+      "leaks": 0
+    },
+    {
+      "task": "fix-async-await",
+      "category": "debug",
+      "passes": 1,
+      "runs": 1,
+      "medianSeconds": 120,
+      "leaks": 0
+    },
+    {
+      "task": "fix-sum-bug",
+      "category": "debug",
+      "passes": 1,
+      "runs": 1,
+      "medianSeconds": 102,
+      "leaks": 0
+    },
+    {
+      "task": "implement-slugify",
+      "category": "implement",
+      "passes": 1,
+      "runs": 1,
+      "medianSeconds": 122,
+      "leaks": 0
+    },
+    {
+      "task": "multi-file-discount",
+      "category": "multi-file",
+      "passes": 1,
+      "runs": 1,
+      "medianSeconds": 207,
+      "leaks": 0
+    },
+    {
+      "task": "write-tests",
+      "category": "testing",
+      "passes": 1,
+      "runs": 1,
+      "medianSeconds": 216,
+      "leaks": 0
+    }
+  ],
+  "raw": [
+    {
+      "task": "add-version-flag",
+      "category": "feature",
+      "pass": false,
+      "verifyPass": false,
+      "checkPass": true,
+      "checkFailures": [],
+      "tamperedTest": false,
+      "error": "turn timed out",
+      "toolCalls": 0,
+      "tokens": 0,
+      "leakedToolNames": 0,
+      "seconds": 300
+    },
+    {
+      "task": "already-passing",
+      "category": "restraint",
+      "pass": true,
+      "verifyPass": true,
+      "checkPass": true,
+      "checkFailures": [],
+      "tamperedTest": false,
+      "error": null,
+      "toolCalls": 1,
+      "tokens": 0,
+      "leakedToolNames": 0,
+      "seconds": 63
+    },
+    {
+      "task": "fix-async-await",
+      "category": "debug",
+      "pass": true,
+      "verifyPass": true,
+      "checkPass": true,
+      "checkFailures": [],
+      "tamperedTest": false,
+      "error": null,
+      "toolCalls": 3,
+      "tokens": 0,
+      "leakedToolNames": 0,
+      "seconds": 120
+    },
+    {
+      "task": "fix-sum-bug",
+      "category": "debug",
+      "pass": true,
+      "verifyPass": true,
+      "checkPass": true,
+      "checkFailures": [],
+      "tamperedTest": false,
+      "error": null,
+      "toolCalls": 3,
+      "tokens": 0,
+      "leakedToolNames": 0,
+      "seconds": 102
+    },
+    {
+      "task": "implement-slugify",
+      "category": "implement",
+      "pass": true,
+      "verifyPass": true,
+      "checkPass": true,
+      "checkFailures": [],
+      "tamperedTest": false,
+      "error": null,
+      "toolCalls": 3,
+      "tokens": 0,
+      "leakedToolNames": 0,
+      "seconds": 122
+    },
+    {
+      "task": "multi-file-discount",
+      "category": "multi-file",
+      "pass": true,
+      "verifyPass": true,
+      "checkPass": true,
+      "checkFailures": [],
+      "tamperedTest": false,
+      "error": null,
+      "toolCalls": 5,
+      "tokens": 0,
+      "leakedToolNames": 0,
+      "seconds": 207
+    },
+    {
+      "task": "write-tests",
+      "category": "testing",
+      "pass": true,
+      "verifyPass": true,
+      "checkPass": true,
+      "checkFailures": [],
+      "tamperedTest": false,
+      "error": null,
+      "toolCalls": 6,
+      "tokens": 0,
+      "leakedToolNames": 0,
+      "seconds": 216
+    }
+  ]
+}

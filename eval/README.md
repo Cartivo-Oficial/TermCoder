@@ -15,8 +15,14 @@ pnpm eval --category=debug       # every task in one category
 pnpm eval --model=anthropic/claude-sonnet-5 --runs=3
 pnpm eval --list                 # print the task table, don't run
 pnpm eval --save                 # write eval/results/<stamp>.json + latest.json
-pnpm eval --baseline=eval/results/latest.json   # flag regressions vs a saved run
+pnpm eval --baseline=eval/baselines/free.json   # flag regressions vs the committed baseline
 ```
+
+`eval/results/` is gitignored (per-run artifacts). A committed reference run
+lives in `eval/baselines/` — `free.json` is the free `termcoderfree/auto` model
+at 6/7 (only `add-version-flag` fails, on a turn timeout). Regenerate or add a
+stronger-model baseline with `--save` then copy `results/latest.json` into
+`baselines/`.
 
 Flags: `--model`, `--task`, `--category`, `--runs`, `--timeout` (seconds/turn),
 `--save`, `--baseline=<file>`, `--list`.
