@@ -204,6 +204,8 @@ export {
   submitAssignment,
   listSubmissions,
   listRoster,
+  gradeSubmission,
+  listGrades,
   loadClassrooms,
   rememberClass,
   type Classroom,

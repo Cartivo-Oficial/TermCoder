@@ -6,7 +6,9 @@ import {
   addAssignment,
   createClassroom,
   fetchClassroom,
+  gradeSubmission,
   joinClassroom,
+  listGrades,
   listRoster,
   listSubmissions,
   loadClassrooms,
@@ -96,5 +98,25 @@ describe("classroom", () => {
     expect(subs[0]).toMatchObject({ user: "student", assignmentId: a.id, link: "https://viewer/x", note: "done!" });
 
     expect(await listSubmissions(cls.code, teacher, "other")).toHaveLength(0);
+  });
+
+  it("records a grade with feedback and keeps only the latest per student", async () => {
+    const be = backend();
+    const teacher = be.client("teacher");
+    const cls = await createClassroom("Bio 101", teacher, { env });
+    const a = await addAssignment(cls.code, { title: "Cell essay" }, teacher);
+
+    await gradeSubmission(cls.code, { assignmentId: a.id, user: "@student", grade: "B", feedback: "solid" }, teacher);
+    let grades = await listGrades(cls.code, teacher);
+    expect(grades).toHaveLength(1);
+    expect(grades[0]).toMatchObject({ user: "student", assignmentId: a.id, grade: "B", feedback: "solid" });
+
+    await gradeSubmission(cls.code, { assignmentId: a.id, user: "student", grade: "A" }, teacher);
+    grades = await listGrades(cls.code, teacher);
+    expect(grades).toHaveLength(1);
+    expect(grades[0]).toMatchObject({ grade: "A" });
+    expect(grades[0]!.feedback).toBeUndefined();
+
+    expect(await listGrades(cls.code, teacher, "other")).toHaveLength(0);
   });
 });

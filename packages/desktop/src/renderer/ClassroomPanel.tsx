@@ -19,6 +19,13 @@ interface Submission {
   note?: string;
   at: string;
 }
+interface Grade {
+  user: string;
+  assignmentId: string;
+  grade: string;
+  feedback?: string;
+  at: string;
+}
 
 interface ClassroomPanelProps {
   port: number;
@@ -34,6 +41,8 @@ export function ClassroomPanel({ port, onClose, onUpgrade }: ClassroomPanelProps
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [roster, setRoster] = useState<Array<{ user: string; at: string }>>([]);
   const [subs, setSubs] = useState<Submission[]>([]);
+  const [grades, setGrades] = useState<Grade[]>([]);
+  const [gradeDrafts, setGradeDrafts] = useState<Record<string, string>>({});
   const [newName, setNewName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [aTitle, setATitle] = useState("");
@@ -73,6 +82,7 @@ export function ClassroomPanel({ port, onClose, onUpgrade }: ClassroomPanelProps
     setAssignments([]);
     setRoster([]);
     setSubs([]);
+    setGrades([]);
     setBusy(true);
     const detail = (await post({ action: "fetch", code: c.code })) as { assignments?: Assignment[] } | null;
     if (detail?.assignments) setAssignments(detail.assignments);
@@ -81,8 +91,23 @@ export function ClassroomPanel({ port, onClose, onUpgrade }: ClassroomPanelProps
       if (Array.isArray(r)) setRoster(r);
       const s = (await post({ action: "submissions", code: c.code })) as Submission[] | null;
       if (Array.isArray(s)) setSubs(s);
+      const g = (await post({ action: "grades", code: c.code })) as Grade[] | null;
+      if (Array.isArray(g)) setGrades(g);
     }
     setBusy(false);
+  }
+
+  async function gradeSub(assignmentId: string, user: string) {
+    if (!selected) return;
+    const key = `${assignmentId}::${user}`;
+    const grade = (gradeDrafts[key] ?? "").trim();
+    if (!grade) return;
+    const ok = await post({ action: "grade", code: selected.code, assignmentId, user, grade });
+    if (ok) {
+      setGradeDrafts((prev) => ({ ...prev, [key]: "" }));
+      const g = (await post({ action: "grades", code: selected.code })) as Grade[] | null;
+      if (Array.isArray(g)) setGrades(g);
+    }
   }
 
   async function createClass() {
@@ -193,13 +218,28 @@ export function ClassroomPanel({ port, onClose, onUpgrade }: ClassroomPanelProps
                       </div>
                       {selected.role === "teacher" && aSubs.length ? (
                         <div className="class-subs">
-                          {aSubs.map((s, i) => (
-                            <div className="class-sub" key={i}>
-                              <span className="class-sub-user">@{s.user}</span>
-                              <a className="class-sub-link" href={s.link} target="_blank" rel="noopener">{t("class.openSubmission")}</a>
-                              {s.note ? <span className="class-sub-note">{s.note}</span> : null}
-                            </div>
-                          ))}
+                          {aSubs.map((s, i) => {
+                            const g = grades.find((x) => x.assignmentId === a.id && x.user === s.user);
+                            const key = `${a.id}::${s.user}`;
+                            return (
+                              <div className="class-sub" key={i}>
+                                <span className="class-sub-user">@{s.user}</span>
+                                <a className="class-sub-link" href={s.link} target="_blank" rel="noopener">{t("class.openSubmission")}</a>
+                                {s.note ? <span className="class-sub-note">{s.note}</span> : null}
+                                {g ? <span className="class-grade">{g.grade}</span> : null}
+                                <span className="class-grade-form">
+                                  <input
+                                    className="settings-input class-grade-input"
+                                    value={gradeDrafts[key] ?? ""}
+                                    placeholder={g ? g.grade : t("class.gradePlaceholder")}
+                                    onChange={(e) => setGradeDrafts((prev) => ({ ...prev, [key]: e.target.value }))}
+                                    onKeyDown={(e) => { if (e.key === "Enter") void gradeSub(a.id, s.user); }}
+                                  />
+                                  <button className="settings-btn sm" onClick={() => void gradeSub(a.id, s.user)}>{t("class.gradeBtn")}</button>
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
                       ) : null}
                     </div>

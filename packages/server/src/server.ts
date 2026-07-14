@@ -70,6 +70,8 @@ import {
   submitAssignment,
   listSubmissions,
   listRoster,
+  gradeSubmission,
+  listGrades,
   loadClassrooms,
   Session,
   SessionStore,
@@ -486,7 +488,7 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
     const body = await readJson(req);
     const action = body.action;
     const code = typeof body.code === "string" ? body.code : "";
-    const needsPro = action === "create" || action === "assign";
+    const needsPro = action === "create" || action === "assign" || action === "grade";
     if (needsPro && !ctx.license().active) {
       return sendJson(res, 402, { error: "termcoder Pro is required to host a classroom.", upgrade: true });
     }
@@ -509,6 +511,16 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
       }
       if (action === "submissions") return await listSubmissions(code, client, body.assignmentId as string | undefined);
       if (action === "roster") return await listRoster(code, client);
+      if (action === "grade") {
+        if (!body.assignmentId || !body.user || !body.grade) throw new GitHubError(400, "missing grade fields");
+        return await gradeSubmission(code, {
+          assignmentId: String(body.assignmentId),
+          user: String(body.user),
+          grade: String(body.grade),
+          feedback: body.feedback as string | undefined,
+        }, client).then(() => ({ ok: true }));
+      }
+      if (action === "grades") return await listGrades(code, client, body.assignmentId as string | undefined);
       throw new GitHubError(400, "unknown classroom action");
     });
   }

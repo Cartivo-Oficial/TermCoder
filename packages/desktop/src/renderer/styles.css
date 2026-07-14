@@ -740,6 +740,10 @@ svg { display: block; }
 .class-sub-user { font-family: var(--mono); color: var(--text); }
 .class-sub-link { color: var(--accent); }
 .class-sub-note { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.class-grade { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 1px 8px; }
+.class-grade-form { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; }
+.class-grade-input { width: 92px; padding: 4px 8px; font-size: 12px; }
+.class-grade-form .settings-btn { margin-top: 0; padding: 4px 9px; }
 @media (max-width: 600px) { .class-forms { grid-template-columns: 1fr; } }
 
 :root[data-wrap="on"] .markdown pre,

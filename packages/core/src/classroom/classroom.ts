@@ -38,6 +38,14 @@ export interface Submission {
   at: string;
 }
 
+export interface Grade {
+  user: string;
+  assignmentId: string;
+  grade: string;
+  feedback?: string;
+  at: string;
+}
+
 
 function storeFile(env: NodeJS.ProcessEnv): string {
   return configFile("classrooms.json", env);
@@ -166,4 +174,38 @@ export async function listRoster(code: string, client: GitHubClient): Promise<Ar
   return comments
     .filter((c) => c.body.startsWith("[joined]"))
     .map((c) => ({ user: c.body.replace("[joined]", "").trim(), at: c.created_at }));
+}
+
+export async function gradeSubmission(
+  code: string,
+  opts: { assignmentId: string; user: string; grade: string; feedback?: string },
+  client: GitHubClient,
+): Promise<void> {
+  const id = parseGistId(code);
+  const user = opts.user.replace(/^@/, "");
+  const body =
+    `[grade] a=${opts.assignmentId} for @${user}: ${opts.grade}` + (opts.feedback ? ` — ${opts.feedback}` : "");
+  await client.createGistComment(id, body);
+}
+
+export async function listGrades(
+  code: string,
+  client: GitHubClient,
+  assignmentId?: string,
+): Promise<Grade[]> {
+  const comments = await client.listGistComments(parseGistId(code));
+  const latest = new Map<string, Grade>();
+  for (const c of comments) {
+    const m = c.body.match(/^\[grade\] a=(\S+) for @(\S+): (.+?)(?: — (.*))?$/);
+    if (m && (!assignmentId || m[1] === assignmentId)) {
+      latest.set(`${m[1]}::${m[2]}`, {
+        assignmentId: m[1]!,
+        user: m[2]!,
+        grade: m[3]!,
+        feedback: m[4],
+        at: c.created_at,
+      });
+    }
+  }
+  return [...latest.values()];
 }
