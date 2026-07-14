@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.10.0
+
+**termcoder Pro — the app teams and classrooms run on.** The solo coding agent
+stays free and open source forever, and joining any live room or classroom is
+always free. Hosting is the new Pro tier: run live rooms for more than one
+person, create classrooms with a teacher dashboard, grade submissions, and sync
+your sessions across devices. The host pays; everyone they invite joins at no
+cost. Licenses are signed and verified offline — no account, no server. Activate
+a key in Settings → termcoder Pro.
+
+**A teacher dashboard, grading, and cross-device sync.** Create a class, add
+assignments, see who joined, review each student's submission, and give a grade
+with feedback — all over GitHub, nothing to host. Turn on session sync and pick
+up your work on another machine.
+
+**Send feels alive.** A message now glides into the thread with a soft rise, the
+terminal shows a blinking caret while a reply streams and a live token count as
+it works, and dropped MCP servers reconnect on their own instead of dying.
+
+**A recipes panel and an honest dashboard.** Browse, run, and create saved
+workflows from the desktop. The web dashboard shows your real synced study data
+and stops dressing sample rows up as live ones.
+
 ## 0.8.2
 
 **The keyless model can use its tools again.** GPT-OSS sometimes names a tool
