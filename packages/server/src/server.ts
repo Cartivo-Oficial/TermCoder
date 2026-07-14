@@ -76,6 +76,13 @@ import {
   ToolRegistry,
   transcribeAudio,
   transcriptSegments,
+  discoverRecipes,
+  saveRecipe,
+  deleteRecipe,
+  getRecipe,
+  composeRecipeRun,
+  type RecipeAudience,
+  type RecipeScope,
   type Config,
   type ModelRunner,
   type PermissionDecision,
@@ -365,6 +372,48 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
       readOnly: !agentCanMutate(a),
     }));
     return sendJson(res, 200, agents);
+  }
+
+  if (req.method === "GET" && parts.length === 1 && parts[0] === "recipes") {
+    const cwd = url.searchParams.get("cwd") || ctx.cwd;
+    return sendJson(res, 200, discoverRecipes({ cwd }));
+  }
+
+  if (req.method === "POST" && parts.length === 1 && parts[0] === "recipes") {
+    const body = await readJson(req);
+    const name = typeof body.name === "string" ? body.name : "";
+    const steps = Array.isArray(body.steps) ? body.steps.filter((s): s is string => typeof s === "string") : [];
+    if (!name.trim() || steps.length === 0) return sendJson(res, 400, { error: "name and at least one step required" });
+    const cwd = typeof body.cwd === "string" && body.cwd ? body.cwd : ctx.cwd;
+    const scope: RecipeScope = body.scope === "user" ? "user" : "project";
+    const audience: RecipeAudience =
+      body.audience === "dev" || body.audience === "study" ? body.audience : "any";
+    try {
+      const r = saveRecipe({
+        scope,
+        name,
+        description: typeof body.description === "string" ? body.description : "",
+        audience,
+        steps,
+        cwd,
+      });
+      return sendJson(res, 200, r);
+    } catch (err) {
+      return sendJson(res, 400, { error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
+  if (req.method === "GET" && parts.length === 3 && parts[0] === "recipes" && parts[2] === "run") {
+    const cwd = url.searchParams.get("cwd") || ctx.cwd;
+    const r = getRecipe(decodeURIComponent(parts[1]!), { cwd });
+    if (!r) return sendJson(res, 404, { error: "recipe not found" });
+    return sendJson(res, 200, { prompt: composeRecipeRun(r), recipe: r });
+  }
+
+  if (req.method === "DELETE" && parts.length === 2 && parts[0] === "recipes") {
+    const cwd = url.searchParams.get("cwd") || ctx.cwd;
+    const removed = deleteRecipe({ name: decodeURIComponent(parts[1]!), cwd });
+    return sendJson(res, removed ? 200 : 404, removed ? { ok: true } : { error: "recipe not found" });
   }
 
   if (req.method === "GET" && parts.length === 1 && parts[0] === "models") {

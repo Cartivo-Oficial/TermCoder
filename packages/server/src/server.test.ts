@@ -452,4 +452,47 @@ describe("server", () => {
     });
     expect(res.status).toBe(400);
   });
+
+  it("saves, lists, runs, and deletes recipes over HTTP", async () => {
+    const save = await fetch(`${base()}/recipes`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        scope: "project",
+        name: "Open a PR",
+        description: "ship the branch",
+        audience: "dev",
+        steps: ["run the tests", "push the branch", "open a pull request"],
+        cwd: dir,
+      }),
+    });
+    expect(save.status).toBe(200);
+    const saved = (await save.json()) as { name: string; steps: string[] };
+    expect(saved.name).toBe("open-a-pr");
+    expect(saved.steps).toHaveLength(3);
+
+    const list = (await (await fetch(`${base()}/recipes?cwd=${encodeURIComponent(dir)}`)).json()) as Array<{ name: string }>;
+    expect(list.some((r) => r.name === "open-a-pr")).toBe(true);
+
+    const run = (await (
+      await fetch(`${base()}/recipes/open-a-pr/run?cwd=${encodeURIComponent(dir)}`)
+    ).json()) as { prompt: string };
+    expect(run.prompt).toContain("open-a-pr");
+    expect(run.prompt).toContain("open a pull request");
+
+    const del = await fetch(`${base()}/recipes/open-a-pr?cwd=${encodeURIComponent(dir)}`, { method: "DELETE" });
+    expect(del.status).toBe(200);
+
+    const runMissing = await fetch(`${base()}/recipes/open-a-pr/run?cwd=${encodeURIComponent(dir)}`);
+    expect(runMissing.status).toBe(404);
+  });
+
+  it("rejects a recipe with no steps", async () => {
+    const res = await fetch(`${base()}/recipes`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "empty", steps: [], cwd: dir }),
+    });
+    expect(res.status).toBe(400);
+  });
 });

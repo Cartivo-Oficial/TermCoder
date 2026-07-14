@@ -12,6 +12,7 @@ import { KEYBIND_ACTIONS, comboFor, matchCombo } from "./keybinds";
 import { IconStop, IconShare, IconCopy, IconEdit, IconMic, IconUndo, IconBolt, IconAgents } from "./Icons";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { RoomPanel } from "./RoomPanel";
+import { RecipesPanel } from "./RecipesPanel";
 import { CallManager } from "./webrtc";
 import { ModelBrowser } from "./ModelBrowser";
 import { Rail } from "./Rail";
@@ -397,6 +398,7 @@ export function App() {
   const [reviewComments, setReviewComments] = useState<DiffComment[]>([]);
   const [hunkIndex, setHunkIndex] = useState(0);
   const [hunkCount, setHunkCount] = useState(0);
+  const [recipesOpen, setRecipesOpen] = useState(false);
   const [leftOpen, setLeftOpen] = useState(true);
   const [sidePanel, setSidePanel] = useState<null | "files" | "study" | "agents">(null);
   const [roomOpen, setRoomOpen] = useState(false);
@@ -1447,6 +1449,19 @@ export function App() {
     setPendingImages([]);
   }
 
+  function runRecipe(prompt: string) {
+    if (busy || !connected) {
+      setInput((v) => (v.trim() ? `${v.trim()}\n\n${prompt}` : prompt));
+      requestAnimationFrame(() => inputRef.current?.focus());
+      return;
+    }
+    appendRef.current = false;
+    setLiveTokens(0);
+    setMessages((prev) => [...prev, { role: "user", text: prompt }]);
+    setBusy(true);
+    wsRef.current?.send(JSON.stringify({ type: "prompt", text: prompt }));
+  }
+
   async function attachFiles() {
     const paths = (await window.api?.pickFile?.()) ?? [];
     if (!paths.length) return;
@@ -1672,6 +1687,7 @@ export function App() {
   const paletteItems: PaletteItem[] = [
     { id: "new", label: t("nav.newSession"), hint: t("palette.hint.command"), run: () => void newSession() },
     { id: "folder", label: t("nav.chooseFolder"), hint: t("palette.hint.command"), run: () => void chooseFolder() },
+    { id: "recipes", label: t("recipes.title"), hint: t("palette.hint.command"), run: () => setRecipesOpen(true) },
     { id: "left", label: t("palette.toggleSessions"), hint: t("palette.hint.command"), run: () => setLeftOpen((v) => !v) },
     { id: "right", label: t("palette.toggleFiles"), hint: t("palette.hint.command"), run: () => setSidePanel((p) => (p === "files" ? null : "files")) },
     {
@@ -1720,6 +1736,7 @@ export function App() {
               <div className="menu" onMouseLeave={() => setMenuOpen(false)}>
                 <button onClick={() => { setMenuOpen(false); void newSession(); }}>{t("nav.newSession")}<span className="mk">Ctrl N</span></button>
                 <button onClick={() => { setMenuOpen(false); void chooseFolder(); }}>{t("nav.openFolder")}<span className="mk">Ctrl O</span></button>
+                <button onClick={() => { setMenuOpen(false); setRecipesOpen(true); }}>{t("recipes.title")}</button>
                 <div className="menu-sep" />
                 <button onClick={() => { setMenuOpen(false); setSettingsOpen(true); }}>{t("nav.settings")}</button>
                 <button onClick={() => { setMenuOpen(false); setPaletteOpen(true); }}>{t("nav.commandPalette")}<span className="mk">Ctrl K</span></button>
@@ -2285,6 +2302,10 @@ export function App() {
         ) : null}
       </div>
       </div>
+
+      {recipesOpen ? (
+        <RecipesPanel port={port} cwd={cwd} onClose={() => setRecipesOpen(false)} onRun={runRecipe} />
+      ) : null}
 
       {roomOpen ? (
         <RoomPanel
