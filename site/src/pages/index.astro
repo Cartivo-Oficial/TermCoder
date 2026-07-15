@@ -1,6 +1,311 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import Hero from "../components/Hero.astro";
+import SpecSection from "../components/SpecSection.astro";
 ---
-<Layout title="TermCoder" description="The open source AI coding agent for your terminal." active="index.html">
-  <section class="sys-sec2"><div class="split"><div class="t full"><h1>TermCoder</h1></div></div></section>
+<Layout
+  title="TermCoder — the open source AI coding agent for your terminal"
+  description="TermCoder is an open source AI coding agent for your terminal and a desktop app with a real shell inside it. Runs with no API key. Routes each turn to the right model. A study tutor is built in."
+  active="index.html"
+>
+  <Hero />
+
+  <SpecSection gutter="—">
+    <div class="t full">
+      <div class="mono-eyebrow"><span class="slash">//</span> HOW IT WORKS</div>
+      <h2>Not a chatbot in a terminal.</h2>
+      <p>It reads the repo, edits files, runs commands, and checks its own work — a real agent loop, not
+        a prompt box with autocomplete. The rest of this page is the machinery, shown as it actually is.</p>
+    </div>
+  </SpecSection>
+
+  <SpecSection gutter="01">
+    <div class="t">
+      <div class="num-head"><span class="nn">01</span><span class="lbl">KEYLESS START</span><span class="live">LIVE</span></div>
+      <h2>No API key.</h2>
+      <p>Opens on a keyless, community-hosted model. No sign-up, no card. It is rate-limited when busy and
+        prompts go to a third party we do not run — point it at local Ollama to make it private.</p>
+    </div>
+    <div class="a">
+      <div class="reqs">
+        <div class="no"><span class="x">&#10007;</span> <s>a credit card</s></div>
+        <div class="no"><span class="x">&#10007;</span> <s>an account to sign up for</s></div>
+        <div class="no"><span class="x">&#10007;</span> <s>an API key to paste</s></div>
+        <div class="no"><span class="x">&#10007;</span> <s>a config file to write</s></div>
+        <div class="yes"><span class="p">&#10095;</span> just run it</div>
+      </div>
+    </div>
+  </SpecSection>
+
+  <SpecSection gutter="02" rev>
+    <div class="t">
+      <div class="num-head"><span class="nn">02</span><span class="lbl">MODEL ROUTING</span><span class="live">LIVE</span></div>
+      <h2>The right model per turn.</h2>
+      <p><code>termcoder/auto</code> classifies each prompt and sends a simple one to a fast model, a hard
+        one to a strong model. No LLM in the routing loop — it is a regex and a tier table. A router and
+        a prompt layer, not a model we trained.</p>
+    </div>
+    <div class="a">
+      <div class="formula">
+        <div class="fh">provider/routing.ts</div>
+        <pre><span class="cm">// classify(prompt)</span>
+len &gt; 600                 <span class="arr">&#8594;</span> <span class="strong">complex</span>
+/architect|debug|race|
+ security|refactor|
+ migrate|optimize/        <span class="arr">&#8594;</span> <span class="strong">complex</span>
+/across|codebase|
+ multiple files/          <span class="arr">&#8594;</span> <span class="strong">complex</span>
+else                      <span class="arr">&#8594;</span> <span class="fast">simple</span>
+
+<span class="cm">// route(complexity)</span>
+<span class="fast">simple</span>  <span class="arr">&#8594;</span> tier.fast   <span class="cm">gemini-flash / haiku</span>
+<span class="strong">complex</span> <span class="arr">&#8594;</span> tier.strong <span class="cm">gemini-pro / sonnet</span></pre>
+      </div>
+    </div>
+  </SpecSection>
+
+  <SpecSection gutter="03">
+    <div class="t full">
+      <div class="num-head"><span class="nn">03</span><span class="lbl">THE TOOLBOX</span></div>
+      <h2>Sixteen real tools.</h2>
+      <p>Every one runs on your machine, behind a permission prompt you can make sticky. Retrieval is
+        built in — <code>symbols</code> and <code>repomap</code> let it find where a thing is defined
+        before it answers. No hidden capabilities, nothing calling home.</p>
+    </div>
+    <div class="a full">
+      <div class="toolgrid">
+        <div class="tl"><b>read</b><span>open a file</span></div>
+        <div class="tl"><b>edit</b><span>change a file</span></div>
+        <div class="tl"><b>write</b><span>create a file</span></div>
+        <div class="tl"><b>bash</b><span>run a command</span></div>
+        <div class="tl"><b>grep</b><span>search contents</span></div>
+        <div class="tl"><b>glob</b><span>find by pattern</span></div>
+        <div class="tl"><b>ls</b><span>list a folder</span></div>
+        <div class="tl"><b>symbols</b><span>go to definition</span></div>
+        <div class="tl"><b>repomap</b><span>map the project</span></div>
+        <div class="tl"><b>memory</b><span>recall &amp; save facts</span></div>
+        <div class="tl"><b>skill</b><span>load a playbook</span></div>
+        <div class="tl"><b>arch</b><span>plan before editing</span></div>
+        <div class="tl"><b>webfetch</b><span>read a URL</span></div>
+        <div class="tl"><b>websearch</b><span>search the web</span></div>
+        <div class="tl"><b>diagnostics</b><span>read LSP errors</span></div>
+        <div class="tl"><b>task</b><span>spawn a sub-agent</span></div>
+      </div>
+    </div>
+  </SpecSection>
+
+  <SpecSection gutter="04" rev>
+    <div class="t">
+      <div class="num-head"><span class="nn">04</span><span class="lbl">MEMORY</span><span class="live">LIVE</span></div>
+      <h2>It remembers.</h2>
+      <p>Tell it once — your stack, the fragile module, the thing you always forget. It keeps that across
+        sessions, so you stop re-explaining your own project every morning.</p>
+    </div>
+    <div class="a">
+      <div class="memo">
+        <div class="mhead"><span>~/.termcoder/memory</span><span class="persist">persists across sessions</span></div>
+        <ul>
+          <li>uses pnpm, never npm</li>
+          <li>the auth module is fragile — tread carefully</li>
+          <li>no barrel files</li>
+          <li>tests run with <code>npm test</code>, not a watcher</li>
+        </ul>
+      </div>
+    </div>
+  </SpecSection>
+
+  <SpecSection gutter="05">
+    <div class="t">
+      <div class="num-head"><span class="nn">05</span><span class="lbl">AUTONOMOUS</span><span class="live">LIVE</span></div>
+      <h2>Give it a goal.</h2>
+      <p>Hand it a task and a verify command. It works, runs the command, reads the failure, and goes
+        again — until it passes. Every turn is checkpointed, so you can walk it back.</p>
+    </div>
+    <div class="a">
+      <div class="loop">
+        <div class="rnd"><span class="dot"></span><div class="body-r"><span class="r">round 1</span> <span class="cmd">edit → npm run build</span><span class="res">&#10007; 2 type errors</span></div></div>
+        <div class="rnd"><span class="dot"></span><div class="body-r"><span class="r">round 2</span> <span class="cmd">fix types → build</span><span class="res">&#10007; 1 test failing</span></div></div>
+        <div class="rnd ok"><span class="dot"></span><div class="body-r"><span class="r">round 3</span> <span class="cmd">fix test → build</span><span class="res">&#10003; build passed</span></div></div>
+      </div>
+    </div>
+  </SpecSection>
+
+  <SpecSection gutter="06">
+    <div class="t full">
+      <div class="num-head"><span class="nn">06</span><span class="lbl">DESKTOP</span></div>
+      <h2>A real shell, inside the app.</h2>
+      <p>Chat, an editor, and an embedded terminal in one window. It scans your PATH and drops a one-click
+        chip on every coding CLI it finds — Claude Code, Codex, Gemini CLI. The shell keeps running while
+        you chat.</p>
+    </div>
+    <div class="a full">
+      <figure class="figure">
+        <img src="/app.png" width="1280" height="800"
+             alt="The TermCoder desktop app with the Terminal tab open, running a project's tests in a real shell." />
+        <figcaption><b>Terminal tab</b> a real shell <span>·</span> <b>chips</b> detected on your PATH</figcaption>
+      </figure>
+    </div>
+  </SpecSection>
+
+  <SpecSection gutter="—">
+    <div class="t full">
+      <div class="mono-eyebrow"><span class="slash">//</span> SYMBOLOGY</div>
+      <h2>Three states, derived not guessed.</h2>
+      <p>The status dot is read from what the session is actually doing, not from a spinner. Learn it once
+        and the UI stops needing tooltips.</p>
+    </div>
+    <div class="a full">
+      <div class="pills">
+        <div class="pill-row">
+          <span class="pill idle"><span class="d"></span>IDLE</span>
+          <p>Prompt waiting, nothing in flight. The dot is dim.</p>
+        </div>
+        <div class="pill-row">
+          <span class="pill gen"><span class="d"></span>GENERATING</span>
+          <p>A turn is running — reading, editing, thinking. The dot is ember and pulses.</p>
+        </div>
+        <div class="pill-row">
+          <span class="pill err"><span class="d"></span>ERROR</span>
+          <p>The last turn failed — a bad key, a rate limit, a tool that threw. <code>/retry</code> or fix and go again.</p>
+        </div>
+      </div>
+    </div>
+  </SpecSection>
+
+  <SpecSection gutter="—" rev>
+    <div class="t">
+      <div class="mono-eyebrow"><span class="slash">//</span> ON-DISK LAYOUT</div>
+      <h2>Files are the source of truth.</h2>
+      <p>No database, no cloud. Your config, memory, sessions, and custom agents are plain files you can
+        read, edit, diff, and delete. Nothing about your project leaves your machine.</p>
+    </div>
+    <div class="a">
+      <div class="tree2">
+        <div class="row"><span class="dir">project/</span></div>
+        <div class="row">├─ <span class="file">AGENTS.md</span>          <span class="cm">// project instructions</span></div>
+        <div class="row">└─ <span class="dir">.termcoder/</span></div>
+        <div class="row">   ├─ <span class="dir">agents/</span>        <span class="cm">// custom sub-agents</span></div>
+        <div class="row">   ├─ <span class="dir">commands/</span>      <span class="cm">// your slash commands</span></div>
+        <div class="row">   └─ <span class="dir">skills/</span>        <span class="cm">// loaded on demand</span></div>
+        <div class="row">&nbsp;</div>
+        <div class="row"><span class="dir">~/.termcoder/</span>          <span class="cm">// global</span></div>
+        <div class="row">├─ <span class="file">config.json</span>        <span class="cm">// providers, model, keys</span></div>
+        <div class="row">├─ <span class="dir">memory/</span>            <span class="cm">// remembered facts</span></div>
+        <div class="row">└─ <span class="dir">sessions/</span>          <span class="cm">// saved transcripts</span></div>
+      </div>
+    </div>
+  </SpecSection>
+
+  <SpecSection gutter="—">
+    <div class="t full">
+      <div class="mono-eyebrow"><span class="slash">//</span> KEYBOARD</div>
+      <h2>Hands on keys, not mouse.</h2>
+      <p>Every panel and action is one chord away. Shown with Ctrl — on macOS swap for &#8984;. Rebind any
+        of them in Settings.</p>
+    </div>
+    <div class="a full">
+      <div class="chordgrid">
+        <div class="chordcol">
+          <h4>SESSION</h4>
+          <div class="chord">Command palette <span class="keys"><span class="kbd">Ctrl</span><span class="kbd">K</span></span></div>
+          <div class="chord">New session <span class="keys"><span class="kbd">Ctrl</span><span class="kbd">N</span></span></div>
+          <div class="chord">Toggle sessions <span class="keys"><span class="kbd">Ctrl</span><span class="kbd">B</span></span></div>
+        </div>
+        <div class="chordcol">
+          <h4>VIEW</h4>
+          <div class="chord">Toggle terminal <span class="keys"><span class="kbd">Ctrl</span><span class="kbd">`</span></span></div>
+          <div class="chord">Toggle files <span class="keys"><span class="kbd">Ctrl</span><span class="kbd">J</span></span></div>
+          <div class="chord">Open folder <span class="keys"><span class="kbd">Ctrl</span><span class="kbd">O</span></span></div>
+        </div>
+        <div class="chordcol">
+          <h4>MODEL</h4>
+          <div class="chord">Pick model <span class="keys"><span class="kbd">/model</span></span></div>
+          <div class="chord">Connect one <span class="keys"><span class="kbd">/upgrade</span></span></div>
+          <div class="chord">Autonomous run <span class="keys"><span class="kbd">/background</span></span></div>
+        </div>
+      </div>
+    </div>
+  </SpecSection>
+
+  <SpecSection gutter="07" rev>
+    <div class="t">
+      <div class="num-head"><span class="nn">07</span><span class="lbl">TERMEXPLORER</span><span class="live">LIVE</span></div>
+      <h2>A tutor is built in.</h2>
+      <p>The same engine, pointed at studying instead of shipping. Spaced-repetition flashcards, practice
+        quizzes, worked homework, and a streak that survives your weekends.</p>
+      <div class="row-2"><a class="btn-2" href="study.html">See study mode</a></div>
+    </div>
+    <div class="a">
+      <div class="deck">
+        <div class="card-f">
+          <div class="kicker">Flashcard · 1 of 8</div>
+          <p class="q">What does the Krebs cycle produce for the electron transport chain?</p>
+          <div class="meta"><span>space to flip</span><span class="streak">streak: 4 days</span></div>
+        </div>
+      </div>
+    </div>
+  </SpecSection>
+
+  <SpecSection gutter="08">
+    <div class="t full">
+      <div class="num-head"><span class="nn">08</span><span class="lbl">MAKE IT YOURS</span></div>
+      <h2>Agents, skills, commands.</h2>
+    </div>
+    <div class="a full">
+      <div class="cards2">
+        <div class="card"><div class="sig">@</div><h3>Agents</h3><p>Give an agent its own model, prompt, tools, and the exact paths it may touch.</p></div>
+        <div class="card"><div class="sig">::</div><h3>Skills</h3><p>Reusable playbooks it loads only when a task needs them, so they cost nothing otherwise.</p></div>
+        <div class="card"><div class="sig">/</div><h3>Commands</h3><p>Your own slash commands, with arguments, shell output, and file mentions baked in.</p></div>
+        <div class="card"><div class="sig">&#8644;</div><h3>MCP &amp; LSP</h3><p>Bring outside tools and language servers into the same loop.</p></div>
+      </div>
+    </div>
+  </SpecSection>
+
+  <SpecSection gutter="—" rev>
+    <div class="t">
+      <div class="mono-eyebrow"><span class="slash">//</span> INSTALL</div>
+      <h2>One command, every platform.</h2>
+      <p>No accounts, no API keys, no telemetry. The CLI runs on Linux, macOS, and Windows; the app ships
+        installers for all three with Node bundled.</p>
+    </div>
+    <div class="a">
+      <div class="fork">
+        <div class="opt">
+          <div class="k">the CLI</div>
+          <h3>term</h3>
+          <p class="line"><span class="in">$</span> npm i -g @termcoder/tui</p>
+          <p class="line"><span class="in">$</span> term</p>
+          <div class="grow"></div>
+          <a class="btn-2" href="install.html">Install guide</a>
+        </div>
+        <div class="opt">
+          <div class="k">the app</div>
+          <h3>desktop</h3>
+          <p class="line">Windows · macOS · Linux</p>
+          <p class="line">Node bundled — nothing to set up</p>
+          <div class="grow"></div>
+          <a class="btn-2 go" href="download.html">Download</a>
+        </div>
+      </div>
+    </div>
+  </SpecSection>
+
+  <SpecSection gutter="—">
+    <div class="t full">
+      <div class="mono-eyebrow"><span class="slash">//</span> OPEN SOURCE</div>
+      <h2>Kept alive by the people it helps.</h2>
+    </div>
+    <div class="a full">
+      <div class="stats">
+        <div class="stat"><b>MIT</b><span>licensed, forever</span></div>
+        <div class="stat"><b>12</b><span>providers supported</span></div>
+        <div class="stat"><b><span class="em">$</span>0</b><span>no paid tier</span></div>
+        <div class="stat"><b>0</b><span>servers holding your code</span></div>
+      </div>
+      <div class="row-2">
+        <a class="btn-2 go" href="https://github.com/Cartivo-Oficial/TermCoder" target="_blank" rel="noopener">Read the source</a>
+        <a class="btn-2" href="docs.html">Read the docs</a>
+      </div>
+    </div>
+  </SpecSection>
 </Layout>

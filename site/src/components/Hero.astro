@@ -1,0 +1,26 @@
+---
+import SpecSection from "./SpecSection.astro";
+import CommandBox from "./CommandBox.astro";
+import TermReplay from "./react/TermReplay";
+---
+<script is:inline src="/hero-session.js"></script>
+<SpecSection gutter="00">
+  <div class="t">
+    <div class="eyebrow-2">open source · MIT</div>
+    <h1>Codes with no API key.</h1>
+    <p class="lead">An agent loop with real tools — read, edit, run — in your terminal, or a desktop
+      app with a shell inside it. It routes each turn to the right model on its own.</p>
+    <CommandBox cmd="npm install -g @termcoder/tui" />
+    <div class="row-2">
+      <a class="btn-2 go" href="download.html" id="desktopDl">Download the app</a>
+      <a class="btn-2" href="install.html">Install the CLI</a>
+    </div>
+  </div>
+  <div class="a">
+    <div class="term-2" role="img" aria-label="A recorded TermCoder session: a prompt, tool calls, and the result">
+      <div class="bar"><i></i><i></i><i></i><span>term — ~/my-project</span></div>
+      <TermReplay client:idle />
+      <div class="foot-2"><span>Build · termcoderfree/auto</span><span class="out">no API key</span></div>
+    </div>
+  </div>
+</SpecSection>

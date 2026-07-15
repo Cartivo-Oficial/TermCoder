@@ -1,0 +1,14 @@
+---
+interface Props {
+  gutter?: string;
+  rev?: boolean;
+}
+
+const { gutter = "", rev = false } = Astro.props;
+---
+<section class="sys-sec2">
+  <div class="gutter">{gutter}</div>
+  <div class:list={["split", { rev }]}>
+    <slot />
+  </div>
+</section>

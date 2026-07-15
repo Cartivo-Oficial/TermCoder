@@ -1,0 +1,14 @@
+---
+import CopyButton from "./react/CopyButton";
+
+interface Props {
+  cmd: string;
+}
+
+const { cmd } = Astro.props;
+---
+<div class="cmd-2">
+  <span class="in">$</span>
+  <code>{cmd}</code>
+  <CopyButton client:visible text={cmd} />
+</div>
