@@ -1,0 +1,22 @@
+---
+const { active = "" } = Astro.props;
+const links = [
+  ["index.html", "Home"], ["features.html", "Features"], ["study.html", "Study"],
+  ["install.html", "Install"], ["download.html", "Download"], ["pricing.html", "Pricing"],
+  ["changelog.html", "Changelog"], ["docs.html", "Docs"], ["login.html", "Sign in"],
+];
+---
+<header class="sys-nav">
+  <div class="in-row">
+    <div class="mark-cell"><span class="brand-mark" aria-hidden="true"></span></div>
+    <div class="row">
+      <a class="wordmark" href="index.html">TERMCODER</a>
+      <nav class="links">
+        {links.map(([href, label]) => (
+          <a href={href} class={active === href ? "on" : ""}>{label}</a>
+        ))}
+        <a href="https://github.com/Cartivo-Oficial/TermCoder" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
+  </div>
+</header>

@@ -17,3 +17,5 @@ eval/results/
 # termcoder Pro license private key — NEVER commit
 pro-private.pem
 **/pro-private.pem
+
+.superpowers/
