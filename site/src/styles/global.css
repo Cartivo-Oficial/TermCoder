@@ -357,6 +357,30 @@
   .snip .c { color: var(--color-faint); }
   .snip .k { color: var(--color-fg); }
 
+  /* ---- changelog timeline (changelog) ---- */
+  .chlog { display: grid; margin-top: 8px; }
+  .chlog .entry { position: relative; display: grid; grid-template-columns: 18px 1fr; gap: 16px; padding-bottom: 40px; }
+  .chlog .entry:last-child { padding-bottom: 0; }
+  .chlog .entry::before { content: ""; position: absolute; left: 5px; top: 18px; bottom: -18px; width: 1px; background: var(--color-line); }
+  .chlog .entry:last-child::before { display: none; }
+  .chlog .entry .dot { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--color-accent); margin-top: 6px; background: var(--color-bg); z-index: 1; }
+  .chlog .entry .body-c { min-width: 0; }
+  .chlog .entry .head-c { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+  .chlog .entry .ver { font-family: var(--font-mono); font-size: var(--text-t4); color: var(--color-accent); }
+  .chlog .entry .ttl { font-family: var(--font-prose); font-size: var(--text-t3); color: var(--color-muted); }
+  .chlog .entry .prose h3 { font-family: var(--font-display); font-size: var(--text-t3); color: var(--color-fg); margin: 22px 0 8px; }
+  .chlog .entry .prose h3:first-child { margin-top: 0; }
+  .chlog .entry .prose p { font-family: var(--font-prose); font-size: var(--text-t3); line-height: 1.65; color: var(--color-muted); margin: 0 0 14px; max-width: 64ch; }
+  .chlog .entry .prose ul, .chlog .entry .prose ol { font-family: var(--font-prose); font-size: var(--text-t3); color: var(--color-muted); padding-left: 20px; margin: 0 0 14px; max-width: 64ch; }
+  .chlog .entry .prose li { margin: 5px 0; }
+  .chlog .entry .prose strong { color: var(--color-fg); font-weight: 600; }
+  .chlog .entry .prose em { color: var(--color-fg); }
+  .chlog .entry .prose code { font-family: var(--font-mono); font-size: 13px; background: var(--color-panel); border: 1px solid var(--color-line); border-radius: 4px; padding: 1px 6px; color: var(--color-fg); }
+  @media (max-width: 600px) {
+    .chlog .entry { grid-template-columns: 1fr; gap: 6px; }
+    .chlog .entry .dot, .chlog .entry::before { display: none; }
+  }
+
   /* ---- feature grid — dense capability cards (features) ---- */
   .feat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--color-line);
     border: 1px solid var(--color-line); border-radius: 6px; overflow: hidden; margin-top: 8px; }

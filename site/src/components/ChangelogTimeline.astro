@@ -1,0 +1,24 @@
+---
+import { marked } from "marked";
+import type { ChangelogEntry } from "../data/changelog";
+
+interface Props {
+  entries: ChangelogEntry[];
+}
+
+const { entries } = Astro.props as Props;
+---
+<div class="chlog">
+  {entries.map((entry) => (
+    <div class="entry">
+      <span class="dot"></span>
+      <div class="body-c">
+        <div class="head-c">
+          <span class="ver">{entry.version}</span>
+          {entry.title && <span class="ttl">{entry.title}</span>}
+        </div>
+        <div class="prose" set:html={marked.parse(entry.body) as string} />
+      </div>
+    </div>
+  ))}
+</div>

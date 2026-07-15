@@ -1,0 +1,21 @@
+---
+import Layout from "../layouts/Layout.astro";
+import SpecSection from "../components/SpecSection.astro";
+import ChangelogTimeline from "../components/ChangelogTimeline.astro";
+import { loadChangelog } from "../data/changelog";
+
+const entries = loadChangelog();
+---
+<Layout
+  title="TermCoder — Changelog"
+  description="What's new in TermCoder — every release, newest first."
+  active="changelog.html"
+>
+  <SpecSection gutter="//">
+    <div class="t full">
+      <div class="mono-eyebrow"><span class="slash">//</span> CHANGELOG</div>
+      <h1>What's new.</h1>
+      <ChangelogTimeline entries={entries} />
+    </div>
+  </SpecSection>
+</Layout>
