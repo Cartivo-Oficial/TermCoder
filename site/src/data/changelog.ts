@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 export interface ChangelogEntry {
@@ -21,6 +21,10 @@ export function parseChangelog(md: string): ChangelogEntry[] {
 }
 
 export function loadChangelog(): ChangelogEntry[] {
-  const path = join(process.cwd(), "..", "CHANGELOG.md");
+  const candidates = [
+    join(process.cwd(), "..", "CHANGELOG.md"),
+    join(process.cwd(), "CHANGELOG.md"),
+  ];
+  const path = candidates.find((p) => existsSync(p)) ?? candidates[0];
   return parseChangelog(readFileSync(path, "utf8"));
 }
