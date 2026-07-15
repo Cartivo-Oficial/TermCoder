@@ -1,5 +1,5 @@
 ---
-const { active = "" } = Astro.props;
+const { active = "", menuBtn = false } = Astro.props;
 const links = [
   ["index.html", "Home"], ["features.html", "Features"], ["study.html", "Study"],
   ["install.html", "Install"], ["download.html", "Download"], ["pricing.html", "Pricing"],
@@ -17,6 +17,9 @@ const links = [
         ))}
         <a href="https://github.com/Cartivo-Oficial/TermCoder" target="_blank" rel="noopener">GitHub</a>
       </nav>
+      {menuBtn && (
+        <button class="menu-btn" onclick="document.querySelector('aside').classList.toggle('open')">Menu</button>
+      )}
     </div>
   </div>
 </header>

@@ -1,0 +1,476 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+<Layout
+  title="Documentation — TermCoder"
+  description="Complete documentation for TermCoder: install, first run, commands, models and providers, modes, agents, skills, study mode, configuration, keyboard shortcuts, and troubleshooting."
+  active="docs.html"
+  bodyClass="sys docs"
+  bare
+  menuBtn
+>
+  <div class="layout">
+    <aside>
+      <div class="grp">Getting started</div>
+      <a href="#getting-started">Overview</a>
+      <a href="#install">Install</a>
+      <a href="#first-run">First run</a>
+      <a href="#quickstart">Quickstart</a>
+      <div class="grp">Using TermCoder</div>
+      <a href="#how-it-works">How it works</a>
+      <a href="#commands">Command reference</a>
+      <a href="#modes">Build and Plan modes</a>
+      <a href="#mentions">Files and sub-agents</a>
+      <div class="grp">Models</div>
+      <a href="#models">Models and providers</a>
+      <a href="#keys">Connecting a key</a>
+      <a href="#local">Running locally</a>
+      <div class="grp">Extending</div>
+      <a href="#agents">Custom agents</a>
+      <a href="#skills">Skills</a>
+      <a href="#study">Study mode</a>
+      <div class="grp">Do more</div>
+      <a href="#autonomous">Autonomous mode</a>
+      <a href="#sync">Sync, share, packs</a>
+      <a href="#classrooms">Classrooms</a>
+      <a href="#web">Run in the browser</a>
+      <div class="grp">Reference</div>
+      <a href="#config">Configuration</a>
+      <a href="#terminal">Terminal</a>
+      <a href="#subscription">Subscription login</a>
+      <a href="#shortcuts">Keyboard shortcuts</a>
+      <a href="#sdk">SDK and server</a>
+      <a href="#troubleshooting">Troubleshooting</a>
+    </aside>
+
+    <main>
+      <h1>Documentation</h1>
+      <p class="tagline">Everything you need to install TermCoder, run it, and make it your own.</p>
+
+      <!-- OVERVIEW -->
+      <section class="doc" id="getting-started">
+        <h2>Overview</h2>
+        <p>TermCoder is an open source AI coding agent that runs in your terminal. You describe a task in
+          plain language; it reads the relevant files, proposes and applies edits, runs commands, and reports
+          back — asking permission before anything that changes your machine.</p>
+        <p>It ships one binary, <code class="i">term</code>, and runs on a <b>free, keyless model out of the box</b> —
+          nothing to sign up for or configure. Bring your own Anthropic, OpenAI, or Google Gemini key when you want
+          more, or run a local model through Ollama. A second persona, <b>TermExplorer</b>, turns the same tool into
+          a study assistant.</p>
+      </section>
+
+      <!-- INSTALL -->
+      <section class="doc" id="install">
+        <h2>Install</h2>
+        <p>You need <a class="link" href="https://nodejs.org" target="_blank" rel="noopener">Node.js 18 or newer</a>. Install the CLI globally from npm:</p>
+        <pre class="block"><span class="c"># Windows (PowerShell or CMD), macOS, or Linux</span>
+npm install <span class="p">-g</span> @termcoder/tui</pre>
+        <p>That adds two equivalent commands to your path — <code class="i">term</code> and <code class="i">TermCoder</code>. Verify the install:</p>
+        <pre class="block">term <span class="p">--version</span></pre>
+        <div class="note"><p><b>Desktop app.</b> Prefer a window? Download the Windows installer from
+          <a class="link" href="https://github.com/Cartivo-Oficial/TermCoder/releases" target="_blank" rel="noopener">GitHub Releases</a>. It runs the same engine as the CLI.</p></div>
+      </section>
+
+      <!-- FIRST RUN -->
+      <section class="doc" id="first-run">
+        <h2>First run</h2>
+        <p>Open a terminal in a project folder and run:</p>
+        <pre class="block">term</pre>
+        <p>Two things happen the first time:</p>
+        <ol>
+          <li><b>Trust prompt.</b> TermCoder asks whether you trust the current folder before it reads or runs
+            anything in it. It remembers your answer per folder.</li>
+          <li><b>Nothing to set up.</b> TermCoder starts on the free, keyless model right away — just type. Want a
+            faster or stronger model? Run <code class="i">/upgrade</code> to connect a free Gemini key in two steps,
+            <code class="i">/setup</code> for the full guide, or pick a local Ollama model.</li>
+        </ol>
+        <p>Type your request at the prompt and press Enter.</p>
+      </section>
+
+      <!-- QUICKSTART -->
+      <section class="doc" id="quickstart">
+        <h2>Quickstart</h2>
+        <p>A first session, end to end:</p>
+        <pre class="block"><span class="c"># in your project folder</span>
+term
+
+<span class="c"># connect a model (once)</span>
+<span class="p">&#10095;</span> /setup
+
+<span class="c"># ask for a change — it reads, edits, and can run tests</span>
+<span class="p">&#10095;</span> add input validation to the signup form and run the tests
+
+<span class="c"># review the plan before it touches files</span>
+<span class="p">&#10095;</span> /model            <span class="c"># switch models any time</span>
+<span class="p">&#10095;</span> shift+tab          <span class="c"># toggle Plan / Build mode</span></pre>
+        <p>TermCoder shows each tool call as it happens, collapses long output, and prints a diff for every edit
+          before applying it.</p>
+      </section>
+
+      <!-- HOW IT WORKS -->
+      <section class="doc" id="how-it-works">
+        <h2>How it works</h2>
+        <p>Each turn, the agent decides which tools to call to satisfy your request. The built-in tools let it
+          read files, list and search the tree, write and edit files, run shell commands, and fetch the web.</p>
+        <p>Anything that changes your machine — writing a file, running a command — goes through a <b>permission
+          check</b> first. You can allow it once, allow it for the session, or deny it. Turn on
+          <code class="i">/auto</code> to auto-approve for the current session when you trust the task.</p>
+        <p>Long tool output is collapsed in the transcript and trimmed from the model's context as the session
+          grows, so a long conversation does not keep re-sending everything it has already read.</p>
+      </section>
+
+      <!-- COMMANDS -->
+      <section class="doc" id="commands">
+        <h2>Command reference</h2>
+        <p>Type <code class="i">/</code> at the prompt to open the command menu. The full set:</p>
+        <table>
+          <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>/help</code></td><td>Show all commands and keyboard shortcuts.</td></tr>
+            <tr><td><code>/setup</code></td><td>Guided model setup — connect a provider or pick a local model.</td></tr>
+            <tr><td><code>/upgrade</code></td><td>Connect a free Gemini key in two steps for faster, stronger answers.</td></tr>
+            <tr><td><code>/key</code></td><td><code>/key &lt;provider&gt; &lt;key&gt;</code> — save an API key for a provider.</td></tr>
+            <tr><td><code>/model</code></td><td>Open the model picker (search, favorites, connect a provider).</td></tr>
+            <tr><td><code>/background</code></td><td><code>/background &lt;goal&gt;</code> — work unattended until the tests pass.</td></tr>
+            <tr><td><code>/agent</code></td><td>Switch the active agent for this session.</td></tr>
+            <tr><td><code>/agents</code></td><td>List the agents available in this project.</td></tr>
+            <tr><td><code>/commands</code></td><td>List custom project commands.</td></tr>
+            <tr><td><code>/skills</code></td><td>List skills the agent can load on demand.</td></tr>
+            <tr><td><code>/tools</code></td><td>Show the tools the current agent may use.</td></tr>
+            <tr><td><code>/auto</code></td><td>Toggle auto-approval of permissions for this session.</td></tr>
+            <tr><td><code>/theme</code></td><td>Change the color theme (saved for next time).</td></tr>
+            <tr><td><code>/new</code></td><td>Start a fresh session.</td></tr>
+            <tr><td><code>/sessions</code></td><td>List past sessions in this project.</td></tr>
+            <tr><td><code>/resume</code></td><td>Resume a previous session.</td></tr>
+            <tr><td><code>/retry</code></td><td>Re-run the last prompt.</td></tr>
+            <tr><td><code>/suggest</code></td><td>Suggest a useful follow-up for the current context.</td></tr>
+            <tr><td><code>/tokens</code></td><td>Show token usage for the session.</td></tr>
+            <tr><td><code>/init</code></td><td>Create an <code>AGENTS.md</code> with project instructions.</td></tr>
+            <tr><td><code>/flashcards</code></td><td><code>/flashcards &lt;topic&gt;</code> — generate study cards into a deck.</td></tr>
+            <tr><td><code>/decks</code></td><td>List your study decks, due counts, and streak.</td></tr>
+            <tr><td><code>/review</code></td><td>Review the cards due today, one at a time.</td></tr>
+            <tr><td><code>/login</code></td><td>Connect a GitHub token for sync, share, packs, and classrooms.</td></tr>
+            <tr><td><code>/sync</code></td><td>Sync settings, drafts, and decks across machines.</td></tr>
+            <tr><td><code>/share</code></td><td>Export the session as HTML you can share.</td></tr>
+            <tr><td><code>/publish</code></td><td>Publish the session to a link anyone can open.</td></tr>
+            <tr><td><code>/import</code></td><td><code>/import &lt;link&gt;</code> — open a shared session.</td></tr>
+            <tr><td><code>/pack</code></td><td>Publish, install, or list packs of agents, skills, and commands.</td></tr>
+            <tr><td><code>/class</code></td><td>Create or join a classroom; manage assignments and submissions.</td></tr>
+            <tr><td><code>/clear</code></td><td>Clear the screen.</td></tr>
+            <tr><td><code>/exit</code></td><td>Quit termcoder.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- MODES -->
+      <section class="doc" id="modes">
+        <h2>Build and Plan modes</h2>
+        <p>TermCoder has two modes. Toggle them with <code class="i">shift+tab</code> — the current mode shows at
+          the bottom of the screen.</p>
+        <ul>
+          <li><b>Build</b> — the default. The agent can read, edit, write, and run commands (with your permission).</li>
+          <li><b>Plan</b> — read-only. The agent inspects the code and proposes an approach without changing any
+            files. Use it to review a plan before committing to it, then switch to Build.</li>
+        </ul>
+      </section>
+
+      <!-- MENTIONS -->
+      <section class="doc" id="mentions">
+        <h2>Files and sub-agents</h2>
+        <p>Two characters give the agent extra context while you type:</p>
+        <table>
+          <thead><tr><th>Type</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td><code>@</code></td><td>Attach a file. A picker opens as you type a path; the file's contents go to the agent.</td></tr>
+            <tr><td><code>$</code></td><td>Hand the task to a specialist sub-agent (reviewer, tester, debugger, architect).</td></tr>
+          </tbody>
+        </table>
+        <p>Sub-agents run a focused sub-task with their own tools and report a summary back to the main session,
+          which keeps the main context clean.</p>
+      </section>
+
+      <!-- MODELS -->
+      <section class="doc" id="models">
+        <h2>Models and providers</h2>
+        <p>Open the picker with <code class="i">/model</code>. It searches a live catalog of models and groups them:</p>
+        <ul>
+          <li><b>Favorites</b> — models you have starred (<code class="i">ctrl+f</code> in the picker).</li>
+          <li><b>TermCoder AI</b> — our own <code class="i">termcoder/auto</code> and <code class="i">termexplorer/auto</code>.</li>
+          <li><b>Cloud</b> — Anthropic, OpenAI, and Google models (need a key).</li>
+          <li><b>Local</b> — models served by Ollama on your machine.</li>
+        </ul>
+        <p>A filled dot means the model is ready to use; an open dot means it needs a key. You can also type a
+          full <code class="i">provider/model</code> id to add one that is not in the list.</p>
+        <h3>termcoder/auto</h3>
+        <p>The default. It routes each task by difficulty — a quick model for simple edits, a stronger one for
+          harder work — and reviews its own changes before finishing. With no key it runs on the free, keyless
+          model; connect a key and it routes to that automatically.</p>
+        <h3>A reliable keyless tier</h3>
+        <p>The free model is community-hosted and can get busy. When a request fails, TermCoder retries it and — if
+          you have connected a key — falls back to it, so a hiccup does not kill your turn. Run
+          <code class="i">/upgrade</code> to connect a free Gemini key in two steps for faster, steadier answers.</p>
+      </section>
+
+      <!-- KEYS -->
+      <section class="doc" id="keys">
+        <h2>Connecting a key</h2>
+        <p>The easiest path is <code class="i">/setup</code>. To set a key directly:</p>
+        <pre class="block"><span class="p">&#10095;</span> /key anthropic sk-ant-...
+<span class="p">&#10095;</span> /key openai sk-...
+<span class="p">&#10095;</span> /key google AIza...</pre>
+        <p>Keys are stored in your user config directory, not in the project. TermCoder also reads standard
+          environment variables if they are set:</p>
+        <table>
+          <thead><tr><th>Provider</th><th>Environment variable</th></tr></thead>
+          <tbody>
+            <tr><td>Anthropic</td><td><code>ANTHROPIC_API_KEY</code></td></tr>
+            <tr><td>OpenAI</td><td><code>OPENAI_API_KEY</code></td></tr>
+            <tr><td>Google Gemini</td><td><code>GEMINI_API_KEY</code> or <code>GOOGLE_GENERATIVE_AI_API_KEY</code></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- LOCAL -->
+      <section class="doc" id="local">
+        <h2>Running locally</h2>
+        <p>To run without any provider key, install <a class="link" href="https://ollama.com" target="_blank" rel="noopener">Ollama</a> and pull a model:</p>
+        <pre class="block"><span class="c"># pull a capable local coding model</span>
+ollama pull qwen2.5-coder
+
+<span class="c"># then pick it in TermCoder</span>
+<span class="p">&#10095;</span> /model   <span class="c"># choose it under "Local"</span></pre>
+        <p>TermCoder detects running Ollama models automatically and lists them in the picker.</p>
+      </section>
+
+      <!-- AGENTS -->
+      <section class="doc" id="agents">
+        <h2>Custom agents</h2>
+        <p>An agent is a named role with its own prompt, model, and tool permissions. Define one by adding a
+          Markdown file with front matter to <code class="i">.termcoder/agents/</code> in your project (or the
+          same folder under your user config for a global agent):</p>
+        <pre class="block"><span class="c"># .termcoder/agents/reviewer.md</span>
+<span class="p">---</span>
+<span class="k">description</span>: Reviews changes, never edits
+<span class="k">mode</span>: subagent
+<span class="k">model</span>: anthropic/claude-sonnet-5
+<span class="k">tools</span>: [read, ls, grep, glob]
+<span class="p">---</span>
+You are a careful code reviewer. Point out correctness bugs and
+risky changes. Do not modify files; describe what should change.</pre>
+        <p>Switch to an agent with <code class="i">/agent</code>, or hand it a sub-task with <code class="i">$</code>.
+          Restricting <code class="i">tools</code> is enough to make an agent read-only.</p>
+      </section>
+
+      <!-- SKILLS -->
+      <section class="doc" id="skills">
+        <h2>Skills</h2>
+        <p>A skill is a reusable playbook the agent loads only when a task calls for it — a set of instructions,
+          and optionally scripts or examples. Add skills under <code class="i">.termcoder/skills/</code>:</p>
+        <pre class="block"><span class="c"># .termcoder/skills/release/SKILL.md</span>
+<span class="p">---</span>
+<span class="k">name</span>: release
+<span class="k">description</span>: Cut a release — bump version, tag, changelog
+<span class="p">---</span>
+Steps to cut a release in this repo:
+1. Bump the version in package.json
+2. Update CHANGELOG.md
+3. Commit, tag, and push</pre>
+        <p>List available skills with <code class="i">/skills</code>. The agent reads a skill's full instructions
+          the moment it decides to use it, so idle skills cost nothing.</p>
+      </section>
+
+      <!-- STUDY -->
+      <section class="doc" id="study">
+        <h2>Study mode</h2>
+        <p>TermCoder ships a sister persona for schoolwork. Open <code class="i">/model</code> and pick
+          <code class="i">termexplorer/auto</code>. The tool switches from a coding agent to a patient tutor:</p>
+        <ul>
+          <li>Explains concepts step by step, in your language.</li>
+          <li>Summarizes notes, articles, or a chapter into key points.</li>
+          <li>Builds flashcards, practice quizzes, and study plans.</li>
+          <li>Works through homework by showing the reasoning, not just the answer.</li>
+        </ul>
+        <p>No programming knowledge is needed — just ask.</p>
+        <h3>Spaced repetition</h3>
+        <p>Flashcards go into decks and come back on a spaced-repetition schedule, so you review each card right
+          before you'd forget it. Reviewing builds a daily streak.</p>
+        <pre class="block"><span class="p">&#10095;</span> /flashcards the water cycle   <span class="c"># make cards, add to a deck</span>
+<span class="p">&#10095;</span> /decks                         <span class="c"># decks, due counts, and streak</span>
+<span class="p">&#10095;</span> /review                        <span class="c"># reveal each card, then grade it 0–5</span></pre>
+        <p>In the desktop app the same decks live under the <b>Study</b> button.</p>
+      </section>
+
+      <!-- AUTONOMOUS -->
+      <section class="doc" id="autonomous">
+        <h2>Autonomous mode</h2>
+        <p>Hand TermCoder a goal and let it work unattended. It plans, edits, and runs your project's check,
+          feeds any failure back into the next round, and keeps going until the check passes or it runs out of
+          rounds.</p>
+        <pre class="block"><span class="p">&#10095;</span> /background add input validation to the signup form and make the tests pass</pre>
+        <p>It auto-approves its own changes while it runs and checkpoints each round, so you can revert. TermCoder
+          detects the check from your project — an npm <code class="i">test</code>, <code class="i">typecheck</code>,
+          or <code class="i">build</code> script, <code class="i">go build</code>, <code class="i">cargo check</code>,
+          or <code class="i">pytest</code>. In the desktop app, toggle the autonomous button in the composer and send
+          your goal.</p>
+      </section>
+
+      <!-- SYNC & PACKS -->
+      <section class="doc" id="sync">
+        <h2>Sync, share, and packs</h2>
+        <p>TermCoder uses GitHub as its backend — no server to run. Connect a token once with
+          <code class="i">/login</code> (it needs the <b>gist</b> scope); it is stored in your user config, never in
+          the project.</p>
+        <table>
+          <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>/sync</code></td><td>Mirror your settings, drafts, and study decks to a private gist, and pull them on another machine. Last write wins.</td></tr>
+            <tr><td><code>/publish</code></td><td>Publish the current session; you get a link that opens in a hosted viewer.</td></tr>
+            <tr><td><code>/import</code></td><td>Open a shared session from its link into a fresh session.</td></tr>
+            <tr><td><code>/pack publish</code></td><td>Bundle this project's agents, skills, and commands into a pack.</td></tr>
+            <tr><td><code>/pack install</code></td><td>Install a pack from a gist or a <code>owner/repo</code> into your project.</td></tr>
+          </tbody>
+        </table>
+        <div class="note"><p><b>Secrets never sync.</b> API keys stay on your machine — sync and share use private
+          gists and carry settings and content only, never your keys.</p></div>
+      </section>
+
+      <!-- CLASSROOMS -->
+      <section class="doc" id="classrooms">
+        <h2>Classrooms</h2>
+        <p>A classroom lets a teacher share packs and assignments with students, all through GitHub. A class is a
+          private gist; joins, submissions, and the roster ride gist comments — async, with nothing to host.</p>
+        <pre class="block"><span class="c"># teacher</span>
+<span class="p">&#10095;</span> /class create "Algorithms 101"
+<span class="p">&#10095;</span> /class assign "Sorting exercise"
+
+<span class="c"># student</span>
+<span class="p">&#10095;</span> /class join &lt;link&gt;        <span class="c"># installs the class's shared packs</span>
+<span class="p">&#10095;</span> /class submit             <span class="c"># publishes your session and posts the link</span>
+
+<span class="c"># teacher</span>
+<span class="p">&#10095;</span> /class submissions        <span class="c"># see who submitted what</span></pre>
+        <p>Joining installs the class's shared packs, so every student starts with the same agents and skills.</p>
+      </section>
+
+      <!-- WEB -->
+      <section class="doc" id="web">
+        <h2>Run in the browser</h2>
+        <p>The same engine runs three ways: the <code class="i">term</code> CLI, the desktop app, and a browser.
+          Start the local server and open the full interface in any browser on your network:</p>
+        <pre class="block"><span class="c"># serve the web app from your machine</span>
+termcoder-server
+<span class="c"># then open the printed http://localhost:PORT</span></pre>
+        <p>Shared sessions also open on their own — a <code class="i">/publish</code> link renders in a hosted
+          viewer with nothing installed.</p>
+      </section>
+
+      <!-- CONFIG -->
+      <section class="doc" id="config">
+        <h2>Configuration</h2>
+        <p>Project settings live in <code class="i">.termcoder/</code> in your repo. Personal settings and secrets
+          live in your user config directory:</p>
+        <table>
+          <thead><tr><th>Location</th><th>Holds</th></tr></thead>
+          <tbody>
+            <tr><td><code>.termcoder/agents/</code></td><td>Project agents.</td></tr>
+            <tr><td><code>.termcoder/commands/</code></td><td>Project commands.</td></tr>
+            <tr><td><code>.termcoder/skills/</code></td><td>Project skills.</td></tr>
+            <tr><td><code>AGENTS.md</code></td><td>Always-on project instructions (create with <code>/init</code>).</td></tr>
+            <tr><td>user config dir</td><td>API keys, theme, favorites, trusted folders, drafts.</td></tr>
+          </tbody>
+        </table>
+        <div class="note"><p><b>Secrets stay out of git.</b> Keys are written to your user config directory, never
+          to the project. Keep <code class="i">.termcoder/</code> in your <code class="i">.gitignore</code> if it holds anything local.</p></div>
+        <p>Change the theme any time with <code class="i">/theme</code>; your choice is saved for next time.</p>
+      </section>
+
+      <!-- TERMINAL -->
+      <section class="doc" id="terminal">
+        <h2>Terminal</h2>
+        <p>The desktop app embeds a real terminal. Open it with the <b>Chat | Terminal</b> tabs at the top of
+          the centre column, or press <code class="i">Ctrl</code> + <code class="i">`</code>. It runs your
+          default shell in the project folder.</p>
+        <p>TermCoder scans your <code class="i">PATH</code> and shows a one-click chip for each coding CLI it
+          finds: Claude Code, termcoder, Codex, and Gemini CLI. The shell keeps running while you are on the
+          Chat tab.</p>
+      </section>
+
+      <!-- SUBSCRIPTION -->
+      <section class="doc" id="subscription">
+        <h2>Subscription login</h2>
+        <p>Instead of an API key, you can sign in with a plan you already have.</p>
+        <pre class="block"><span class="p">/login-claude</span>   <span class="c"># Claude Pro or Max</span>
+<span class="p">/login-chatgpt</span>  <span class="c"># ChatGPT Plus or Pro</span></pre>
+        <p class="note"><b>Experimental.</b> These use the vendors' own login flows. They can break when those
+          flows change, and they are not covered by any support agreement.</p>
+      </section>
+
+      <!-- SHORTCUTS -->
+      <section class="doc" id="shortcuts">
+        <h2>Keyboard shortcuts</h2>
+        <table>
+          <thead><tr><th>Key</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td><code>shift+tab</code></td><td>Toggle Build / Plan mode.</td></tr>
+            <tr><td><code>ctrl+p</code></td><td>Open the command palette.</td></tr>
+            <tr><td><code>/</code></td><td>Open the command menu.</td></tr>
+            <tr><td><code>@</code></td><td>Attach a file.</td></tr>
+            <tr><td><code>$</code></td><td>Delegate to a sub-agent.</td></tr>
+            <tr><td><code>Esc</code></td><td>Interrupt the current turn.</td></tr>
+            <tr><td><code>&uarr; / &darr;</code></td><td>Cycle through your previous prompts.</td></tr>
+            <tr><td><code>Ctrl+&larr; / &rarr;</code></td><td>Jump by word in the input.</td></tr>
+            <tr><td><code>\ + Enter</code></td><td>Insert a newline without sending.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- SDK -->
+      <section class="doc" id="sdk">
+        <h2>SDK and server</h2>
+        <p>TermCoder is a monorepo. The engine is headless and can be driven from your own code, and an HTTP +
+          WebSocket server powers the desktop app.</p>
+        <ul>
+          <li><b><code class="i">@termcoder/core</code></b> — the agent engine: sessions, tools, permissions, providers.</li>
+          <li><b><code class="i">@termcoder/server</code></b> — the HTTP + WebSocket API.</li>
+          <li><b><code class="i">@termcoder/tui</code></b> — the terminal interface (the <code class="i">term</code> binary).</li>
+        </ul>
+        <p>See the <a class="link" href="https://github.com/Cartivo-Oficial/TermCoder/tree/main/docs" target="_blank" rel="noopener">docs folder on GitHub</a> for the SDK and server API reference.</p>
+      </section>
+
+      <!-- TROUBLESHOOTING -->
+      <section class="doc" id="troubleshooting">
+        <h2>Troubleshooting</h2>
+        <h3>The <code class="i">term</code> command isn't found</h3>
+        <p>Make sure the install finished and that npm's global bin directory is on your PATH. Reopen the terminal
+          after installing. Check with <code class="i">npm root -g</code>.</p>
+        <h3>It says a model needs a key</h3>
+        <p>Run <code class="i">/setup</code>, or set the provider's key with <code class="i">/key</code>. To run
+          without a key, use a local Ollama model (see <a class="link" href="#local">Running locally</a>).</p>
+        <h3>An auth or quota error mid-task</h3>
+        <p>The error line points you to <code class="i">/setup</code>. Re-connect the provider or switch models
+          with <code class="i">/model</code>, then <code class="i">/retry</code>.</p>
+        <h3>Nothing happens when I run <code class="i">term</code></h3>
+        <p>Confirm Node.js 18+ with <code class="i">node --version</code>, then reinstall with
+          <code class="i">npm install -g @termcoder/tui</code>.</p>
+        <div class="note"><p>Still stuck? Open an issue on
+          <a class="link" href="https://github.com/Cartivo-Oficial/TermCoder/issues" target="_blank" rel="noopener">GitHub</a>.</p></div>
+      </section>
+    </main>
+  </div>
+
+  <script is:inline>
+    var links = Array.prototype.slice.call(document.querySelectorAll('aside a'));
+    var map = {};
+    links.forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          links.forEach(function (a) { a.classList.remove('active'); });
+          var a = map[e.target.id];
+          if (a) a.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-60px 0px -75% 0px' });
+    document.querySelectorAll('section.doc').forEach(function (s) { obs.observe(s); });
+  </script>
+</Layout>

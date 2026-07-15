@@ -7,9 +7,12 @@ interface Props {
   title: string;
   description: string;
   active?: string;
+  bodyClass?: string;
+  bare?: boolean;
+  menuBtn?: boolean;
 }
 
-const { title, description, active = "" } = Astro.props;
+const { title, description, active = "", bodyClass = "sys", bare = false, menuBtn = false } = Astro.props;
 ---
 <!doctype html>
 <html lang="en">
@@ -20,9 +23,9 @@ const { title, description, active = "" } = Astro.props;
     <title>{title}</title>
     <meta name="description" content={description} />
   </head>
-  <body class="sys">
-    <Nav active={active} />
-    <main><slot /></main>
+  <body class={bodyClass}>
+    <Nav active={active} menuBtn={menuBtn} />
+    {bare ? <slot /> : <main><slot /></main>}
     <Footer />
   </body>
 </html>
