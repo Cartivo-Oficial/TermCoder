@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="stylesheet" href="style.css?v=6" />
+<title>TermCoder — signing in</title>
+<meta name="description" content="Completing your TermCoder sign-in." />
+</head>
+<body class="sys login">
+
+<header class="sys-nav">
+  <div class="in-row">
+    <div class="mark-cell"><span class="brand-mark" aria-hidden="true"></span></div>
+    <div class="row">
+      <a class="wordmark" href="index.html">TERMCODER</a>
+    </div>
+  </div>
+</header>
+
+<main class="auth-wrap">
+  <div class="auth-card">
+    <div class="mono-eyebrow"><span class="slash">//</span> SIGNING IN</div>
+    <h1>One moment.</h1>
+    <p class="auth-lead" id="cb-status">Completing sign-in…</p>
+    <p class="auth-note"><a class="link" href="login.html">Back to sign in</a></p>
+  </div>
+</main>
+
+<script src="config.js?v=3"></script>
+<script src="auth.js?v=6"></script>
+<script>window.TCAuth && window.TCAuth.handleCallback();</script>
+
+</body>
+</html>
