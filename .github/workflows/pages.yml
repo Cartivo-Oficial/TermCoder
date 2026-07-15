@@ -7,7 +7,8 @@ on:
   push:
     branches: [main]
     paths:
-      - "website/**"
+      - "site/**"
+      - "CHANGELOG.md"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -29,9 +30,18 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
       - uses: actions/configure-pages@v5
+      - run: npm ci
+        working-directory: site
+      - run: npm run build
+        working-directory: site
+      - run: node tools/verify.mjs
+        working-directory: site
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: website
+          path: site/dist
       - id: deployment
         uses: actions/deploy-pages@v4
