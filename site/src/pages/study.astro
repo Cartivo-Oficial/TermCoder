@@ -1,0 +1,90 @@
+---
+import Layout from "../layouts/Layout.astro";
+import SpecSection from "../components/SpecSection.astro";
+---
+<Layout
+  title="TermCoder — study mode (TermExplorer)"
+  description="TermExplorer is TermCoder's built-in study tutor: spaced-repetition flashcards, quizzes, and worked homework — the same engine, pointed at learning."
+  active="study.html"
+>
+  <SpecSection gutter="//">
+    <div class="t">
+      <div class="mono-eyebrow"><span class="slash">//</span> TERMEXPLORER</div>
+      <h2>A tutor is built in.</h2>
+      <p class="lead">The same engine, pointed at studying instead of shipping. Switch to the
+        <code>termexplorer/auto</code> model and the coding agent becomes a patient tutor — explaining,
+        quizzing, and building flashcards from whatever you are learning.</p>
+      <div class="row-2">
+        <a class="btn-2 go" href="download.html">Download the app</a>
+        <a class="btn-2" href="install.html">Install the CLI</a>
+      </div>
+    </div>
+    <div class="a">
+      <div class="deck">
+        <div class="card-f">
+          <div class="kicker">Flashcard · 1 of 8</div>
+          <p class="q">What does the Krebs cycle produce for the electron transport chain?</p>
+          <div class="meta"><span>space to flip</span><span class="streak">streak: 4 days</span></div>
+        </div>
+      </div>
+    </div>
+  </SpecSection>
+
+  <SpecSection gutter="01" rev>
+    <div class="t">
+      <div class="num-head"><span class="nn">01</span><span class="lbl">ONE MODEL CHANGE</span></div>
+      <h2>From coder to tutor.</h2>
+      <p>Open the model picker and choose <code>termexplorer/auto</code>. Same keys, same free tier, same
+        folder — the tone and the tools shift to teaching. Ask a question, paste a problem, or point it at
+        your notes.</p>
+    </div>
+    <div class="a">
+      <div class="snip">
+        <div class="sbar"><span>termexplorer</span></div>
+        <pre><span class="in">&#10095;</span> /model termexplorer/auto
+<span class="out">&#10003;</span> switched to study mode
+<span class="in">&#10095;</span> explain the krebs cycle, then quiz me
+<span class="out">&#10003;</span> made 8 flashcards</pre>
+      </div>
+    </div>
+  </SpecSection>
+
+  <SpecSection gutter="02">
+    <div class="t">
+      <div class="num-head"><span class="nn">02</span><span class="lbl">SPACED REPETITION</span></div>
+      <h2>Cards come back at the right time.</h2>
+      <p>Flashcards go into decks and resurface on a spaced-repetition schedule — recall one easily and it
+        waits longer; miss it and it returns soon. A streak keeps you honest across the week.</p>
+    </div>
+    <div class="a">
+      <div class="snip">
+        <div class="sbar"><span>/review</span></div>
+        <pre><span class="in">&#10095;</span> /review
+  <span class="k">3/8 &#183; due today</span>
+  <span class="c">easy &#8594; +4 days</span>
+  <span class="c">again &#8594; +10 min</span>
+  streak: <span class="out">4 days</span></pre>
+      </div>
+    </div>
+  </SpecSection>
+
+  <SpecSection gutter="03" rev>
+    <div class="t">
+      <div class="num-head"><span class="nn">03</span><span class="lbl">NOT JUST CODERS</span></div>
+      <h2>Bring it to your next study session.</h2>
+      <p>No terminal experience needed. Install once, pick the study model, and type your question in
+        plain language — history, biology, math, a language. In the desktop app the decks live under the
+        Study tab, one click away.</p>
+      <div class="row-2"><a class="btn-2" href="docs.html">Read the docs</a></div>
+    </div>
+    <div class="a">
+      <div class="deck">
+        <div class="card-f">
+          <div class="kicker">Deck · World History</div>
+          <p class="q">Which treaty ended the Thirty Years' War, and in what year?</p>
+          <div class="meta"><span>space to flip</span><span class="streak">12 cards</span></div>
+        </div>
+      </div>
+    </div>
+  </SpecSection>
+</Layout>
