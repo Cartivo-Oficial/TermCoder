@@ -1,0 +1,24 @@
+---
+import Layout from "../layouts/Layout.astro";
+import DownloadCards from "../components/react/DownloadCards";
+---
+<Layout
+  title="TermCoder — download"
+  description="Download the TermCoder desktop app for Windows, macOS, or Linux. Node bundled, no account, no API key."
+  active="download.html"
+>
+  <DownloadCards client:load />
+
+  <section class="sys-sec2">
+    <div class="gutter">—</div>
+    <div class="split">
+      <div class="t full">
+        <div class="mono-eyebrow"><span class="slash">//</span> AFTER YOU INSTALL</div>
+        <h2>Open a folder and go.</h2>
+        <p>No account, no API key. It starts on a free, keyless model; connect a better one whenever you
+          want from Settings → Providers.</p>
+        <div class="row-2"><a class="btn-2" href="docs.html">Read the docs</a></div>
+      </div>
+    </div>
+  </section>
+</Layout>

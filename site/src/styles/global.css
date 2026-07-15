@@ -209,6 +209,7 @@
   .reqs .yes .p { color: var(--color-accent); }
 
   /* ---- download grid ---- */
+  .in-word { font-family: var(--font-mono); color: var(--color-accent); }
   .dlgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 8px; }
   .dlcol { border: 1px solid var(--color-line); border-radius: 4px; padding: 16px 16px 10px; min-width: 0; }
   .dlcol .k { font-family: var(--font-display); font-size: 11px; letter-spacing: .12em; color: var(--color-faint); margin-bottom: 8px; }
