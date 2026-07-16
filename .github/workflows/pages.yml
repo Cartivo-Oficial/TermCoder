@@ -36,20 +36,15 @@ jobs:
           node-version: 22
       - uses: actions/configure-pages@v5
       - run: npm ci
-        working-directory: site
-      - run: npm run build
-        working-directory: site
-      - run: node tools/verify.mjs
-        working-directory: site
-      # Redesign preview (Vite + React + shadcn) shipped alongside the live site
-      # at /preview/ so the main pages and the OAuth callback stay untouched.
-      - run: npm ci
         working-directory: app
       - run: npm run build
         working-directory: app
-      - run: cp -r app/dist site/dist/preview
+      # Fails the deploy rather than shipping a page whose assets 404 — the way
+      # the site once went out unstyled.
+      - run: node verify.mjs
+        working-directory: app
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site/dist
+          path: app/dist
       - id: deployment
         uses: actions/deploy-pages@v4

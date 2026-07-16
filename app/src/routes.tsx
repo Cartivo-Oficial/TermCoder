@@ -104,7 +104,7 @@ export const ROUTES: RouteDef[] = [
 ];
 
 export function matchRoute(pathname: string): RouteDef {
-  const clean = pathname.replace(/^\/TermCoder\/preview/, "").replace(/\/$/, "") || "/index.html";
+  const clean = pathname.replace(/^\/TermCoder/, "").replace(/\/$/, "") || "/index.html";
   const withHtml = clean.endsWith(".html") ? clean : `${clean}.html`;
   return ROUTES.find((r) => r.path === withHtml) ?? ROUTES[0];
 }
