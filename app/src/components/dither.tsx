@@ -132,12 +132,22 @@ export function Dither({
       if (!reduce) raf = requestAnimationFrame(render);
     };
 
+    // A hidden/background tab defers layout and never fires ResizeObserver or
+    // rAF, so poll briefly until the canvas actually has a box.
+    let tries = 0;
+    let retry: ReturnType<typeof setTimeout>;
+    const attempt = () => {
+      start();
+      if (lastW === 0 && tries++ < 40) retry = setTimeout(attempt, 120);
+    };
+
     const ro = new ResizeObserver(() => start());
     ro.observe(c);
-    start();
+    attempt();
 
     return () => {
       cancelAnimationFrame(raf);
+      clearTimeout(retry);
       ro.disconnect();
     };
   }, [side, tone, band, density]);
