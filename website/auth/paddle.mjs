@@ -1,5 +1,5 @@
 const MAX_PAGES = 5;
-const API = "https://api.paddle.com/transactions?status=completed&per_page=200&order_by=billed_at[DESC]";
+const API = "https://api.paddle.com/transactions?status=completed&per_page=200&order_by=billed_at[DESC]&include=customer";
 
 export async function findPurchase(sub, opts) {
   const doFetch = opts.fetch ?? fetch;
@@ -16,8 +16,10 @@ export async function findPurchase(sub, opts) {
       if (t.custom_data?.sub !== sub) continue;
       const priced = (t.items ?? []).some((i) => i.price?.id === opts.priceId);
       if (!priced) continue;
+      const billedAt = Date.parse(t.billed_at);
+      if (Number.isNaN(billedAt)) throw new Error("paddle_bad_billed_at");
       return {
-        billedAt: Date.parse(t.billed_at),
+        billedAt,
         email: t.customer?.email ?? "",
       };
     }

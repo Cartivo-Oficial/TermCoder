@@ -59,4 +59,27 @@ describe("findPurchase", () => {
     const f = async () => ({ ok: false, status: 500, json: async () => ({}) });
     await expect(findPurchase("github:1", { apiKey: "k", priceId: PRICE, fetch: f })).rejects.toThrow("paddle_500");
   });
+
+  it("requests the customer include so email is actually populated", async () => {
+    const requestedUrls = [];
+    const f = async (url) => {
+      requestedUrls.push(url);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ data: [], meta: { pagination: { has_more: false, next: null } } }),
+      };
+    };
+    await findPurchase("github:1", { apiKey: "k", priceId: PRICE, fetch: f });
+    expect(new URL(requestedUrls[0]).searchParams.get("include")).toBe("customer");
+  });
+
+  it("rejects with paddle_bad_billed_at when a matched transaction has a null billed_at", async () => {
+    const t = tx("github:1", Date.now());
+    t.billed_at = null;
+    const f = fakeFetch([[t]]);
+    await expect(findPurchase("github:1", { apiKey: "k", priceId: PRICE, fetch: f })).rejects.toThrow(
+      "paddle_bad_billed_at",
+    );
+  });
 });
