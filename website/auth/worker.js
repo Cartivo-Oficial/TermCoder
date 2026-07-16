@@ -9,6 +9,7 @@
 // Client IDs are public vars (wrangler.toml or the dashboard).
 
 import { signSession } from "./session.mjs";
+import { issueLicense } from "./issue.mjs";
 
 const ALLOWED_ORIGINS = ["https://cartivo-oficial.github.io"];
 
@@ -31,7 +32,9 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { headers: cors });
 
     const url = new URL(request.url);
-    if (request.method !== "POST" || !url.pathname.endsWith("/callback")) {
+    const isCallback = url.pathname.endsWith("/callback");
+    const isLicense = url.pathname.endsWith("/license");
+    if (request.method !== "POST" || (!isCallback && !isLicense)) {
       return json({ error: "not_found" }, 404, cors);
     }
 
@@ -41,6 +44,12 @@ export default {
     } catch (e) {
       return json({ error: "bad_json" }, 400, cors);
     }
+
+    if (isLicense) {
+      const out = await issueLicense(body, env);
+      return json(out.body, out.status, cors);
+    }
+
     const { provider, code, redirect_uri } = body || {};
     if (!code || !redirect_uri) return json({ error: "missing_code_or_redirect" }, 400, cors);
 
