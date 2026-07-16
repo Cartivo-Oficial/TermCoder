@@ -526,7 +526,7 @@ describe("server", () => {
     expect(type).toBe("room-welcome");
   });
 
-  it("blocks a second room participant and gates classroom hosting when unlicensed", async () => {
+  it("gives an unlicensed host one free guest, and gates classroom hosting", async () => {
     const free = createServer({
       config,
       store,
@@ -556,11 +556,71 @@ describe("server", () => {
     const ws1 = new WebSocket(`ws://localhost:${fport}/sessions/${record.id}/stream?name=Host`);
     await new Promise<void>((r) => ws1.on("message", (raw) => { if (JSON.parse(raw.toString()).type === "room-welcome") r(); }));
     const ws2 = new WebSocket(`ws://localhost:${fport}/sessions/${record.id}/stream?name=Guest`);
-    const type = await new Promise<string>((r) => ws2.on("message", (raw) => r(JSON.parse(raw.toString()).type as string)));
+    const guest = await new Promise<string>((r) => ws2.on("message", (raw) => r(JSON.parse(raw.toString()).type as string)));
+    expect(guest).toBe("room-welcome");
     ws1.close();
     ws2.close();
+
+    await new Promise<void>((r) => free.close(() => r()));
+  });
+
+  it("blocks a third room participant when unlicensed", async () => {
+    const free = createServer({
+      config,
+      store,
+      registry: new ToolRegistry(),
+      runner: scriptedRunner(),
+      cwd: dir,
+      license: () => ({ active: false }),
+    });
+    await new Promise<void>((r) => free.listen(0, r));
+    const fport = (free.address() as AddressInfo).port;
+
+    const record = (await (
+      await fetch(`http://localhost:${fport}/sessions`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ cwd: dir }),
+      })
+    ).json()) as { id: string };
+    const welcomed = (ws: WebSocket) =>
+      new Promise<void>((r) => ws.on("message", (raw) => { if (JSON.parse(raw.toString()).type === "room-welcome") r(); }));
+
+    const ws1 = new WebSocket(`ws://localhost:${fport}/sessions/${record.id}/stream?name=Host`);
+    await welcomed(ws1);
+    const ws2 = new WebSocket(`ws://localhost:${fport}/sessions/${record.id}/stream?name=Guest`);
+    await welcomed(ws2);
+
+    const ws3 = new WebSocket(`ws://localhost:${fport}/sessions/${record.id}/stream?name=Third`);
+    const type = await new Promise<string>((r) => ws3.on("message", (raw) => r(JSON.parse(raw.toString()).type as string)));
+    ws1.close();
+    ws2.close();
+    ws3.close();
     expect(type).toBe("room-locked");
 
     await new Promise<void>((r) => free.close(() => r()));
+  });
+
+  it("lets a licensed host admit a third room participant", async () => {
+    const record = (await (
+      await fetch(`${base()}/sessions`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ cwd: dir }),
+      })
+    ).json()) as { id: string };
+    const welcomed = (ws: WebSocket) =>
+      new Promise<void>((r) => ws.on("message", (raw) => { if (JSON.parse(raw.toString()).type === "room-welcome") r(); }));
+
+    const ws1 = new WebSocket(`ws://localhost:${port}/sessions/${record.id}/stream?name=Host`);
+    await welcomed(ws1);
+    const ws2 = new WebSocket(`ws://localhost:${port}/sessions/${record.id}/stream?name=Guest`);
+    await welcomed(ws2);
+    const ws3 = new WebSocket(`ws://localhost:${port}/sessions/${record.id}/stream?name=Third`);
+    const type = await new Promise<string>((r) => ws3.on("message", (raw) => r(JSON.parse(raw.toString()).type as string)));
+    ws1.close();
+    ws2.close();
+    ws3.close();
+    expect(type).toBe("room-welcome");
   });
 });

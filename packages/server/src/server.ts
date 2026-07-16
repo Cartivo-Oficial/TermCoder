@@ -1147,8 +1147,8 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
   }
 
   const room = getRoom(ctx, sessionId);
-  if (room.sockets.size >= 1 && !ctx.license().active) {
-    ws.send(JSON.stringify({ type: "room-locked", error: "The host needs termcoder Pro to host a room." }));
+  if (room.sockets.size >= 2 && !ctx.license().active) {
+    ws.send(JSON.stringify({ type: "room-locked", error: "The host needs termcoder Pro to host more than one guest." }));
     ws.close(1008, "host needs termcoder Pro");
     return;
   }
