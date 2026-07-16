@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import worker, { allowOrigin, github, google } from "./worker.js";
-import { verifySession } from "./session.mjs";
+import { verifySession, signSession } from "./session.mjs";
+import { issueLicense } from "./issue.mjs";
 
 describe("allowOrigin", () => {
   it("allows the production site", () => {
@@ -144,5 +145,52 @@ describe("fetch handler (end-to-end)", () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+});
+
+function licenseRequest(body, origin = "https://cartivo-oficial.github.io") {
+  return new Request("https://auth.example.com/license", {
+    method: "POST",
+    headers: { "content-type": "application/json", origin },
+    body: JSON.stringify(body),
+  });
+}
+
+describe("fetch handler routing — POST /license", () => {
+  it("reaches the license handler and carries CORS headers for an allowed origin", async () => {
+    const res = await worker.fetch(licenseRequest({ session: "whatever" }), {});
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBe("https://cartivo-oficial.github.io");
+    const body = await res.json();
+    expect(body.error).toBeDefined();
+  });
+
+  it("is not blocked by the callback-only SESSION_SECRET gate", async () => {
+    const res = await worker.fetch(licenseRequest({ session: "whatever" }), {});
+    expect(res.status).toBe(503);
+    const body = await res.json();
+    expect(body).toEqual({ error: "not_configured" });
+  });
+
+  it("ignores a body-supplied sub and looks up the session's own sub", async () => {
+    const SECRET = "worker-test-secret";
+    const session = await signSession(
+      { sub: "github:me", email: "me@example.com", name: "Me", provider: "github" },
+      SECRET,
+    );
+    const env = {
+      SESSION_SECRET: SECRET,
+      PADDLE_API_KEY: "k",
+      PADDLE_PRICE_ID: "pri_test",
+      PRO_PRIVATE_KEY: "irrelevant",
+    };
+    let receivedSub;
+    const deps = {
+      findPurchase: async (sub) => {
+        receivedSub = sub;
+        return null;
+      },
+    };
+    await issueLicense({ session, sub: "github:victim" }, env, deps);
+    expect(receivedSub).toBe("github:me");
   });
 });

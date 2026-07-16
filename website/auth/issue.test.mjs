@@ -78,4 +78,39 @@ describe("issueLicense", () => {
     });
     expect(res.status).toBe(503);
   });
+
+  it("reports misconfiguration rather than crashing when the private key is malformed", async () => {
+    const badEnv = { ...env, PRO_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\nnot-real-base64!!\n-----END PRIVATE KEY-----" };
+    const deps = { findPurchase: async () => ({ billedAt: Date.now(), email: "paddle@example.com" }) };
+    const res = await issueLicense({ session: await session() }, badEnv, deps);
+    expect(res.status).toBe(503);
+    expect(res.body).toEqual({ error: "not_configured" });
+  });
+
+  it("treats a whitespace-only session email as absent and falls back to the Paddle email", async () => {
+    const whitespaceEmail = await signSession({ sub: "github:1", email: "   ", name: "A", provider: "github" }, SECRET);
+    const deps = { findPurchase: async () => ({ billedAt: Date.now(), email: "paddle@example.com" }) };
+    const res = await issueLicense({ session: whitespaceEmail }, env, deps);
+    expect(res.status).toBe(200);
+    expect(res.body.active).toBe(true);
+    expect(res.body.email).toBe("paddle@example.com");
+    expect(verifyLicenseKey(res.body.key, publicPem).email).toBe("paddle@example.com");
+  });
+
+  it("refuses to mint a key when both session and Paddle emails are whitespace-only", async () => {
+    const whitespaceEmail = await signSession({ sub: "github:1", email: "   ", provider: "github" }, SECRET);
+    const deps = { findPurchase: async () => ({ billedAt: Date.now(), email: "   " }) };
+    const res = await issueLicense({ session: whitespaceEmail }, env, deps);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ active: false, reason: "no-email" });
+  });
+
+  it("reports misconfiguration rather than a bad session when SESSION_SECRET is missing", async () => {
+    const noSecretEnv = { ...env, SESSION_SECRET: "" };
+    const res = await issueLicense({ session: await session() }, noSecretEnv, {
+      findPurchase: async () => null,
+    });
+    expect(res.status).toBe(503);
+    expect(res.body).toEqual({ error: "not_configured" });
+  });
 });
