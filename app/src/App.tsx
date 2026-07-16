@@ -94,47 +94,35 @@ export default function App() {
           </div>
         </div>
 
-        {/* two live panels */}
-        <div className="relative mx-auto grid max-w-6xl gap-4 px-6 pb-20 lg:grid-cols-2">
-          <div className="overflow-hidden rounded-md border border-primary/25 bg-[#0d0c0e] shadow-[0_40px_100px_-40px_rgba(255,122,69,0.35)]">
-            <div className="flex items-center gap-2 border-b border-border px-3.5 py-2.5">
-              <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_8px] shadow-primary" />
-              <span className="font-mono text-[11px] uppercase tracking-widest text-primary">the builder</span>
-              <span className="ml-auto font-mono text-[10px] text-muted-foreground/60">termcoder/auto</span>
-            </div>
-            <div className="space-y-1.5 px-4 py-4 font-mono text-[12.5px] leading-relaxed text-[#d7d2cc]">
-              <div><span className="text-primary">❯</span> the auth e2e is flaky — fix the refresh token race</div>
-              <div className="text-muted-foreground/70">✳ Two requests both rotate the refresh token; the second loses.</div>
-              <div><span className="text-[#28c840]">✓</span> read src/auth/token.service.ts <span className="text-muted-foreground/60">168 lines</span></div>
-              <div><span className="text-[#28c840]">✓</span> edit src/auth/token.service.ts</div>
-              <div className="text-[#ff6b6b]">- const fresh = await this.rotate(token);</div>
-              <div className="text-[#58d38c]">+ const fresh = await this.rotateShared(token);</div>
-              <div><span className="text-[#28c840]">✓</span> bash npm run test:e2e -- auth</div>
-              <div className="text-muted-foreground/70">12 tests, auth.e2e-spec.ts <span className="text-[#28c840]">passing</span></div>
-            </div>
-            <div className="flex items-center justify-between border-t border-border px-4 py-2 font-mono text-[10.5px] text-muted-foreground/70">
-              <span>3 rounds · verified</span><span className="text-primary">no API key</span>
+        {/* the product, for real */}
+        <div className="relative mx-auto max-w-6xl px-6 pb-20">
+          <div className="relative">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -inset-x-8 -top-6 bottom-0 rounded-[28px] opacity-70 blur-3xl"
+              style={{ background: "linear-gradient(100deg, rgba(255,122,69,0.30), rgba(49,208,180,0.26))" }}
+            />
+            <div className="relative overflow-hidden rounded-lg border border-white/12 bg-[#0d0c0e] shadow-[0_60px_140px_-40px_rgba(0,0,0,0.95)]">
+              <img
+                src={appShot}
+                width={1280}
+                height={800}
+                alt="The TermCoder desktop app: the session rail, the Chat and Terminal tabs, one-click chips for the coding CLIs found on PATH, and a real shell running npm test."
+                className="block w-full"
+              />
             </div>
           </div>
-          <div className="overflow-hidden rounded-md border border-study/25 bg-[#0d0c0e] shadow-[0_40px_100px_-40px_rgba(49,208,180,0.35)]">
-            <div className="flex items-center gap-2 border-b border-border px-3.5 py-2.5">
-              <span className="h-2 w-2 rounded-full bg-study shadow-[0_0_8px] shadow-study" />
-              <span className="font-mono text-[11px] uppercase tracking-widest text-study">the tutor</span>
-              <span className="ml-auto font-mono text-[10px] text-muted-foreground/60">termexplorer/auto</span>
-            </div>
-            <div className="space-y-1.5 px-4 py-4 font-mono text-[12.5px] leading-relaxed text-[#d7d2cc]">
-              <div><span className="text-study">❯</span> /flashcards race conditions</div>
-              <div className="text-muted-foreground/70">✳ Generated 8 cards · added to deck “concurrency”</div>
-              <div className="mt-2 rounded-md border border-study/20 bg-study/5 p-3">
-                <div className="text-[11px] uppercase tracking-widest text-study/70">card 3 / 8</div>
-                <div className="mt-1.5 text-[#e8e4df]">Why does a retry make a race worse?</div>
-                <div className="mt-2 text-muted-foreground/70">It adds a second writer to the same window — the loser overwrites the winner.</div>
+          <div className="mt-4 grid gap-x-10 gap-y-2 font-mono text-[11.5px] sm:grid-cols-3">
+            {[
+              ["chat · terminal", "a real shell, in the same window"],
+              ["it finds your CLIs", "Claude Code · Codex · Gemini, on PATH"],
+              ["one install", "the builder and the tutor, together"],
+            ].map(([a, b]) => (
+              <div key={a} className="border-t border-border pt-2.5">
+                <div className="text-foreground">{a}</div>
+                <div className="text-[11px] text-muted-foreground/60">{b}</div>
               </div>
-              <div className="mt-2 text-muted-foreground/70">how well did you know it? <span className="text-study">0 1 2 3 4 5</span></div>
-            </div>
-            <div className="flex items-center justify-between border-t border-border px-4 py-2 font-mono text-[10.5px] text-muted-foreground/70">
-              <span>due tomorrow · SM-2</span><span className="text-study">streak 6 days</span>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -336,28 +324,48 @@ else                             <span className="text-[#58d38c]">→ simple</sp
         </div>
       </Section>
 
-      {/* ─────────── 09 · desktop (image-led) ─────────── */}
+      {/* ─────────── 09 · extend it (file tree + connectors) ─────────── */}
       <Section>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <Cmd>desktop</Cmd>
-            <H2>A real shell, inside the app.</H2>
-          </div>
-          <p className="max-w-sm text-sm text-muted-foreground">
-            Chat, an editor and a real terminal in one window. It scans your PATH and drops a one-click chip on every coding
-            CLI it finds.
-          </p>
-        </div>
-        <div className="mt-8 overflow-hidden rounded-md border border-border bg-[#0d0c0e] shadow-[0_50px_120px_-50px_rgba(0,0,0,0.9)]">
-          <img src={appShot} width={1280} height={800} alt="The TermCoder desktop app with the Terminal tab open, running npm test in a real shell." className="block w-full" />
-        </div>
-        <div className="mt-5 grid gap-x-10 gap-y-2 font-mono text-[12px] sm:grid-cols-3">
-          {[["CHAT | TERMINAL", "the shell keeps running while you chat"], ["PATH chips", "Claude Code · Codex · Gemini"], ["Windows · macOS · Linux", "Node bundled, nothing to install"]].map(([a, b]) => (
-            <div key={a} className="border-t border-border pt-2.5">
-              <div className="text-foreground">{a}</div>
-              <div className="text-[11px] text-muted-foreground/60">{b}</div>
+        <Cmd>agents · commands · skills · recipes · mcp</Cmd>
+        <H2>Teach it your way.</H2>
+        <Lead>
+          Everything it knows about your project is markdown in your repo — readable, diffable, reviewable in a PR. Not
+          settings in someone else&apos;s dashboard.
+        </Lead>
+        <div className="mt-8 grid gap-8 lg:grid-cols-2">
+          <div className="rounded-md border border-border bg-[#0d0c0e] p-4 font-mono text-[12px] leading-relaxed">
+            <div className="text-muted-foreground/50">.termcoder/</div>
+            <div className="mt-2 space-y-1">
+              {[
+                ["├─ agents/", "own model, prompt, tools, permissions"],
+                ["├─ commands/", "/slash commands with $ARGUMENTS"],
+                ["├─ skills/", "playbooks — loaded only when needed"],
+                ["├─ recipes/", "saved multi-step workflows"],
+                ["└─ memory/", "facts it keeps about the project"],
+              ].map(([a, b]) => (
+                <div key={a} className="flex flex-wrap gap-x-3">
+                  <span className="text-[#d7d2cc]">{a}</span>
+                  <span className="text-muted-foreground/50">{b}</span>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+          <div>
+            <h3 className="font-display text-2xl font-normal tracking-tight text-foreground">Connectors, one click.</h3>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              A curated MCP catalog — pick one, fill the inputs it asks for, and it writes the config. No memorising
+              transports or <span className="font-mono text-foreground">npx</span> incantations.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {["filesystem", "git", "github", "postgres", "fetch", "brave-search", "slack", "puppeteer", "memory", "sequential-thinking"].map((m) => (
+                <span key={m} className="rounded border border-border px-2.5 py-1 font-mono text-[11.5px] text-muted-foreground">{m}</span>
+              ))}
+            </div>
+            <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
+              Skills use progressive disclosure: only the name and one-line description sit in the prompt — the body loads
+              when the agent actually reaches for it, so context stays cheap.
+            </p>
+          </div>
         </div>
       </Section>
 
