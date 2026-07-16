@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import Dither from "../components/Dither.astro";
 ---
 <Layout
   title="Documentation — TermCoder"
@@ -43,7 +44,8 @@ import Layout from "../layouts/Layout.astro";
       <a href="#troubleshooting">Troubleshooting</a>
     </aside>
 
-    <main>
+    <main class="has-dither">
+      <Dither side="top" seed={2} density={0.45} band={0.32} class="page-dither" />
       <h1>Documentation</h1>
       <p class="tagline">Everything you need to install TermCoder, run it, and make it your own.</p>
 

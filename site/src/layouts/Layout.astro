@@ -2,6 +2,14 @@
 import "../styles/global.css";
 import Nav from "../components/Nav.astro";
 import Footer from "../components/Footer.astro";
+import Dither from "../components/Dither.astro";
+
+interface DitherCfg {
+  side: "both" | "left" | "right" | "top";
+  seed: number;
+  density: number;
+  band?: number;
+}
 
 interface Props {
   title: string;
@@ -13,6 +21,18 @@ interface Props {
 }
 
 const { title, description, active = "", bodyClass = "sys", bare = false, menuBtn = false } = Astro.props;
+
+const PAGE_DITHER: Record<string, DitherCfg> = {
+  "features.html": { side: "left", seed: 3, density: 0.82 },
+  "study.html": { side: "right", seed: 5, density: 0.82 },
+  "install.html": { side: "top", seed: 8, density: 0.6, band: 0.32 },
+  "download.html": { side: "both", seed: 11, density: 0.72, band: 0.24 },
+  "docs.html": { side: "left", seed: 2, density: 0.5, band: 0.18 },
+  "pricing.html": { side: "both", seed: 13, density: 0.8, band: 0.24 },
+  "changelog.html": { side: "right", seed: 17, density: 0.72 },
+  "login.html": { side: "top", seed: 21, density: 0.55, band: 0.3 },
+};
+const pageDither = bare ? undefined : PAGE_DITHER[active];
 ---
 <!doctype html>
 <html lang="en">
@@ -25,7 +45,22 @@ const { title, description, active = "", bodyClass = "sys", bare = false, menuBt
   </head>
   <body class={bodyClass}>
     <Nav active={active} menuBtn={menuBtn} />
-    {bare ? <slot /> : <main><slot /></main>}
+    {bare ? (
+      <slot />
+    ) : (
+      <main class={pageDither ? "has-dither" : ""}>
+        {pageDither && (
+          <Dither
+            side={pageDither.side}
+            seed={pageDither.seed}
+            density={pageDither.density}
+            band={pageDither.band ?? 0.26}
+            class="page-dither"
+          />
+        )}
+        <slot />
+      </main>
+    )}
     <Footer />
   </body>
 </html>

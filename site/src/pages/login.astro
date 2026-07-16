@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import Dither from "../components/Dither.astro";
 ---
 <Layout
   title="TermCoder — sign in"
@@ -8,7 +9,8 @@ import Layout from "../layouts/Layout.astro";
   bodyClass="sys login"
   bare
 >
-  <main class="auth-wrap">
+  <main class="auth-wrap has-dither">
+    <Dither side="both" seed={21} density={0.6} band={0.28} class="page-dither" />
     <div class="auth-card">
       <div class="mono-eyebrow"><span class="slash">//</span> SIGN IN</div>
       <h1>Your dashboard.</h1>
