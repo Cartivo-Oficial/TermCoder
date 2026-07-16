@@ -5,6 +5,7 @@ import Install from "@/pages/install";
 import Download from "@/pages/download";
 import Features from "@/pages/features";
 import Study from "@/pages/study";
+import Pricing from "@/pages/pricing";
 
 export interface RouteDef {
   path: string;
@@ -48,6 +49,13 @@ export const ROUTES: RouteDef[] = [
     description:
       "Download the TermCoder desktop app for Windows, macOS or Linux. Chat, an editor and a real terminal in one window, with Node bundled.",
     Component: Download,
+  },
+  {
+    path: "/pricing.html",
+    title: "TermCoder — pricing",
+    description:
+      "The agent, the tutor and the source are free forever. Pro is $9/month for the person who hosts a room or teaches a class — joining is always free.",
+    Component: Pricing,
   },
   {
     path: "/changelog.html",

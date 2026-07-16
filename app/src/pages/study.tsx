@@ -199,7 +199,7 @@ export default function Study() {
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
               Share a link and someone joins your session — voice, camera, screen share and chat, straight between the two
               of you over STUN. No media server in the middle. Joining is always free; only hosting a room for more than
-              one person needs a licence.
+              one guest needs a licence.
             </p>
           </div>
         </div>
