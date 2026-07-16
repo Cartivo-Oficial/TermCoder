@@ -7,3 +7,9 @@ window.TC_AUTH = {
   github: { clientId: "Ov23liSR2sI4lUCrZNtb" }, // GitHub OAuth App client ID
   google: { clientId: "811964169804-05orndflh9nljq5pj2uvg08q52h2fdn2.apps.googleusercontent.com" }, // Google OAuth client ID (Web application) — public, safe to commit
 };
+
+window.TC_PAY = {
+  environment: "sandbox",
+  clientToken: "",
+  priceId: "",
+};

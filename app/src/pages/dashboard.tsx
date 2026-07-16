@@ -3,35 +3,12 @@ import { Footer } from "@/components/site/footer";
 import { Dither } from "@/components/dither";
 import { Mark } from "@/components/mark";
 import { cn } from "@/lib/utils";
-
-
-const SESSION_KEY = "tc-session";
-
-interface Session {
-  provider: string;
-  name: string;
-  email: string;
-  avatar: string;
-  token: string;
-}
+import { readSession, signOut, type Session } from "@/lib/session";
 
 interface Deck {
   name: string;
   cards: number;
   due: number;
-}
-
-function readSession(): Session | null {
-  try {
-    return JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
-  } catch {
-    return null;
-  }
-}
-
-function signOut() {
-  localStorage.removeItem(SESSION_KEY);
-  location.href = "login.html";
 }
 
 function unwrap(file: { content?: string } | undefined): any {

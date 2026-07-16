@@ -76,6 +76,8 @@
         email: profile.email || "",
         avatar: profile.avatar || "",
         token: provider === "github" ? (profile.token || "") : "",
+        sub: profile.sub || "",
+        session: profile.session || "",
       }));
       sessionStorage.removeItem(STATE_KEY);
       location.href = "dashboard.html";
