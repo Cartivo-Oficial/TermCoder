@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import Dither from "../components/Dither.astro";
 ---
 <!doctype html>
 <html lang="en">
@@ -11,6 +12,7 @@ import "../styles/global.css";
 <meta name="description" content="Your TermCoder dashboard — models, synced sessions, recipes, MCP connectors, and study decks in one place." />
 </head>
 <body class="sys dash">
+<Dither side="right" seed={33} density={0.6} band={0.22} class="tex-band" />
 
 <header class="sys-nav">
   <div class="in-row">

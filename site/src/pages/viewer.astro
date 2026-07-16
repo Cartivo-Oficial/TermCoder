@@ -1,6 +1,7 @@
 ---
 import "../styles/global.css";
 import Viewer from "../components/react/Viewer";
+import Dither from "../components/Dither.astro";
 ---
 <!doctype html>
 <html lang="en">
@@ -12,6 +13,7 @@ import Viewer from "../components/react/Viewer";
 <meta name="description" content="Open a shared TermCoder session from a link — a read-only transcript, no install." />
 </head>
 <body>
+<Dither side="left" seed={30} density={0.6} band={0.22} class="tex-band" />
 
 <header class="nav">
   <div class="nav-in">

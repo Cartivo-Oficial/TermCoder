@@ -623,3 +623,6 @@
 main.has-dither { position: relative; }
 main.has-dither > :not(.page-dither) { position: relative; z-index: 1; }
 .page-dither { top: 0; bottom: auto; height: clamp(300px, 40vw, 540px); z-index: 0; mix-blend-mode: screen; opacity: 0.55; -webkit-mask-image: linear-gradient(180deg, #000 50%, transparent); mask-image: linear-gradient(180deg, #000 50%, transparent); }
+.tex-band { top: 0; left: 0; right: 0; bottom: auto; height: clamp(300px, 40vw, 540px); z-index: 0; mix-blend-mode: screen; opacity: 0.5; -webkit-mask-image: linear-gradient(180deg, #000 50%, transparent); mask-image: linear-gradient(180deg, #000 50%, transparent); }
+body:has(> .tex-band) { position: relative; }
+body:has(> .tex-band) > :not(.tex-band) { position: relative; z-index: 1; }
