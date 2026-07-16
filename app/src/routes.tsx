@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import Home from "@/pages/home";
+import Changelog from "@/pages/changelog";
 
 export interface RouteDef {
   path: string;
@@ -15,6 +16,13 @@ export const ROUTES: RouteDef[] = [
     description:
       "An open-source AI coding agent that lives in your terminal — and a tutor that teaches you. Runs with no API key. One engine, two minds.",
     Component: Home,
+  },
+  {
+    path: "/changelog.html",
+    title: "TermCoder — changelog",
+    description:
+      "Every TermCoder release, newest first: what changed in the engine, the CLI, the desktop app and the site.",
+    Component: Changelog,
   },
 ];
 

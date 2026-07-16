@@ -4,6 +4,8 @@ import { Dither } from "@/components/dither";
 import { CopyButton } from "@/components/copy-button";
 import { Mark } from "@/components/mark";
 import appShot from "@/assets/app-hero.png";
+import { Nav } from "@/components/site/nav";
+import { Footer } from "@/components/site/footer";
 
 const PROVIDERS: [string, string][] = [
   ["Anthropic", "claude-sonnet-5 · haiku"], ["OpenAI", "gpt-4o · 4o-mini"], ["Google", "gemini-2.5 pro · flash"],
@@ -45,27 +47,7 @@ function Section({ children }: { children: React.ReactNode }) {
 export default function Home() {
   return (
     <div className="flex min-h-full flex-col">
-      {/* ─────────── nav ─────────── */}
-      <header className="sticky top-0 z-40 border-b border-border bg-background/75 backdrop-blur-xl">
-        <div className="mx-auto flex h-[60px] max-w-6xl items-center gap-7 px-6">
-          <a href="#" className="flex items-center gap-2.5">
-            <Mark size={20} />
-            <span className="font-display text-[17px] font-light tracking-tight text-foreground">termcoder</span>
-          </a>
-          <nav className="hidden items-center gap-6 font-mono text-[12.5px] text-muted-foreground md:flex">
-            <a href="#build" className="transition-colors hover:text-primary">build</a>
-            <a href="#study" className="transition-colors hover:text-study">study</a>
-            <span className="h-3 w-px bg-border" />
-            {["install", "download", "docs", "changelog", "pricing"].map((n) => (
-              <a key={n} href="#" className="transition-colors hover:text-foreground">{n}</a>
-            ))}
-          </nav>
-          <div className="ml-auto flex items-center gap-4">
-            <a href="#" className="hidden font-mono text-[12.5px] text-muted-foreground transition-colors hover:text-foreground sm:block">sign in</a>
-            <a href="#" className={cn(buttonVariants(), "h-9 rounded-md px-4 font-mono text-[13px] shadow-[0_10px_30px_-12px] shadow-primary/60")}>Get the app →</a>
-          </div>
-        </div>
-      </header>
+      <Nav active="home" />
 
       {/* ─────────── 01 · hero ─────────── */}
       <section className="relative overflow-hidden">
@@ -493,35 +475,7 @@ else                             <span className="text-[#58d38c]">→ simple</sp
         </div>
       </section>
 
-      {/* ─────────── footer ─────────── */}
-      <footer className="mt-auto border-t border-border">
-        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-8 px-6 py-14 md:grid-cols-4">
-          <div className="col-span-2 md:col-span-1">
-            <a href="#" className="flex items-center gap-2.5">
-              <Mark size={18} />
-              <span className="font-display text-[16px] font-light tracking-tight text-foreground">termcoder</span>
-            </a>
-            <p className="mt-3 max-w-[32ch] text-sm text-muted-foreground">
-              An open-source AI agent for your terminal — a builder and a tutor in one install. Local-first, MIT.
-            </p>
-          </div>
-          {([
-            ["Build", ["Features", "Install", "Download", "Docs"]],
-            ["Study", ["TermExplorer", "Flashcards", "Classrooms", "Live rooms"]],
-            ["Project", ["GitHub", "Changelog", "Pricing", "npm"]],
-          ] as const).map(([title, links]) => (
-            <div key={title}>
-              <h4 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground/70">{title}</h4>
-              <ul className="mt-4 space-y-2.5">
-                {links.map((l) => <li key={l}><a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">{l}</a></li>)}
-              </ul>
-            </div>
-          ))}
-        </div>
-        <div className="mx-auto flex max-w-6xl items-center justify-between border-t border-border px-6 py-5 font-mono text-xs text-muted-foreground/70">
-          <span>termcoder · MIT</span><span>built in the open</span>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
