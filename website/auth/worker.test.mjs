@@ -126,4 +126,23 @@ describe("fetch handler (end-to-end)", () => {
       vi.unstubAllGlobals();
     }
   });
+
+  it("does not touch the network (and so does not burn the OAuth code) when SESSION_SECRET is missing", async () => {
+    const spy = vi.fn(githubFetch({ id: 1, login: "x" }));
+    vi.stubGlobal("fetch", spy);
+    try {
+      const req = new Request("https://auth.example.com/callback", {
+        method: "POST",
+        headers: { "content-type": "application/json", origin: "http://localhost:4199" },
+        body: JSON.stringify({ provider: "github", code: "abc", redirect_uri: "https://example.com/callback.html" }),
+      });
+      const res = await worker.fetch(req, { ...GITHUB_ENV });
+      expect(res.status).toBe(503);
+      const body = await res.json();
+      expect(body.error).toBe("auth_not_configured");
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });

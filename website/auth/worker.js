@@ -1,7 +1,7 @@
 // TermCoder auth Worker — the ONLY place the OAuth client secrets live.
 // It exchanges an OAuth `code` for a token server-side, fetches the user's
-// public profile, and returns just { name, email, avatar } to the browser.
-// The access token never leaves the Worker.
+// public profile, and returns { name, email, avatar, sub, session } to the
+// browser. The access token never leaves the Worker.
 //
 // Deploy: see website/auth/README.md. Secrets are set with
 //   wrangler secret put GITHUB_CLIENT_SECRET
@@ -45,11 +45,11 @@ export default {
     if (!code || !redirect_uri) return json({ error: "missing_code_or_redirect" }, 400, cors);
 
     try {
+      if (!env.SESSION_SECRET) return json({ error: "auth_not_configured" }, 503, cors);
       let profile = null;
       if (provider === "github") profile = await github(code, redirect_uri, env);
       if (provider === "google") profile = await google(code, redirect_uri, env);
       if (!profile) return json({ error: "unknown_provider" }, 400, cors);
-      if (!env.SESSION_SECRET) return json({ error: "auth_not_configured" }, 503, cors);
       profile.session = await signSession(
         { sub: profile.sub, email: profile.email, name: profile.name, provider: profile.provider },
         env.SESSION_SECRET,
