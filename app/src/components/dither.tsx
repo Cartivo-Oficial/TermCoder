@@ -1,15 +1,21 @@
-"use client";
-
 import { useEffect, useRef } from "react";
 
-const PALETTE = [
+const WARM = [
   [255, 122, 69], [255, 122, 69], [255, 171, 82], [255, 92, 51],
-  [255, 63, 107], [193, 99, 255], [67, 220, 196], [234, 234, 239],
+  [255, 63, 107], [193, 99, 255], [234, 234, 239],
 ];
+const COOL = [
+  [49, 208, 180], [49, 208, 180], [127, 240, 221], [56, 176, 200],
+  [99, 140, 255], [193, 99, 255], [234, 234, 239],
+];
+
+type Tone = "warm" | "cool" | "seam";
+type Side = "both" | "left" | "right" | "top" | "field";
 
 interface Cell {
   x: number;
   y: number;
+  ny: number;
   prox: number;
   phase: number;
   speed: number;
@@ -17,7 +23,19 @@ interface Cell {
   colorRate: number;
 }
 
-export function Dither({ className, side = "both" }: { className?: string; side?: "both" | "left" | "right" | "top" }) {
+export function Dither({
+  className,
+  side = "both",
+  tone = "warm",
+  band = 0.24,
+  density = 0.9,
+}: {
+  className?: string;
+  side?: Side;
+  tone?: Tone;
+  band?: number;
+  density?: number;
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -27,11 +45,16 @@ export function Dither({ className, side = "both" }: { className?: string; side?
     if (!ctx) return;
 
     const cell = 9;
-    const band = 0.24;
     let cells: Cell[] = [];
     let W = 0;
     let H = 0;
     let raf = 0;
+
+    const paletteFor = (ny: number) => {
+      if (tone === "warm") return WARM;
+      if (tone === "cool") return COOL;
+      return ny < 0.5 ? WARM : COOL;
+    };
 
     const build = () => {
       const rect = c.getBoundingClientRect();
@@ -47,24 +70,27 @@ export function Dither({ className, side = "both" }: { className?: string; side?
       cells = [];
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
-          const nx = x / (cols - 1);
-          const ny = y / (rows - 1);
+          const nx = cols > 1 ? x / (cols - 1) : 0;
+          const ny = rows > 1 ? y / (rows - 1) : 0;
           let prox = 0;
           if (side === "both") prox = Math.max(1 - nx / band, 1 - (1 - nx) / band, 0);
           else if (side === "left") prox = Math.max(1 - nx / band, 0);
           else if (side === "right") prox = Math.max(1 - (1 - nx) / band, 0);
-          else prox = Math.max(1 - ny / band, 0);
-          if (prox <= 0) continue;
-          const fade = side === "top" ? 1 : 1 - ny * 0.45;
-          if (Math.random() > prox * prox * 0.9 * fade) continue;
+          else if (side === "top") prox = Math.max(1 - ny / band, 0);
+          else prox = 0.42 + 0.35 * Math.sin(nx * 7.5) * Math.cos(ny * 5.5);
+          if (prox <= 0.02) continue;
+          const fade = side === "top" || side === "field" ? 1 : 1 - ny * 0.4;
+          if (Math.random() > prox * prox * density * fade) continue;
+          const pal = paletteFor(ny);
           cells.push({
             x: x * cell,
             y: y * cell,
-            prox,
+            ny,
+            prox: Math.min(prox, 1),
             phase: Math.random() * Math.PI * 2,
-            speed: 0.6 + Math.random() * 1.1,
-            colorBase: (Math.random() * PALETTE.length) | 0,
-            colorRate: 0.15 + Math.random() * 0.35,
+            speed: 0.6 + Math.random() * 1.2,
+            colorBase: (Math.random() * pal.length) | 0,
+            colorRate: 0.15 + Math.random() * 0.4,
           });
         }
       }
@@ -75,10 +101,10 @@ export function Dither({ className, side = "both" }: { className?: string; side?
       const ts = t * 0.001;
       for (const p of cells) {
         const twinkle = 0.5 + 0.5 * Math.sin(ts * p.speed + p.phase);
-        const alpha = p.prox * (0.18 + 0.82 * twinkle);
+        const alpha = p.prox * (0.16 + 0.84 * twinkle);
         if (alpha < 0.03) continue;
-        const idx = (p.colorBase + Math.floor(ts * p.colorRate + p.phase)) % PALETTE.length;
-        const rgb = PALETTE[idx];
+        const pal = paletteFor(p.ny);
+        const rgb = pal[(p.colorBase + Math.floor(ts * p.colorRate + p.phase)) % pal.length];
         ctx.globalAlpha = alpha;
         ctx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
         ctx.fillRect(p.x, p.y, cell - 1, cell - 1);
@@ -114,7 +140,7 @@ export function Dither({ className, side = "both" }: { className?: string; side?
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [side]);
+  }, [side, tone, band, density]);
 
   return <canvas ref={ref} aria-hidden className={className} style={{ mixBlendMode: "screen" }} />;
 }

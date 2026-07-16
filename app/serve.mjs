@@ -13,7 +13,7 @@ const MIME = {
 createServer(async (req, res) => {
   try {
     let p = decodeURIComponent((req.url || "/").split("?")[0]);
-    if (p.startsWith("/TermCoder")) p = p.slice("/TermCoder".length);
+    if (p.startsWith("/TermCoder/preview")) p = p.slice("/TermCoder/preview".length);
     if (p === "" || p.endsWith("/")) p += "index.html";
     let f = join(ROOT, p);
     const s = await stat(f).catch(() => null);
