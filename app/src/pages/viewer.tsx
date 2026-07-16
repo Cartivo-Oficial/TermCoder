@@ -30,7 +30,6 @@ export default function Viewer() {
       const doc = frame.contentWindow.document;
       frame.style.height = Math.max(doc.body.scrollHeight + 24, window.innerHeight * 0.6) + "px";
     } catch {
-      /* cross-origin or not ready */
     }
   }
 
@@ -142,7 +141,6 @@ export default function Viewer() {
           <div className="mt-4 overflow-hidden rounded-md border border-border bg-white">
             <iframe
               ref={frameRef}
-              // No allow-scripts: the transcript is someone else's HTML and must not run.
               sandbox="allow-same-origin"
               title="Session transcript"
               srcDoc={srcDoc}

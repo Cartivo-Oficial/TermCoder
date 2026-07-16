@@ -2,13 +2,6 @@ import { Nav } from "@/components/site/nav";
 import { Footer } from "@/components/site/footer";
 import { Dither } from "@/components/dither";
 
-/**
- * The markup here is a contract with public/auth.js, which is loaded as a
- * classic script on this route only (see routes.tsx) and wires the buttons on
- * DOMContentLoaded. It looks for `.auth-btn[data-provider]`; the href is the
- * fallback it deliberately lets through when a provider has no client id yet.
- * Nothing on this page is stateful, so React never fights it for the DOM.
- */
 
 function GitHubMark() {
   return (

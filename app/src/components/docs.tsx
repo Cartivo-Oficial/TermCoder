@@ -23,7 +23,6 @@ export function P({ children }: { children: React.ReactNode }) {
   return <p className="max-w-2xl text-[14.5px] leading-relaxed text-muted-foreground">{children}</p>;
 }
 
-/** inline code */
 export function C({ children }: { children: React.ReactNode }) {
   return (
     <code className="rounded bg-white/6 px-1 py-0.5 font-mono text-[0.88em] text-foreground">{children}</code>
@@ -55,12 +54,10 @@ export function Pre({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** a shell comment inside a Pre */
 export function Cm({ children }: { children: React.ReactNode }) {
   return <span className="text-muted-foreground/45">{children}</span>;
 }
 
-/** the ❯ prompt, a flag, or a yaml key inside a Pre */
 export function Pm({ children }: { children: React.ReactNode }) {
   return <span className="text-primary">{children}</span>;
 }
@@ -123,19 +120,8 @@ export function Tr({ k, children }: { k: React.ReactNode; children: React.ReactN
   );
 }
 
-/** distance below the sticky header where a heading counts as "reached" */
 const SPY_LINE = 88;
 
-/**
- * Highlights the section you are reading: the last one whose heading has passed
- * under the header. Starts on the first id so the server render and the first
- * client render agree.
- *
- * Deliberately not an IntersectionObserver. A section only "intersects" a band,
- * and at the top of the page the first heading sits below any band the sticky
- * header allows — leaving nothing observed and the highlight stuck on whatever
- * was last active. Comparing positions has no such gap.
- */
 export function useScrollSpy(ids: string[]): string {
   const [active, setActive] = useState(ids[0]);
 
@@ -150,14 +136,10 @@ export function useScrollSpy(ids: string[]): string {
         const el = document.getElementById(id);
         if (el && el.getBoundingClientRect().top + window.scrollY <= line) current = id;
       }
-      // The last section is often too short to ever reach the line, so it would
-      // never light up on its own.
       if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 2) current = ids[ids.length - 1];
       setActive(current);
     };
 
-    // setTimeout, not rAF: rAF never fires while the tab is hidden, which would
-    // leave the sidebar stale on a background tab restored by an anchor link.
     const onScroll = () => {
       if (queued) return;
       queued = true;

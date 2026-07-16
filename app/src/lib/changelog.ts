@@ -54,14 +54,6 @@ const CODE = "rounded bg-white/6 px-1 py-0.5 font-mono text-[0.9em] text-foregro
 
 const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-/**
- * The small subset of markdown the changelog uses.
- *
- * Code spans are stashed behind a token before anything else runs. ``a`` is how
- * markdown quotes a literal backtick, so replacing it in place would leave that
- * backtick in the text for the single-backtick pass to mis-pair with the next
- * span — which is exactly what mangled the Ctrl+` entry.
- */
 export function inlineMd(md: string): string {
   const codes: string[] = [];
   const stash = (code: string) => `@@code:${codes.push(code) - 1}@@`;

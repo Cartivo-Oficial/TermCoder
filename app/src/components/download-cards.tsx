@@ -12,10 +12,6 @@ const PRIMARY: Record<Os, string> = {
   Linux: "TermCoder-x86_64.AppImage",
 };
 
-/**
- * Renders the Windows default on the server and on the first client render, then
- * corrects itself after hydration — so the markup matches and nothing warns.
- */
 export function PrimaryDownload() {
   const [os, setOs] = useState<Os>("Windows");
 

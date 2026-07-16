@@ -4,14 +4,6 @@ import { Dither } from "@/components/dither";
 import { Mark } from "@/components/mark";
 import { cn } from "@/lib/utils";
 
-/**
- * Reads the session and the synced gist in React rather than loading auth.js.
- * auth.js hydrates a dashboard by writing straight into the DOM on
- * DOMContentLoaded — textContent, innerHTML, style — which React would race
- * with and overwrite on its first render. The data contract below is the part
- * that matters, and it matches what callback.html stores: the "tc-session" key,
- * and the private "termcoder:sync" gist the app writes.
- */
 
 const SESSION_KEY = "tc-session";
 
@@ -42,7 +34,6 @@ function signOut() {
   location.href = "login.html";
 }
 
-/** the app writes {version, data} envelopes; older files are the bare value */
 function unwrap(file: { content?: string } | undefined): any {
   if (!file || !file.content) return null;
   try {

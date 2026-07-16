@@ -7,7 +7,6 @@ async function copy(text: string) {
       return true;
     }
   } catch {
-    // the clipboard API can be blocked by permissions or an insecure context
   }
   try {
     const el = document.createElement("textarea");

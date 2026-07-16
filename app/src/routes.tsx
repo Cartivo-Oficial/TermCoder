@@ -16,7 +16,6 @@ export interface RouteDef {
   title: string;
   description: string;
   Component: ComponentType;
-  /** classic scripts to load on this page only, resolved relative to it */
   scripts?: string[];
 }
 
@@ -76,9 +75,6 @@ export const ROUTES: RouteDef[] = [
     description:
       "Sign in to your TermCoder dashboard with GitHub or Google. Optional — TermCoder runs with no account and no API key.",
     Component: Login,
-    // The OAuth redirect flow lives in these two files and is deliberately not
-    // ported: callback.html loads the same pair, and auth.js derives its
-    // redirect_uri from the page URL, so both must stay put.
     scripts: ["config.js?v=3", "auth.js?v=6"],
   },
   {
