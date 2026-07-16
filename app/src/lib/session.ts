@@ -22,3 +22,9 @@ export function signOut(): void {
   localStorage.removeItem(SESSION_KEY);
   location.href = "login.html";
 }
+
+declare global {
+  interface Window {
+    TC_AUTH?: { workerUrl?: string };
+  }
+}
