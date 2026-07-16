@@ -1,3 +1,5 @@
+import { CACHE_KEY as LICENSE_CACHE_KEY } from "@/lib/license";
+
 const SESSION_KEY = "tc-session";
 
 export interface Session {
@@ -20,6 +22,7 @@ export function readSession(): Session | null {
 
 export function signOut(): void {
   localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(LICENSE_CACHE_KEY);
   location.href = "login.html";
 }
 

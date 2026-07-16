@@ -6,6 +6,7 @@
   var CFG = window.TC_AUTH || {};
   var SESSION_KEY = "tc-session";
   var STATE_KEY = "tc-oauth-state";
+  var LICENSE_KEY = "tc-license";
 
   function configured(provider) {
     if (!CFG.workerUrl) return false;
@@ -47,6 +48,7 @@
   }
   function signOut() {
     localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(LICENSE_KEY);
     location.href = "login.html";
   }
   async function handleCallback() {

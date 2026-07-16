@@ -15,8 +15,8 @@ export function LicencePanel() {
   const load = () => {
     const s = readSession();
     setSession(s);
-    if (!s) return setState({ status: "none" });
-    const cached = cachedLicense();
+    if (!s) return;
+    const cached = cachedLicense(s.sub ?? "");
     if (cached) setState(cached);
     fetchLicense(s).then((next) => {
       if (next.status === "error" && cached) return;
@@ -55,7 +55,14 @@ export function LicencePanel() {
       {state.status === "loading" && <p className="mt-3 font-mono text-[13px] text-muted-foreground">Checking…</p>}
 
       {state.status === "error" && (
-        <p className="mt-3 max-w-xl text-[14px] text-muted-foreground">{state.message}</p>
+        <>
+          <p className="mt-3 max-w-xl text-[14px] text-muted-foreground">{state.message}</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button onClick={load} className={cn(buttonVariants({ variant: "outline" }), "h-11 rounded-md px-5 font-mono text-[14px]")}>
+              Refresh
+            </button>
+          </div>
+        </>
       )}
 
       {state.status === "none" && (
@@ -119,10 +126,16 @@ export function LicencePanel() {
             <CopyButton text={state.key} />
           </div>
 
-          {expired && payConfigured() && (
-            <button onClick={buy} className={cn(buttonVariants(), "mt-6 h-11 rounded-md px-5 font-mono text-[14px]")}>
-              Renew for another year →
-            </button>
+          {expired && (
+            payConfigured() ? (
+              <button onClick={buy} className={cn(buttonVariants(), "mt-6 h-11 rounded-md px-5 font-mono text-[14px]")}>
+                Renew for another year →
+              </button>
+            ) : (
+              <a href="pricing.html" className={cn(buttonVariants(), "mt-6 h-11 rounded-md px-5 font-mono text-[14px]")}>
+                See pricing →
+              </a>
+            )
           )}
         </>
       )}
