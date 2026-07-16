@@ -33,21 +33,21 @@
 
 @font-face {
   font-family: "Departure Mono";
-  src: url("/fonts/departure-mono.woff2") format("woff2");
+  src: url("/TermCoder/fonts/departure-mono.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Inter v";
-  src: url("/fonts/inter-400.woff2") format("woff2");
+  src: url("/TermCoder/fonts/inter-400.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Inter v";
-  src: url("/fonts/inter-600.woff2") format("woff2");
+  src: url("/TermCoder/fonts/inter-600.woff2") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -78,8 +78,8 @@
   .brand-mark {
     display: inline-block;
     background: currentColor;
-    -webkit-mask: url("/mark.png") center / contain no-repeat;
-    mask: url("/mark.png") center / contain no-repeat;
+    -webkit-mask: url("/TermCoder/mark.png") center / contain no-repeat;
+    mask: url("/TermCoder/mark.png") center / contain no-repeat;
   }
 
   /* ---- top nav ---- */

@@ -1,8 +1,9 @@
 ---
 import TermReplay from "./react/TermReplay";
 import Dither from "./Dither.astro";
+const base = import.meta.env.BASE_URL;
 ---
-<script is:inline src="/hero-session.js"></script>
+<script is:inline src={`${base}hero-session.js`}></script>
 <section class="hero">
   <Dither side="both" seed={7} density={0.92} band={0.24} class="hero-dither" />
   <div class="hero-in">

@@ -7,6 +7,8 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
+  site: 'https://cartivo-oficial.github.io',
+  base: '/TermCoder/',
   output: 'static',
 
   build: {

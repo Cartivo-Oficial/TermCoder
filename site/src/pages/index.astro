@@ -2,6 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 import Hero from "../components/Hero.astro";
 import SpecSection from "../components/SpecSection.astro";
+const base = import.meta.env.BASE_URL;
 ---
 <Layout
   title="TermCoder — the open source AI coding agent for your terminal"
@@ -140,7 +141,7 @@ else                      <span class="arr">&#8594;</span> <span class="fast">si
     </div>
     <div class="a full">
       <figure class="figure">
-        <img src="/app.png" width="1280" height="800"
+        <img src={`${base}app.png`} width="1280" height="800"
              alt="The TermCoder desktop app with the Terminal tab open, running a project's tests in a real shell." />
         <figcaption><b>Terminal tab</b> a real shell <span>·</span> <b>chips</b> detected on your PATH</figcaption>
       </figure>
