@@ -1,8 +1,11 @@
+import { useState, useEffect } from "react";
 import { Nav } from "@/components/site/nav";
 import { Footer } from "@/components/site/footer";
 import { Dither } from "@/components/dither";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { readSession, type Session } from "@/lib/session";
+import { openCheckout, payConfigured } from "@/lib/paddle";
 
 const FREE: string[] = [
   "The full coding agent — every model, every provider",
@@ -55,6 +58,20 @@ function Check({ tone = "warm" }: { tone?: "warm" | "cool" }) {
 }
 
 export default function Pricing() {
+  const [session, setSession] = useState<Session | null>(null);
+  useEffect(() => setSession(readSession()), []);
+
+  const getPro = () => {
+    const s = readSession();
+    if (!s || !payConfigured()) {
+      location.href = "login.html";
+      return;
+    }
+    void openCheckout(s).catch(() => {
+      location.href = "login.html";
+    });
+  };
+
   return (
     <div className="flex min-h-full flex-col">
       <Nav active="pricing" />
@@ -133,12 +150,15 @@ export default function Pricing() {
                   </li>
                 ))}
               </ul>
-              <a href="login.html" className={cn(buttonVariants({ variant: "outline" }), "mt-7 h-11 w-full rounded-md border-study/40 font-mono text-[14px] text-study hover:bg-study/10")}>
-                Get Pro
-              </a>
+              <button
+                onClick={getPro}
+                className={cn(buttonVariants({ variant: "outline" }), "mt-7 h-11 w-full rounded-md border-study/40 font-mono text-[14px] text-study hover:bg-study/10")}
+              >
+                {session ? "Get Pro" : "Sign in to get Pro"}
+              </button>
               <p className="mt-4 text-[11.5px] leading-relaxed text-muted-foreground/60">
-                Checkout opens at launch. The app already activates licence keys in Settings, so early
-                teachers can start now — <a href="docs.html" className="text-study underline underline-offset-2">ask for a key</a>.
+                One year, paid once — Pix, card or PayPal. Your key lands in your{" "}
+                <a href="dashboard.html" className="text-study underline underline-offset-2">dashboard</a>.
               </p>
             </div>
           </div>
