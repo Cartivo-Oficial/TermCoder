@@ -14,16 +14,19 @@ const { render, routes } = await import(pathToFileURL(join(root, "dist-ssr", "en
 
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-for (const route of routes) {
-  const { html, title, description } = render(route);
+for (const { path, scripts } of routes) {
+  const { html, title, description } = render(path);
+  // Relative src, so the same file works under /TermCoder/preview/ and at the root.
+  const tags = scripts.map((s) => `<script src="${s}"></script>`).join("\n    ");
   const page = template
     .replace("<!--app-html-->", html)
     .replace("<!--app-title-->", esc(title))
-    .replace("<!--app-description-->", esc(description));
-  const out = resolve(dist, `.${route}`);
+    .replace("<!--app-description-->", esc(description))
+    .replace("</body>", tags ? `  ${tags}\n  </body>` : "</body>");
+  const out = resolve(dist, `.${path}`);
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, page);
-  console.log(`prerendered ${route.padEnd(24)} ${(page.length / 1024).toFixed(1)}kB`);
+  console.log(`prerendered ${path.padEnd(24)} ${(page.length / 1024).toFixed(1)}kB${tags ? " +scripts" : ""}`);
 }
 
 // Any unknown path falls back to the landing so a deep link never 404s.

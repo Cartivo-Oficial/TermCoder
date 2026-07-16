@@ -14,4 +14,4 @@ export function render(pathname: string) {
   return { html, title: route.title, description: route.description };
 }
 
-export const routes = ROUTES.map((r) => r.path);
+export const routes = ROUTES.map((r) => ({ path: r.path, scripts: r.scripts ?? [] }));
