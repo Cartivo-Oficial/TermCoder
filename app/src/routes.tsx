@@ -7,6 +7,7 @@ import Features from "@/pages/features";
 import Study from "@/pages/study";
 import Pricing from "@/pages/pricing";
 import Docs from "@/pages/docs";
+import Viewer from "@/pages/viewer";
 
 export interface RouteDef {
   path: string;
@@ -64,6 +65,12 @@ export const ROUTES: RouteDef[] = [
     description:
       "The agent, the tutor and the source are free forever. Pro is $9/month for the person who hosts a room or teaches a class — joining is always free.",
     Component: Pricing,
+  },
+  {
+    path: "/viewer.html",
+    title: "Session viewer — TermCoder",
+    description: "Open a shared TermCoder session from a link — a read-only transcript, no install.",
+    Component: Viewer,
   },
   {
     path: "/changelog.html",
