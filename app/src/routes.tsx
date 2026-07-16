@@ -3,6 +3,8 @@ import Home from "@/pages/home";
 import Changelog from "@/pages/changelog";
 import Install from "@/pages/install";
 import Download from "@/pages/download";
+import Features from "@/pages/features";
+import Study from "@/pages/study";
 
 export interface RouteDef {
   path: string;
@@ -18,6 +20,20 @@ export const ROUTES: RouteDef[] = [
     description:
       "An open-source AI coding agent that lives in your terminal — and a tutor that teaches you. Runs with no API key. One engine, two minds.",
     Component: Home,
+  },
+  {
+    path: "/features.html",
+    title: "TermCoder — features",
+    description:
+      "Everything the TermCoder builder does: no API key, twelve providers, sub-agents with real permissions, checkpoints, sync and packs, MCP and language servers.",
+    Component: Features,
+  },
+  {
+    path: "/study.html",
+    title: "TermCoder — a tutor is built in",
+    description:
+      "TermExplorer turns TermCoder into a patient tutor: explanations step by step, flashcards on a real SM-2 scheduler, a streak, classrooms and live rooms. Free for students.",
+    Component: Study,
   },
   {
     path: "/install.html",
