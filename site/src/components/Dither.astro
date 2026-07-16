@@ -1,0 +1,70 @@
+---
+interface Props {
+  side?: "both" | "left" | "right" | "top";
+  seed?: number;
+  density?: number;
+  band?: number;
+  class?: string;
+}
+const { side = "both", seed = 1, density = 0.85, band = 0.26, class: cls = "" } = Astro.props;
+
+const COLS = 120;
+const ROWS = 80;
+
+const palette: Array<[string, number]> = [
+  ["#ff7a45", 30],
+  ["#ffab52", 15],
+  ["#ff5c33", 12],
+  ["#ff3f6b", 7],
+  ["#c163ff", 5],
+  ["#43dcc4", 3],
+  ["#eaeaef", 2],
+];
+const pool: string[] = [];
+for (const [c, w] of palette) for (let i = 0; i < w; i++) pool.push(c);
+
+function mulberry32(a: number) {
+  return function () {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const rng = mulberry32((seed * 2654435761) >>> 0);
+
+interface Cell {
+  x: number;
+  y: number;
+  c: string;
+  o: string;
+}
+const cells: Cell[] = [];
+for (let r = 0; r < ROWS; r++) {
+  for (let col = 0; col < COLS; col++) {
+    const nx = col / (COLS - 1);
+    const ny = r / (ROWS - 1);
+    let prox = 0;
+    if (side === "both") prox = Math.max(1 - nx / band, 1 - (1 - nx) / band, 0);
+    else if (side === "left") prox = Math.max(1 - nx / band, 0);
+    else if (side === "right") prox = Math.max(1 - (1 - nx) / band, 0);
+    else prox = Math.max(1 - ny / band, 0);
+    if (prox <= 0) continue;
+    const fade = side === "top" ? 1 : 1 - ny * 0.4;
+    const p = prox * prox * density * fade;
+    if (rng() > p) continue;
+    const color = pool[(rng() * pool.length) | 0];
+    const opacity = (0.22 + rng() * 0.78 * prox).toFixed(2);
+    cells.push({ x: col, y: r, c: color, o: opacity });
+  }
+}
+---
+<svg
+  class={`dither ${cls}`}
+  viewBox={`0 0 ${COLS} ${ROWS}`}
+  preserveAspectRatio="none"
+  aria-hidden="true"
+>
+  {cells.map((c) => <rect x={c.x} y={c.y} width="1" height="1" fill={c.c} opacity={c.o} />)}
+</svg>

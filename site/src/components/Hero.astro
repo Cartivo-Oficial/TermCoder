@@ -1,26 +1,38 @@
 ---
-import SpecSection from "./SpecSection.astro";
-import CommandBox from "./CommandBox.astro";
 import TermReplay from "./react/TermReplay";
+import Dither from "./Dither.astro";
 ---
 <script is:inline src="/hero-session.js"></script>
-<SpecSection gutter="00">
-  <div class="t">
-    <div class="eyebrow-2">open source · MIT</div>
-    <h1>Codes with no API key.</h1>
-    <p class="lead">An agent loop with real tools — read, edit, run — in your terminal, or a desktop
-      app with a shell inside it. It routes each turn to the right model on its own.</p>
-    <CommandBox cmd="npm install -g @termcoder/tui" />
-    <div class="row-2">
-      <a class="btn-2 go" href="download.html" id="desktopDl">Download the app</a>
-      <a class="btn-2" href="install.html">Install the CLI</a>
+<section class="hero">
+  <Dither side="both" seed={7} density={0.92} band={0.24} class="hero-dither" />
+  <div class="hero-in">
+    <div class="eyebrow">open source · MIT</div>
+    <h1 class="hero-title">Code<br />with <span class="acc">no API key.</span></h1>
+    <p class="hero-lead">
+      An agent loop with real tools — read, edit, run — in your terminal, or a desktop app with a
+      shell inside it. It routes each turn to the right model on its own.
+    </p>
+    <div class="hero-cta">
+      <a class="btn-cta" href="download.html" id="desktopDl">Download the app <span class="arr">&#8594;</span></a>
+      <a class="btn-ghost" href="install.html">Install the CLI</a>
     </div>
   </div>
-  <div class="a">
-    <div class="term-2" role="img" aria-label="A recorded TermCoder session: a prompt, tool calls, and the result">
+
+  <div class="demo">
+    <div class="demo-label">
+      <span class="demo-dot" aria-hidden="true"></span>
+      <span class="demo-name">the terminal</span>
+      <span class="demo-sub">— a real recorded session</span>
+      <a class="demo-link" href="features.html">See what it does &#8594;</a>
+    </div>
+    <div
+      class="term-2 demo-frame"
+      role="img"
+      aria-label="A recorded TermCoder session: a prompt, tool calls, and the result"
+    >
       <div class="bar"><i></i><i></i><i></i><span>term — ~/my-project</span></div>
       <TermReplay client:idle />
       <div class="foot-2"><span>Build · termcoderfree/auto</span><span class="out">no API key</span></div>
     </div>
   </div>
-</SpecSection>
+</section>
