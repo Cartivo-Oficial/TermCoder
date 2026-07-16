@@ -83,6 +83,7 @@ export const ROUTES: RouteDef[] = [
     description:
       "Your TermCoder dashboard — models, synced sessions, recipes, MCP connectors, and study decks in one place.",
     Component: Dashboard,
+    scripts: ["config.js?v=3"],
   },
   {
     path: "/viewer.html",

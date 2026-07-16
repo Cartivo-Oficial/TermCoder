@@ -4,6 +4,7 @@ import { Dither } from "@/components/dither";
 import { Mark } from "@/components/mark";
 import { cn } from "@/lib/utils";
 import { readSession, signOut, type Session } from "@/lib/session";
+import { LicencePanel } from "@/components/licence-panel";
 
 interface Deck {
   name: string;
@@ -50,7 +51,7 @@ async function loadSynced(token: string): Promise<{ decks: Deck[]; streak: numbe
   }
 }
 
-const TABS = ["overview", "models", "sessions", "recipes", "connectors", "study", "settings"] as const;
+const TABS = ["licence", "overview", "models", "sessions", "recipes", "connectors", "study", "settings"] as const;
 type Tab = (typeof TABS)[number];
 
 const MODELS: [string, string, string][] = [
@@ -165,7 +166,7 @@ function DeckList({ decks, signedIn }: { decks: Deck[] | null; signedIn: boolean
 }
 
 export default function Dashboard() {
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTab] = useState<Tab>("licence");
   const [session, setSession] = useState<Session | null>(null);
   const [decks, setDecks] = useState<Deck[] | null>(null);
   const [streak, setStreak] = useState<number | null>(null);
@@ -233,6 +234,8 @@ export default function Dashboard() {
           </aside>
 
           <section className="min-w-0">
+            {tab === "licence" && <LicencePanel />}
+
             {tab === "overview" && (
               <div>
                 <Eyebrow>overview</Eyebrow>
