@@ -12,13 +12,9 @@ The ask: a checkout that accepts Pix, boleto, credit card, and foreign payment i
 
 ## Two corrections this spec depends on
 
-**1. The pricing page is lying about the gate.** [server.ts:1150](../../../packages/server/src/server.ts) reads:
+**1. The gate did not match the promise — RESOLVED 2026-07-16 in `6008a06`.** The gate read `room.sockets.size >= 1`, which blocked the next joiner as soon as the host was in the room, so the first guest was already paywalled — while the site promised one free guest. Rather than correct the copy, the user chose to keep the promise, so the gate is now `>= 2`: **Pro is required from the third person in the room**.
 
-```js
-if (room.sockets.size >= 1 && !ctx.license().active) { /* room-locked */ }
-```
-
-Once the host is in the room, the **next** person to join is blocked without a licence. So **the first guest already requires Pro**. The live pricing page says "Host a room, one guest — free" and "the licence starts at the third person", and `study.tsx` says "more than one guest". All three are false and must be corrected in this work. The old `pricing.astro` was already wrong ("more than one guest"); the error was inherited, not invented by the gate.
+The published pricing copy ("Host a room, one guest — free", "the licence starts at the third person") and `study.tsx` ("more than one guest") are therefore now accurate, and **no site copy change is needed**. What we sell, precisely: joining is always free; hosting is free up to one guest; Pro covers the third person onward, classrooms, and session sync.
 
 **2. The browser invents its own session.** `auth.js` builds the session client-side and the Worker signs nothing:
 
@@ -150,7 +146,7 @@ This is the minimum honest content. The broader "the dashboard has almost no opt
 | `app/src/lib/paddle.ts` | load Paddle.js, open the overlay | `window.TC_PAY` |
 | `app/src/lib/session.ts` | read `tc-session`, expose `session` token | localStorage |
 | `app/src/pages/dashboard.tsx` | the Licence panel | the two libs above |
-| `app/src/pages/pricing.tsx` | correct copy + Buy button | `paddle.ts` |
+| `app/src/pages/pricing.tsx` | Buy button (copy is already accurate as of `6008a06`) | `paddle.ts` |
 
 Each is separately testable: session signing is pure crypto; the Paddle lookup is one fetch behind an interface that can be faked; the panel is a component with four states.
 
