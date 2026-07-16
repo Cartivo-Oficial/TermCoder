@@ -1,10 +1,15 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
+import { StrictMode } from "react";
+import { hydrateRoot, createRoot } from "react-dom/client";
+import { matchRoute } from "@/routes";
+import "./index.css";
 
-createRoot(document.getElementById('root')!).render(
+const { Component } = matchRoute(window.location.pathname);
+const root = document.getElementById("root")!;
+const tree = (
   <StrictMode>
-    <App />
-  </StrictMode>,
-)
+    <Component />
+  </StrictMode>
+);
+
+if (root.hasChildNodes()) hydrateRoot(root, tree);
+else createRoot(root).render(tree);

@@ -42,7 +42,7 @@ function Section({ children }: { children: React.ReactNode }) {
   return <section className="border-t border-border"><div className="mx-auto max-w-6xl px-6 py-20">{children}</div></section>;
 }
 
-export default function App() {
+export default function Home() {
   return (
     <div className="flex min-h-full flex-col">
       {/* ─────────── nav ─────────── */}
