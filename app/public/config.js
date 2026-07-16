@@ -1,7 +1,7 @@
-// Public OAuth config — safe to commit. Client IDs and the Worker URL are NOT
-// secrets. The client SECRETS live only in the Cloudflare Worker environment
-// (see website/auth/README.md). Until these are filled in, the Sign-in buttons
-// fall through to the dashboard preview.
+// Public OAuth + Paddle config — safe to commit. Client IDs, the Worker URL,
+// and the Paddle client token are NOT secrets. The client SECRETS live only in
+// the Cloudflare Worker environment (see website/auth/README.md). Until these
+// are filled in, the Sign-in buttons fall through to the dashboard preview.
 window.TC_AUTH = {
   workerUrl: "https://termcoder-auth.eduardo-wankax.workers.dev", // Cloudflare Worker (auth/worker.js)
   github: { clientId: "Ov23liSR2sI4lUCrZNtb" }, // GitHub OAuth App client ID

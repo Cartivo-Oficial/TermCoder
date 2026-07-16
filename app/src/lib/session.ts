@@ -6,8 +6,8 @@ export interface Session {
   email: string;
   avatar: string;
   token: string;
-  sub: string;
-  session: string;
+  sub?: string;
+  session?: string;
 }
 
 export function readSession(): Session | null {
