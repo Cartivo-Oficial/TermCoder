@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Dither } from "@/components/dither";
 import { CopyButton } from "@/components/copy-button";
 import { Mark } from "@/components/mark";
-import appShot from "@/assets/app.png";
+import appShot from "@/assets/app-hero.png";
 
 const PROVIDERS: [string, string][] = [
   ["Anthropic", "claude-sonnet-5 · haiku"], ["OpenAI", "gpt-4o · 4o-mini"], ["Google", "gemini-2.5 pro · flash"],
@@ -105,9 +105,9 @@ export default function App() {
             <div className="relative overflow-hidden rounded-lg border border-white/12 bg-[#0d0c0e] shadow-[0_60px_140px_-40px_rgba(0,0,0,0.95)]">
               <img
                 src={appShot}
-                width={1280}
-                height={800}
-                alt="The TermCoder desktop app: the session rail, the Chat and Terminal tabs, one-click chips for the coding CLIs found on PATH, and a real shell running npm test."
+                width={1034}
+                height={740}
+                alt="The TermCoder desktop app on open: the session rail, Chat and Terminal tabs, the pixel TERMCODER wordmark, suggestion chips, and a composer with the model picker."
                 className="block w-full"
               />
             </div>
@@ -115,8 +115,8 @@ export default function App() {
           <div className="mt-4 grid gap-x-10 gap-y-2 font-mono text-[11.5px] sm:grid-cols-3">
             {[
               ["chat · terminal", "a real shell, in the same window"],
-              ["it finds your CLIs", "Claude Code · Codex · Gemini, on PATH"],
-              ["one install", "the builder and the tutor, together"],
+              ["any model, one picker", "or the free one it opens on"],
+              ["speaks your language", "eleven of them, including yours"],
             ].map(([a, b]) => (
               <div key={a} className="border-t border-border pt-2.5">
                 <div className="text-foreground">{a}</div>
