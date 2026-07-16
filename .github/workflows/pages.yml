@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - "site/**"
+      - "app/**"
       - "CHANGELOG.md"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
@@ -40,6 +41,13 @@ jobs:
         working-directory: site
       - run: node tools/verify.mjs
         working-directory: site
+      # Redesign preview (Vite + React + shadcn) shipped alongside the live site
+      # at /preview/ so the main pages and the OAuth callback stay untouched.
+      - run: npm ci
+        working-directory: app
+      - run: npm run build
+        working-directory: app
+      - run: cp -r app/dist site/dist/preview
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site/dist
