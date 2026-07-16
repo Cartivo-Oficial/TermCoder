@@ -8,11 +8,21 @@
 //   wrangler secret put GOOGLE_CLIENT_SECRET
 // Client IDs are public vars (wrangler.toml or the dashboard).
 
+import { signSession } from "./session.mjs";
+
+const ALLOWED_ORIGINS = ["https://cartivo-oficial.github.io"];
+
+export function allowOrigin(origin) {
+  if (!origin) return "";
+  if (ALLOWED_ORIGINS.includes(origin)) return origin;
+  if (/^http:\/\/localhost:\d+$/.test(origin)) return origin;
+  return "";
+}
+
 export default {
   async fetch(request, env) {
-    const origin = request.headers.get("Origin") || "*";
     const cors = {
-      "Access-Control-Allow-Origin": origin,
+      "Access-Control-Allow-Origin": allowOrigin(request.headers.get("Origin")),
       "Access-Control-Allow-Methods": "POST, OPTIONS",
       "Access-Control-Allow-Headers": "content-type",
       "Access-Control-Max-Age": "86400",
@@ -35,9 +45,16 @@ export default {
     if (!code || !redirect_uri) return json({ error: "missing_code_or_redirect" }, 400, cors);
 
     try {
-      if (provider === "github") return json(await github(code, redirect_uri, env), 200, cors);
-      if (provider === "google") return json(await google(code, redirect_uri, env), 200, cors);
-      return json({ error: "unknown_provider" }, 400, cors);
+      let profile = null;
+      if (provider === "github") profile = await github(code, redirect_uri, env);
+      if (provider === "google") profile = await google(code, redirect_uri, env);
+      if (!profile) return json({ error: "unknown_provider" }, 400, cors);
+      if (!env.SESSION_SECRET) return json({ error: "auth_not_configured" }, 503, cors);
+      profile.session = await signSession(
+        { sub: profile.sub, email: profile.email, name: profile.name, provider: profile.provider },
+        env.SESSION_SECRET,
+      );
+      return json(profile, 200, cors);
     } catch (e) {
       return json({ error: String((e && e.message) || e) }, 502, cors);
     }
@@ -51,8 +68,9 @@ function json(obj, status, cors) {
   });
 }
 
-async function github(code, redirect_uri, env) {
-  const tokRes = await fetch("https://github.com/login/oauth/access_token", {
+export async function github(code, redirect_uri, env, deps = {}) {
+  const doFetch = deps.fetch ?? fetch;
+  const tokRes = await doFetch("https://github.com/login/oauth/access_token", {
     method: "POST",
     headers: { "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify({
@@ -70,10 +88,10 @@ async function github(code, redirect_uri, env) {
     "user-agent": "termcoder-auth",
     accept: "application/vnd.github+json",
   };
-  const u = await (await fetch("https://api.github.com/user", { headers })).json();
+  const u = await (await doFetch("https://api.github.com/user", { headers })).json();
   let email = u.email;
   if (!email) {
-    const emRes = await fetch("https://api.github.com/user/emails", { headers });
+    const emRes = await doFetch("https://api.github.com/user/emails", { headers });
     if (emRes.ok) {
       const ems = await emRes.json();
       const primary = Array.isArray(ems) ? ems.find((e) => e.primary) || ems[0] : null;
@@ -86,6 +104,7 @@ async function github(code, redirect_uri, env) {
   // personal dashboard reading your own data; not returned for Google.
   return {
     provider: "github",
+    sub: "github:" + u.id,
     login: u.login,
     name: u.name || u.login || "",
     email: email || "",
@@ -94,8 +113,9 @@ async function github(code, redirect_uri, env) {
   };
 }
 
-async function google(code, redirect_uri, env) {
-  const tokRes = await fetch("https://oauth2.googleapis.com/token", {
+export async function google(code, redirect_uri, env, deps = {}) {
+  const doFetch = deps.fetch ?? fetch;
+  const tokRes = await doFetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -110,9 +130,9 @@ async function google(code, redirect_uri, env) {
   if (!tok.access_token) throw new Error(tok.error_description || "google_token_exchange_failed");
 
   const u = await (
-    await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+    await doFetch("https://www.googleapis.com/oauth2/v3/userinfo", {
       headers: { authorization: "Bearer " + tok.access_token },
     })
   ).json();
-  return { provider: "google", name: u.name || "", email: u.email || "", avatar: u.picture || "" };
+  return { provider: "google", sub: "google:" + u.sub, name: u.name || "", email: u.email || "", avatar: u.picture || "" };
 }
