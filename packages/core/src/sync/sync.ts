@@ -3,6 +3,7 @@ import { dirname } from "node:path";
 import { configFile } from "../util/paths";
 import type { GitHubClient } from "../github/github";
 import type { SessionRecord, SessionStore } from "../storage/storage";
+import { mergeSettings, parseSettings } from "./settings";
 
 const SESSIONS_FILE = "sessions.json";
 const SESSION_SYNC_LIMIT = 50;
@@ -11,7 +12,7 @@ const SESSION_SYNC_LIMIT = 50;
 const SYNC_DESCRIPTION = "termcoder:sync — private synced settings";
 const META_FILE = "sync.json";
 
-export const DEFAULT_SYNC_STORES = ["favorites", "drafts", "decks", "progress"] as const;
+export const DEFAULT_SYNC_STORES = ["favorites", "drafts", "decks", "progress", "settings"] as const;
 
 interface SyncMeta {
   gistId?: string;
@@ -91,6 +92,16 @@ export async function pullSync(
   if (!raw) return false;
   const envelope = JSON.parse(raw) as SyncEnvelope;
   const local = readLocal(name, env);
+
+  if (name === "settings") {
+    const merged = mergeSettings(
+      parseSettings(local?.data),
+      parseSettings(envelope.data),
+    );
+    writeLocal(name, merged, env);
+    return true;
+  }
+
   if (local && local.updatedAt >= envelope.updatedAt) return false; // local wins
   writeLocal(name, envelope.data, env);
   return true;

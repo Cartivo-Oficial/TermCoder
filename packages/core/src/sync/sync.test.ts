@@ -40,6 +40,39 @@ function fakeClient() {
   } as unknown as GitHubClient;
 }
 
+function fakeClientWith(files: Record<string, string>) {
+  const store: Record<string, Record<string, string>> = { g1: files };
+  const toGist = (id: string): Gist => ({
+    id,
+    html_url: `https://gist.github.com/${id}`,
+    description: "",
+    public: false,
+    updated_at: "",
+    files: Object.fromEntries(
+      Object.entries(store[id] ?? {}).map(([k, v]) => [k, { filename: k, content: v }]),
+    ),
+  });
+  return {
+    async createGist({ files: f }: { files: Record<string, { content: string }> }) {
+      const id = `g${Object.keys(store).length + 1}`;
+      store[id] = {};
+      for (const [k, v] of Object.entries(f)) store[id]![k] = v.content;
+      return toGist(id);
+    },
+    async updateGist(id: string, f: Record<string, { content: string }>) {
+      store[id] ??= {};
+      for (const [k, v] of Object.entries(f)) store[id]![k] = v.content;
+      return toGist(id);
+    },
+    async getGist(id: string) {
+      return toGist(id);
+    },
+    async gistFileContent(g: Gist, filename: string) {
+      return g.files[filename]?.content;
+    },
+  } as unknown as GitHubClient;
+}
+
 describe("sync store", () => {
   let cfgA: string;
   let cfgB: string;
@@ -48,11 +81,21 @@ describe("sync store", () => {
   const cdir = (cfg: string) => join(cfg, "termcoder");
   const favFile = (cfg: string) => join(cdir(cfg), "favorites.json");
   const metaFile = (cfg: string) => join(cdir(cfg), "sync.json");
+  const storeFile = (cfg: string, name: string) => join(cdir(cfg), `${name}.json`);
   const writeFav = (cfg: string, list: string[]) => {
     mkdirSync(cdir(cfg), { recursive: true });
     writeFileSync(favFile(cfg), JSON.stringify(list), "utf8");
   };
   const readFav = (cfg: string) => JSON.parse(readFileSync(favFile(cfg), "utf8"));
+  const writeLocalStore = (name: string, data: unknown) => {
+    mkdirSync(cdir(cfgA), { recursive: true });
+    writeFileSync(storeFile(cfgA, name), JSON.stringify(data), "utf8");
+  };
+  const readLocalStore = (name: string) => JSON.parse(readFileSync(storeFile(cfgA, name), "utf8"));
+  const useGist = (id: string) => {
+    mkdirSync(cdir(cfgA), { recursive: true });
+    writeFileSync(metaFile(cfgA), JSON.stringify({ gistId: id }), "utf8");
+  };
 
   beforeEach(() => {
     cfgA = mkdtempSync(join(tmpdir(), "tc-syncA-"));
@@ -101,6 +144,57 @@ describe("sync store", () => {
     writeFav(cfgA, ["a"]);
     const res = await syncAll(client, ["favorites"], envA);
     expect(res.pushed).toContain("favorites");
+  });
+
+  it("merges the settings store key by key instead of replacing it", async () => {
+    useGist("g1");
+    writeLocalStore("settings", {
+      theme: { value: "ember", updatedAt: 200 },
+      defaultModel: { value: "local/model", updatedAt: 50 },
+    });
+    const client = fakeClientWith({
+      "settings.json": JSON.stringify({
+        updatedAt: 999,
+        data: {
+          theme: { value: "paper", updatedAt: 100 },
+          defaultModel: { value: "remote/model", updatedAt: 300 },
+        },
+      }),
+    });
+
+    await pullSync("settings", client, envA);
+
+    expect(readLocalStore("settings")).toEqual({
+      theme: { value: "ember", updatedAt: 200 },
+      defaultModel: { value: "remote/model", updatedAt: 300 },
+    });
+  });
+
+  it("drops an unknown settings key arriving from the gist", async () => {
+    useGist("g1");
+    writeLocalStore("settings", {});
+    const client = fakeClientWith({
+      "settings.json": JSON.stringify({
+        updatedAt: 999,
+        data: { evil: { value: "rm -rf /", updatedAt: 999 } },
+      }),
+    });
+
+    await pullSync("settings", client, envA);
+
+    expect(readLocalStore("settings")).toEqual({});
+  });
+
+  it("still replaces a non-settings store wholesale", async () => {
+    useGist("g1");
+    writeLocalStore("favorites", ["a"]);
+    const client = fakeClientWith({
+      "favorites.json": JSON.stringify({ updatedAt: Date.now() + 10_000, data: ["b"] }),
+    });
+
+    await pullSync("favorites", client, envA);
+
+    expect(readLocalStore("favorites")).toEqual(["b"]);
   });
 });
 
