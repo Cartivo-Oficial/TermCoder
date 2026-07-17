@@ -57,6 +57,7 @@ export interface SessionDeps {
   reviewer?: () => Promise<string>;
   maxSteps?: number;
   streamText?: typeof streamText;
+  renderReasoning?: boolean;
 }
 
 interface ToolResultPart {
@@ -295,7 +296,8 @@ export class Session {
     });
     const temperature = agent.temperature ?? this.record.temperature;
     const isAnthropic = modelId.split("/")[0] === "anthropic";
-    const wantThinking = isAnthropic && this.deps.config.reasoning !== false;
+    const reasoningOn = this.deps.config.reasoning !== false;
+    const wantThinking = isAnthropic && reasoningOn && this.deps.renderReasoning === true;
     const reasoningBudgetTokens = 4000;
     const streamFn = this.deps.streamText ?? streamText;
     return ({ system, messages, tools, signal }) =>

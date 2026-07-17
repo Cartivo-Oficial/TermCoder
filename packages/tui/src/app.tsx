@@ -216,7 +216,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
   ).current;
 
   const [session, setSession] = useState<Session>(() =>
-    Session.create({ store, registry, config, permission }, { cwd }),
+    Session.create({ store, registry, config, permission, renderReasoning: true }, { cwd }),
   );
 
   useEffect(() => {
@@ -769,7 +769,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         setClearEpoch((n) => n + 1);
         break;
       case "new": {
-        const fresh = Session.create({ store, registry, config, permission }, { cwd });
+        const fresh = Session.create({ store, registry, config, permission, renderReasoning: true }, { cwd });
         setSession(fresh);
         setHistory([{ kind: "notice", text: "Started a new session." }]);
         setLive([]);
@@ -840,7 +840,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           break;
         }
         try {
-          const resumed = Session.resume({ store, registry, config, permission }, match.id);
+          const resumed = Session.resume({ store, registry, config, permission, renderReasoning: true }, match.id);
           setSession(resumed);
           setHistory([
             { kind: "notice", text: `Resumed ${match.id.slice(0, 8)} (${match.messageCount} msgs).` },
@@ -1020,7 +1020,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         pushHistory({ kind: "notice", text: "Importing shared session…" });
         importSessionFromGist(arg, client, store)
           .then((record) => {
-            const resumed = Session.resume({ store, registry, config, permission }, record.id);
+            const resumed = Session.resume({ store, registry, config, permission, renderReasoning: true }, record.id);
             setSession(resumed);
             setHistory([
               { kind: "notice", text: `✓ Imported "${record.title}".` },

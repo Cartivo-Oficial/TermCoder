@@ -387,13 +387,29 @@ describe("Session agent loop", () => {
     const spy = captureStreamTextArgs();
     const permission = new PermissionManager(config.permission, async () => "deny");
     const session = Session.create(
-      { store, registry, config, permission, streamText: spy.streamText },
+      { store, registry, config, permission, streamText: spy.streamText, renderReasoning: true },
       { cwd: dir, temperature: 0.3 },
     );
     await collect(session, "hi");
     const args = spy.lastArgs();
     expect(args.providerOptions?.anthropic?.thinking?.type).toBe("enabled");
     expect(args.temperature).toBeUndefined();
+  });
+
+  it("sends no thinking option and keeps temperature when renderReasoning is not set, even with reasoning on", async () => {
+    config.model = "anthropic/claude-sonnet-5";
+    config.providers.anthropic = { apiKey: "test-key" };
+    config.reasoning = true;
+    const spy = captureStreamTextArgs();
+    const permission = new PermissionManager(config.permission, async () => "deny");
+    const session = Session.create(
+      { store, registry, config, permission, streamText: spy.streamText },
+      { cwd: dir, temperature: 0.3 },
+    );
+    await collect(session, "hi");
+    const args = spy.lastArgs();
+    expect(args.providerOptions?.anthropic).toBeUndefined();
+    expect(args.temperature).toBe(0.3);
   });
 
   it("sends no thinking option and keeps temperature for a non-Anthropic model", async () => {
@@ -419,7 +435,7 @@ describe("Session agent loop", () => {
     const spy = captureStreamTextArgs();
     const permission = new PermissionManager(config.permission, async () => "deny");
     const session = Session.create(
-      { store, registry, config, permission, streamText: spy.streamText },
+      { store, registry, config, permission, streamText: spy.streamText, renderReasoning: true },
       { cwd: dir, temperature: 0.3 },
     );
     await collect(session, "hi");
