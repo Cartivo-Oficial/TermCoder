@@ -478,6 +478,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     try {
       for await (const event of useSession.prompt(text, { signal: controller.signal })) {
         if (aborted.current) {
+          closeThinking();
           localLive.push({ kind: "notice", text: "⛔ Interrupted." });
           break;
         }
@@ -548,6 +549,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
             setLastCtx(event.inputTokens);
             break;
           case "error": {
+            closeThinking();
             localLive.push({ kind: "error", text: event.error });
             if (/quota|rate.?limit|too many|429|busy|overload/i.test(event.error)) {
               rateLimited = true;
@@ -562,6 +564,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         sync();
       }
     } finally {
+      closeThinking();
       const secs = Math.round((Date.now() - turnStart) / 1000);
       const dur = fmtDuration(secs);
       const stamped: ViewItem[] = localLive.map((it) =>
