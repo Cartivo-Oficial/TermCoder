@@ -5,6 +5,7 @@ import { Mark } from "@/components/mark";
 import { cn } from "@/lib/utils";
 import { readSession, signOut, type Session } from "@/lib/session";
 import { LicencePanel } from "@/components/licence-panel";
+import { findSyncGist, readStore, writeStore } from "@/lib/gist";
 
 interface Deck {
   name: string;
@@ -22,14 +23,16 @@ function unwrap(file: { content?: string } | undefined): any {
   }
 }
 
-async function loadSynced(token: string): Promise<{ decks: Deck[]; streak: number } | null> {
+function sanitizeFavorites(data: unknown): string[] {
+  return Array.isArray(data) ? data.filter((x): x is string => typeof x === "string") : [];
+}
+
+async function loadSynced(token: string): Promise<{ decks: Deck[]; streak: number; gistId: string | null } | null> {
   try {
+    const gistId = await findSyncGist(token);
+    if (!gistId) return null;
     const headers = { authorization: "Bearer " + token, accept: "application/vnd.github+json" };
-    const gists = await (await fetch("https://api.github.com/gists?per_page=100", { headers })).json();
-    if (!Array.isArray(gists)) return null;
-    const sync = gists.find((g: any) => (g.description || "").indexOf("termcoder:sync") === 0);
-    if (!sync) return null;
-    const full = await (await fetch("https://api.github.com/gists/" + sync.id, { headers })).json();
+    const full = await (await fetch("https://api.github.com/gists/" + gistId, { headers })).json();
     const files = full.files || {};
     const decksRaw = unwrap(files["decks.json"]);
     const progress = unwrap(files["progress.json"]);
@@ -45,7 +48,7 @@ async function loadSynced(token: string): Promise<{ decks: Deck[]; streak: numbe
             };
           })
         : [];
-    return { decks, streak: (progress && (progress.streak || progress.currentStreak)) || 0 };
+    return { decks, streak: (progress && (progress.streak || progress.currentStreak)) || 0, gistId };
   } catch {
     return null;
   }
@@ -170,6 +173,8 @@ export default function Dashboard() {
   const [session, setSession] = useState<Session | null>(null);
   const [decks, setDecks] = useState<Deck[] | null>(null);
   const [streak, setStreak] = useState<number | null>(null);
+  const [favorites, setFavorites] = useState<string[] | null>(null);
+  const [gistId, setGistId] = useState<string | null>(null);
 
   useEffect(() => {
     const s = readSession();
@@ -179,9 +184,27 @@ export default function Dashboard() {
         if (!d) return;
         setDecks(d.decks);
         setStreak(d.streak);
+        setGistId(d.gistId);
+        if (d.gistId) {
+          readStore(s.token, d.gistId, "favorites")
+            .then((data) => setFavorites(sanitizeFavorites(data)))
+            .catch(() => setFavorites([]));
+        }
       });
     }
   }, []);
+
+  const toggleFavorite = async (id: string) => {
+    if (!session?.token || !gistId || favorites === null) return;
+    const next = favorites.includes(id) ? favorites.filter((f) => f !== id) : [...favorites, id];
+    const previous = favorites;
+    setFavorites(next);
+    try {
+      await writeStore(session.token, gistId, "favorites", next);
+    } catch {
+      setFavorites(previous);
+    }
+  };
 
   const signedIn = !!session;
   const dash = (n: number | null, unit: string) => (n === null ? "—" : `${n} ${n === 1 ? unit : unit + "s"}`);
@@ -269,7 +292,25 @@ export default function Dashboard() {
                       key={m}
                       c1={m}
                       c2={d}
-                      right={<Badge tone={badge === "ready" ? "ok" : badge === "local" ? "local" : undefined}>{badge}</Badge>}
+                      right={
+                        <div className="flex shrink-0 items-center gap-3">
+                          {session?.token && gistId && (
+                            <button
+                              type="button"
+                              onClick={() => toggleFavorite(m)}
+                              aria-label={favorites?.includes(m) ? `Unfavorite ${m}` : `Favorite ${m}`}
+                              aria-pressed={!!favorites?.includes(m)}
+                              className={cn(
+                                "font-mono text-[14px] leading-none transition-colors",
+                                favorites?.includes(m) ? "text-primary" : "text-muted-foreground/30 hover:text-muted-foreground",
+                              )}
+                            >
+                              {favorites?.includes(m) ? "★" : "☆"}
+                            </button>
+                          )}
+                          <Badge tone={badge === "ready" ? "ok" : badge === "local" ? "local" : undefined}>{badge}</Badge>
+                        </div>
+                      }
                     />
                   ))}
                 </div>
