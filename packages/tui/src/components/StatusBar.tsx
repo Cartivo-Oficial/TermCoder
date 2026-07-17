@@ -1,4 +1,4 @@
-import { Box, Text } from "ink";
+import { Box, Text, useStdout } from "ink";
 import type { Theme } from "../theme";
 
 interface StatusBarProps {
@@ -29,47 +29,69 @@ function shortenPath(p: string): string {
   return tail || p;
 }
 
+const SEP = "  ·  ";
+
+interface Segment {
+  key: string;
+  priority: number;
+  text: string;
+  color?: string;
+  bold?: boolean;
+}
+
 export function StatusBar({ theme, cwd, tokens, lastCtx, ctxPct, autoApprove, version, model, agent }: StatusBarProps) {
-  const dot = <Text color={theme.border}>{"  ·  "}</Text>;
+  const { stdout } = useStdout();
+  const columns = stdout?.columns ?? 80;
+
+  const segments: Segment[] = [];
+
+  if (model) {
+    segments.push({ key: "model", priority: 1, text: shortModel(model), color: theme.muted });
+  }
+  if (agent) {
+    segments.push({ key: "agent", priority: 2, text: agent, color: theme.muted });
+  }
+  segments.push({ key: "path", priority: 3, text: shortenPath(cwd), color: theme.muted });
+  if (lastCtx && lastCtx > 0) {
+    segments.push({
+      key: "ctx",
+      priority: 4,
+      text: `ctx ${formatTokens(lastCtx)}${ctxPct ? ` (${ctxPct}%)` : ""}`,
+      color: ctxPct && ctxPct > 70 ? theme.error : ctxPct && ctxPct > 40 ? theme.running : theme.muted,
+    });
+  }
+  if (tokens > 0) {
+    segments.push({ key: "tokens", priority: 5, text: `${formatTokens(tokens)} tok`, color: theme.muted });
+  }
+  if (autoApprove) {
+    segments.push({ key: "auto", priority: 6, text: "auto", color: theme.running, bold: true });
+  }
+  if (version) {
+    segments.push({ key: "version", priority: 7, text: version, color: theme.border });
+  }
+
+  const included = new Set<string>();
+  let width = 0;
+  for (const seg of [...segments].sort((a, b) => a.priority - b.priority)) {
+    const next = width + seg.text.length + SEP.length;
+    if (next > columns - 1) break;
+    width = next;
+    included.add(seg.key);
+  }
+  const visible = segments.filter((seg) => included.has(seg.key));
+
   return (
     <Box paddingX={1}>
-      <Text color={theme.muted}>{shortenPath(cwd)}</Text>
-      {model ? (
-        <>
-          {dot}
-          <Text color={theme.muted}>{shortModel(model)}</Text>
-        </>
-      ) : null}
-      {agent ? (
-        <>
-          {dot}
-          <Text color={theme.muted}>{agent}</Text>
-        </>
-      ) : null}
-      {lastCtx && lastCtx > 0 ? (
-        <>
-          {dot}
-          <Text color={ctxPct && ctxPct > 70 ? theme.error : ctxPct && ctxPct > 40 ? theme.running : theme.muted}>
-            {`ctx ${formatTokens(lastCtx)}${ctxPct ? ` (${ctxPct}%)` : ""}`}
+      {visible.flatMap((seg, i) => [
+        i > 0 ? (
+          <Text key={`${seg.key}-sep`} color={theme.border}>
+            {SEP}
           </Text>
-        </>
-      ) : null}
-      {tokens > 0 ? (
-        <>
-          {dot}
-          <Text color={theme.muted}>{`${formatTokens(tokens)} tok`}</Text>
-        </>
-      ) : null}
-      {autoApprove ? (
-        <>
-          {dot}
-          <Text color={theme.running} bold>
-            auto
-          </Text>
-        </>
-      ) : null}
-      <Box flexGrow={1} />
-      {version ? <Text color={theme.border}>{version}</Text> : null}
+        ) : null,
+        <Text key={seg.key} color={seg.color} bold={seg.bold}>
+          {seg.text}
+        </Text>,
+      ])}
     </Box>
   );
 }
