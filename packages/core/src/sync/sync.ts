@@ -3,6 +3,10 @@ import { dirname } from "node:path";
 import { configFile } from "../util/paths";
 import type { GitHubClient } from "../github/github";
 import type { SessionRecord, SessionStore } from "../storage/storage";
+import { readGlobalConfig, saveConfig } from "../config/config";
+import { extractSettings, mergeSettings, parseSettings, settingsToConfigPatch } from "./settings";
+import type { SettingsFile } from "./settings";
+
 
 const SESSIONS_FILE = "sessions.json";
 const SESSION_SYNC_LIMIT = 50;
@@ -11,7 +15,7 @@ const SESSION_SYNC_LIMIT = 50;
 const SYNC_DESCRIPTION = "termcoder:sync — private synced settings";
 const META_FILE = "sync.json";
 
-export const DEFAULT_SYNC_STORES = ["favorites", "drafts", "decks", "progress"] as const;
+export const DEFAULT_SYNC_STORES = ["favorites", "drafts", "decks", "progress", "settings"] as const;
 
 interface SyncMeta {
   gistId?: string;
@@ -60,11 +64,23 @@ export function isSyncConfigured(env: NodeJS.ProcessEnv = process.env): boolean 
   return Boolean(loadMeta(env).gistId);
 }
 
+function reconcileSettingsFromConfig(env: NodeJS.ProcessEnv): SettingsFile {
+  const config = readGlobalConfig({ env });
+  const local = readLocal("settings", env);
+  const existing = parseSettings(local?.data);
+  const configPath = configFile("config.json", env);
+  const stamp = existsSync(configPath) ? statSync(configPath).mtimeMs : 0;
+  const reconciled = extractSettings(config, existing, stamp);
+  writeLocal("settings", reconciled, env);
+  return reconciled;
+}
+
 export async function pushSync(
   name: string,
   client: GitHubClient,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<boolean> {
+  if (name === "settings") reconcileSettingsFromConfig(env);
   const local = readLocal(name, env);
   if (!local) return false;
   const envelope: SyncEnvelope = { updatedAt: local.updatedAt, data: local.data };
@@ -91,6 +107,15 @@ export async function pullSync(
   if (!raw) return false;
   const envelope = JSON.parse(raw) as SyncEnvelope;
   const local = readLocal(name, env);
+
+  if (name === "settings") {
+    const settingsLocal = reconcileSettingsFromConfig(env);
+    const merged = mergeSettings(settingsLocal, parseSettings(envelope.data));
+    writeLocal(name, merged, env);
+    saveConfig(settingsToConfigPatch(merged), { env });
+    return true;
+  }
+
   if (local && local.updatedAt >= envelope.updatedAt) return false; // local wins
   writeLocal(name, envelope.data, env);
   return true;

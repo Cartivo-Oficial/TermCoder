@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Footer } from "@/components/site/footer";
 import { Dither } from "@/components/dither";
 import { Mark } from "@/components/mark";
 import { cn } from "@/lib/utils";
 import { readSession, signOut, type Session } from "@/lib/session";
 import { LicencePanel } from "@/components/licence-panel";
+import { SettingsPanel } from "@/components/settings-panel";
+import { createOptimisticQueue, findSyncGist, readStore, writeStore, type OptimisticQueue } from "@/lib/gist";
 
 interface Deck {
   name: string;
@@ -22,14 +24,26 @@ function unwrap(file: { content?: string } | undefined): any {
   }
 }
 
-async function loadSynced(token: string): Promise<{ decks: Deck[]; streak: number } | null> {
+const FAVORITE_ID_MAX_LENGTH = 120;
+const FAVORITES_MAX_LENGTH = 500;
+
+function sanitizeFavorites(data: unknown): string[] {
+  if (!Array.isArray(data)) return [];
+  const out: string[] = [];
+  for (const x of data) {
+    if (typeof x !== "string" || x.length === 0 || x.length > FAVORITE_ID_MAX_LENGTH) continue;
+    out.push(x);
+    if (out.length >= FAVORITES_MAX_LENGTH) break;
+  }
+  return out;
+}
+
+async function loadSynced(token: string): Promise<{ decks: Deck[]; streak: number; gistId: string | null } | null> {
   try {
+    const gistId = await findSyncGist(token);
+    if (!gistId) return null;
     const headers = { authorization: "Bearer " + token, accept: "application/vnd.github+json" };
-    const gists = await (await fetch("https://api.github.com/gists?per_page=100", { headers })).json();
-    if (!Array.isArray(gists)) return null;
-    const sync = gists.find((g: any) => (g.description || "").indexOf("termcoder:sync") === 0);
-    if (!sync) return null;
-    const full = await (await fetch("https://api.github.com/gists/" + sync.id, { headers })).json();
+    const full = await (await fetch("https://api.github.com/gists/" + gistId, { headers })).json();
     const files = full.files || {};
     const decksRaw = unwrap(files["decks.json"]);
     const progress = unwrap(files["progress.json"]);
@@ -45,7 +59,7 @@ async function loadSynced(token: string): Promise<{ decks: Deck[]; streak: numbe
             };
           })
         : [];
-    return { decks, streak: (progress && (progress.streak || progress.currentStreak)) || 0 };
+    return { decks, streak: (progress && (progress.streak || progress.currentStreak)) || 0, gistId };
   } catch {
     return null;
   }
@@ -85,13 +99,6 @@ const CONNECTORS: [string, string][] = [
   ["Brave Search", "web & local search"],
 ];
 
-const SETTINGS: [string, string, string][] = [
-  ["Display name", "shown in live rooms", "you"],
-  ["Theme", "app color theme", "ember"],
-  ["Default model", "used for new sessions", "termcoder/auto"],
-  ["Sync via GitHub", "mirror sessions, decks, recipes", "on"],
-];
-
 function Eyebrow({ children, sample }: { children: React.ReactNode; sample?: boolean }) {
   return (
     <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
@@ -113,7 +120,7 @@ function Sub({ children }: { children: React.ReactNode }) {
   return <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed text-muted-foreground">{children}</p>;
 }
 
-function Row({ c1, c2, right }: { c1: string; c2: string; right: React.ReactNode }) {
+export function Row({ c1, c2, right }: { c1: string; c2: string; right: React.ReactNode }) {
   return (
     <div className="flex items-center gap-4 border-b border-border/60 py-3">
       <span className="w-[38%] shrink-0 font-mono text-[13px] text-foreground">{c1}</span>
@@ -123,7 +130,7 @@ function Row({ c1, c2, right }: { c1: string; c2: string; right: React.ReactNode
   );
 }
 
-function Badge({ children, tone }: { children: React.ReactNode; tone?: "ok" | "local" | "tag" }) {
+export function Badge({ children, tone }: { children: React.ReactNode; tone?: "ok" | "local" | "tag" }) {
   return (
     <span
       className={cn(
@@ -170,6 +177,9 @@ export default function Dashboard() {
   const [session, setSession] = useState<Session | null>(null);
   const [decks, setDecks] = useState<Deck[] | null>(null);
   const [streak, setStreak] = useState<number | null>(null);
+  const [favorites, setFavorites] = useState<string[] | null>(null);
+  const [gistId, setGistId] = useState<string | null>(null);
+  const favoritesQueueRef = useRef<OptimisticQueue<string[]> | null>(null);
 
   useEffect(() => {
     const s = readSession();
@@ -179,9 +189,33 @@ export default function Dashboard() {
         if (!d) return;
         setDecks(d.decks);
         setStreak(d.streak);
+        setGistId(d.gistId);
+        const token = s.token as string;
+        const gid = d.gistId;
+        if (gid) {
+          readStore(token, gid, "favorites")
+            .then((data) => sanitizeFavorites(data))
+            .catch(() => [])
+            .then((favs) => {
+              setFavorites(favs);
+              favoritesQueueRef.current = createOptimisticQueue<string[]>({
+                initial: favs,
+                write: (value) => writeStore(token, gid, "favorites", value),
+                onChange: setFavorites,
+              });
+            });
+        }
       });
     }
   }, []);
+
+  const toggleFavorite = (id: string) => {
+    const queue = favoritesQueueRef.current;
+    if (!session?.token || !gistId || !queue) return;
+    const current = queue.get();
+    const next = current.includes(id) ? current.filter((f) => f !== id) : [...current, id];
+    queue.set(next);
+  };
 
   const signedIn = !!session;
   const dash = (n: number | null, unit: string) => (n === null ? "—" : `${n} ${n === 1 ? unit : unit + "s"}`);
@@ -269,7 +303,25 @@ export default function Dashboard() {
                       key={m}
                       c1={m}
                       c2={d}
-                      right={<Badge tone={badge === "ready" ? "ok" : badge === "local" ? "local" : undefined}>{badge}</Badge>}
+                      right={
+                        <div className="flex shrink-0 items-center gap-3">
+                          {session?.token && gistId && (
+                            <button
+                              type="button"
+                              onClick={() => toggleFavorite(m)}
+                              aria-label={favorites?.includes(m) ? `Unfavorite ${m}` : `Favorite ${m}`}
+                              aria-pressed={!!favorites?.includes(m)}
+                              className={cn(
+                                "font-mono text-[14px] leading-none transition-colors",
+                                favorites?.includes(m) ? "text-primary" : "text-muted-foreground/30 hover:text-muted-foreground",
+                              )}
+                            >
+                              {favorites?.includes(m) ? "★" : "☆"}
+                            </button>
+                          )}
+                          <Badge tone={badge === "ready" ? "ok" : badge === "local" ? "local" : undefined}>{badge}</Badge>
+                        </div>
+                      }
                     />
                   ))}
                 </div>
@@ -362,34 +414,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {tab === "settings" && (
-              <div>
-                <Eyebrow sample>settings</Eyebrow>
-                <H2>Your preferences.</H2>
-                <Sub>
-                  These travel with your account. Everything is optional — sensible defaults are already set. Editing
-                  them here is on the way; the values below are the defaults.
-                </Sub>
-                <div className="mt-7">
-                  {SETTINGS.map(([n, d, v]) => (
-                    <Row
-                      key={n}
-                      c1={n}
-                      c2={d}
-                      right={v === "on" ? <Badge tone="ok">on</Badge> : <span className="shrink-0 font-mono text-[11.5px] text-muted-foreground">{v}</span>}
-                    />
-                  ))}
-                </div>
-                <div className="mt-7 flex flex-wrap gap-3">
-                  <a href="docs.html" className="rounded-md border border-border px-4 py-2 font-mono text-[12.5px] text-foreground transition-colors hover:border-white/25">
-                    Read the docs
-                  </a>
-                  <button onClick={signOut} className="rounded-md border border-border px-4 py-2 font-mono text-[12.5px] text-foreground transition-colors hover:border-white/25">
-                    Sign out
-                  </button>
-                </div>
-              </div>
-            )}
+            {tab === "settings" && <SettingsPanel />}
           </section>
         </div>
       </div>

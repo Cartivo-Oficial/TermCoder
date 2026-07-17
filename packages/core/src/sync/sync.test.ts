@@ -1,9 +1,10 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { pullSessions, pullSync, pushSessions, pushSync, syncAll } from "./sync";
 import { SessionStore } from "../storage/storage";
+import { saveConfig } from "../config/config";
 import type { Gist, GitHubClient } from "../github/github";
 
 function fakeClient() {
@@ -40,6 +41,39 @@ function fakeClient() {
   } as unknown as GitHubClient;
 }
 
+function fakeClientWith(files: Record<string, string>) {
+  const store: Record<string, Record<string, string>> = { g1: files };
+  const toGist = (id: string): Gist => ({
+    id,
+    html_url: `https://gist.github.com/${id}`,
+    description: "",
+    public: false,
+    updated_at: "",
+    files: Object.fromEntries(
+      Object.entries(store[id] ?? {}).map(([k, v]) => [k, { filename: k, content: v }]),
+    ),
+  });
+  return {
+    async createGist({ files: f }: { files: Record<string, { content: string }> }) {
+      const id = `g${Object.keys(store).length + 1}`;
+      store[id] = {};
+      for (const [k, v] of Object.entries(f)) store[id]![k] = v.content;
+      return toGist(id);
+    },
+    async updateGist(id: string, f: Record<string, { content: string }>) {
+      store[id] ??= {};
+      for (const [k, v] of Object.entries(f)) store[id]![k] = v.content;
+      return toGist(id);
+    },
+    async getGist(id: string) {
+      return toGist(id);
+    },
+    async gistFileContent(g: Gist, filename: string) {
+      return g.files[filename]?.content;
+    },
+  } as unknown as GitHubClient;
+}
+
 describe("sync store", () => {
   let cfgA: string;
   let cfgB: string;
@@ -48,11 +82,21 @@ describe("sync store", () => {
   const cdir = (cfg: string) => join(cfg, "termcoder");
   const favFile = (cfg: string) => join(cdir(cfg), "favorites.json");
   const metaFile = (cfg: string) => join(cdir(cfg), "sync.json");
+  const storeFile = (cfg: string, name: string) => join(cdir(cfg), `${name}.json`);
   const writeFav = (cfg: string, list: string[]) => {
     mkdirSync(cdir(cfg), { recursive: true });
     writeFileSync(favFile(cfg), JSON.stringify(list), "utf8");
   };
   const readFav = (cfg: string) => JSON.parse(readFileSync(favFile(cfg), "utf8"));
+  const writeLocalStore = (name: string, data: unknown) => {
+    mkdirSync(cdir(cfgA), { recursive: true });
+    writeFileSync(storeFile(cfgA, name), JSON.stringify(data), "utf8");
+  };
+  const readLocalStore = (name: string) => JSON.parse(readFileSync(storeFile(cfgA, name), "utf8"));
+  const useGist = (id: string) => {
+    mkdirSync(cdir(cfgA), { recursive: true });
+    writeFileSync(metaFile(cfgA), JSON.stringify({ gistId: id }), "utf8");
+  };
 
   beforeEach(() => {
     cfgA = mkdtempSync(join(tmpdir(), "tc-syncA-"));
@@ -101,6 +145,128 @@ describe("sync store", () => {
     writeFav(cfgA, ["a"]);
     const res = await syncAll(client, ["favorites"], envA);
     expect(res.pushed).toContain("favorites");
+  });
+
+  it("merges the settings store key by key instead of replacing it", async () => {
+    useGist("g1");
+    writeLocalStore("settings", {
+      theme: { value: "ember", updatedAt: 200 },
+      model: { value: "local/model", updatedAt: 50 },
+    });
+    const client = fakeClientWith({
+      "settings.json": JSON.stringify({
+        updatedAt: 999,
+        data: {
+          theme: { value: "paper", updatedAt: 100 },
+          model: { value: "remote/model", updatedAt: 300 },
+        },
+      }),
+    });
+
+    await pullSync("settings", client, envA);
+
+    expect(readLocalStore("settings")).toEqual({
+      theme: { value: "ember", updatedAt: 200 },
+      model: { value: "remote/model", updatedAt: 300 },
+    });
+  });
+
+  it("proves the transport: the merged theme+model land in settings.json, and travel to a second machine's config.json via the same gist", async () => {
+    useGist("g1");
+    saveConfig({ theme: "ember" }, { configDir: cdir(cfgA) });
+    const client = fakeClientWith({
+      "settings.json": JSON.stringify({
+        updatedAt: 999,
+        data: {
+          model: { value: "remote/model", updatedAt: Date.now() - 10_000 },
+        },
+      }),
+    });
+
+    expect(await pullSync("settings", client, envA)).toBe(true);
+
+    const transportA = readLocalStore("settings");
+    expect(transportA.theme).toEqual({ value: "ember", updatedAt: expect.any(Number) });
+    expect(transportA.model).toEqual({ value: "remote/model", updatedAt: expect.any(Number) });
+
+    expect(await pushSync("settings", client, envA)).toBe(true);
+
+    mkdirSync(cdir(cfgB), { recursive: true });
+    writeFileSync(metaFile(cfgB), JSON.stringify({ gistId: "g1" }), "utf8");
+    writeFileSync(join(cdir(cfgB), "config.json"), "{}", "utf8");
+
+    expect(await pullSync("settings", client, envB)).toBe(true);
+
+    const configB = JSON.parse(readFileSync(join(cdir(cfgB), "config.json"), "utf8"));
+    expect(configB.theme).toBe("ember");
+    expect(configB.model).toBe("remote/model");
+  });
+
+  it("preserves a non-whitelisted key like connectors across a settings reconcile", async () => {
+    useGist("g1");
+    writeLocalStore("settings", {
+      theme: { value: "ember", updatedAt: 200 },
+      connectors: { value: [{ id: "linear", inputs: {} }], updatedAt: 150 },
+    });
+    const client = fakeClientWith({
+      "settings.json": JSON.stringify({ updatedAt: 999, data: {} }),
+    });
+
+    expect(await pullSync("settings", client, envA)).toBe(true);
+
+    expect(readLocalStore("settings").connectors).toEqual({
+      value: [{ id: "linear", inputs: {} }],
+      updatedAt: 150,
+    });
+  });
+
+  it("mtime staleness: an untouched local theme with an old config loses to a newer remote edit", async () => {
+    useGist("g1");
+    saveConfig({ theme: "ember" }, { configDir: cdir(cfgA) });
+    const configPath = join(cdir(cfgA), "config.json");
+    const oldTime = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    utimesSync(configPath, oldTime, oldTime);
+    const remoteStamp = Date.now() - 1000;
+    const client = fakeClientWith({
+      "settings.json": JSON.stringify({
+        updatedAt: 999,
+        data: {
+          theme: { value: "paper", updatedAt: remoteStamp },
+        },
+      }),
+    });
+
+    expect(await pullSync("settings", client, envA)).toBe(true);
+
+    const config = JSON.parse(readFileSync(configPath, "utf8"));
+    expect(config.theme).toBe("paper");
+  });
+
+  it("drops an unknown settings key arriving from the gist", async () => {
+    useGist("g1");
+    writeLocalStore("settings", {});
+    const client = fakeClientWith({
+      "settings.json": JSON.stringify({
+        updatedAt: 999,
+        data: { evil: { value: "rm -rf /", updatedAt: 999 } },
+      }),
+    });
+
+    await pullSync("settings", client, envA);
+
+    expect(readLocalStore("settings")).toEqual({});
+  });
+
+  it("still replaces a non-settings store wholesale", async () => {
+    useGist("g1");
+    writeLocalStore("favorites", ["a"]);
+    const client = fakeClientWith({
+      "favorites.json": JSON.stringify({ updatedAt: Date.now() + 10_000, data: ["b"] }),
+    });
+
+    await pullSync("favorites", client, envA);
+
+    expect(readLocalStore("favorites")).toEqual(["b"]);
   });
 });
 

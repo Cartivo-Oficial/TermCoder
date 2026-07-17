@@ -629,3 +629,30 @@ git commit -m "feat: enable a vetted connector from the dashboard, confirmed in 
 - [ ] Hand-edit the gist's `settings.json` to contain an unknown key and a bogus connector id, then `/sync`. Nothing is written to local config and nothing executes.
 - [ ] Sign in with Google → the settings panel says it needs GitHub and offers no controls.
 - [ ] Enable a connector from the dashboard → the app asks before it runs, showing the resolved command.
+
+---
+
+## CORRECTION (2026-07-17) — Tasks 2+3 shipped a store nobody reads
+
+Verified against the code after Tasks 1-3 were committed:
+- The app reads `config.json` (`readGlobalConfig`, and `loadConfig` at config.ts:149/169). **Nothing reads `settings.json`.** So `pullSync`'s settings branch merges into a dead file and `/sync` applies nothing — a dashboard theme change never reaches the app.
+- `SettingsSchema` invented homeless keys: `language` and `displayName` have NO config field, and `defaultModel` should be `model` (the real config field). Real syncable config fields: `model`, `theme`, `reasoning` (all three exist in ConfigSchema; `reasoning` was just added by the CLI work).
+
+### The corrected design (Task 3b — additive; the per-key merge in Tasks 2-3 stays)
+
+`settings.json` is the sync TRANSPORT; `config.json` stays the app's source of truth. `/sync` reconciles them both ways using the existing `readGlobalConfig`/`saveConfig` seams (both take `{ env, configDir }`).
+
+**settings.ts:**
+- Fix `SettingsSchema`: `theme` (keep), `model` (rename from `defaultModel`), `reasoning: z.boolean().optional()`. DROP `language` and `displayName`. Keep `connectors` (Task 6).
+- `export const SETTINGS_KEYS = ["theme", "model", "reasoning"] as const;` — the whitelist projected to/from config.json (connectors are applied separately in Task 6).
+- `extractSettings(config: Record<string,unknown>, prev: SettingsFile, now: number): SettingsFile` — for each SETTINGS_KEY present in `config`, if its value differs from `prev[key]?.value`, emit `{ value, updatedAt: now }`; else keep `prev[key]` (preserving its timestamp). Pure. This captures a local `/theme` edit (which only touched config.json) into the sync layer with a fresh timestamp so it can win the merge.
+- `settingsToConfigPatch(merged: SettingsFile): Record<string,unknown>` — pick the whitelisted keys from `merged` values, validated via `SettingsSchema`, into a `saveConfig` partial. Pure.
+
+**sync.ts:**
+- `reconcileSettingsFromConfig(env)` — read `readGlobalConfig({env})` + existing `settings.json`, compute `extractSettings(config, existing, Date.now())`, `writeLocal("settings", ...)`, return it. This is the ONE place that does I/O.
+- `pullSync("settings")`: `const local = reconcileSettingsFromConfig(env);` then `merged = mergeSettings(local, parseSettings(envelope.data))`; `writeLocal("settings", merged)`; `saveConfig(settingsToConfigPatch(merged), { env })`.
+- `pushSync("settings")`: call `reconcileSettingsFromConfig(env)` before the generic read-and-push so the pushed file reflects config even on a first sync (when `pullSync` returns early for a missing gist).
+
+**The acceptance test (this is the proof the hole is closed):** set `config.json` theme locally; a remote `settings.json` carries a newer `model`; after `pullSync("settings")`, `config.json` has BOTH the local theme AND the remote model. If either is lost, the design is wrong.
+
+Timestamp honesty: `extractSettings` uses a single `now` for all locally-changed keys (we cannot know per-key edit times from config.json). Acceptable; documented.
