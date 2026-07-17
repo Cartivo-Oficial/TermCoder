@@ -69,6 +69,7 @@ export type FormatterConfig = z.infer<typeof FormatterSchema>;
 
 export const ConfigSchema = z.object({
   model: z.string().default("anthropic/claude-sonnet-5"),
+  reasoning: z.boolean().default(true),
   theme: z.string().default("default"),
   keybinds: z.record(z.string(), z.string()).default({}),
   permission: z

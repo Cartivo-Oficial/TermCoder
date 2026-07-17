@@ -1,7 +1,9 @@
+import { EventEmitter } from "node:events";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { useState } from "react";
+import { render as inkRender } from "ink";
 import { render } from "ink-testing-library";
 import { describe, expect, it, vi } from "vitest";
 import { getTheme } from "../theme";
@@ -11,6 +13,7 @@ import { PermissionModal } from "./PermissionModal";
 import { TrustPrompt } from "./TrustPrompt";
 import { CommandMenu } from "./CommandMenu";
 import { StatusBar } from "./StatusBar";
+import { Thinking } from "./Thinking";
 import { Composer } from "./Composer";
 import { CodeBlock } from "./CodeBlock";
 import { MentionMenu } from "./MentionMenu";
@@ -204,6 +207,47 @@ describe("CommandMenu", () => {
   });
 });
 
+describe("Thinking", () => {
+  it("streams reasoning while thinking, collapses when done", () => {
+    const live = render(<Thinking theme={theme} item={{ kind: "thinking", text: "weighing options", done: false }} />);
+    expect(live.lastFrame()).toContain("thinking");
+    expect(live.lastFrame()).toContain("weighing options");
+
+    const done = render(<Thinking theme={theme} item={{ kind: "thinking", text: "weighing options", done: true, dur: "3.2s" }} />);
+    expect(done.lastFrame()).toContain("thought for 3.2s");
+    expect(done.lastFrame()).not.toContain("weighing options");
+  });
+});
+
+class FixedWidthStdout extends EventEmitter {
+  columns: number;
+  frames: string[] = [];
+  constructor(columns: number) {
+    super();
+    this.columns = columns;
+  }
+  write = (frame: string) => {
+    this.frames.push(frame);
+  };
+  lastFrame = () => this.frames[this.frames.length - 1];
+}
+
+function renderAtWidth(tree: JSX.Element, columns: number) {
+  const stdout = new FixedWidthStdout(columns);
+  const stderr = new FixedWidthStdout(columns);
+  const stdin = new EventEmitter() as unknown as NodeJS.ReadStream;
+  Object.assign(stdin, { isTTY: true, setRawMode: () => {}, ref: () => {}, unref: () => {}, read: () => null });
+  inkRender(tree, {
+    stdout: stdout as unknown as NodeJS.WriteStream,
+    stderr: stderr as unknown as NodeJS.WriteStream,
+    stdin,
+    debug: true,
+    exitOnCtrlC: false,
+    patchConsole: false,
+  });
+  return { lastFrame: stdout.lastFrame };
+}
+
 describe("StatusBar", () => {
   it("shows the folder, context, tokens and version (minimal footer)", () => {
     const { lastFrame } = render(
@@ -226,6 +270,60 @@ describe("StatusBar", () => {
     expect(frame).toContain("0.1.3");
     expect(frame).not.toContain("tok");
     expect(frame).not.toContain("ctx");
+  });
+
+  it("shows the active model and agent", () => {
+    const frame = render(
+      <StatusBar theme={theme} cwd="/x/y" tokens={0} autoApprove={false} model="anthropic/claude-sonnet-5" agent="build" />,
+    ).lastFrame();
+    expect(frame).toContain("claude-sonnet-5");
+    expect(frame).toContain("build");
+  });
+
+  it("shows every segment, including model/agent/version, on a wide terminal", () => {
+    const { lastFrame } = renderAtWidth(
+      <StatusBar
+        theme={theme}
+        cwd="/tmp/proj"
+        tokens={1500}
+        lastCtx={8200}
+        ctxPct={3}
+        autoApprove
+        version="0.1.0"
+        model="anthropic/claude-sonnet-5"
+        agent="build"
+      />,
+      120,
+    );
+    const frame = lastFrame() ?? "";
+    expect(frame).toContain("claude-sonnet-5");
+    expect(frame).toContain("build");
+    expect(frame).toContain("proj");
+    expect(frame).toContain("ctx 8.2k (3%)");
+    expect(frame).toContain("1.5k tok");
+    expect(frame).toContain("auto");
+    expect(frame).toContain("0.1.0");
+  });
+
+  it("stays on one line and keeps model/agent on an 80-column terminal", () => {
+    const { lastFrame } = renderAtWidth(
+      <StatusBar
+        theme={theme}
+        cwd="/tmp/proj"
+        tokens={1500}
+        lastCtx={8200}
+        ctxPct={3}
+        autoApprove
+        version="0.1.0"
+        model="anthropic/claude-sonnet-5"
+        agent="build"
+      />,
+      80,
+    );
+    const frame = lastFrame() ?? "";
+    expect(frame.split("\n").filter((line) => line.trim().length > 0)).toHaveLength(1);
+    expect(frame).toContain("claude-sonnet-5");
+    expect(frame).toContain("build");
   });
 });
 

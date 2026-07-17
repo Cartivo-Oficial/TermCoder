@@ -216,7 +216,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
   ).current;
 
   const [session, setSession] = useState<Session>(() =>
-    Session.create({ store, registry, config, permission }, { cwd }),
+    Session.create({ store, registry, config, permission, renderReasoning: true }, { cwd }),
   );
 
   useEffect(() => {
@@ -451,10 +451,22 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
 
     const localLive: ViewItem[] = [];
     let assistantIdx: number | null = null;
+    let thinkingIdx: number | null = null;
     let thoughtShown = false;
     let rateLimited = false;
     const onFreeModel = ["termcoderfree", "pollinations"].includes(session.record.model.split("/")[0] ?? "");
     const sync = () => setLive([...localLive]);
+
+    const closeThinking = () => {
+      if (thinkingIdx === null) return;
+      thoughtShown = true;
+      const cur = localLive[thinkingIdx];
+      if (cur?.kind === "thinking") {
+        const ms = Date.now() - turnStart;
+        localLive[thinkingIdx] = { ...cur, done: true, dur: ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s` };
+      }
+      thinkingIdx = null;
+    };
 
     const markThought = () => {
       if (thoughtShown) return;
@@ -466,12 +478,30 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
     try {
       for await (const event of useSession.prompt(text, { signal: controller.signal })) {
         if (aborted.current) {
+          closeThinking();
           localLive.push({ kind: "notice", text: "⛔ Interrupted." });
           break;
         }
         switch (event.type) {
+          case "reasoning-delta": {
+            if (config.reasoning === false) break;
+            setStatus("Thinking…");
+            if (thinkingIdx === null) {
+              localLive.push({ kind: "thinking", text: event.text, done: false });
+              thinkingIdx = localLive.length - 1;
+            } else {
+              const cur = localLive[thinkingIdx];
+              if (cur?.kind === "thinking") localLive[thinkingIdx] = { ...cur, text: cur.text + event.text };
+            }
+            break;
+          }
+          case "reasoning-end": {
+            closeThinking();
+            break;
+          }
           case "text-delta": {
             setStatus("Thinking…");
+            closeThinking();
             if (assistantIdx === null) {
               markThought();
               localLive.push({ kind: "assistant", text: event.text });
@@ -485,6 +515,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
             break;
           }
           case "tool-call": {
+            closeThinking();
             markThought();
             assistantIdx = null;
             setStatus(toolStatus(event.name, event.title, event.detail));
@@ -518,6 +549,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
             setLastCtx(event.inputTokens);
             break;
           case "error": {
+            closeThinking();
             localLive.push({ kind: "error", text: event.error });
             if (/quota|rate.?limit|too many|429|busy|overload/i.test(event.error)) {
               rateLimited = true;
@@ -532,6 +564,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         sync();
       }
     } finally {
+      closeThinking();
       const secs = Math.round((Date.now() - turnStart) / 1000);
       const dur = fmtDuration(secs);
       const stamped: ViewItem[] = localLive.map((it) =>
@@ -736,7 +769,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         setClearEpoch((n) => n + 1);
         break;
       case "new": {
-        const fresh = Session.create({ store, registry, config, permission }, { cwd });
+        const fresh = Session.create({ store, registry, config, permission, renderReasoning: true }, { cwd });
         setSession(fresh);
         setHistory([{ kind: "notice", text: "Started a new session." }]);
         setLive([]);
@@ -807,7 +840,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           break;
         }
         try {
-          const resumed = Session.resume({ store, registry, config, permission }, match.id);
+          const resumed = Session.resume({ store, registry, config, permission, renderReasoning: true }, match.id);
           setSession(resumed);
           setHistory([
             { kind: "notice", text: `Resumed ${match.id.slice(0, 8)} (${match.messageCount} msgs).` },
@@ -987,7 +1020,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
         pushHistory({ kind: "notice", text: "Importing shared session…" });
         importSessionFromGist(arg, client, store)
           .then((record) => {
-            const resumed = Session.resume({ store, registry, config, permission }, record.id);
+            const resumed = Session.resume({ store, registry, config, permission, renderReasoning: true }, record.id);
             setSession(resumed);
             setHistory([
               { kind: "notice", text: `✓ Imported "${record.title}".` },
@@ -1550,6 +1583,8 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
       ctxPct={ctxPct}
       autoApprove={autoApprove}
       version={VERSION}
+      model={session.record.model}
+      agent={session.record.agent ?? session.record.mode ?? "build"}
     />
   );
 

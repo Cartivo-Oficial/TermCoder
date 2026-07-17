@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
-import type { ModelMessage } from "ai";
+import type { ModelMessage, streamText } from "ai";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { loadConfig, type Config } from "../config/config";
@@ -11,7 +11,7 @@ import { PermissionManager } from "../permission/permission";
 import { SessionStore } from "../storage/storage";
 import { ToolRegistry } from "../tools";
 import type { TermTool } from "../tools/types";
-import { Session, friendlyError, type ModelRunner, type SessionEvent } from "./session";
+import { Session, friendlyError, type ModelRunner, type ModelStreamResult, type SessionEvent } from "./session";
 
 interface ScriptedStep {
   chunks: Array<{ type: string; text?: string; error?: unknown }>;
@@ -44,6 +44,31 @@ async function collect(session: Session, text: string): Promise<SessionEvent[]> 
   const events: SessionEvent[] = [];
   for await (const event of session.prompt(text)) events.push(event);
   return events;
+}
+
+interface CapturedStreamTextArgs {
+  temperature?: number;
+  providerOptions?: { anthropic?: { thinking?: { type?: string; budgetTokens?: number } } };
+}
+
+function captureStreamTextArgs() {
+  const calls: CapturedStreamTextArgs[] = [];
+  const streamText = (args: CapturedStreamTextArgs): ModelStreamResult => {
+    calls.push(args);
+    async function* stream() {
+      yield { type: "text-delta", text: "ok" };
+    }
+    return {
+      fullStream: stream(),
+      response: Promise.resolve({ messages: [{ role: "assistant", content: "ok" }] as ModelMessage[] }),
+      finishReason: Promise.resolve("stop"),
+      toolCalls: Promise.resolve([]),
+    };
+  };
+  return {
+    streamText: streamText as unknown as typeof import("ai").streamText,
+    lastArgs: () => calls[calls.length - 1]!,
+  };
 }
 
 describe("Session agent loop", () => {
@@ -309,6 +334,184 @@ describe("Session agent loop", () => {
       { type: "done" },
     ]);
     expect(store.load(session.record.id).messages).toHaveLength(2);
+  });
+
+  it("surfaces reasoning-delta events before the answer, in order", async () => {
+    const runner = scriptedRunner([
+      {
+        chunks: [
+          { type: "reasoning-delta", text: "Let me think. " },
+          { type: "reasoning-delta", text: "The file is large." },
+          { type: "reasoning-end" },
+          { type: "text-delta", text: "Here is the fix." },
+        ],
+        finishReason: "stop",
+        responseMessages: [{ role: "assistant", content: "Here is the fix." }],
+      },
+    ]);
+    const session = makeSession(runner);
+    const events = await collect(session, "hi");
+
+    expect(events).toEqual([
+      { type: "reasoning-delta", text: "Let me think. " },
+      { type: "reasoning-delta", text: "The file is large." },
+      { type: "reasoning-end" },
+      { type: "text-delta", text: "Here is the fix." },
+      { type: "done" },
+    ]);
+    const reasoning = events
+      .filter((e) => e.type === "reasoning-delta")
+      .map((e) => (e as { text: string }).text)
+      .join("");
+    expect(reasoning).toBe("Let me think. The file is large.");
+  });
+
+  it("emits no reasoning events for a stream that does not reason", async () => {
+    const runner = scriptedRunner([
+      {
+        chunks: [{ type: "text-delta", text: "hello" }],
+        finishReason: "stop",
+        responseMessages: [{ role: "assistant", content: "hello" }],
+      },
+    ]);
+    const session = makeSession(runner);
+    const events = await collect(session, "hi");
+
+    expect(events.some((e) => e.type.startsWith("reasoning"))).toBe(false);
+  });
+
+  it("enables Anthropic thinking and omits temperature when reasoning is on", async () => {
+    config.model = "anthropic/claude-sonnet-5";
+    config.providers.anthropic = { apiKey: "test-key" };
+    config.reasoning = true;
+    const spy = captureStreamTextArgs();
+    const permission = new PermissionManager(config.permission, async () => "deny");
+    const session = Session.create(
+      { store, registry, config, permission, streamText: spy.streamText, renderReasoning: true },
+      { cwd: dir, temperature: 0.3 },
+    );
+    await collect(session, "hi");
+    const args = spy.lastArgs();
+    expect(args.providerOptions?.anthropic?.thinking?.type).toBe("enabled");
+    expect(args.temperature).toBeUndefined();
+  });
+
+  it("sends no thinking option and keeps temperature when renderReasoning is not set, even with reasoning on", async () => {
+    config.model = "anthropic/claude-sonnet-5";
+    config.providers.anthropic = { apiKey: "test-key" };
+    config.reasoning = true;
+    const spy = captureStreamTextArgs();
+    const permission = new PermissionManager(config.permission, async () => "deny");
+    const session = Session.create(
+      { store, registry, config, permission, streamText: spy.streamText },
+      { cwd: dir, temperature: 0.3 },
+    );
+    await collect(session, "hi");
+    const args = spy.lastArgs();
+    expect(args.providerOptions?.anthropic).toBeUndefined();
+    expect(args.temperature).toBe(0.3);
+  });
+
+  it("sends no thinking option and keeps temperature for a non-Anthropic model", async () => {
+    config.model = "google/gemini-2.5-pro";
+    config.providers.google = { apiKey: "test-key" };
+    config.reasoning = true;
+    const spy = captureStreamTextArgs();
+    const permission = new PermissionManager(config.permission, async () => "deny");
+    const session = Session.create(
+      { store, registry, config, permission, streamText: spy.streamText },
+      { cwd: dir, temperature: 0.3 },
+    );
+    await collect(session, "hi");
+    const args = spy.lastArgs();
+    expect(args.providerOptions?.anthropic).toBeUndefined();
+    expect(args.temperature).toBe(0.3);
+  });
+
+  it("sends no thinking option when reasoning is off", async () => {
+    config.model = "anthropic/claude-sonnet-5";
+    config.providers.anthropic = { apiKey: "test-key" };
+    config.reasoning = false;
+    const spy = captureStreamTextArgs();
+    const permission = new PermissionManager(config.permission, async () => "deny");
+    const session = Session.create(
+      { store, registry, config, permission, streamText: spy.streamText, renderReasoning: true },
+      { cwd: dir, temperature: 0.3 },
+    );
+    await collect(session, "hi");
+    const args = spy.lastArgs();
+    expect(args.providerOptions?.anthropic).toBeUndefined();
+    expect(args.temperature).toBe(0.3);
+  });
+
+  it("emits a reasoning boundary between attempts on a transient retry", async () => {
+    const runner = scriptedRunner([
+      {
+        chunks: [
+          { type: "reasoning-delta", text: "thinking about the first attempt" },
+          { type: "error", error: new Error("model overloaded") },
+        ],
+        finishReason: "error",
+      },
+      {
+        chunks: [
+          { type: "reasoning-delta", text: "thinking again on the retry" },
+          { type: "reasoning-end" },
+          { type: "text-delta", text: "recovered" },
+        ],
+        finishReason: "stop",
+        responseMessages: [{ role: "assistant", content: "recovered" }],
+      },
+    ]);
+    const session = makeSession(runner);
+    const events = await collect(session, "hi");
+    const types = events.map((e) => e.type);
+
+    const firstReasoningIdx = types.indexOf("reasoning-delta");
+    const boundaryIdx = types.indexOf("reasoning-end");
+    const secondReasoningIdx = types.indexOf("reasoning-delta", firstReasoningIdx + 1);
+
+    expect(firstReasoningIdx).toBeGreaterThanOrEqual(0);
+    expect(boundaryIdx).toBeGreaterThan(firstReasoningIdx);
+    expect(boundaryIdx).toBeLessThan(secondReasoningIdx);
+    expect(events.filter((e) => e.type === "error")).toHaveLength(0); // recovered, no surfaced error
+  });
+
+  it("emits no spurious reasoning-end when a non-reasoning attempt retries", async () => {
+    const runner = scriptedRunner([
+      { chunks: [{ type: "error", error: new Error("model overloaded") }], finishReason: "error" },
+      {
+        chunks: [{ type: "text-delta", text: "recovered" }],
+        finishReason: "stop",
+        responseMessages: [{ role: "assistant", content: "recovered" }],
+      },
+    ]);
+    const session = makeSession(runner);
+    const events = await collect(session, "hi");
+    expect(events.some((e) => e.type === "reasoning-end")).toBe(false);
+  });
+
+  it("emits exactly one reasoning-end when the model closes reasoning before a transient retry", async () => {
+    const runner = scriptedRunner([
+      {
+        chunks: [
+          { type: "reasoning-delta", text: "thinking about the first attempt" },
+          { type: "reasoning-end" },
+          { type: "error", error: new Error("model overloaded") },
+        ],
+        finishReason: "error",
+      },
+      {
+        chunks: [{ type: "text-delta", text: "recovered" }],
+        finishReason: "stop",
+        responseMessages: [{ role: "assistant", content: "recovered" }],
+      },
+    ]);
+    const session = makeSession(runner);
+    const events = await collect(session, "hi");
+    const types = events.map((e) => e.type);
+
+    expect(types.filter((t) => t === "reasoning-end")).toHaveLength(1);
   });
 
   it("defaults a new session title to its folder name", () => {
