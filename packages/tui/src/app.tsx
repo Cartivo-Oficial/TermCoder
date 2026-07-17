@@ -451,10 +451,22 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
 
     const localLive: ViewItem[] = [];
     let assistantIdx: number | null = null;
+    let thinkingIdx: number | null = null;
     let thoughtShown = false;
     let rateLimited = false;
     const onFreeModel = ["termcoderfree", "pollinations"].includes(session.record.model.split("/")[0] ?? "");
     const sync = () => setLive([...localLive]);
+
+    const closeThinking = () => {
+      if (thinkingIdx === null) return;
+      thoughtShown = true;
+      const cur = localLive[thinkingIdx];
+      if (cur?.kind === "thinking") {
+        const ms = Date.now() - turnStart;
+        localLive[thinkingIdx] = { ...cur, done: true, dur: ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s` };
+      }
+      thinkingIdx = null;
+    };
 
     const markThought = () => {
       if (thoughtShown) return;
@@ -470,8 +482,25 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           break;
         }
         switch (event.type) {
+          case "reasoning-delta": {
+            if (config.reasoning === false) break;
+            setStatus("Thinking…");
+            if (thinkingIdx === null) {
+              localLive.push({ kind: "thinking", text: event.text, done: false });
+              thinkingIdx = localLive.length - 1;
+            } else {
+              const cur = localLive[thinkingIdx];
+              if (cur?.kind === "thinking") localLive[thinkingIdx] = { ...cur, text: cur.text + event.text };
+            }
+            break;
+          }
+          case "reasoning-end": {
+            closeThinking();
+            break;
+          }
           case "text-delta": {
             setStatus("Thinking…");
+            closeThinking();
             if (assistantIdx === null) {
               markThought();
               localLive.push({ kind: "assistant", text: event.text });
@@ -485,6 +514,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
             break;
           }
           case "tool-call": {
+            closeThinking();
             markThought();
             assistantIdx = null;
             setStatus(toolStatus(event.name, event.title, event.detail));
@@ -1550,6 +1580,8 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
       ctxPct={ctxPct}
       autoApprove={autoApprove}
       version={VERSION}
+      model={session.record.model}
+      agent={session.record.agent ?? session.record.mode ?? "build"}
     />
   );
 
