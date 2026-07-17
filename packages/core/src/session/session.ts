@@ -56,6 +56,7 @@ export interface SessionDeps {
   runner?: ModelRunner;
   reviewer?: () => Promise<string>;
   maxSteps?: number;
+  streamText?: typeof streamText;
 }
 
 interface ToolResultPart {
@@ -287,18 +288,26 @@ export class Session {
   }
 
   private buildRunner(agent: AgentDef, modelOverride?: string): ModelRunner {
-    const model = resolveModel(modelOverride ?? agent.model ?? this.record.model, {
+    const modelId = modelOverride ?? agent.model ?? this.record.model;
+    const model = resolveModel(modelId, {
       config: this.deps.config,
       env: this.deps.env,
     });
     const temperature = agent.temperature ?? this.record.temperature;
+    const isAnthropic = modelId.split("/")[0] === "anthropic";
+    const wantThinking = isAnthropic && this.deps.config.reasoning !== false;
+    const reasoningBudgetTokens = 4000;
+    const streamFn = this.deps.streamText ?? streamText;
     return ({ system, messages, tools, signal }) =>
-      streamText({
+      streamFn({
         model,
         system,
         messages,
         tools,
-        temperature,
+        ...(wantThinking ? {} : { temperature }),
+        ...(wantThinking
+          ? { providerOptions: { anthropic: { thinking: { type: "enabled", budgetTokens: reasoningBudgetTokens } } } }
+          : {}),
         abortSignal: signal,
       }) as unknown as ModelStreamResult;
   }
@@ -442,11 +451,13 @@ export class Session {
           const idleMs = this.deps.config.reliability?.idleTimeoutMs ?? 45000;
           let streamError: string | null = null;
           let emittedText = false;
+          let emittedReasoning = false;
           for await (const chunk of streamWithIdleTimeout(result.fullStream, idleMs, () => attemptAbort.abort())) {
             if (chunk.type === "text-delta") {
               emittedText = true;
               yield { type: "text-delta", text: (chunk as { text?: string }).text ?? "" };
             } else if (chunk.type === "reasoning-delta") {
+              emittedReasoning = true;
               yield { type: "reasoning-delta", text: (chunk as { text?: string }).text ?? "" };
             } else if (chunk.type === "reasoning-end") {
               yield { type: "reasoning-end" };
@@ -485,6 +496,8 @@ export class Session {
             stepFailed = true;
             break;
           }
+
+          if (emittedReasoning) yield { type: "reasoning-end" };
 
           if (next.model === modelToUse) {
             // Same-model retry on a transient error (rate limit / overload):
