@@ -5,6 +5,7 @@ import { Mark } from "@/components/mark";
 import { cn } from "@/lib/utils";
 import { readSession, signOut, type Session } from "@/lib/session";
 import { LicencePanel } from "@/components/licence-panel";
+import { SettingsPanel } from "@/components/settings-panel";
 import { createOptimisticQueue, findSyncGist, readStore, writeStore, type OptimisticQueue } from "@/lib/gist";
 
 interface Deck {
@@ -98,13 +99,6 @@ const CONNECTORS: [string, string][] = [
   ["Brave Search", "web & local search"],
 ];
 
-const SETTINGS: [string, string, string][] = [
-  ["Display name", "shown in live rooms", "you"],
-  ["Theme", "app color theme", "ember"],
-  ["Default model", "used for new sessions", "termcoder/auto"],
-  ["Sync via GitHub", "mirror sessions, decks, recipes", "on"],
-];
-
 function Eyebrow({ children, sample }: { children: React.ReactNode; sample?: boolean }) {
   return (
     <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
@@ -126,7 +120,7 @@ function Sub({ children }: { children: React.ReactNode }) {
   return <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed text-muted-foreground">{children}</p>;
 }
 
-function Row({ c1, c2, right }: { c1: string; c2: string; right: React.ReactNode }) {
+export function Row({ c1, c2, right }: { c1: string; c2: string; right: React.ReactNode }) {
   return (
     <div className="flex items-center gap-4 border-b border-border/60 py-3">
       <span className="w-[38%] shrink-0 font-mono text-[13px] text-foreground">{c1}</span>
@@ -136,7 +130,7 @@ function Row({ c1, c2, right }: { c1: string; c2: string; right: React.ReactNode
   );
 }
 
-function Badge({ children, tone }: { children: React.ReactNode; tone?: "ok" | "local" | "tag" }) {
+export function Badge({ children, tone }: { children: React.ReactNode; tone?: "ok" | "local" | "tag" }) {
   return (
     <span
       className={cn(
@@ -420,34 +414,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {tab === "settings" && (
-              <div>
-                <Eyebrow sample>settings</Eyebrow>
-                <H2>Your preferences.</H2>
-                <Sub>
-                  These travel with your account. Everything is optional — sensible defaults are already set. Editing
-                  them here is on the way; the values below are the defaults.
-                </Sub>
-                <div className="mt-7">
-                  {SETTINGS.map(([n, d, v]) => (
-                    <Row
-                      key={n}
-                      c1={n}
-                      c2={d}
-                      right={v === "on" ? <Badge tone="ok">on</Badge> : <span className="shrink-0 font-mono text-[11.5px] text-muted-foreground">{v}</span>}
-                    />
-                  ))}
-                </div>
-                <div className="mt-7 flex flex-wrap gap-3">
-                  <a href="docs.html" className="rounded-md border border-border px-4 py-2 font-mono text-[12.5px] text-foreground transition-colors hover:border-white/25">
-                    Read the docs
-                  </a>
-                  <button onClick={signOut} className="rounded-md border border-border px-4 py-2 font-mono text-[12.5px] text-foreground transition-colors hover:border-white/25">
-                    Sign out
-                  </button>
-                </div>
-              </div>
-            )}
+            {tab === "settings" && <SettingsPanel />}
           </section>
         </div>
       </div>
