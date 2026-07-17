@@ -240,6 +240,14 @@ describe("StatusBar", () => {
     expect(frame).not.toContain("tok");
     expect(frame).not.toContain("ctx");
   });
+
+  it("shows the active model and agent", () => {
+    const frame = render(
+      <StatusBar theme={theme} cwd="/x/y" tokens={0} autoApprove={false} model="anthropic/claude-sonnet-5" agent="build" />,
+    ).lastFrame();
+    expect(frame).toContain("claude-sonnet-5");
+    expect(frame).toContain("build");
+  });
 });
 
 describe("logo", () => {

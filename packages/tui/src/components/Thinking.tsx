@@ -1,9 +1,10 @@
 import { Box, Text } from "ink";
 import type { Theme } from "../theme";
+import type { ViewItem } from "../types";
 
 const TAIL = 6;
 
-export function Thinking({ theme, item }: { theme: Theme; item: { text: string; done?: boolean; dur?: string } }) {
+export function Thinking({ theme, item }: { theme: Theme; item: Extract<ViewItem, { kind: "thinking" }> }) {
   if (item.done) {
     return (
       <Box marginTop={1}>

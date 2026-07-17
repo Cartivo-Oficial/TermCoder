@@ -9,6 +9,13 @@ interface StatusBarProps {
   ctxPct?: number;
   autoApprove: boolean;
   version?: string;
+  model?: string;
+  agent?: string;
+}
+
+function shortModel(model: string): string {
+  const idx = model.indexOf("/");
+  return idx >= 0 ? model.slice(idx + 1) : model;
 }
 
 function formatTokens(n: number): string {
@@ -22,11 +29,23 @@ function shortenPath(p: string): string {
   return tail || p;
 }
 
-export function StatusBar({ theme, cwd, tokens, lastCtx, ctxPct, autoApprove, version }: StatusBarProps) {
+export function StatusBar({ theme, cwd, tokens, lastCtx, ctxPct, autoApprove, version, model, agent }: StatusBarProps) {
   const dot = <Text color={theme.border}>{"  ·  "}</Text>;
   return (
     <Box paddingX={1}>
       <Text color={theme.muted}>{shortenPath(cwd)}</Text>
+      {model ? (
+        <>
+          {dot}
+          <Text color={theme.muted}>{shortModel(model)}</Text>
+        </>
+      ) : null}
+      {agent ? (
+        <>
+          {dot}
+          <Text color={theme.muted}>{agent}</Text>
+        </>
+      ) : null}
       {lastCtx && lastCtx > 0 ? (
         <>
           {dot}
