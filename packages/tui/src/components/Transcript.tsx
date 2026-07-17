@@ -4,6 +4,7 @@ import type { Theme } from "../theme";
 import type { ViewItem } from "../types";
 import { DiffView, isDiff } from "./DiffView";
 import { Markdown } from "./Markdown";
+import { Thinking } from "./Thinking";
 
 interface TranscriptProps {
   theme: Theme;
@@ -106,6 +107,9 @@ export function TranscriptItem({ theme, item, caret }: { theme: Theme; item: Vie
           <Text color={theme.error}>{`✗ ${item.text}`}</Text>
         </Box>
       );
+
+    case "thinking":
+      return <Thinking theme={theme} item={item} />;
   }
 }
 
