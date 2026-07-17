@@ -24,6 +24,8 @@ import { ensureFreshChatGPTConfig } from "../auth/chatgpt-oauth";
 
 export type SessionEvent =
   | { type: "text-delta"; text: string }
+  | { type: "reasoning-delta"; text: string }
+  | { type: "reasoning-end" }
   | { type: "tool-call"; id: string; name: string; args: unknown; title?: string; detail?: string }
   | { type: "tool-result"; id: string; name: string; output: string; isError: boolean }
   | { type: "usage"; inputTokens: number; outputTokens: number }
@@ -444,6 +446,10 @@ export class Session {
             if (chunk.type === "text-delta") {
               emittedText = true;
               yield { type: "text-delta", text: (chunk as { text?: string }).text ?? "" };
+            } else if (chunk.type === "reasoning-delta") {
+              yield { type: "reasoning-delta", text: (chunk as { text?: string }).text ?? "" };
+            } else if (chunk.type === "reasoning-end") {
+              yield { type: "reasoning-end" };
             } else if (chunk.type === "error") {
               if (signal?.aborted) return;
               streamError = friendlyError(stringifyError((chunk as { error?: unknown }).error));

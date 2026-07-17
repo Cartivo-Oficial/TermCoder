@@ -311,6 +311,50 @@ describe("Session agent loop", () => {
     expect(store.load(session.record.id).messages).toHaveLength(2);
   });
 
+  it("surfaces reasoning-delta events before the answer, in order", async () => {
+    const runner = scriptedRunner([
+      {
+        chunks: [
+          { type: "reasoning-delta", text: "Let me think. " },
+          { type: "reasoning-delta", text: "The file is large." },
+          { type: "reasoning-end" },
+          { type: "text-delta", text: "Here is the fix." },
+        ],
+        finishReason: "stop",
+        responseMessages: [{ role: "assistant", content: "Here is the fix." }],
+      },
+    ]);
+    const session = makeSession(runner);
+    const events = await collect(session, "hi");
+
+    expect(events).toEqual([
+      { type: "reasoning-delta", text: "Let me think. " },
+      { type: "reasoning-delta", text: "The file is large." },
+      { type: "reasoning-end" },
+      { type: "text-delta", text: "Here is the fix." },
+      { type: "done" },
+    ]);
+    const reasoning = events
+      .filter((e) => e.type === "reasoning-delta")
+      .map((e) => (e as { text: string }).text)
+      .join("");
+    expect(reasoning).toBe("Let me think. The file is large.");
+  });
+
+  it("emits no reasoning events for a stream that does not reason", async () => {
+    const runner = scriptedRunner([
+      {
+        chunks: [{ type: "text-delta", text: "hello" }],
+        finishReason: "stop",
+        responseMessages: [{ role: "assistant", content: "hello" }],
+      },
+    ]);
+    const session = makeSession(runner);
+    const events = await collect(session, "hi");
+
+    expect(events.some((e) => e.type.startsWith("reasoning"))).toBe(false);
+  });
+
   it("defaults a new session title to its folder name", () => {
     const runner = scriptedRunner([]);
     const session = makeSession(runner);
