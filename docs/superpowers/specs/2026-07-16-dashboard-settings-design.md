@@ -17,7 +17,7 @@ So: the dashboard writes to the gist with the token it already holds (`gist` sco
 
 - `DEFAULT_SYNC_STORES = ["favorites", "drafts", "decks", "progress"]` — `packages/core/src/sync/sync.ts`. **There is no `settings` store.** The dashboard's Settings tab has nowhere to write, which is exactly why it is fake.
 - `favorites` already syncs, so favourite models are reachable from the dashboard with almost no core change.
-- `pullSync` does `writeFileSync` of a whole store file. **Last write wins, no merge.**
+- `pullSync` guards on a timestamp — `if (local && local.updatedAt >= envelope.updatedAt) return false` — so it does **not** blindly clobber. But the granularity is the **whole store file**, and `updatedAt` is the local file's **mtime** (`statSync(f).mtimeMs`), not a recorded edit time.
 - Sign-in with Google returns **no token** (`worker.js`'s `google()` deliberately omits it). Gist-backed settings are **GitHub-only**.
 - API keys never sync. Documented invariant; keys stay on the machine.
 - `McpServerSchema` (`packages/core/src/config/config.ts`) is a discriminated union: `stdio` carries `command`, `args`, `env`; `http` carries `url`, `headers`. **A stdio server config is an arbitrary command line.**
@@ -62,7 +62,14 @@ Explicitly **not** settable from the web: API keys, agent definitions, agent per
 
 ## The merge problem
 
-`pullSync` overwrites whole files, so a dashboard edit can silently destroy a newer local change — and the reverse. This must be solved before any button ships.
+Not "the newer edit is destroyed" — `pullSync` has an mtime guard and the newer side does win. The problem is that it wins **for the whole file**, so the loser's edits to *unrelated keys* vanish:
+
+- Change the theme in the app at 10:00; the dashboard had set the default model at 09:00. The pull is skipped entirely, and the dashboard's model change is silently dropped.
+- The dashboard writes at 11:00; the whole local file is replaced, and the 10:00 theme change is gone.
+
+Neither side is wrong; the granularity is. And `updatedAt` is the file's **mtime**, which a checkout, a restore or a file copy can move without anyone editing anything.
+
+This must be solved before any button ships.
 
 Chosen: **per-key last-write-wins with timestamps**, not per-file. Each settings key is stored as `{ value, updatedAt }`. `pullSync` for the `settings` store merges key by key, keeping whichever side has the newer `updatedAt`. A key edited on the desktop after the dashboard wrote it survives the pull; an untouched key takes the dashboard's value.
 
