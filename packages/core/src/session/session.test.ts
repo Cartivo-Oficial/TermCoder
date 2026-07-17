@@ -475,6 +475,29 @@ describe("Session agent loop", () => {
     expect(events.some((e) => e.type === "reasoning-end")).toBe(false);
   });
 
+  it("emits exactly one reasoning-end when the model closes reasoning before a transient retry", async () => {
+    const runner = scriptedRunner([
+      {
+        chunks: [
+          { type: "reasoning-delta", text: "thinking about the first attempt" },
+          { type: "reasoning-end" },
+          { type: "error", error: new Error("model overloaded") },
+        ],
+        finishReason: "error",
+      },
+      {
+        chunks: [{ type: "text-delta", text: "recovered" }],
+        finishReason: "stop",
+        responseMessages: [{ role: "assistant", content: "recovered" }],
+      },
+    ]);
+    const session = makeSession(runner);
+    const events = await collect(session, "hi");
+    const types = events.map((e) => e.type);
+
+    expect(types.filter((t) => t === "reasoning-end")).toHaveLength(1);
+  });
+
   it("defaults a new session title to its folder name", () => {
     const runner = scriptedRunner([]);
     const session = makeSession(runner);

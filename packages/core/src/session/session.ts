@@ -460,6 +460,7 @@ export class Session {
               emittedReasoning = true;
               yield { type: "reasoning-delta", text: (chunk as { text?: string }).text ?? "" };
             } else if (chunk.type === "reasoning-end") {
+              emittedReasoning = false;
               yield { type: "reasoning-end" };
             } else if (chunk.type === "error") {
               if (signal?.aborted) return;
