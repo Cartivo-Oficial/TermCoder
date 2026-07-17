@@ -9,3 +9,4 @@ compatibility_date = "2024-11-01"
 [vars]
 GITHUB_CLIENT_ID = "Ov23liSR2sI4lUCrZNtb"
 GOOGLE_CLIENT_ID = "811964169804-05orndflh9nljq5pj2uvg08q52h2fdn2.apps.googleusercontent.com"
+PADDLE_PRICE_ID = "pri_REPLACE_ME"

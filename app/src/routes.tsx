@@ -68,6 +68,7 @@ export const ROUTES: RouteDef[] = [
     description:
       "The agent, the tutor and the source are free forever. Pro is $9/month for the person who hosts a room or teaches a class — joining is always free.",
     Component: Pricing,
+    scripts: ["config.js?v=4"],
   },
   {
     path: "/login.html",
@@ -75,7 +76,7 @@ export const ROUTES: RouteDef[] = [
     description:
       "Sign in to your TermCoder dashboard with GitHub or Google. Optional — TermCoder runs with no account and no API key.",
     Component: Login,
-    scripts: ["config.js?v=3", "auth.js?v=6"],
+    scripts: ["config.js?v=4", "auth.js?v=6"],
   },
   {
     path: "/dashboard.html",
@@ -83,6 +84,7 @@ export const ROUTES: RouteDef[] = [
     description:
       "Your TermCoder dashboard — models, synced sessions, recipes, MCP connectors, and study decks in one place.",
     Component: Dashboard,
+    scripts: ["config.js?v=4"],
   },
   {
     path: "/viewer.html",

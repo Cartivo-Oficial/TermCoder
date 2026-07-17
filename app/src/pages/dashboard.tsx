@@ -3,35 +3,13 @@ import { Footer } from "@/components/site/footer";
 import { Dither } from "@/components/dither";
 import { Mark } from "@/components/mark";
 import { cn } from "@/lib/utils";
-
-
-const SESSION_KEY = "tc-session";
-
-interface Session {
-  provider: string;
-  name: string;
-  email: string;
-  avatar: string;
-  token: string;
-}
+import { readSession, signOut, type Session } from "@/lib/session";
+import { LicencePanel } from "@/components/licence-panel";
 
 interface Deck {
   name: string;
   cards: number;
   due: number;
-}
-
-function readSession(): Session | null {
-  try {
-    return JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
-  } catch {
-    return null;
-  }
-}
-
-function signOut() {
-  localStorage.removeItem(SESSION_KEY);
-  location.href = "login.html";
 }
 
 function unwrap(file: { content?: string } | undefined): any {
@@ -73,7 +51,7 @@ async function loadSynced(token: string): Promise<{ decks: Deck[]; streak: numbe
   }
 }
 
-const TABS = ["overview", "models", "sessions", "recipes", "connectors", "study", "settings"] as const;
+const TABS = ["licence", "overview", "models", "sessions", "recipes", "connectors", "study", "settings"] as const;
 type Tab = (typeof TABS)[number];
 
 const MODELS: [string, string, string][] = [
@@ -256,6 +234,8 @@ export default function Dashboard() {
           </aside>
 
           <section className="min-w-0">
+            {tab === "licence" && <LicencePanel />}
+
             {tab === "overview" && (
               <div>
                 <Eyebrow>overview</Eyebrow>

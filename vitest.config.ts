@@ -14,7 +14,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["packages/*/src/**/*.{test,spec}.{ts,tsx}"],
+    include: ["packages/*/src/**/*.{test,spec}.{ts,tsx}", "website/auth/**/*.test.mjs"],
     environment: "node",
   },
 });
