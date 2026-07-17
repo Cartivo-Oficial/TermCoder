@@ -56,15 +56,17 @@ export function createOptimisticQueue<T>(opts: {
 
   function run(): Promise<void> {
     queued = false;
-    const snapshot = current;
+    const written = current;
     return opts
-      .write(snapshot)
+      .write(written)
       .then(() => {
-        accepted = snapshot;
+        accepted = written;
       })
       .catch(() => {
-        current = accepted;
-        opts.onChange(accepted);
+        if (JSON.stringify(current) === JSON.stringify(written)) {
+          current = accepted;
+          opts.onChange(accepted);
+        }
       });
   }
 
