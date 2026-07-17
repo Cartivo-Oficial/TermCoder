@@ -68,7 +68,9 @@ function reconcileSettingsFromConfig(env: NodeJS.ProcessEnv): SettingsFile {
   const config = readGlobalConfig({ env });
   const local = readLocal("settings", env);
   const existing = parseSettings(local?.data);
-  const reconciled = extractSettings(config, existing, Date.now());
+  const configPath = configFile("config.json", env);
+  const stamp = existsSync(configPath) ? statSync(configPath).mtimeMs : 0;
+  const reconciled = extractSettings(config, existing, stamp);
   writeLocal("settings", reconciled, env);
   return reconciled;
 }

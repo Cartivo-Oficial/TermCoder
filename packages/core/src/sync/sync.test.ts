@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -171,23 +171,75 @@ describe("sync store", () => {
     });
   });
 
-  it("closes the settings/config hole: a pull carries both the local config edit and the newer remote key into config.json", async () => {
+  it("proves the transport: the merged theme+model land in settings.json, and travel to a second machine's config.json via the same gist", async () => {
     useGist("g1");
     saveConfig({ theme: "ember" }, { configDir: cdir(cfgA) });
     const client = fakeClientWith({
       "settings.json": JSON.stringify({
         updatedAt: 999,
         data: {
-          model: { value: "remote/model", updatedAt: Date.now() + 1e7 },
+          model: { value: "remote/model", updatedAt: Date.now() - 10_000 },
         },
       }),
     });
 
     expect(await pullSync("settings", client, envA)).toBe(true);
 
-    const config = JSON.parse(readFileSync(join(cdir(cfgA), "config.json"), "utf8"));
-    expect(config.theme).toBe("ember");
-    expect(config.model).toBe("remote/model");
+    const transportA = readLocalStore("settings");
+    expect(transportA.theme).toEqual({ value: "ember", updatedAt: expect.any(Number) });
+    expect(transportA.model).toEqual({ value: "remote/model", updatedAt: expect.any(Number) });
+
+    expect(await pushSync("settings", client, envA)).toBe(true);
+
+    mkdirSync(cdir(cfgB), { recursive: true });
+    writeFileSync(metaFile(cfgB), JSON.stringify({ gistId: "g1" }), "utf8");
+    writeFileSync(join(cdir(cfgB), "config.json"), "{}", "utf8");
+
+    expect(await pullSync("settings", client, envB)).toBe(true);
+
+    const configB = JSON.parse(readFileSync(join(cdir(cfgB), "config.json"), "utf8"));
+    expect(configB.theme).toBe("ember");
+    expect(configB.model).toBe("remote/model");
+  });
+
+  it("preserves a non-whitelisted key like connectors across a settings reconcile", async () => {
+    useGist("g1");
+    writeLocalStore("settings", {
+      theme: { value: "ember", updatedAt: 200 },
+      connectors: { value: [{ id: "linear", inputs: {} }], updatedAt: 150 },
+    });
+    const client = fakeClientWith({
+      "settings.json": JSON.stringify({ updatedAt: 999, data: {} }),
+    });
+
+    expect(await pullSync("settings", client, envA)).toBe(true);
+
+    expect(readLocalStore("settings").connectors).toEqual({
+      value: [{ id: "linear", inputs: {} }],
+      updatedAt: 150,
+    });
+  });
+
+  it("mtime staleness: an untouched local theme with an old config loses to a newer remote edit", async () => {
+    useGist("g1");
+    saveConfig({ theme: "ember" }, { configDir: cdir(cfgA) });
+    const configPath = join(cdir(cfgA), "config.json");
+    const oldTime = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    utimesSync(configPath, oldTime, oldTime);
+    const remoteStamp = Date.now() - 1000;
+    const client = fakeClientWith({
+      "settings.json": JSON.stringify({
+        updatedAt: 999,
+        data: {
+          theme: { value: "paper", updatedAt: remoteStamp },
+        },
+      }),
+    });
+
+    expect(await pullSync("settings", client, envA)).toBe(true);
+
+    const config = JSON.parse(readFileSync(configPath, "utf8"));
+    expect(config.theme).toBe("paper");
   });
 
   it("drops an unknown settings key arriving from the gist", async () => {

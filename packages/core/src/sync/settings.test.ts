@@ -73,6 +73,19 @@ describe("extractSettings", () => {
   it("ignores config keys outside the whitelist", () => {
     expect(extractSettings({ apiKey: "secret" }, {}, 999)).toEqual({});
   });
+
+  it("preserves a non-whitelisted key such as connectors from prev untouched", () => {
+    const prev = { connectors: at([{ id: "linear", inputs: {} }], 150) };
+    expect(extractSettings({}, prev, 999)).toEqual(prev);
+  });
+
+  it("preserves connectors from prev even while a whitelisted key changes", () => {
+    const prev = { theme: at("ember", 100), connectors: at([{ id: "linear", inputs: {} }], 150) };
+    expect(extractSettings({ theme: "paper" }, prev, 999)).toEqual({
+      theme: at("paper", 999),
+      connectors: at([{ id: "linear", inputs: {} }], 150),
+    });
+  });
 });
 
 describe("settingsToConfigPatch", () => {

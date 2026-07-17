@@ -55,16 +55,14 @@ export function mergeSettings(local: SettingsFile, remote: SettingsFile): Settin
 export function extractSettings(
   config: Record<string, unknown>,
   prev: SettingsFile,
-  now: number,
+  stamp: number,
 ): SettingsFile {
-  const out: SettingsFile = {};
+  const out: SettingsFile = { ...prev };
   for (const key of SETTINGS_KEYS) {
     const value = config[key];
     const prevEntry = prev[key];
     if (value !== undefined && value !== prevEntry?.value) {
-      out[key] = { value, updatedAt: now };
-    } else if (prevEntry) {
-      out[key] = prevEntry;
+      out[key] = { value, updatedAt: stamp };
     }
   }
   return out;
