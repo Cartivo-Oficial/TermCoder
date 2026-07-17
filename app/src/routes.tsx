@@ -68,6 +68,7 @@ export const ROUTES: RouteDef[] = [
     description:
       "The agent, the tutor and the source are free forever. Pro is $9/month for the person who hosts a room or teaches a class — joining is always free.",
     Component: Pricing,
+    scripts: ["config.js?v=4"],
   },
   {
     path: "/login.html",

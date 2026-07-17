@@ -5,6 +5,7 @@ export const CACHE_KEY = "tc-license";
 export type LicenseState =
   | { status: "loading" }
   | { status: "none" }
+  | { status: "no-email" }
   | { status: "active"; key: string; email: string; expires: number }
   | { status: "error"; message: string };
 
@@ -63,6 +64,7 @@ export async function fetchLicense(session: Session): Promise<LicenseState> {
 
     const body = await res.json();
     if (!body.active) {
+      if (body.reason === "no-email") return { status: "no-email" };
       cacheLicense({ status: "none" }, sub);
       return { status: "none" };
     }

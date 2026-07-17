@@ -166,7 +166,7 @@ function DeckList({ decks, signedIn }: { decks: Deck[] | null; signedIn: boolean
 }
 
 export default function Dashboard() {
-  const [tab, setTab] = useState<Tab>("licence");
+  const [tab, setTab] = useState<Tab>("overview");
   const [session, setSession] = useState<Session | null>(null);
   const [decks, setDecks] = useState<Deck[] | null>(null);
   const [streak, setStreak] = useState<number | null>(null);

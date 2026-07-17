@@ -27,6 +27,14 @@ if (existsSync(join(dist, "callback.html"))) {
   check(cb.includes("handleCallback"), "callback.html no longer calls handleCallback");
 }
 
+for (const p of ["dashboard", "pricing", "login"]) {
+  const file = join(dist, `${p}.html`);
+  if (existsSync(file)) {
+    const html = readFileSync(file, "utf8");
+    check(/<script[^>]+src="[^"]*config\.js/.test(html), `${p}.html does not load config.js`);
+  }
+}
+
 const URLS = /(?:src|href)="([^"]+)"/g;
 
 for (const page of pages) {

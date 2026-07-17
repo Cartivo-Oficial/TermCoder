@@ -65,6 +65,20 @@ export function LicencePanel() {
         </>
       )}
 
+      {state.status === "no-email" && (
+        <>
+          <p className="mt-3 max-w-xl text-[14.5px] leading-relaxed text-muted-foreground">
+            We found your purchase, but couldn&apos;t tell which email to issue the licence to. Make an email
+            public on your account and refresh, or contact support.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button onClick={load} className={cn(buttonVariants({ variant: "outline" }), "h-11 rounded-md px-5 font-mono text-[14px]")}>
+              Refresh
+            </button>
+          </div>
+        </>
+      )}
+
       {state.status === "none" && (
         <>
           <p className="mt-3 max-w-xl text-[14.5px] leading-relaxed text-muted-foreground">
