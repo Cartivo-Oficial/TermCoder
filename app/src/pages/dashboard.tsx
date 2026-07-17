@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Footer } from "@/components/site/footer";
 import { Dither } from "@/components/dither";
 import { Mark } from "@/components/mark";
 import { cn } from "@/lib/utils";
 import { readSession, signOut, type Session } from "@/lib/session";
 import { LicencePanel } from "@/components/licence-panel";
-import { findSyncGist, readStore, writeStore } from "@/lib/gist";
+import { createOptimisticQueue, findSyncGist, readStore, writeStore, type OptimisticQueue } from "@/lib/gist";
 
 interface Deck {
   name: string;
@@ -23,8 +23,18 @@ function unwrap(file: { content?: string } | undefined): any {
   }
 }
 
+const FAVORITE_ID_MAX_LENGTH = 120;
+const FAVORITES_MAX_LENGTH = 500;
+
 function sanitizeFavorites(data: unknown): string[] {
-  return Array.isArray(data) ? data.filter((x): x is string => typeof x === "string") : [];
+  if (!Array.isArray(data)) return [];
+  const out: string[] = [];
+  for (const x of data) {
+    if (typeof x !== "string" || x.length === 0 || x.length > FAVORITE_ID_MAX_LENGTH) continue;
+    out.push(x);
+    if (out.length >= FAVORITES_MAX_LENGTH) break;
+  }
+  return out;
 }
 
 async function loadSynced(token: string): Promise<{ decks: Deck[]; streak: number; gistId: string | null } | null> {
@@ -175,6 +185,7 @@ export default function Dashboard() {
   const [streak, setStreak] = useState<number | null>(null);
   const [favorites, setFavorites] = useState<string[] | null>(null);
   const [gistId, setGistId] = useState<string | null>(null);
+  const favoritesQueueRef = useRef<OptimisticQueue<string[]> | null>(null);
 
   useEffect(() => {
     const s = readSession();
@@ -185,25 +196,31 @@ export default function Dashboard() {
         setDecks(d.decks);
         setStreak(d.streak);
         setGistId(d.gistId);
-        if (d.gistId) {
-          readStore(s.token, d.gistId, "favorites")
-            .then((data) => setFavorites(sanitizeFavorites(data)))
-            .catch(() => setFavorites([]));
+        const token = s.token as string;
+        const gid = d.gistId;
+        if (gid) {
+          readStore(token, gid, "favorites")
+            .then((data) => sanitizeFavorites(data))
+            .catch(() => [])
+            .then((favs) => {
+              setFavorites(favs);
+              favoritesQueueRef.current = createOptimisticQueue<string[]>({
+                initial: favs,
+                write: (value) => writeStore(token, gid, "favorites", value),
+                onChange: setFavorites,
+              });
+            });
         }
       });
     }
   }, []);
 
-  const toggleFavorite = async (id: string) => {
-    if (!session?.token || !gistId || favorites === null) return;
-    const next = favorites.includes(id) ? favorites.filter((f) => f !== id) : [...favorites, id];
-    const previous = favorites;
-    setFavorites(next);
-    try {
-      await writeStore(session.token, gistId, "favorites", next);
-    } catch {
-      setFavorites(previous);
-    }
+  const toggleFavorite = (id: string) => {
+    const queue = favoritesQueueRef.current;
+    if (!session?.token || !gistId || !queue) return;
+    const current = queue.get();
+    const next = current.includes(id) ? current.filter((f) => f !== id) : [...current, id];
+    queue.set(next);
   };
 
   const signedIn = !!session;

@@ -38,3 +38,46 @@ export async function writeStore(token: string, gistId: string, name: string, da
   });
   if (!res.ok) throw new Error("github_" + res.status);
 }
+
+export interface OptimisticQueue<T> {
+  get(): T;
+  set(value: T): void;
+}
+
+export function createOptimisticQueue<T>(opts: {
+  initial: T;
+  write: (value: T) => Promise<void>;
+  onChange: (value: T) => void;
+}): OptimisticQueue<T> {
+  let current = opts.initial;
+  let accepted = opts.initial;
+  let chain: Promise<void> = Promise.resolve();
+  let queued = false;
+
+  function run(): Promise<void> {
+    queued = false;
+    const snapshot = current;
+    return opts
+      .write(snapshot)
+      .then(() => {
+        accepted = snapshot;
+      })
+      .catch(() => {
+        current = accepted;
+        opts.onChange(accepted);
+      });
+  }
+
+  return {
+    get() {
+      return current;
+    },
+    set(value: T) {
+      current = value;
+      opts.onChange(current);
+      if (queued) return;
+      queued = true;
+      chain = chain.then(run);
+    },
+  };
+}
