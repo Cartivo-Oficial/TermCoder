@@ -11,4 +11,5 @@ export type ViewItem =
       output?: string;
     }
   | { kind: "notice"; text: string }
-  | { kind: "error"; text: string };
+  | { kind: "error"; text: string }
+  | { kind: "thinking"; text: string; done?: boolean; dur?: string };

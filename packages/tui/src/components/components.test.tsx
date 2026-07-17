@@ -11,6 +11,7 @@ import { PermissionModal } from "./PermissionModal";
 import { TrustPrompt } from "./TrustPrompt";
 import { CommandMenu } from "./CommandMenu";
 import { StatusBar } from "./StatusBar";
+import { Thinking } from "./Thinking";
 import { Composer } from "./Composer";
 import { CodeBlock } from "./CodeBlock";
 import { MentionMenu } from "./MentionMenu";
@@ -201,6 +202,18 @@ describe("CommandMenu", () => {
     const frame = lastFrame() ?? "";
     expect(frame).toContain(`/${cmds[1]!.name}`);
     expect(frame).toContain("❯"); // selection marker
+  });
+});
+
+describe("Thinking", () => {
+  it("streams reasoning while thinking, collapses when done", () => {
+    const live = render(<Thinking theme={theme} item={{ kind: "thinking", text: "weighing options", done: false }} />);
+    expect(live.lastFrame()).toContain("thinking");
+    expect(live.lastFrame()).toContain("weighing options");
+
+    const done = render(<Thinking theme={theme} item={{ kind: "thinking", text: "weighing options", done: true, dur: "3.2s" }} />);
+    expect(done.lastFrame()).toContain("thought for 3.2s");
+    expect(done.lastFrame()).not.toContain("weighing options");
   });
 });
 
