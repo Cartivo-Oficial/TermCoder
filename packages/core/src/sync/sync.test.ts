@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { pullSessions, pullSync, pushSessions, pushSync, syncAll } from "./sync";
 import { SessionStore } from "../storage/storage";
+import { saveConfig } from "../config/config";
 import type { Gist, GitHubClient } from "../github/github";
 
 function fakeClient() {
@@ -150,14 +151,14 @@ describe("sync store", () => {
     useGist("g1");
     writeLocalStore("settings", {
       theme: { value: "ember", updatedAt: 200 },
-      defaultModel: { value: "local/model", updatedAt: 50 },
+      model: { value: "local/model", updatedAt: 50 },
     });
     const client = fakeClientWith({
       "settings.json": JSON.stringify({
         updatedAt: 999,
         data: {
           theme: { value: "paper", updatedAt: 100 },
-          defaultModel: { value: "remote/model", updatedAt: 300 },
+          model: { value: "remote/model", updatedAt: 300 },
         },
       }),
     });
@@ -166,8 +167,27 @@ describe("sync store", () => {
 
     expect(readLocalStore("settings")).toEqual({
       theme: { value: "ember", updatedAt: 200 },
-      defaultModel: { value: "remote/model", updatedAt: 300 },
+      model: { value: "remote/model", updatedAt: 300 },
     });
+  });
+
+  it("closes the settings/config hole: a pull carries both the local config edit and the newer remote key into config.json", async () => {
+    useGist("g1");
+    saveConfig({ theme: "ember" }, { configDir: cdir(cfgA) });
+    const client = fakeClientWith({
+      "settings.json": JSON.stringify({
+        updatedAt: 999,
+        data: {
+          model: { value: "remote/model", updatedAt: Date.now() + 1e7 },
+        },
+      }),
+    });
+
+    expect(await pullSync("settings", client, envA)).toBe(true);
+
+    const config = JSON.parse(readFileSync(join(cdir(cfgA), "config.json"), "utf8"));
+    expect(config.theme).toBe("ember");
+    expect(config.model).toBe("remote/model");
   });
 
   it("drops an unknown settings key arriving from the gist", async () => {

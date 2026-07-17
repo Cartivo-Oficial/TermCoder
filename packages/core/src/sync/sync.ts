@@ -3,7 +3,10 @@ import { dirname } from "node:path";
 import { configFile } from "../util/paths";
 import type { GitHubClient } from "../github/github";
 import type { SessionRecord, SessionStore } from "../storage/storage";
-import { mergeSettings, parseSettings } from "./settings";
+import { readGlobalConfig, saveConfig } from "../config/config";
+import { extractSettings, mergeSettings, parseSettings, settingsToConfigPatch } from "./settings";
+import type { SettingsFile } from "./settings";
+
 
 const SESSIONS_FILE = "sessions.json";
 const SESSION_SYNC_LIMIT = 50;
@@ -61,11 +64,21 @@ export function isSyncConfigured(env: NodeJS.ProcessEnv = process.env): boolean 
   return Boolean(loadMeta(env).gistId);
 }
 
+function reconcileSettingsFromConfig(env: NodeJS.ProcessEnv): SettingsFile {
+  const config = readGlobalConfig({ env });
+  const local = readLocal("settings", env);
+  const existing = parseSettings(local?.data);
+  const reconciled = extractSettings(config, existing, Date.now());
+  writeLocal("settings", reconciled, env);
+  return reconciled;
+}
+
 export async function pushSync(
   name: string,
   client: GitHubClient,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<boolean> {
+  if (name === "settings") reconcileSettingsFromConfig(env);
   const local = readLocal(name, env);
   if (!local) return false;
   const envelope: SyncEnvelope = { updatedAt: local.updatedAt, data: local.data };
@@ -94,11 +107,10 @@ export async function pullSync(
   const local = readLocal(name, env);
 
   if (name === "settings") {
-    const merged = mergeSettings(
-      parseSettings(local?.data),
-      parseSettings(envelope.data),
-    );
+    const settingsLocal = reconcileSettingsFromConfig(env);
+    const merged = mergeSettings(settingsLocal, parseSettings(envelope.data));
     writeLocal(name, merged, env);
+    saveConfig(settingsToConfigPatch(merged), { env });
     return true;
   }
 

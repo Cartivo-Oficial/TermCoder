@@ -1,12 +1,9 @@
 import { z } from "zod";
 
-export const LANGUAGES = ["en", "pt", "es"] as const;
-
 export const SettingsSchema = z.object({
   theme: z.string().min(1).max(40).optional(),
-  language: z.enum(LANGUAGES).optional(),
-  defaultModel: z.string().min(1).max(120).optional(),
-  displayName: z.string().min(1).max(40).optional(),
+  model: z.string().min(1).max(120).optional(),
+  reasoning: z.boolean().optional(),
   connectors: z
     .array(
       z.object({
@@ -18,6 +15,8 @@ export const SettingsSchema = z.object({
 });
 
 export type Settings = z.infer<typeof SettingsSchema>;
+
+export const SETTINGS_KEYS = ["theme", "model", "reasoning"] as const;
 
 export interface SettingEntry {
   value: unknown;
@@ -49,6 +48,36 @@ export function mergeSettings(local: SettingsFile, remote: SettingsFile): Settin
   for (const [key, entry] of Object.entries(remote)) {
     const mine = out[key];
     if (!mine || entry.updatedAt > mine.updatedAt) out[key] = entry;
+  }
+  return out;
+}
+
+export function extractSettings(
+  config: Record<string, unknown>,
+  prev: SettingsFile,
+  now: number,
+): SettingsFile {
+  const out: SettingsFile = {};
+  for (const key of SETTINGS_KEYS) {
+    const value = config[key];
+    const prevEntry = prev[key];
+    if (value !== undefined && value !== prevEntry?.value) {
+      out[key] = { value, updatedAt: now };
+    } else if (prevEntry) {
+      out[key] = prevEntry;
+    }
+  }
+  return out;
+}
+
+export function settingsToConfigPatch(merged: SettingsFile): Record<string, unknown> {
+  const shape = SettingsSchema.shape as Record<string, z.ZodTypeAny>;
+  const out: Record<string, unknown> = {};
+  for (const key of SETTINGS_KEYS) {
+    const entry = merged[key];
+    if (!entry) continue;
+    const parsed = shape[key]!.safeParse(entry.value);
+    if (parsed.success) out[key] = parsed.data;
   }
   return out;
 }
