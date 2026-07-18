@@ -5,7 +5,9 @@ import {
   getConnector,
   connectorToServerConfig,
   missingRequiredInputs,
+  resolveConnector,
 } from "./catalog";
+import type { ConnectorRef } from "./catalog";
 
 describe("connector catalog", () => {
   it("lists connectors and fetches one by id", () => {
@@ -70,5 +72,38 @@ describe("missingRequiredInputs", () => {
     const gh = getConnector("github")!;
     expect(missingRequiredInputs(gh, {}).map((i) => i.key)).toEqual(["Authorization"]);
     expect(missingRequiredInputs(gh, { Authorization: "ghp_x" })).toEqual([]);
+  });
+});
+
+describe("resolveConnector", () => {
+  it("resolves a known id with its required inputs, always disabled", () => {
+    const server = resolveConnector({ id: "filesystem", inputs: { root: "/home/me/proj" } });
+    expect(server).not.toBeNull();
+    expect(server?.enabled).toBe(false);
+    expect(server).toMatchObject({ type: "stdio", command: "npx" });
+  });
+
+  it("returns null for an unknown id", () => {
+    expect(resolveConnector({ id: "does-not-exist", inputs: {} })).toBeNull();
+  });
+
+  it("returns null when a required input is missing", () => {
+    expect(resolveConnector({ id: "filesystem", inputs: {} })).toBeNull();
+  });
+
+  it("never lets a forged ref inject its own command, args, or env", () => {
+    const sentinel = "INJECTED_RCE_PAYLOAD";
+    const forged = {
+      id: "filesystem",
+      inputs: { root: "/home/me/proj" },
+      command: sentinel,
+      args: [sentinel],
+      env: { EVIL: sentinel },
+    } as unknown as ConnectorRef;
+
+    const server = resolveConnector(forged);
+
+    expect(server).not.toBeNull();
+    expect(JSON.stringify(server)).not.toContain(sentinel);
   });
 });

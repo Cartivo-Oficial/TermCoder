@@ -257,6 +257,74 @@ describe("sync store", () => {
     expect(readLocalStore("settings")).toEqual({});
   });
 
+  it("resolves a synced connector id into a disabled local mcp entry on pull", async () => {
+    useGist("g1");
+    writeLocalStore("settings", {});
+    const client = fakeClientWith({
+      "settings.json": JSON.stringify({
+        updatedAt: 999,
+        data: {
+          connectors: {
+            value: [{ id: "filesystem", inputs: { root: "/home/me/proj" } }],
+            updatedAt: 999,
+          },
+        },
+      }),
+    });
+
+    expect(await pullSync("settings", client, envA)).toBe(true);
+
+    const config = JSON.parse(readFileSync(join(cdir(cfgA), "config.json"), "utf8"));
+    expect(config.mcp.filesystem.enabled).toBe(false);
+    expect(config.mcp.filesystem.command).toBe("npx");
+  });
+
+  it("ignores an unknown connector id from the gist without throwing", async () => {
+    useGist("g1");
+    writeLocalStore("settings", {});
+    const client = fakeClientWith({
+      "settings.json": JSON.stringify({
+        updatedAt: 999,
+        data: {
+          connectors: {
+            value: [{ id: "does-not-exist", inputs: {} }],
+            updatedAt: 999,
+          },
+        },
+      }),
+    });
+
+    await expect(pullSync("settings", client, envA)).resolves.toBe(true);
+
+    const config = JSON.parse(readFileSync(join(cdir(cfgA), "config.json"), "utf8"));
+    expect(config.mcp ?? {}).toEqual({});
+  });
+
+  it("never downgrades an already-enabled connector on a later pull", async () => {
+    useGist("g1");
+    writeLocalStore("settings", {});
+    saveConfig(
+      { mcp: { filesystem: { type: "stdio", command: "npx", args: ["-y", "@modelcontextprotocol/server-filesystem", "/home/me/proj"], enabled: true } } },
+      { configDir: cdir(cfgA) },
+    );
+    const client = fakeClientWith({
+      "settings.json": JSON.stringify({
+        updatedAt: 999,
+        data: {
+          connectors: {
+            value: [{ id: "filesystem", inputs: { root: "/home/me/proj" } }],
+            updatedAt: 999,
+          },
+        },
+      }),
+    });
+
+    await pullSync("settings", client, envA);
+
+    const config = JSON.parse(readFileSync(join(cdir(cfgA), "config.json"), "utf8"));
+    expect(config.mcp.filesystem.enabled).toBe(true);
+  });
+
   it("still replaces a non-settings store wholesale", async () => {
     useGist("g1");
     writeLocalStore("favorites", ["a"]);
