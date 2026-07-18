@@ -46,6 +46,7 @@ export interface UseRoomResult {
     remotes: RoomStageTile[];
   };
   actions: {
+    join: () => void;
     toggleMute: () => void;
     toggleCamera: () => void;
     toggleScreen: () => void;
@@ -57,7 +58,6 @@ export interface UseRoomResult {
 
 export function useRoom(opts: UseRoomOptions): UseRoomResult {
   const callRef = useRef<CallManager | null>(null);
-  const joinedRef = useRef(false);
   const [, forceTick] = useState(0);
   const [selfId, setSelfId] = useState("");
   const [selfName, setSelfName] = useState("");
@@ -87,11 +87,10 @@ export function useRoom(opts: UseRoomOptions): UseRoomResult {
   }, [opts.port, opts.secure]);
 
   useEffect(() => {
-    if (opts.active && selfId && !joinedRef.current) {
-      joinedRef.current = true;
-      void call().joinVoice();
+    if (!opts.active && callRef.current?.inCall) {
+      callRef.current.leave();
     }
-  }, [opts.active, selfId]);
+  }, [opts.active]);
 
   useEffect(() => {
     return () => {
@@ -170,6 +169,7 @@ export function useRoom(opts: UseRoomOptions): UseRoomResult {
       remotes,
     },
     actions: {
+      join: () => void call().joinVoice(),
       toggleMute: () => call().toggleMute(),
       toggleCamera: () => void call().toggleCamera(),
       toggleScreen: () => {

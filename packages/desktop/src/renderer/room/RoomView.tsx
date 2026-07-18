@@ -121,19 +121,28 @@ export function RoomView({ room, myName, onChangeName, onClose }: RoomViewProps)
 
           {call.error ? <p className="room-call-err">{call.error}</p> : null}
 
+          <label className="room-label">{t("room.call")}</label>
           <div className="room-control-bar">
-            <button className={`btn-2 ${call.muted ? "" : "go"}`} onClick={room.actions.toggleMute}>
-              <IconMic /> {call.muted ? t("room.unmute") : t("room.mute")}
-            </button>
-            <button className={`btn-2 ${call.cameraOn ? "sharing" : ""}`} onClick={room.actions.toggleCamera}>
-              {call.cameraOn ? t("room.cameraOff") : t("room.cameraOn")}
-            </button>
-            <button className={`btn-2 ${call.sharing ? "sharing" : ""}`} onClick={room.actions.toggleScreen}>
-              <IconShare /> {call.sharing ? t("room.stopShare") : t("room.shareScreen")}
-            </button>
-            <button className="btn-2" onClick={room.actions.leave}>
-              {t("room.leaveCall")}
-            </button>
+            {call.inCall ? (
+              <>
+                <button className={`btn-2 ${call.muted ? "" : "go"}`} onClick={room.actions.toggleMute}>
+                  <IconMic /> {call.muted ? t("room.unmute") : t("room.mute")}
+                </button>
+                <button className={`btn-2 ${call.cameraOn ? "sharing" : ""}`} onClick={room.actions.toggleCamera}>
+                  {call.cameraOn ? t("room.cameraOff") : t("room.cameraOn")}
+                </button>
+                <button className={`btn-2 ${call.sharing ? "sharing" : ""}`} onClick={room.actions.toggleScreen}>
+                  <IconShare /> {call.sharing ? t("room.stopShare") : t("room.shareScreen")}
+                </button>
+                <button className="btn-2" onClick={room.actions.leave}>
+                  {t("room.leaveCall")}
+                </button>
+              </>
+            ) : (
+              <button className="btn-2 go" onClick={room.actions.join}>
+                <IconMic /> {t("room.joinCall")}
+              </button>
+            )}
           </div>
 
           <label className="room-label">{t("room.invite")}</label>
