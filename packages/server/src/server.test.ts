@@ -643,16 +643,31 @@ describe("server", () => {
     expect(type).toBe("room-welcome");
   });
 
-  it("a bogus room token creates its own empty room, never joins another", async () => {
+  it("rejects a bogus room id instead of allocating a phantom room", async () => {
     const record = (await (
       await fetch(`${base()}/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cwd: dir }) })
     ).json()) as { id: string };
     const ws1 = new WebSocket(`ws://localhost:${port}/sessions/${record.id}/stream?name=Host`);
     await new Promise<void>((r) => ws1.on("message", (raw) => { if (JSON.parse(raw.toString()).type === "room-welcome") r(); }));
+
+    const before = (await (await fetch(`${base()}/room/addresses`)).json()) as { rooms: number };
+    expect(before.rooms).toBe(1);
+
     const ws2 = new WebSocket(`ws://localhost:${port}/sessions/deadbeefdeadbeefdeadbeef01/stream?name=Nobody`);
-    const w2 = await new Promise<Record<string, unknown>>((r) => ws2.on("message", (raw) => { const m = JSON.parse(raw.toString()); if (m.type === "room-welcome") r(m); }));
+    const outcome = await new Promise<{ event?: Record<string, unknown>; code?: number }>((resolve) => {
+      ws2.on("message", (raw) => resolve({ event: JSON.parse(raw.toString()) }));
+      ws2.on("close", (code) => resolve({ code }));
+    });
     ws1.close();
     ws2.close();
-    expect(w2.participants).toEqual(["Nobody"]);
+
+    if (outcome.event) {
+      expect(outcome.event.type).toBe("error");
+    } else {
+      expect(outcome.code).toBe(1008);
+    }
+
+    const after = (await (await fetch(`${base()}/room/addresses`)).json()) as { rooms: number };
+    expect(after.rooms).toBe(1);
   });
 });

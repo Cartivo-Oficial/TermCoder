@@ -1147,6 +1147,11 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
   }
   const sessionId = parts[1]!;
   const resolvedSessionId = ctx.roomTokens.get(sessionId) ?? sessionId;
+  if (!ctx.roomTokens.has(sessionId) && !ctx.store.exists(resolvedSessionId)) {
+    ws.send(JSON.stringify({ type: "error", error: "session not found" }));
+    ws.close(1008, "session not found");
+    return;
+  }
 
   const room = getRoom(ctx, resolvedSessionId);
   if (room.sockets.size >= 2 && !ctx.license().active) {
