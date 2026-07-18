@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { readSession, signOut, type Session } from "@/lib/session";
 import { LicencePanel } from "@/components/licence-panel";
 import { SettingsPanel } from "@/components/settings-panel";
+import { ConnectorsPanel } from "@/components/connectors-panel";
 import { createOptimisticQueue, findSyncGist, readStore, writeStore, type OptimisticQueue } from "@/lib/gist";
 
 interface Deck {
@@ -89,14 +90,6 @@ const RECIPES: [string, string, string][] = [
   ["test-and-fix", "run tests, fix failures, re-run", "dev · 3 steps"],
   ["release", "bump, tag, publish", "dev · 3 steps"],
   ["photosynthesis", "guided lesson, one step at a time", "study · 5 steps"],
-];
-
-const CONNECTORS: [string, string][] = [
-  ["GitHub", "issues, PRs, code · hosted"],
-  ["Filesystem", "read & write a chosen folder"],
-  ["Web fetch", "fetch a URL as clean markdown"],
-  ["PostgreSQL", "query a database, read-only"],
-  ["Brave Search", "web & local search"],
 ];
 
 function Eyebrow({ children, sample }: { children: React.ReactNode; sample?: boolean }) {
@@ -370,30 +363,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {tab === "connectors" && (
-              <div>
-                <Eyebrow>connectors</Eyebrow>
-                <H2>One-click MCP.</H2>
-                <Sub>
-                  Add a Model Context Protocol server without memorizing commands. Pick a connector, fill in what it
-                  needs, and its tools appear to the agent.
-                </Sub>
-                <div className="mt-7">
-                  {CONNECTORS.map(([n, d]) => (
-                    <Row
-                      key={n}
-                      c1={n}
-                      c2={d}
-                      right={
-                        <a href="docs.html" className="shrink-0 font-mono text-[11.5px] text-primary">
-                          Add
-                        </a>
-                      }
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+            {tab === "connectors" && <ConnectorsPanel />}
 
             {tab === "study" && (
               <div>
