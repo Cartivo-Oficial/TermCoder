@@ -1,0 +1,52 @@
+[
+  {
+    "id": "fetch",
+    "name": "Web fetch",
+    "description": "Fetch a URL and return its content as clean markdown.",
+    "inputs": []
+  },
+  {
+    "id": "filesystem",
+    "name": "Filesystem",
+    "description": "Read and write files under a folder you choose.",
+    "inputs": [
+      {
+        "key": "root",
+        "label": "Folder to expose",
+        "placeholder": "/path/to/project",
+        "required": true
+      }
+    ]
+  },
+  {
+    "id": "git",
+    "name": "Git",
+    "description": "Inspect and operate on a Git repository.",
+    "inputs": [
+      {
+        "key": "repo",
+        "label": "Repository path",
+        "placeholder": "/path/to/repo",
+        "required": true
+      }
+    ]
+  },
+  {
+    "id": "memory",
+    "name": "Knowledge graph memory",
+    "description": "A persistent knowledge-graph memory the agent can read and update.",
+    "inputs": []
+  },
+  {
+    "id": "puppeteer",
+    "name": "Browser (Puppeteer)",
+    "description": "Drive a headless browser — navigate, screenshot, and scrape pages.",
+    "inputs": []
+  },
+  {
+    "id": "sequential-thinking",
+    "name": "Sequential thinking",
+    "description": "A structured step-by-step reasoning scratchpad tool.",
+    "inputs": []
+  }
+]

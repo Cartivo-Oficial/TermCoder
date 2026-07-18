@@ -121,7 +121,14 @@ const CONNECTORS: McpConnector[] = [
     command: "npx",
     args: ["-y", "@modelcontextprotocol/server-postgres"],
     inputs: [
-      { key: "conn", label: "Connection string", kind: "arg", required: true, placeholder: "postgresql://user:pass@host/db" },
+      {
+        key: "conn",
+        label: "Connection string",
+        kind: "arg",
+        required: true,
+        secret: true,
+        placeholder: "postgresql://user:pass@host/db",
+      },
     ],
     runtime: "Node (npx)",
     docsUrl: "https://github.com/modelcontextprotocol/servers/tree/main/src/postgres",
