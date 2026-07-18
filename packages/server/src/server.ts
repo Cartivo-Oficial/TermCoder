@@ -1196,7 +1196,7 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
       ws.send(JSON.stringify({ type: "error", error: "invalid JSON message" }));
       return;
     }
-    if (isGuest && (msg.type === "prompt" || msg.type === "background" || msg.type === "stop" || msg.type === "permission-decision")) {
+    if (isGuest && msg.type !== "chat" && msg.type !== "signal") {
       ws.send(JSON.stringify({ type: "error", error: "Guests are observers and can't control the session." }));
       return;
     }

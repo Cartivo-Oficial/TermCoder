@@ -707,6 +707,10 @@ describe("server", () => {
     const decisionRejection = await nextGuestEvent();
     expect(decisionRejection.type).toBe("error");
 
+    ws2.send(JSON.stringify({ type: "model", model: "anthropic/claude-sonnet-5" }));
+    const unknownRejection = await nextGuestEvent();
+    expect(unknownRejection.type).toBe("error");
+
     ws2.send(JSON.stringify({ type: "chat", text: "hi" }));
     const chatEcho = await nextGuestEvent();
     expect(chatEcho.type).toBe("room-chat");
