@@ -94,6 +94,7 @@ const HOME_DIR = decodeURIComponent(new URLSearchParams(location.search).get("ho
 const DEFAULT_DIR = decodeURIComponent(new URLSearchParams(location.search).get("docs") || "") || HOME_DIR;
 const JOIN_SESSION = new URLSearchParams(location.search).get("session") || "";
 const JOIN_ROOM = new URLSearchParams(location.search).get("room") || "";
+const isGuest = !!JOIN_ROOM;
 function cleanDir(dir?: string | null): string | undefined {
   if (!dir) return undefined;
   return HOME_DIR && dir === HOME_DIR ? DEFAULT_DIR || undefined : dir;
@@ -1088,6 +1089,7 @@ export function App() {
   }
 
   function stop() {
+    if (isGuest) return;
     wsRef.current?.send(JSON.stringify({ type: "stop" }));
     setBusy(false);
     setPerm(null);
@@ -1393,11 +1395,13 @@ export function App() {
   }
 
   function decide(decision: "allow" | "deny" | "allow-always") {
+    if (isGuest) return;
     if (perm) wsRef.current?.send(JSON.stringify({ type: "permission-decision", id: perm.id, decision }));
     setPerm(null);
   }
 
   function send() {
+    if (isGuest) return;
     const text = input.trim();
     if ((!text && pendingImages.length === 0) || busy || !connected) return;
     const cmd = parseCommand(text);
@@ -1428,6 +1432,7 @@ export function App() {
   }
 
   function runRecipe(prompt: string) {
+    if (isGuest) return;
     if (busy || !connected) {
       setInput((v) => (v.trim() ? `${v.trim()}\n\n${prompt}` : prompt));
       requestAnimationFrame(() => inputRef.current?.focus());
@@ -2001,7 +2006,7 @@ export function App() {
             </div>
           </div>
 
-          {perm ? (
+          {perm && !isGuest ? (
             <div className="perm">
               <div className="perm-card">
                 <div className="perm-title">{t("perm.title")}</div>
@@ -2238,7 +2243,7 @@ export function App() {
                 >
                   <IconMic />
                 </button>
-                {busy ? (
+                {isGuest ? null : busy ? (
                   <button className="send stop" onClick={stop} title={t("chat.stop")}><IconStop /></button>
                 ) : (
                   <button className="send" onClick={send} disabled={!connected}><IconSend /></button>
@@ -2323,7 +2328,7 @@ export function App() {
         />
       ) : null}
       {paletteOpen ? <CommandPalette items={paletteItems} onClose={() => setPaletteOpen(false)} /> : null}
-      {!onboarded ? <Welcome onChoose={chooseMode} /> : null}
+      {!onboarded && !JOIN_ROOM ? <Welcome onChoose={chooseMode} /> : null}
 
       {browserOpen ? (
         <ModelBrowser port={port} current={model} onSelect={changeModel} onClose={() => setBrowserOpen(false)} />

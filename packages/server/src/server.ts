@@ -1153,6 +1153,7 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
     return;
   }
 
+  const isGuest = ctx.roomTokens.has(sessionId);
   const room = getRoom(ctx, resolvedSessionId);
   if (room.sockets.size >= 2 && !ctx.license().active) {
     ws.send(JSON.stringify({ type: "room-locked", error: "The host needs termcoder Pro to host more than one guest." }));
@@ -1193,6 +1194,10 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
       msg = JSON.parse(raw.toString());
     } catch {
       ws.send(JSON.stringify({ type: "error", error: "invalid JSON message" }));
+      return;
+    }
+    if (isGuest && (msg.type === "prompt" || msg.type === "background" || msg.type === "stop" || msg.type === "permission-decision")) {
+      ws.send(JSON.stringify({ type: "error", error: "Guests are observers and can't control the session." }));
       return;
     }
     if (msg.type === "prompt" && typeof msg.text === "string") {
