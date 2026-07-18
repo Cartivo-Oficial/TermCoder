@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { TerminalPane } from "./TerminalPane";
+import { gridColumns } from "./terminal/grid";
 
 export function TerminalDeck({
   cwd,
@@ -13,6 +14,16 @@ export function TerminalDeck({
   const [terminals, setTerminals] = useState<number[]>([1]);
   const [activeId, setActiveId] = useState(1);
   const [nextId, setNextId] = useState(2);
+  const [layout, setLayout] = useState<"tabs" | "grid">(
+    () => (localStorage.getItem("tc-term-layout") === "grid" ? "grid" : "tabs"),
+  );
+  const toggleLayout = () => {
+    setLayout((prev) => {
+      const next = prev === "grid" ? "tabs" : "grid";
+      localStorage.setItem("tc-term-layout", next);
+      return next;
+    });
+  };
 
   const addTerminal = () => {
     const id = nextId;
@@ -58,16 +69,31 @@ export function TerminalDeck({
         <button className="term-tab-add" title="New terminal" onClick={addTerminal}>
           +
         </button>
+        <button
+          className="term-tab-add"
+          title={layout === "grid" ? "Tabs view" : "Grid view"}
+          onClick={toggleLayout}
+        >
+          {layout === "grid" ? "▭" : "▦"}
+        </button>
       </div>
-      <div className="term-deck-body">
+      <div
+        className={`term-deck-body ${layout === "grid" ? "grid" : ""}`}
+        style={layout === "grid" ? { gridTemplateColumns: `repeat(${gridColumns(terminals.length)}, minmax(0, 1fr))` } : undefined}
+      >
         {terminals.map((id) => (
-          <TerminalPane
+          <div
             key={id}
-            id={id}
-            cwd={cwd}
-            hidden={hidden || id !== activeId}
-            themeKey={themeKey}
-          />
+            className={`term-pane-cell ${layout === "grid" && id === activeId ? "focused" : ""}`}
+            onMouseDown={layout === "grid" ? () => setActiveId(id) : undefined}
+          >
+            <TerminalPane
+              id={id}
+              cwd={cwd}
+              hidden={layout === "grid" ? hidden : hidden || id !== activeId}
+              themeKey={themeKey}
+            />
+          </div>
         ))}
       </div>
     </div>
