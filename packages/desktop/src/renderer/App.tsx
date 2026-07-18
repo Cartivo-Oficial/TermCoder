@@ -93,6 +93,7 @@ const wsBase = `${wsScheme}//${host}:${port}`;
 const HOME_DIR = decodeURIComponent(new URLSearchParams(location.search).get("home") || "");
 const DEFAULT_DIR = decodeURIComponent(new URLSearchParams(location.search).get("docs") || "") || HOME_DIR;
 const JOIN_SESSION = new URLSearchParams(location.search).get("session") || "";
+const JOIN_ROOM = new URLSearchParams(location.search).get("room") || "";
 function cleanDir(dir?: string | null): string | undefined {
   if (!dir) return undefined;
   return HOME_DIR && dir === HOME_DIR ? DEFAULT_DIR || undefined : dir;
@@ -746,6 +747,12 @@ export function App() {
     started.current = true;
     void (async () => {
       try {
+        if (JOIN_ROOM) {
+          setCurrentId(JOIN_ROOM);
+          connect(JOIN_ROOM);
+          setRoomOpen(true);
+          return;
+        }
         const list = (await (await fetch(`${httpBase}/sessions`)).json()) as SessionSummary[];
         setSessions(list);
         if (JOIN_SESSION && list.some((s) => s.id === JOIN_SESSION)) {
