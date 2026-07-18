@@ -623,4 +623,36 @@ describe("server", () => {
     ws3.close();
     expect(type).toBe("room-welcome");
   });
+
+  it("lets a guest join by room token without knowing the session id", async () => {
+    const record = (await (
+      await fetch(`${base()}/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cwd: dir }) })
+    ).json()) as { id: string };
+
+    const ws1 = new WebSocket(`ws://localhost:${port}/sessions/${record.id}/stream?name=Host`);
+    const welcome = await new Promise<Record<string, unknown>>((r) =>
+      ws1.on("message", (raw) => { const m = JSON.parse(raw.toString()); if (m.type === "room-welcome") r(m); }));
+    const token = welcome.joinToken as string;
+    expect(token).toBeTruthy();
+    expect(token).not.toBe(record.id);
+
+    const ws2 = new WebSocket(`ws://localhost:${port}/sessions/${token}/stream?name=Guest`);
+    const type = await new Promise<string>((r) => ws2.on("message", (raw) => r(JSON.parse(raw.toString()).type as string)));
+    ws1.close();
+    ws2.close();
+    expect(type).toBe("room-welcome");
+  });
+
+  it("a bogus room token creates its own empty room, never joins another", async () => {
+    const record = (await (
+      await fetch(`${base()}/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cwd: dir }) })
+    ).json()) as { id: string };
+    const ws1 = new WebSocket(`ws://localhost:${port}/sessions/${record.id}/stream?name=Host`);
+    await new Promise<void>((r) => ws1.on("message", (raw) => { if (JSON.parse(raw.toString()).type === "room-welcome") r(); }));
+    const ws2 = new WebSocket(`ws://localhost:${port}/sessions/deadbeefdeadbeefdeadbeef01/stream?name=Nobody`);
+    const w2 = await new Promise<Record<string, unknown>>((r) => ws2.on("message", (raw) => { const m = JSON.parse(raw.toString()); if (m.type === "room-welcome") r(m); }));
+    ws1.close();
+    ws2.close();
+    expect(w2.participants).toEqual(["Nobody"]);
+  });
 });
