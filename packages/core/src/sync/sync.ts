@@ -4,8 +4,11 @@ import { configFile } from "../util/paths";
 import type { GitHubClient } from "../github/github";
 import type { SessionRecord, SessionStore } from "../storage/storage";
 import { readGlobalConfig, saveConfig } from "../config/config";
+import type { McpServerConfig } from "../config/config";
 import { extractSettings, mergeSettings, parseSettings, settingsToConfigPatch } from "./settings";
 import type { SettingsFile } from "./settings";
+import { resolveConnector } from "../mcp/catalog";
+import type { ConnectorRef } from "../mcp/catalog";
 
 
 const SESSIONS_FILE = "sessions.json";
@@ -64,6 +67,21 @@ export function isSyncConfigured(env: NodeJS.ProcessEnv = process.env): boolean 
   return Boolean(loadMeta(env).gistId);
 }
 
+function applyConnectors(merged: SettingsFile, env: NodeJS.ProcessEnv): void {
+  const value = merged.connectors?.value;
+  if (!Array.isArray(value)) return;
+  const existingMcp = (readGlobalConfig({ env }).mcp ?? {}) as Record<string, unknown>;
+  const additions: Record<string, McpServerConfig> = {};
+  for (const ref of value as ConnectorRef[]) {
+    if (!ref || typeof ref.id !== "string") continue;
+    if (existingMcp[ref.id] || additions[ref.id]) continue;
+    const server = resolveConnector(ref);
+    if (!server) continue;
+    additions[ref.id] = server;
+  }
+  if (Object.keys(additions).length > 0) saveConfig({ mcp: additions }, { env });
+}
+
 function reconcileSettingsFromConfig(env: NodeJS.ProcessEnv): SettingsFile {
   const config = readGlobalConfig({ env });
   const local = readLocal("settings", env);
@@ -113,6 +131,7 @@ export async function pullSync(
     const merged = mergeSettings(settingsLocal, parseSettings(envelope.data));
     writeLocal(name, merged, env);
     saveConfig(settingsToConfigPatch(merged), { env });
+    applyConnectors(merged, env);
     return true;
   }
 

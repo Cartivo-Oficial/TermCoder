@@ -216,3 +216,16 @@ export function connectorToServerConfig(connector: McpConnector, values: Record<
     ...(Object.keys(env).length ? { env } : {}),
   };
 }
+
+export interface ConnectorRef {
+  id: string;
+  inputs: Record<string, string>;
+}
+
+export function resolveConnector(ref: ConnectorRef): McpServerConfig | null {
+  const connector = getConnector(ref.id);
+  if (!connector) return null;
+  const inputs = ref.inputs ?? {};
+  if (missingRequiredInputs(connector, inputs).length > 0) return null;
+  return { ...connectorToServerConfig(connector, inputs), enabled: false };
+}
