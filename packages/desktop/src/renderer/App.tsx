@@ -949,6 +949,7 @@ export function App() {
       await fetch(`${httpBase}/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body })
     ).json()) as { id: string; cwd: string; model: string };
     setCurrentId(record.id);
+    setCenterTab("chat");
     addOpenTab(record.id);
     resetTokenMeters();
     localStorage.setItem("tc-session", record.id);
