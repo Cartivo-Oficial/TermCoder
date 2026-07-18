@@ -11,10 +11,10 @@ import { COLOR_THEMES, THEME_VARS } from "./themes";
 import { KEYBIND_ACTIONS, comboFor, matchCombo } from "./keybinds";
 import { IconStop, IconShare, IconCopy, IconEdit, IconMic, IconUndo, IconBolt, IconAgents } from "./Icons";
 import { ErrorBoundary } from "./ErrorBoundary";
-import { RoomPanel } from "./RoomPanel";
+import { RoomView } from "./room/RoomView";
+import { useRoom } from "./room/useRoom";
 import { RecipesPanel } from "./RecipesPanel";
 import { ClassroomPanel } from "./ClassroomPanel";
-import { CallManager } from "./webrtc";
 import { ModelBrowser } from "./ModelBrowser";
 import { Rail } from "./Rail";
 import { TerminalDeck } from "./TerminalDeck";
@@ -93,6 +93,8 @@ const wsBase = `${wsScheme}//${host}:${port}`;
 const HOME_DIR = decodeURIComponent(new URLSearchParams(location.search).get("home") || "");
 const DEFAULT_DIR = decodeURIComponent(new URLSearchParams(location.search).get("docs") || "") || HOME_DIR;
 const JOIN_SESSION = new URLSearchParams(location.search).get("session") || "";
+const JOIN_ROOM = new URLSearchParams(location.search).get("room") || "";
+const isGuest = !!JOIN_ROOM;
 function cleanDir(dir?: string | null): string | undefined {
   if (!dir) return undefined;
   return HOME_DIR && dir === HOME_DIR ? DEFAULT_DIR || undefined : dir;
@@ -404,10 +406,6 @@ export function App() {
   const [leftOpen, setLeftOpen] = useState(true);
   const [sidePanel, setSidePanel] = useState<null | "files" | "study" | "agents">(null);
   const [roomOpen, setRoomOpen] = useState(false);
-  const [, setCallTick] = useState(0);
-  const callRef = useRef<CallManager | null>(null);
-  const [roomParticipants, setRoomParticipants] = useState<string[]>([]);
-  const [roomChat, setRoomChat] = useState<Array<{ from: string; text: string; kind: "chat" | "prompt" }>>([]);
   const [myName, setMyName] = useState<string>(() => localStorage.getItem("tc-name") || "You");
   const myNameRef = useRef(myName);
   useEffect(() => {
@@ -500,6 +498,16 @@ export function App() {
   const streamRef = useRef<MediaStream | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
+  const room = useRoom({
+    port,
+    secure: scheme === "https:",
+    active: roomOpen,
+    sendSignal: (to, data) => wsRef.current?.send(JSON.stringify({ type: "signal", to, data })),
+    sendChat: (text) => {
+      const trimmed = text.trim();
+      if (trimmed) wsRef.current?.send(JSON.stringify({ type: "chat", text: trimmed }));
+    },
+  });
   const stopReconnect = useRef(false);
   const appendRef = useRef(false);
   const nudgedUpgradeRef = useRef(false);
@@ -740,6 +748,12 @@ export function App() {
     started.current = true;
     void (async () => {
       try {
+        if (JOIN_ROOM) {
+          setCurrentId(JOIN_ROOM);
+          connect(JOIN_ROOM);
+          setRoomOpen(true);
+          return;
+        }
         const list = (await (await fetch(`${httpBase}/sessions`)).json()) as SessionSummary[];
         setSessions(list);
         if (JOIN_SESSION && list.some((s) => s.id === JOIN_SESSION)) {
@@ -841,22 +855,6 @@ export function App() {
         }, 500);
       }
     };
-  }
-
-  function sendRoomChat(text: string) {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    wsRef.current?.send(JSON.stringify({ type: "chat", text: trimmed }));
-  }
-
-  function call(): CallManager {
-    if (!callRef.current) {
-      callRef.current = new CallManager(
-        (to, data) => wsRef.current?.send(JSON.stringify({ type: "signal", to, data })),
-        () => setCallTick((t) => t + 1),
-      );
-    }
-    return callRef.current;
   }
 
   function setWorkingDir(rawDir: string) {
@@ -1091,6 +1089,7 @@ export function App() {
   }
 
   function stop() {
+    if (isGuest) return;
     wsRef.current?.send(JSON.stringify({ type: "stop" }));
     setBusy(false);
     setPerm(null);
@@ -1262,33 +1261,7 @@ export function App() {
       setMessages((prev) => [...prev, { role: "notice", text: t("pro.roomLocked") }]);
       return;
     }
-    if (e.type === "room-welcome") {
-      setRoomParticipants(Array.isArray(e.participants) ? e.participants : []);
-      call().setSelf(e.peerId || "");
-      call().setPeers(Array.isArray(e.peers) ? e.peers : []);
-      return;
-    }
-    if (e.type === "room-presence") {
-      setRoomParticipants(Array.isArray(e.participants) ? e.participants : []);
-      call().setPeers(Array.isArray(e.peers) ? e.peers : []);
-      return;
-    }
-    if (e.type === "signal") {
-      void call().onSignal(String(e.from ?? ""), e.data);
-      return;
-    }
-    if (e.type === "peer-left") {
-      call().onPeerLeft(String(e.peerId ?? ""));
-      return;
-    }
-    if (e.type === "room-chat") {
-      setRoomChat((prev) => [...prev, { from: String(e.from ?? "?"), text: String(e.text ?? ""), kind: "chat" }]);
-      return;
-    }
-    if (e.type === "room-prompt") {
-      setRoomChat((prev) => [...prev, { from: String(e.from ?? "?"), text: String(e.text ?? ""), kind: "prompt" }]);
-      return;
-    }
+    if (room.handleEvent(e)) return;
     if (e.type === "permission-request") {
       if (autoApproveRef.current) {
         wsRef.current?.send(JSON.stringify({ type: "permission-decision", id: e.id, decision: "allow" }));
@@ -1422,11 +1395,13 @@ export function App() {
   }
 
   function decide(decision: "allow" | "deny" | "allow-always") {
+    if (isGuest) return;
     if (perm) wsRef.current?.send(JSON.stringify({ type: "permission-decision", id: perm.id, decision }));
     setPerm(null);
   }
 
   function send() {
+    if (isGuest) return;
     const text = input.trim();
     if ((!text && pendingImages.length === 0) || busy || !connected) return;
     const cmd = parseCommand(text);
@@ -1457,6 +1432,7 @@ export function App() {
   }
 
   function runRecipe(prompt: string) {
+    if (isGuest) return;
     if (busy || !connected) {
       setInput((v) => (v.trim() ? `${v.trim()}\n\n${prompt}` : prompt));
       requestAnimationFrame(() => inputRef.current?.focus());
@@ -1927,12 +1903,12 @@ export function App() {
                 </span>
               ) : null}
               <button
-                className={`icon sm${roomParticipants.length > 1 ? " live" : ""}`}
+                className={`icon sm${room.participants.length > 1 ? " live" : ""}`}
                 title={t("room.title")}
                 onClick={() => setRoomOpen(true)}
               >
                 <IconAgents />
-                {roomParticipants.length > 1 ? <span className="room-count">{roomParticipants.length}</span> : null}
+                {room.participants.length > 1 ? <span className="room-count">{room.participants.length}</span> : null}
               </button>
               {canRevert ? (
                 <button className="icon sm" title={t("revert.title")} onClick={() => void revertTurn()}>
@@ -2030,7 +2006,7 @@ export function App() {
             </div>
           </div>
 
-          {perm ? (
+          {perm && !isGuest ? (
             <div className="perm">
               <div className="perm-card">
                 <div className="perm-title">{t("perm.title")}</div>
@@ -2267,7 +2243,7 @@ export function App() {
                 >
                   <IconMic />
                 </button>
-                {busy ? (
+                {isGuest ? null : busy ? (
                   <button className="send stop" onClick={stop} title={t("chat.stop")}><IconStop /></button>
                 ) : (
                   <button className="send" onClick={send} disabled={!connected}><IconSend /></button>
@@ -2324,33 +2300,7 @@ export function App() {
       ) : null}
 
       {roomOpen ? (
-        <RoomPanel
-          port={port}
-          sessionId={currentId ?? ""}
-          myName={myName}
-          onChangeName={setMyName}
-          participants={roomParticipants}
-          messages={roomChat}
-          onSendChat={sendRoomChat}
-          onClose={() => setRoomOpen(false)}
-          call={{
-            inCall: callRef.current?.inCall ?? false,
-            muted: callRef.current?.muted ?? false,
-            cameraOn: callRef.current?.cameraOn ?? false,
-            sharing: callRef.current?.sharing ?? false,
-            error: callRef.current?.error ?? null,
-            selfSpeaking: callRef.current?.selfSpeaking() ?? false,
-            peers: callRef.current?.callPeers() ?? [],
-            videos: callRef.current?.remoteVideos() ?? [],
-            localVideo: callRef.current?.localVideo() ?? null,
-            onJoin: () => void call().joinVoice(),
-            onLeave: () => call().leave(),
-            onToggleMute: () => call().toggleMute(),
-            onToggleCamera: () => void call().toggleCamera(),
-            onShareScreen: () => void call().shareScreen(),
-            onStopShare: () => call().stopShare(),
-          }}
-        />
+        <RoomView room={room} myName={myName} onChangeName={setMyName} onClose={() => setRoomOpen(false)} />
       ) : null}
 
       {viewerOpen && tabs.length ? (
@@ -2378,7 +2328,7 @@ export function App() {
         />
       ) : null}
       {paletteOpen ? <CommandPalette items={paletteItems} onClose={() => setPaletteOpen(false)} /> : null}
-      {!onboarded ? <Welcome onChoose={chooseMode} /> : null}
+      {!onboarded && !JOIN_ROOM ? <Welcome onChoose={chooseMode} /> : null}
 
       {browserOpen ? (
         <ModelBrowser port={port} current={model} onSelect={changeModel} onClose={() => setBrowserOpen(false)} />

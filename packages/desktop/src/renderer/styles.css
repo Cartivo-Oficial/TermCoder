@@ -679,19 +679,27 @@ svg { display: block; }
 .room-compose .settings-input { flex: 1; }
 .icon.sm.live { color: var(--accent); position: relative; }
 .room-count { position: absolute; top: -3px; right: -3px; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 999px; background: var(--accent); color: #0b0b0d; font-size: 9px; line-height: 14px; text-align: center; font-weight: 700; }
-.room-call-join { width: 100%; justify-content: center; }
-.room-call { display: flex; flex-direction: column; gap: 8px; }
-.room-call-ctl { display: flex; gap: 8px; }
-.room-call-peers { display: flex; flex-wrap: wrap; gap: 6px; }
 .call-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--faint); vertical-align: middle; }
 .call-dot.live { background: var(--accent); box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 55%, transparent); }
 .room-call-err { color: var(--accent); font-size: 12px; margin: 2px 0; }
 .btn-2.sharing { border-color: var(--accent); color: var(--accent); }
-.room-screens { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-top: 4px; }
-.room-screen { position: relative; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: #000; transition: box-shadow .12s ease, border-color .12s ease; }
-.room-screen.speaking { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent); }
-.room-screen video { display: block; width: 100%; height: auto; max-height: 220px; object-fit: contain; background: #000; }
-.room-screen-name { position: absolute; left: 6px; bottom: 6px; font-family: var(--mono); font-size: 10.5px; color: var(--text); background: rgba(0,0,0,.55); border-radius: 4px; padding: 1px 6px; }
+
+.room-view { position: absolute; inset: 0; z-index: 30; background: var(--floating); display: flex; flex-direction: column; animation: fadeIn var(--t-fast) var(--ease); }
+.room-view-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.room-view-head h3 { margin: 0; font-size: 15px; }
+.room-view-body { flex: 1; min-height: 0; display: flex; gap: 20px; padding: 18px 20px; overflow: hidden; }
+.room-view-main { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-y: auto; }
+.room-view-chat { width: 300px; flex-shrink: 0; display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--border); padding-left: 18px; }
+.room-view-chat .room-log { flex: 1; }
+.room-stage { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.room-tile { position: relative; aspect-ratio: 4 / 3; border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; background: var(--elev); display: flex; align-items: center; justify-content: center; transition: box-shadow .12s ease, border-color .12s ease; }
+.room-tile.speaking { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent); }
+.room-tile video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; }
+.room-tile-avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--elev2); color: var(--text); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; }
+.room-tile-name { position: absolute; left: 6px; bottom: 6px; font-family: var(--mono); font-size: 10.5px; color: var(--text); background: rgba(0,0,0,.55); border-radius: 4px; padding: 1px 6px; }
+.room-tile-dot { position: absolute; right: 8px; top: 8px; }
+.room-stage-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 18px; border: 1px dashed var(--border); border-radius: var(--r-lg); background: var(--elev); aspect-ratio: 4 / 3; }
+.room-control-bar { display: flex; gap: 8px; justify-content: center; margin: 14px 0; flex-wrap: wrap; }
 
 .recipe-list { display: flex; flex-direction: column; gap: 8px; max-height: 46vh; overflow-y: auto; margin: 8px 0; }
 .recipe-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--elev); }

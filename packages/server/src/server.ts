@@ -9,6 +9,7 @@ import {
   type ServerResponse,
 } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
+import { mintRoomToken } from "./rooms/token";
 import {
   CheckpointManager,
   checkpointDir,
@@ -125,6 +126,7 @@ interface Room {
   pending: Map<string, (decision: PermissionDecision) => void>;
   permission: PermissionManager;
   registry: ToolRegistry;
+  joinToken: string;
 }
 
 interface Ctx {
@@ -136,6 +138,7 @@ interface Ctx {
   status: ServerStatus;
   webDir?: string;
   rooms: Map<string, Room>;
+  roomTokens: Map<string, string>;
   license: () => LicenseInfo;
 }
 
@@ -149,6 +152,7 @@ export function createServer(deps: ServerDeps = {}): Server {
     status: deps.status ?? { mcp: [], lsp: [], plugins: [] },
     webDir: deps.webDir,
     rooms: new Map(),
+    roomTokens: new Map(),
     license: deps.license ?? (() => licenseStatus()),
   };
 
@@ -1049,6 +1053,7 @@ function getRoom(ctx: Ctx, sessionId: string): Room {
     running: false,
     controller: null as AbortController | null,
     pending,
+    joinToken: mintRoomToken(),
   } as Room;
   room.permission = new PermissionManager(
     ctx.config.permission,
@@ -1071,6 +1076,7 @@ function getRoom(ctx: Ctx, sessionId: string): Room {
     }),
   ]);
   ctx.rooms.set(sessionId, room);
+  ctx.roomTokens.set(room.joinToken, sessionId);
   return room;
 }
 
@@ -1140,13 +1146,15 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
     return;
   }
   const sessionId = parts[1]!;
-  if (!ctx.store.exists(sessionId)) {
+  const resolvedSessionId = ctx.roomTokens.get(sessionId) ?? sessionId;
+  if (!ctx.roomTokens.has(sessionId) && !ctx.store.exists(resolvedSessionId)) {
     ws.send(JSON.stringify({ type: "error", error: "session not found" }));
     ws.close(1008, "session not found");
     return;
   }
 
-  const room = getRoom(ctx, sessionId);
+  const isGuest = ctx.roomTokens.has(sessionId);
+  const room = getRoom(ctx, resolvedSessionId);
   if (room.sockets.size >= 2 && !ctx.license().active) {
     ws.send(JSON.stringify({ type: "room-locked", error: "The host needs termcoder Pro to host more than one guest." }));
     ws.close(1008, "host needs termcoder Pro");
@@ -1166,6 +1174,7 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
       peerId,
       participants: [...room.names.values()],
       peers: roomPeerList(room),
+      joinToken: room.joinToken,
     }),
   );
   roomPresence(room);
@@ -1185,6 +1194,10 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
       msg = JSON.parse(raw.toString());
     } catch {
       ws.send(JSON.stringify({ type: "error", error: "invalid JSON message" }));
+      return;
+    }
+    if (isGuest && msg.type !== "chat" && msg.type !== "signal") {
+      ws.send(JSON.stringify({ type: "error", error: "Guests are observers and can't control the session." }));
       return;
     }
     if (msg.type === "prompt" && typeof msg.text === "string") {
@@ -1224,7 +1237,8 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
     if (room.sockets.size === 0) {
       // Last participant left — abort any run and drop the room.
       room.controller?.abort();
-      ctx.rooms.delete(sessionId);
+      ctx.rooms.delete(resolvedSessionId);
+      ctx.roomTokens.delete(room.joinToken);
     } else {
       roomPresence(room);
     }

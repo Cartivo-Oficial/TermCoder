@@ -623,4 +623,133 @@ describe("server", () => {
     ws3.close();
     expect(type).toBe("room-welcome");
   });
+
+  it("lets a guest join by room token without knowing the session id", async () => {
+    const record = (await (
+      await fetch(`${base()}/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cwd: dir }) })
+    ).json()) as { id: string };
+
+    const ws1 = new WebSocket(`ws://localhost:${port}/sessions/${record.id}/stream?name=Host`);
+    const welcome = await new Promise<Record<string, unknown>>((r) =>
+      ws1.on("message", (raw) => { const m = JSON.parse(raw.toString()); if (m.type === "room-welcome") r(m); }));
+    const token = welcome.joinToken as string;
+    expect(token).toBeTruthy();
+    expect(token).not.toBe(record.id);
+
+    const ws2 = new WebSocket(`ws://localhost:${port}/sessions/${token}/stream?name=Guest`);
+    const type = await new Promise<string>((r) => ws2.on("message", (raw) => r(JSON.parse(raw.toString()).type as string)));
+    ws1.close();
+    ws2.close();
+    expect(type).toBe("room-welcome");
+  });
+
+  it("rejects a bogus room id instead of allocating a phantom room", async () => {
+    const record = (await (
+      await fetch(`${base()}/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cwd: dir }) })
+    ).json()) as { id: string };
+    const ws1 = new WebSocket(`ws://localhost:${port}/sessions/${record.id}/stream?name=Host`);
+    await new Promise<void>((r) => ws1.on("message", (raw) => { if (JSON.parse(raw.toString()).type === "room-welcome") r(); }));
+
+    const before = (await (await fetch(`${base()}/room/addresses`)).json()) as { rooms: number };
+    expect(before.rooms).toBe(1);
+
+    const ws2 = new WebSocket(`ws://localhost:${port}/sessions/deadbeefdeadbeefdeadbeef01/stream?name=Nobody`);
+    const outcome = await new Promise<{ event?: Record<string, unknown>; code?: number }>((resolve) => {
+      ws2.on("message", (raw) => resolve({ event: JSON.parse(raw.toString()) }));
+      ws2.on("close", (code) => resolve({ code }));
+    });
+    ws1.close();
+    ws2.close();
+
+    if (outcome.event) {
+      expect(outcome.event.type).toBe("error");
+    } else {
+      expect(outcome.code).toBe(1008);
+    }
+
+    const after = (await (await fetch(`${base()}/room/addresses`)).json()) as { rooms: number };
+    expect(after.rooms).toBe(1);
+  });
+
+  it("rejects prompt, background, stop, and permission-decision from a guest, but still lets a guest chat", async () => {
+    const record = (await (
+      await fetch(`${base()}/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cwd: dir }) })
+    ).json()) as { id: string };
+
+    const ws1 = new WebSocket(`ws://localhost:${port}/sessions/${record.id}/stream?name=Host`);
+    const welcome = await new Promise<Record<string, unknown>>((r) =>
+      ws1.on("message", (raw) => { const m = JSON.parse(raw.toString()); if (m.type === "room-welcome") r(m); }));
+    const token = welcome.joinToken as string;
+
+    const hostSeen: Array<{ type: string }> = [];
+    ws1.on("message", (raw) => hostSeen.push(JSON.parse(raw.toString())));
+
+    const ws2 = new WebSocket(`ws://localhost:${port}/sessions/${token}/stream?name=Guest`);
+    await new Promise<void>((r) => ws2.on("message", (raw) => { if (JSON.parse(raw.toString()).type === "room-welcome") r(); }));
+
+    const guestSeen: Array<{ type: string; error?: string; from?: string; text?: string }> = [];
+    const nextGuestEvent = () => new Promise<{ type: string; error?: string; from?: string; text?: string }>((r) =>
+      ws2.once("message", (raw) => { const e = JSON.parse(raw.toString()); guestSeen.push(e); r(e); }));
+
+    ws2.send(JSON.stringify({ type: "prompt", text: "rm -rf /" }));
+    const promptRejection = await nextGuestEvent();
+    expect(promptRejection.type).toBe("error");
+
+    ws2.send(JSON.stringify({ type: "background", goal: "do something" }));
+    const backgroundRejection = await nextGuestEvent();
+    expect(backgroundRejection.type).toBe("error");
+
+    ws2.send(JSON.stringify({ type: "stop" }));
+    const stopRejection = await nextGuestEvent();
+    expect(stopRejection.type).toBe("error");
+
+    ws2.send(JSON.stringify({ type: "permission-decision", id: "fake-id", decision: "allow" }));
+    const decisionRejection = await nextGuestEvent();
+    expect(decisionRejection.type).toBe("error");
+
+    ws2.send(JSON.stringify({ type: "model", model: "anthropic/claude-sonnet-5" }));
+    const unknownRejection = await nextGuestEvent();
+    expect(unknownRejection.type).toBe("error");
+
+    ws2.send(JSON.stringify({ type: "chat", text: "hi" }));
+    const chatEcho = await nextGuestEvent();
+    expect(chatEcho.type).toBe("room-chat");
+    expect(chatEcho.from).toBe("Guest");
+    expect(chatEcho.text).toBe("hi");
+
+    ws1.close();
+    ws2.close();
+
+    expect(hostSeen.some((e) => e.type === "room-prompt")).toBe(false);
+  });
+
+  it("does not reject a host's own prompt with the guests-are-observers error", async () => {
+    const record = (await (
+      await fetch(`${base()}/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cwd: dir }) })
+    ).json()) as { id: string };
+
+    const ws1 = new WebSocket(`ws://localhost:${port}/sessions/${record.id}/stream?name=Host`);
+    await new Promise<void>((r) => ws1.on("message", (raw) => { if (JSON.parse(raw.toString()).type === "room-welcome") r(); }));
+
+    const events: Array<{ type: string; error?: string }> = [];
+    const done = new Promise<void>((resolve, reject) => {
+      ws1.on("message", (raw) => {
+        const e = JSON.parse(raw.toString()) as { type: string; id?: string; error?: string };
+        events.push(e);
+        if (e.type === "permission-request") {
+          ws1.send(JSON.stringify({ type: "permission-decision", id: e.id, decision: "allow" }));
+        } else if (e.type === "done") {
+          resolve();
+        } else if (e.type === "error") {
+          reject(new Error(e.error));
+        }
+      });
+    });
+
+    ws1.send(JSON.stringify({ type: "prompt", text: "create file" }));
+    await done;
+    ws1.close();
+
+    expect(events.some((e) => e.error === "Guests are observers and can't control the session.")).toBe(false);
+  });
 });
