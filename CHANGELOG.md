@@ -2,6 +2,37 @@
 
 New releases and improvements to TermCoder.
 
+## 0.11.0
+2026-07-19
+
+### Security
+- **Fixed a critical local-network exposure.** The built-in server listened on every network interface with no authentication, so anyone on the same network — a café, an office, shared Wi-Fi — could list your sessions, connect as the host and drive your agent: run prompts, approve permission requests, stop work. Your memory was readable the same way. The server now listens on localhost only. **Versions 0.10.0 and earlier are affected; update if you ever run TermCoder on a network you do not control.**
+- Hosting a Live Room now opens a separate, room-only listener on the network. It serves the room and nothing else — every other route is unreachable from it, and joining requires a room invite token. Your sessions, memory and configuration are never reachable from the network at all.
+- Guests in a Live Room are observers, enforced on the server: they can watch and chat, but cannot prompt the agent, approve permissions, or stop a run.
+- Room invites now carry a rotatable join token instead of the session id, so an invite no longer leaks the session it points at.
+- The `termcoder serve` command keeps a `HOST` override for headless use, and now warns plainly when it exposes an unauthenticated server on the network.
+
+### Core
+- The model's reasoning is now emitted as it streams, behind a reasoning toggle.
+- Added a settings store that merges key by key, so syncing settings from another device no longer clobbers unrelated keys.
+- Synced MCP connector references resolve against the local catalogue only, so a synced setting can never point your machine at an unvetted server.
+
+### CLI
+- The model's reasoning renders as it streams, in a dimmed collapsible thinking panel.
+- The status bar shows the active model and agent, and stays on one line at 80 columns.
+
+### Desktop
+- Terminals now tile side by side in a grid, with a toggle to switch back to tabs.
+- Live Rooms were rebuilt as a real call UI: a video stage instead of a modal, an explicit Join so opening a room no longer grabs your microphone, and an in-call indicator.
+- You can join a room from an invite link alone, without a local session.
+- Opening a new session from the navbar returns you to the chat instead of stranding you on the terminal.
+
+### Website
+- Rebuilt the site: new landing, pricing, features, study, docs, install and download pages, a session viewer, and a changelog generated from this file.
+- The dashboard gained a real settings panel — theme, model and reasoning — that syncs to your desktop, plus favourite models and a licence panel.
+- You can enable a vetted MCP connector from the dashboard.
+- **Get Pro** is wired to checkout, and a completed purchase issues a signed licence key.
+
 ## 0.10.0
 2026-07-14
 

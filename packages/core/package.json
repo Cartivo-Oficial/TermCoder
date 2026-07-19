@@ -1,6 +1,6 @@
 {
   "name": "@termcoder/core",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Headless engine for termcoder: agent loop, tools, permissions, sessions, MCP/LSP, providers.",
   "license": "MIT",
   "author": "Eduardo <eduardo.wankax@gmail.com>",
