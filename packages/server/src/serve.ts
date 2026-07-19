@@ -9,6 +9,7 @@ import {
   loadPlugins,
   ToolRegistry,
 } from "@termcoder/core";
+import { apiHost, isLanHost } from "./host";
 import { createServer } from "./server";
 
 const port = Number(process.env.PORT ?? 4096);
@@ -58,7 +59,12 @@ async function main() {
     plugins: plugins.plugins,
   };
   const server = createServer({ config, registry, cwd, webDir, status });
-  server.listen(port, () => {
+  server.listen(port, apiHost(), () => {
+    if (isLanHost(apiHost())) {
+      process.stderr.write(
+        `WARNING: HOST=${apiHost()} exposes the termcoder server on the network with NO authentication. Anyone who can reach this host can control your sessions. Use only on a trusted network.\n`,
+      );
+    }
     process.stdout.write(`termcoder server listening on http://localhost:${port}\n`);
     if (webDir) {
       process.stdout.write(`  🌐 Web app: open http://localhost:${port} in your browser\n`);
