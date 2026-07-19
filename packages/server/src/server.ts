@@ -178,12 +178,16 @@ export function createServer(deps: ServerDeps = {}): Server {
 function ensureRoomListener(ctx: Ctx): Promise<number> {
   if (ctx.roomListener) return Promise.resolve(ctx.roomListener.port);
   if (ctx.roomListenerPending) return ctx.roomListenerPending;
-  ctx.roomListenerPending = new Promise<number>((resolve) => {
+  ctx.roomListenerPending = new Promise<number>((resolve, reject) => {
     const server = createHttpServer((req, res) => {
       handleHttp(req, res, ctx, true).catch((err) => sendJson(res, 500, { error: String(err) }));
     });
     const wss = new WebSocketServer({ server });
     wss.on("connection", (ws, req) => handleSocket(ws, req, ctx, true));
+    server.on("error", (err) => {
+      ctx.roomListenerPending = null;
+      reject(err);
+    });
     server.listen(0, "0.0.0.0", () => {
       const addr = server.address();
       const p = typeof addr === "object" && addr ? addr.port : 0;
