@@ -68,7 +68,7 @@ async function startServer(): Promise<void> {
     cwd,
     status: { mcp: mcp.servers, lsp: lsp.servers, plugins: [...plugins.plugins, ...customStatus] },
   });
-  await new Promise<void>((resolve) => server.listen(0, resolve));
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
   serverPort = typeof address === "object" && address ? address.port : 0;
 

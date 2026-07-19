@@ -9,6 +9,7 @@ import {
   loadPlugins,
   ToolRegistry,
 } from "@termcoder/core";
+import { apiHost } from "./host";
 import { createServer } from "./server";
 
 const port = Number(process.env.PORT ?? 4096);
@@ -58,7 +59,7 @@ async function main() {
     plugins: plugins.plugins,
   };
   const server = createServer({ config, registry, cwd, webDir, status });
-  server.listen(port, () => {
+  server.listen(port, apiHost(), () => {
     process.stdout.write(`termcoder server listening on http://localhost:${port}\n`);
     if (webDir) {
       process.stdout.write(`  🌐 Web app: open http://localhost:${port} in your browser\n`);
