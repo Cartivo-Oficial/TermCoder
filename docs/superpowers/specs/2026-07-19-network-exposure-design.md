@@ -60,8 +60,9 @@ Port: OS‑assigned random free port (bind `0.0.0.0:0`), read back after `listen
 
 ### Lifecycle
 
-- First `POST` that creates a room (host opens the Live Room) → ensure the room listener is up; capture its port; hand that port to the invite builder.
-- Last room removed → close the room listener; LAN surface returns to zero.
+- **Open (opt‑in):** the host opening the Live Room panel fetches `GET /room/addresses`, which lazily and idempotently starts the room listener (`ensureRoomListener`, guarded by a pending‑promise so concurrent fetches don't double‑bind), captures its port, and returns it for the invite builder.
+- **Close:** the room listener is torn down when the API server closes (app quit), via an `http.on("close")` hook that also clears `ctx.roomListener`.
+- **Why not "close when the last room ends":** a "room" (`ctx.rooms` entry) is created for *every* session's WebSocket by `getRoom`, not only when hosting — so `ctx.rooms` is essentially never empty while the app is open with any session. Tying the listener's close to `ctx.rooms.size === 0` would therefore almost never fire and could close the listener during a transient empty state mid‑session. The accepted simplification is app‑quit teardown. This has **no security impact**: with `roomTokens` empty the listener rejects every WS and 404s every non‑static route, so the only residual LAN surface is the *public* built SPA bundle (`dist-web` = `index.html` + hashed assets, no secrets, no owner API, no host WebSocket). Tightening the surface to return to exactly zero when the host closes the Live Room panel requires an explicit host‑intent arm/disarm signal (a client teardown on panel close plus a matching server endpoint) and is a logged follow‑on, not part of the critical fix.
 - The listener holds no independent state — it reads/writes the shared `ctx`, so presence/chat/signal flow identically whether a socket arrived via the API listener (host, loopback) or the room listener (guest, LAN).
 
 ## What this gives us
@@ -74,6 +75,7 @@ Port: OS‑assigned random free port (bind `0.0.0.0:0`), read back after `listen
 ## Explicitly out of scope (follow‑ons, logged not built)
 
 - **Owner token on the localhost API.** Owner endpoints live only on `127.0.0.1`; a loopback‑scoped bearer token to defend against hostile *local* processes is a sensible later hardening, not part of the critical fix. Keeping it out keeps this change tight.
+- **CLI `HOST` opt‑in has no auth (by design, with a warning).** The standalone `serve` CLI honors a `HOST` env override (default `127.0.0.1`) for headless/LAN use. When `HOST` is non‑loopback, the server prints a stderr warning that the *unauthenticated* API is network‑exposed. Adding auth to that path is the same owner‑token follow‑on above; until then it is a conscious operator opt‑in and is strictly better than the pre‑change behavior (which always bound `0.0.0.0`). The desktop app has no such override — it is hardcoded to loopback.
 - `GET /memory` / `DELETE /sessions` authorization semantics beyond removing LAN reachability.
 - HTTPS/TLS for the room listener (invite stays `http://` on the LAN; `secure?` flag already threaded for a future TLS story).
 
