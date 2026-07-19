@@ -6,7 +6,7 @@ import type { TermTool } from "../tools/types";
 import { parseFrontmatter } from "../util/frontmatter";
 
 export type AgentMode = "primary" | "subagent" | "all";
-type PermMap = Partial<Record<"bash" | "write" | "edit" | "mcp", PermissionRule>>;
+type PermMap = Partial<Record<"bash" | "write" | "edit" | "mcp" | "network", PermissionRule>>;
 
 export interface AgentDef {
   name: string;
@@ -22,7 +22,7 @@ export interface AgentDef {
   builtin?: boolean;
 }
 
-const READONLY: PermMap = { write: "deny", edit: "deny", bash: "deny", mcp: "deny" };
+const READONLY: PermMap = { write: "deny", edit: "deny", bash: "deny", mcp: "deny", network: "deny" };
 
 export const BUILTIN_AGENTS: AgentDef[] = [
   { name: "build", description: "Full access — edits files and runs commands.", mode: "primary", builtin: true },

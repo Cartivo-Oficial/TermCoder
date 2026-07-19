@@ -1,6 +1,6 @@
 import type { Config, PermissionMode, PermissionRule } from "../config/config";
 
-export type PermissionKind = "bash" | "write" | "edit" | "mcp";
+export type PermissionKind = "bash" | "write" | "edit" | "mcp" | "network";
 
 export type PermissionMap = Partial<Record<PermissionKind, PermissionRule>>;
 

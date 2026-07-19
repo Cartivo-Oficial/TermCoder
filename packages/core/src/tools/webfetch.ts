@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { assertFetchAllowed } from "../util/net";
 import { defineTool } from "./types";
 
 const MAX_CHARS = 8000;
@@ -27,7 +28,15 @@ export const webfetchTool = defineTool({
     url: z.string().url().describe("The URL to fetch (http or https)."),
   }),
   readOnly: true,
+  permissionKind: "network",
+  target(args) {
+    return args.url;
+  },
+  describe(args) {
+    return { title: `Fetch ${args.url}` };
+  },
   async run(args) {
+    await assertFetchAllowed(args.url);
     const res = await fetch(args.url, { headers: { "user-agent": "termcoder/0.1" } });
     if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
     const contentType = res.headers.get("content-type") ?? "";

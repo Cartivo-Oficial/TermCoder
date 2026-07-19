@@ -226,7 +226,7 @@ function agentMarkdown(body: Record<string, unknown>): string {
   lines.push(`mode: ${body.mode === "primary" || body.mode === "subagent" ? body.mode : "all"}`);
   if (typeof body.model === "string" && body.model.trim()) lines.push(`model: ${body.model.trim()}`);
   if (body.readOnly) {
-    lines.push("permission:", "  write: deny", "  edit: deny", "  bash: deny", "  mcp: deny");
+    lines.push("permission:", "  write: deny", "  edit: deny", "  bash: deny", "  mcp: deny", "  network: deny");
   } else if (Array.isArray(body.editPaths)) {
     const globs = (body.editPaths as unknown[])
       .filter((g): g is string => typeof g === "string" && g.trim() !== "")
