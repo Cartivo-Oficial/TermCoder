@@ -140,6 +140,8 @@ interface Ctx {
   rooms: Map<string, Room>;
   roomTokens: Map<string, string>;
   license: () => LicenseInfo;
+  roomListener?: { server: Server; wss: WebSocketServer; port: number } | null;
+  roomListenerPending?: Promise<number> | null;
 }
 
 export function createServer(deps: ServerDeps = {}): Server {
@@ -163,7 +165,34 @@ export function createServer(deps: ServerDeps = {}): Server {
   const wss = new WebSocketServer({ server: http });
   wss.on("connection", (ws, req) => handleSocket(ws, req, ctx));
 
+  http.on("close", () => {
+    ctx.roomListener?.wss.close();
+    ctx.roomListener?.server.close();
+    ctx.roomListener = null;
+    ctx.roomListenerPending = null;
+  });
+
   return http;
+}
+
+function ensureRoomListener(ctx: Ctx): Promise<number> {
+  if (ctx.roomListener) return Promise.resolve(ctx.roomListener.port);
+  if (ctx.roomListenerPending) return ctx.roomListenerPending;
+  ctx.roomListenerPending = new Promise<number>((resolve) => {
+    const server = createHttpServer((req, res) => {
+      handleHttp(req, res, ctx, true).catch((err) => sendJson(res, 500, { error: String(err) }));
+    });
+    const wss = new WebSocketServer({ server });
+    wss.on("connection", (ws, req) => handleSocket(ws, req, ctx, true));
+    server.listen(0, "0.0.0.0", () => {
+      const addr = server.address();
+      const p = typeof addr === "object" && addr ? addr.port : 0;
+      ctx.roomListener = { server, wss, port: p };
+      ctx.roomListenerPending = null;
+      resolve(p);
+    });
+  });
+  return ctx.roomListenerPending;
 }
 
 const CORS = {
@@ -318,13 +347,30 @@ async function withGitHub(
   }
 }
 
-async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): Promise<void> {
+async function handleHttp(
+  req: IncomingMessage,
+  res: ServerResponse,
+  ctx: Ctx,
+  lanOnly = false,
+): Promise<void> {
   if (req.method === "OPTIONS") {
     res.writeHead(204, CORS);
     return void res.end();
   }
   const url = new URL(req.url ?? "/", "http://localhost");
   const parts = url.pathname.split("/").filter(Boolean);
+
+  if (lanOnly) {
+    if (
+      (req.method === "GET" || req.method === "HEAD") &&
+      ctx.webDir &&
+      (url.pathname === "/" || extname(url.pathname) !== "") &&
+      serveStatic(res, ctx.webDir, url.pathname)
+    ) {
+      return;
+    }
+    return sendJson(res, 404, { error: "not found" });
+  }
 
   if (req.method === "POST" && parts.length === 1 && parts[0] === "sessions") {
     const body = await readJson(req);
@@ -720,9 +766,8 @@ async function handleHttp(req: IncomingMessage, res: ServerResponse, ctx: Ctx): 
   }
 
   if (req.method === "GET" && parts.length === 2 && parts[0] === "room" && parts[1] === "addresses") {
-    const host = typeof req.headers.host === "string" ? req.headers.host : "";
-    const port = host.includes(":") ? host.split(":").pop() ?? "" : "";
-    return sendJson(res, 200, { addresses: lanAddresses(), port, rooms: ctx.rooms.size });
+    const roomPort = await ensureRoomListener(ctx);
+    return sendJson(res, 200, { addresses: lanAddresses(), port: roomPort, rooms: ctx.rooms.size });
   }
 
   if (req.method === "POST" && parts.length === 1 && parts[0] === "mcp") {
@@ -1138,7 +1183,7 @@ async function roomRunBackground(ctx: Ctx, room: Room, goal: string): Promise<vo
   }
 }
 
-function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
+function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx, lanOnly = false): void {
   const url = new URL(req.url ?? "/", "http://localhost");
   const parts = url.pathname.split("/").filter(Boolean);
   if (parts.length !== 3 || parts[0] !== "sessions" || parts[2] !== "stream") {
@@ -1146,6 +1191,10 @@ function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx): void {
     return;
   }
   const sessionId = parts[1]!;
+  if (lanOnly && !ctx.roomTokens.has(sessionId)) {
+    ws.close(1008, "room token required");
+    return;
+  }
   const resolvedSessionId = ctx.roomTokens.get(sessionId) ?? sessionId;
   if (!ctx.roomTokens.has(sessionId) && !ctx.store.exists(resolvedSessionId)) {
     ws.send(JSON.stringify({ type: "error", error: "session not found" }));

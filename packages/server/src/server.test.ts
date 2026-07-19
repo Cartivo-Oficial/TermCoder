@@ -51,18 +51,22 @@ describe("server", () => {
   let config: Config;
   let server: ReturnType<typeof createServer>;
   let port: number;
+  let webDir: string;
 
   beforeEach(async () => {
     dir = mkdtempSync(join(tmpdir(), "tc-server-"));
     store = new SessionStore(join(dir, "sessions"));
     config = loadConfig({ cwd: dir, configDir: join(dir, "cfg"), env: {} });
     config.permission.write = "ask";
+    webDir = mkdtempSync(join(tmpdir(), "tc-server-web-"));
+    writeFileSync(join(webDir, "index.html"), "<!doctype html><div id=root></div>");
     server = createServer({
       config,
       store,
       registry: new ToolRegistry(),
       runner: scriptedRunner(),
       cwd: dir,
+      webDir,
       license: () => ({ active: true, tier: "pro" }),
     });
     await new Promise<void>((resolve) => server.listen(0, resolve));
@@ -72,6 +76,7 @@ describe("server", () => {
   afterEach(async () => {
     await new Promise<void>((resolve) => server.close(() => resolve()));
     rmSync(dir, { recursive: true, force: true });
+    rmSync(webDir, { recursive: true, force: true });
   });
 
   const base = () => `http://localhost:${port}`;
@@ -365,8 +370,9 @@ describe("server", () => {
   it("reports LAN addresses for sharing a room", async () => {
     const res = await fetch(`${base()}/room/addresses`);
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { addresses: string[]; port: string };
+    const body = (await res.json()) as { addresses: string[]; port: number };
     expect(Array.isArray(body.addresses)).toBe(true);
+    expect(body.port).toBeGreaterThan(0);
   });
 
   it("relays a WebRTC signal peer-to-peer between two room members", async () => {
@@ -751,5 +757,87 @@ describe("server", () => {
     ws1.close();
 
     expect(events.some((e) => e.error === "Guests are observers and can't control the session.")).toBe(false);
+  });
+
+  describe("room-only LAN listener", () => {
+    let mintedHosts: WebSocket[] = [];
+
+    afterEach(() => {
+      for (const host of mintedHosts) host.close();
+      mintedHosts = [];
+    });
+
+    async function openLan(): Promise<number> {
+      const res = await fetch(`${base()}/room/addresses`);
+      const body = (await res.json()) as { port: number };
+      return body.port;
+    }
+
+    async function mintToken(): Promise<string> {
+      const record = (await (
+        await fetch(`${base()}/sessions`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ cwd: dir }),
+        })
+      ).json()) as { id: string };
+      const host = new WebSocket(`ws://localhost:${port}/sessions/${record.id}/stream?name=Host`);
+      const token = await new Promise<string>((resolve, reject) => {
+        host.on("message", (raw) => {
+          const msg = JSON.parse(raw.toString());
+          if (msg.type === "room-welcome") resolve(String(msg.joinToken));
+        });
+        host.on("error", reject);
+      });
+      mintedHosts.push(host);
+      return token;
+    }
+
+    it("opens on a port distinct from the API listener", async () => {
+      const lanPort = await openLan();
+      expect(lanPort).toBeGreaterThan(0);
+      expect(lanPort).not.toBe(port);
+    });
+
+    it("serves the static app but 404s the owner API", async () => {
+      const lanPort = await openLan();
+      expect((await fetch(`http://localhost:${lanPort}/`)).status).toBe(200);
+      expect((await fetch(`http://localhost:${lanPort}/sessions`)).status).toBe(404);
+      expect((await fetch(`http://localhost:${lanPort}/memory`)).status).toBe(404);
+      expect(
+        (await fetch(`http://localhost:${lanPort}/sessions`, { method: "DELETE" })).status,
+      ).toBe(404);
+    });
+
+    it("rejects a WS opened with a real session id, accepts a valid room token", async () => {
+      const lanPort = await openLan();
+      const record = (await (
+        await fetch(`${base()}/sessions`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ cwd: dir }),
+        })
+      ).json()) as { id: string };
+
+      const impostor = new WebSocket(`ws://localhost:${lanPort}/sessions/${record.id}/stream?name=Mallory`);
+      const rejected = await new Promise<boolean>((resolve) => {
+        impostor.on("close", (code) => resolve(code === 1008));
+        impostor.on("open", () => impostor.send("{}"));
+      });
+      expect(rejected).toBe(true);
+
+      const token = await mintToken();
+      const guest = new WebSocket(`ws://localhost:${lanPort}/sessions/${token}/stream?name=Guest`);
+      const welcomed = await new Promise<boolean>((resolve, reject) => {
+        guest.on("message", (raw) => {
+          const msg = JSON.parse(raw.toString());
+          if (msg.type === "room-welcome") resolve(true);
+        });
+        guest.on("close", () => resolve(false));
+        guest.on("error", reject);
+      });
+      expect(welcomed).toBe(true);
+      guest.close();
+    });
   });
 });
