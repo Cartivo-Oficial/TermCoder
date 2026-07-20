@@ -1,9 +1,12 @@
 import type { Schema } from "ai";
 import type { z } from "zod";
 import type { PermissionKind } from "../permission/permission";
+import type { SessionEvent } from "../session/session";
 
 export interface ToolContext {
   cwd: string;
+  toolCallId?: string;
+  emit?: (event: SessionEvent) => void;
 }
 
 export interface ToolResult {
