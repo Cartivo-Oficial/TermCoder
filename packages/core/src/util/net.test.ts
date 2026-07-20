@@ -27,6 +27,21 @@ describe("isBlockedHost", () => {
   ])("allows %s", (ip) => {
     expect(isBlockedHost(ip)).toBe(false);
   });
+
+  it.each([
+    "::ffff:7f00:1",
+    "::ffff:a9fe:a9fe",
+    "::ffff:a00:1",
+    "::ffff:c0a8:1",
+    "::ffff:127.0.0.1",
+    "::ffff:10.0.0.1",
+  ])("blocks mapped address %s", (ip) => {
+    expect(isBlockedHost(ip)).toBe(true);
+  });
+
+  it.each(["8.8.8.8", "1.1.1.1"])("still allows public %s", (ip) => {
+    expect(isBlockedHost(ip)).toBe(false);
+  });
 });
 
 describe("assertFetchAllowed", () => {
@@ -52,5 +67,9 @@ describe("assertFetchAllowed", () => {
     await expect(assertFetchAllowed("http://169.254.169.254/latest/meta-data/")).rejects.toThrow(
       /private or loopback/,
     );
+  });
+
+  it("rejects a hostname that cannot be resolved", async () => {
+    await expect(assertFetchAllowed("http://x.invalid/")).rejects.toThrow();
   });
 });

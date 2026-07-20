@@ -36,15 +36,24 @@ export const webfetchTool = defineTool({
     return { title: `Fetch ${args.url}` };
   },
   async run(args) {
-    await assertFetchAllowed(args.url);
-    const res = await fetch(args.url, { headers: { "user-agent": "termcoder/0.1" } });
+    let url = args.url;
+    let res: Response;
+    for (let hop = 0; ; hop++) {
+      await assertFetchAllowed(url);
+      res = await fetch(url, { headers: { "user-agent": "termcoder/0.1" }, redirect: "manual" });
+      if (res.status < 300 || res.status >= 400) break;
+      const location = res.headers.get("location");
+      if (!location) break;
+      if (hop >= 5) throw new Error("Too many redirects.");
+      url = new URL(location, url).toString();
+    }
     if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
     const contentType = res.headers.get("content-type") ?? "";
     const body = await res.text();
     const text = contentType.includes("html") ? htmlToText(body) : body;
     return {
       output: text.length > MAX_CHARS ? `${text.slice(0, MAX_CHARS)}\n…(truncated)` : text,
-      meta: { url: args.url, contentType },
+      meta: { url, contentType },
     };
   },
 });

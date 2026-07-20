@@ -1,10 +1,29 @@
 import { lookup } from "node:dns/promises";
 
+function mappedToDotted(rest: string): string | null {
+  if (rest.includes(".")) return rest;
+  const groups = rest.split(":").filter((g) => g !== "");
+  if (groups.length === 0 || groups.length > 2) return null;
+  const parsed = groups.map((g) => Number.parseInt(g, 16));
+  if (parsed.some((n) => !Number.isInteger(n) || n < 0 || n > 0xffff)) return null;
+  const high = parsed.length === 2 ? parsed[0]! : 0;
+  const low = parsed[parsed.length - 1]!;
+  const value = high * 65536 + low;
+  return [(value >>> 24) & 255, (value >>> 16) & 255, (value >>> 8) & 255, value & 255].join(".");
+}
+
 export function isBlockedHost(ip: string): boolean {
   const addr = ip.trim().toLowerCase().replace(/^\[|\]$/g, "");
   if (addr === "::1" || addr === "::") return true;
   if (addr.startsWith("fc") || addr.startsWith("fd") || addr.startsWith("fe80")) return true;
-  const v4 = addr.startsWith("::ffff:") ? addr.slice(7) : addr;
+  let v4: string;
+  if (addr.startsWith("::ffff:")) {
+    const dotted = mappedToDotted(addr.slice(7));
+    if (dotted === null) return true;
+    v4 = dotted;
+  } else {
+    v4 = addr;
+  }
   const parts = v4.split(".");
   if (parts.length !== 4) return false;
   const n = parts.map((p) => Number(p));
@@ -36,7 +55,7 @@ export async function assertFetchAllowed(url: string): Promise<void> {
   try {
     resolved = await lookup(host, { all: true });
   } catch {
-    return;
+    throw new Error(`Could not verify the address for: ${parsed.hostname}`);
   }
   for (const entry of resolved) {
     if (isBlockedHost(entry.address)) {
