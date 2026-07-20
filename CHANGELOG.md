@@ -10,6 +10,7 @@ New releases and improvements to TermCoder.
 - **Fetching a URL and searching the web now ask for permission.** Both tools run under a new `network` permission, which you can set per project or per agent. This is a visible change: the first web search or fetch in a session now prompts, and you can allow it for the rest of the session. The prompt shows the address being contacted.
 - Both web tools now refuse addresses on your own machine or local network, and re-check after each redirect.
 - **A tool that declares a permission is now always checked.** Read-only tools previously skipped the permission check entirely — which is why the two changes above needed this fix to take effect at all.
+- **Auto-approve no longer covers network access.** Turning on "auto-approve" still runs file and command actions without asking, but a URL fetch or web search always asks and shows its destination — including during autonomous runs, where it matters most.
 - Read-only agents now deny network access along with writing, editing and shell commands.
 
 Updating is recommended if you open projects you did not write yourself, or run agents over untrusted input such as fetched web pages or issue text.
