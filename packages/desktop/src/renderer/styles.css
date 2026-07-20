@@ -991,6 +991,13 @@ button.chip { cursor: pointer; }
 .term-deck-body.grid .term-pane-cell { position: relative; inset: auto; min-width: 0; min-height: 0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
 .term-deck-body.grid .term-pane-cell.focused { border-color: var(--accent); }
 .term-deck-body.grid .term-pane { position: absolute; inset: 0; }
+.term-grid-gutter { position: absolute; z-index: 5; background: transparent; }
+.term-grid-gutter.col { top: 0; bottom: 0; width: 10px; margin-left: -5px; cursor: col-resize; }
+.term-grid-gutter.row { left: 0; right: 0; height: 10px; margin-top: -5px; cursor: row-resize; }
+.term-grid-gutter::after { content: ""; position: absolute; background: var(--border); opacity: 0; transition: opacity 0.12s; }
+.term-grid-gutter.col::after { top: 0; bottom: 0; left: 4px; width: 2px; }
+.term-grid-gutter.row::after { left: 0; right: 0; top: 4px; height: 2px; }
+.term-grid-gutter:hover::after, .term-grid-gutter:active::after { opacity: 1; background: var(--accent); }
 .term-bar { display: flex; align-items: center; gap: 6px; padding: 7px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .term-chip { font-family: var(--mono); font-size: 11px; color: var(--muted); background: var(--elev); border: 1px solid var(--border); border-radius: 7px; padding: 4px 9px; cursor: pointer; }
 .term-chip:hover { color: var(--text); border-color: var(--accent); }

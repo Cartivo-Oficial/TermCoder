@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { TerminalPane } from "./TerminalPane";
-import { gridColumns } from "./terminal/grid";
+import { TerminalGrid } from "./TerminalGrid";
 
 export function TerminalDeck({
   cwd,
@@ -46,6 +46,15 @@ export function TerminalDeck({
     });
   };
 
+  const renderPane = (id: number) => (
+    <TerminalPane
+      id={id}
+      cwd={cwd}
+      hidden={layout === "grid" ? hidden : hidden || id !== activeId}
+      themeKey={themeKey}
+    />
+  );
+
   return (
     <div className={`term-deck ${hidden ? "hidden" : ""}`}>
       <div className="term-tabs">
@@ -77,25 +86,22 @@ export function TerminalDeck({
           {layout === "grid" ? "▭" : "▦"}
         </button>
       </div>
-      <div
-        className={`term-deck-body ${layout === "grid" ? "grid" : ""}`}
-        style={layout === "grid" ? { gridTemplateColumns: `repeat(${gridColumns(terminals.length)}, minmax(0, 1fr))` } : undefined}
-      >
-        {terminals.map((id) => (
-          <div
-            key={id}
-            className={`term-pane-cell ${layout === "grid" && id === activeId ? "focused" : ""}`}
-            onMouseDown={layout === "grid" ? () => setActiveId(id) : undefined}
-          >
-            <TerminalPane
-              id={id}
-              cwd={cwd}
-              hidden={layout === "grid" ? hidden : hidden || id !== activeId}
-              themeKey={themeKey}
-            />
-          </div>
-        ))}
-      </div>
+      {layout === "grid" ? (
+        <TerminalGrid
+          terminals={terminals}
+          activeId={activeId}
+          onActivate={setActiveId}
+          renderPane={renderPane}
+        />
+      ) : (
+        <div className="term-deck-body">
+          {terminals.map((id) => (
+            <div key={id} className="term-pane-cell">
+              {renderPane(id)}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
