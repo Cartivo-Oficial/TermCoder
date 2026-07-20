@@ -688,10 +688,11 @@ svg { display: block; }
 .room-view-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .room-view-head h3 { margin: 0; font-size: 15px; }
 .room-view-body { flex: 1; min-height: 0; display: flex; gap: 20px; padding: 18px 20px; overflow: hidden; }
-.room-view-main { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-y: auto; }
-.room-view-chat { width: 300px; flex-shrink: 0; display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--border); padding-left: 18px; }
-.room-view-chat .room-log { flex: 1; }
-.room-stage { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.room-stage-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.room-rail { width: 300px; flex-shrink: 0; display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--border); padding-left: 18px; }
+.room-rail .room-log { flex: 1; max-height: none; }
+.room-stage { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); grid-auto-rows: 1fr; gap: 10px; align-content: stretch; }
+.room-stage-empty { aspect-ratio: auto; }
 .room-tile { position: relative; aspect-ratio: 4 / 3; border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; background: var(--elev); display: flex; align-items: center; justify-content: center; transition: box-shadow .12s ease, border-color .12s ease; }
 .room-tile.speaking { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent); }
 .room-tile video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; }
@@ -700,6 +701,24 @@ svg { display: block; }
 .room-tile-dot { position: absolute; right: 8px; top: 8px; }
 .room-stage-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 18px; border: 1px dashed var(--border); border-radius: var(--r-lg); background: var(--elev); aspect-ratio: 4 / 3; }
 .room-control-bar { display: flex; gap: 8px; justify-content: center; margin: 14px 0; flex-wrap: wrap; }
+.room-controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; padding: 4px 0 2px; }
+.room-ctrl { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); background: var(--elev); border: 1px solid var(--border); border-radius: 999px; padding: 8px 14px; cursor: pointer; transition: border-color .12s ease, background .12s ease, opacity .12s ease; }
+.room-ctrl:hover:not(:disabled) { border-color: var(--accent); }
+.room-ctrl.primary { background: var(--accent); color: #0b0b0d; border-color: var(--accent); font-weight: 600; }
+.room-ctrl.active { border-color: var(--accent); color: var(--accent); }
+.room-ctrl.danger:hover:not(:disabled) { border-color: #e5484d; color: #e5484d; }
+.room-ctrl:disabled { opacity: 0.45; cursor: not-allowed; }
+.room-head-right { display: flex; align-items: center; gap: 10px; }
+.room-name-edit { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); background: transparent; border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+.room-name-edit:hover { border-color: var(--accent); color: var(--text); }
+.room-name-edit b { color: var(--text); font-weight: 600; }
+.room-name-input { width: 200px; }
+.room-invite { display: flex; flex-direction: column; gap: 6px; }
+.room-share-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 12.5px; color: #0b0b0d; background: var(--accent); border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-weight: 600; }
+.room-share-btn:hover { opacity: 0.92; }
+.room-invite-more { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--muted); background: transparent; border: none; cursor: pointer; padding: 2px 0; }
+.room-invite-more svg { transition: transform .12s ease; }
+.room-invite-more.open svg { transform: rotate(90deg); }
 
 .recipe-list { display: flex; flex-direction: column; gap: 8px; max-height: 46vh; overflow-y: auto; margin: 8px 0; }
 .recipe-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--elev); }
