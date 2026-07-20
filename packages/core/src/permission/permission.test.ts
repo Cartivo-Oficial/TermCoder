@@ -5,7 +5,7 @@ import {
   type PermissionDecision,
 } from "./permission";
 
-const baseConfig = { bash: "ask", write: "ask", edit: "ask", mcp: "ask" } as const;
+const baseConfig = { bash: "ask", write: "ask", edit: "ask", mcp: "ask", network: "ask" } as const;
 
 function req(
   kind: "bash" | "write" | "edit" | "mcp" = "write",

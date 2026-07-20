@@ -14,7 +14,7 @@ interface McpEntry {
   url?: string;
 }
 interface LiveConfig {
-  permission: { bash: PermMode; write: PermMode; edit: PermMode; mcp: PermMode };
+  permission: { bash: PermMode; write: PermMode; edit: PermMode; mcp: PermMode; network: PermMode };
   providers: Record<string, { hasKey: boolean; baseURL?: string }>;
   mcp: Record<string, McpEntry>;
   formatter?: boolean | Record<string, unknown>;
@@ -657,11 +657,12 @@ export function Settings(p: Props) {
     loadConfig();
   }
 
-  const PERM_KINDS: Array<["bash" | "write" | "edit" | "mcp", string]> = [
+  const PERM_KINDS: Array<["bash" | "write" | "edit" | "mcp" | "network", string]> = [
     ["write", "settings.perm.write"],
     ["edit", "settings.perm.edit"],
     ["bash", "settings.perm.bash"],
     ["mcp", "settings.perm.mcp"],
+    ["network", "settings.perm.network"],
   ];
   return (
     <div className="settings" onClick={p.onClose}>

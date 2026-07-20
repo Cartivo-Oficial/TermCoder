@@ -51,6 +51,7 @@ export const AgentSchema = z.object({
       write: PermissionRuleSchema,
       edit: PermissionRuleSchema,
       mcp: PermissionRuleSchema,
+      network: PermissionRuleSchema,
     })
     .partial()
     .optional(),
@@ -78,6 +79,7 @@ export const ConfigSchema = z.object({
       write: PermissionRuleSchema.default("ask"),
       edit: PermissionRuleSchema.default("ask"),
       mcp: PermissionRuleSchema.default("ask"),
+      network: PermissionRuleSchema.default("ask"),
     })
     .default({}),
   providers: z

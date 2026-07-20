@@ -1,6 +1,7 @@
+import { relative } from "node:path";
 import { z } from "zod";
-import { globSync } from "tinyglobby";
 import { gitignoreGlobs } from "../util/gitignore";
+import { workspaceGlob } from "../util/workspace-glob";
 import { defineTool } from "./types";
 
 const IGNORE = ["**/node_modules/**", "**/.git/**", "**/dist/**"];
@@ -15,12 +16,10 @@ export const globTool = defineTool({
   }),
   readOnly: true,
   async run(args, ctx) {
-    const matches = globSync(args.pattern, {
-      cwd: ctx.cwd,
+    const abs = workspaceGlob(args.pattern, ctx.cwd, {
       ignore: [...IGNORE, ...gitignoreGlobs(ctx.cwd)],
-      dot: false,
-      onlyFiles: true,
     });
+    const matches = abs.map((f) => relative(ctx.cwd, f).split("\\").join("/"));
     matches.sort();
     const shown = matches.slice(0, MAX_RESULTS);
     const suffix =

@@ -2,11 +2,12 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { AgentConfig, Config, PermissionRule } from "../config/config";
+import { resolvePermissionMode } from "../permission/permission";
 import type { TermTool } from "../tools/types";
 import { parseFrontmatter } from "../util/frontmatter";
 
 export type AgentMode = "primary" | "subagent" | "all";
-type PermMap = Partial<Record<"bash" | "write" | "edit" | "mcp", PermissionRule>>;
+type PermMap = Partial<Record<"bash" | "write" | "edit" | "mcp" | "network", PermissionRule>>;
 
 export interface AgentDef {
   name: string;
@@ -22,7 +23,7 @@ export interface AgentDef {
   builtin?: boolean;
 }
 
-const READONLY: PermMap = { write: "deny", edit: "deny", bash: "deny", mcp: "deny" };
+const READONLY: PermMap = { write: "deny", edit: "deny", bash: "deny", mcp: "deny", network: "deny" };
 
 export const BUILTIN_AGENTS: AgentDef[] = [
   { name: "build", description: "Full access — edits files and runs commands.", mode: "primary", builtin: true },
@@ -158,12 +159,15 @@ export function agentCanMutate(agent: AgentDef): boolean {
   );
 }
 
-export function agentToolFilter(agent: AgentDef): (t: TermTool) => boolean {
+export function agentToolFilter(agent: AgentDef, config?: Config): (t: TermTool) => boolean {
   const allow = agent.tools ? new Set(agent.tools) : null;
   const mutates = agentCanMutate(agent);
   return (t: TermTool) => {
     if (allow && !allow.has(t.name)) return false;
-    if (t.permissionKind && agent.permission?.[t.permissionKind] === "deny") return false;
+    if (t.permissionKind) {
+      const rule = agent.permission?.[t.permissionKind] ?? config?.permission?.[t.permissionKind];
+      if (resolvePermissionMode(rule, undefined) === "deny") return false;
+    }
     if (t.name === "task" && !mutates) return false;
     return true;
   };

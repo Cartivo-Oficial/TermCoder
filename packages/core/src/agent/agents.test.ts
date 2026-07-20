@@ -21,7 +21,10 @@ describe("agents", () => {
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
   const allowed = (name: string) =>
-    builtinTools.filter(agentToolFilter(resolveAgent({ config, cwd, env: {} }, name))).map((t) => t.name).sort();
+    builtinTools
+      .filter(agentToolFilter(resolveAgent({ config, cwd, env: {} }, name), config))
+      .map((t) => t.name)
+      .sort();
 
   it("includes the built-in agents", () => {
     const names = discoverAgents({ config, cwd, env: {} }).map((a) => a.name);
@@ -64,5 +67,30 @@ describe("agents", () => {
     expect(scoped.permission?.edit).toEqual({ "docs/**": "allow", "**": "deny" });
     expect(agentCanMutate(scoped)).toBe(true);
     expect(allowed("scoped")).toContain("edit");
+  });
+
+  it("falls back to the global permission config when the agent has no explicit rule for a kind", () => {
+    config.permission.network = "deny";
+    const build = resolveAgent({ config, cwd, env: {} }, "build");
+    expect(build.permission?.network).toBeUndefined();
+    expect(allowed("build")).not.toContain("webfetch");
+    expect(allowed("build")).not.toContain("websearch");
+  });
+
+  it("keeps the tool available when the resolved global mode is ask", () => {
+    config.permission.network = "ask";
+    expect(allowed("build")).toContain("webfetch");
+    expect(allowed("build")).toContain("websearch");
+  });
+
+  it("lets an agent's own permission rule override the global config", () => {
+    config.permission.network = "deny";
+    writeFileSync(
+      join(cwd, ".termcoder", "agents", "networked.md"),
+      "---\ndescription: Can reach the network\npermission:\n  network: allow\n---\nGo fetch.",
+    );
+    const networked = resolveAgent({ config, cwd, env: {} }, "networked");
+    expect(networked.permission?.network).toBe("allow");
+    expect(allowed("networked")).toContain("webfetch");
   });
 });

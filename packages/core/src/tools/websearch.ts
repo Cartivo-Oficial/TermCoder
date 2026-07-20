@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { assertFetchAllowed } from "../util/net";
 import { defineTool } from "./types";
 
 export interface SearchResult {
@@ -57,11 +58,19 @@ export const websearchTool = defineTool({
     query: z.string().describe("The search query."),
   }),
   readOnly: true,
+  permissionKind: "network",
+  target(args) {
+    return `https://html.duckduckgo.com/html/?q=${encodeURIComponent(args.query)}`;
+  },
+  describe(args) {
+    return { title: `Search the web for "${args.query}"` };
+  },
   async run(args) {
-    const res = await fetch(
-      `https://html.duckduckgo.com/html/?q=${encodeURIComponent(args.query)}`,
-      { headers: { "user-agent": "Mozilla/5.0 (compatible; termcoder/0.1)" } },
-    );
+    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(args.query)}`;
+    await assertFetchAllowed(url);
+    const res = await fetch(url, {
+      headers: { "user-agent": "Mozilla/5.0 (compatible; termcoder/0.1)" },
+    });
     if (!res.ok) throw new Error(`Search failed: HTTP ${res.status}`);
     const results = parseDuckDuckGo(await res.text()).slice(0, 8);
     if (results.length === 0) return { output: "No results found (or the search was blocked)." };
