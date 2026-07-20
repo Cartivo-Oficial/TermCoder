@@ -49,6 +49,10 @@ export function parseDuckDuckGo(html: string): SearchResult[] {
   return results;
 }
 
+function searchUrl(query: string): string {
+  return `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+}
+
 export const websearchTool = defineTool({
   name: "websearch",
   description:
@@ -60,13 +64,13 @@ export const websearchTool = defineTool({
   readOnly: true,
   permissionKind: "network",
   target(args) {
-    return `https://html.duckduckgo.com/html/?q=${encodeURIComponent(args.query)}`;
+    return searchUrl(args.query);
   },
   describe(args) {
-    return { title: `Search the web for "${args.query}"` };
+    return { title: `Search the web for "${args.query}"`, detail: searchUrl(args.query) };
   },
   async run(args) {
-    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(args.query)}`;
+    const url = searchUrl(args.query);
     await assertFetchAllowed(url);
     const res = await fetch(url, {
       headers: { "user-agent": "Mozilla/5.0 (compatible; termcoder/0.1)" },

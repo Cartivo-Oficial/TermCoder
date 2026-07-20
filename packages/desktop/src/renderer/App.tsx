@@ -1263,7 +1263,7 @@ export function App() {
     }
     if (room.handleEvent(e)) return;
     if (e.type === "permission-request") {
-      if (autoApproveRef.current) {
+      if (autoApproveRef.current && e.request.kind !== "network") {
         wsRef.current?.send(JSON.stringify({ type: "permission-decision", id: e.id, decision: "allow" }));
         return;
       }
