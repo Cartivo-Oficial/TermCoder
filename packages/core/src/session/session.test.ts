@@ -709,6 +709,62 @@ describe("Session agent loop", () => {
     expect(existsSync(join(dir, "blocked.txt"))).toBe(false);
   });
 
+  it("consults the permission asker for a read-only tool that declares a permission kind, and refuses it on deny", async () => {
+    const askerCalls: Array<{ toolName: string; kind: string }> = [];
+    const permission = new PermissionManager(config.permission, async (request) => {
+      askerCalls.push({ toolName: request.toolName, kind: request.kind });
+      return "deny";
+    });
+    const runner = scriptedRunner([
+      {
+        chunks: [],
+        finishReason: "tool-calls",
+        toolCalls: [{ toolCallId: "t1", toolName: "webfetch", input: { url: "https://example.com" } }],
+        responseMessages: [{ role: "assistant", content: "" }],
+      },
+      {
+        chunks: [{ type: "text-delta", text: "Okay, skipped." }],
+        finishReason: "stop",
+        responseMessages: [{ role: "assistant", content: "Okay, skipped." }],
+      },
+    ]);
+    const session = Session.create({ store, registry, config, permission, runner }, { cwd: dir });
+    const events = await collect(session, "fetch that url");
+
+    expect(askerCalls).toEqual([{ toolName: "webfetch", kind: "network" }]);
+    const result = events.find((e) => e.type === "tool-result");
+    expect(result).toMatchObject({ isError: true });
+    expect(result && "output" in result ? result.output : "").toMatch(/Permission denied/);
+  });
+
+  it("leaves read-only tools with no permission kind on the auto-allow path", async () => {
+    writeFileSync(join(dir, "note.txt"), "hi");
+    const askerCalls: Array<{ toolName: string; kind: string }> = [];
+    const permission = new PermissionManager(config.permission, async (request) => {
+      askerCalls.push({ toolName: request.toolName, kind: request.kind });
+      return "deny";
+    });
+    const runner = scriptedRunner([
+      {
+        chunks: [],
+        finishReason: "tool-calls",
+        toolCalls: [{ toolCallId: "t1", toolName: "read", input: { path: "note.txt" } }],
+        responseMessages: [{ role: "assistant", content: "" }],
+      },
+      {
+        chunks: [{ type: "text-delta", text: "Read it." }],
+        finishReason: "stop",
+        responseMessages: [{ role: "assistant", content: "Read it." }],
+      },
+    ]);
+    const session = Session.create({ store, registry, config, permission, runner }, { cwd: dir });
+    const events = await collect(session, "read that file");
+
+    expect(askerCalls).toEqual([]);
+    const result = events.find((e) => e.type === "tool-result");
+    expect(result).toMatchObject({ isError: false });
+  });
+
   it("connection errors suggest retry or connecting a better model", () => {
     const msg = friendlyError("Cannot connect to API");
     expect(msg).toMatch(/busy|try again/i);

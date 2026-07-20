@@ -360,7 +360,7 @@ export class Session {
       { config: this.deps.config, cwd: this.record.cwd, env: this.deps.env },
       this.record.agent ?? this.record.mode,
     );
-    const tools = this.deps.registry.toToolSet(agentToolFilter(agent));
+    const tools = this.deps.registry.toToolSet(agentToolFilter(agent, this.deps.config));
     this.deps.permission.setAgentPermission(agent.permission);
 
     const coderBrain = this.record.model.startsWith("termcoder/");
@@ -640,7 +640,7 @@ export class Session {
     input: unknown,
     ctx: ToolContext,
   ): Promise<boolean> {
-    if (tool.readOnly || !tool.permissionKind) return true;
+    if (!tool.permissionKind) return true;
     const described = tool.describe?.(input, ctx) ?? { title: tool.name };
     return this.deps.permission.check({
       toolName: tool.name,

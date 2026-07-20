@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { htmlToText } from "./webfetch";
-import { parseDuckDuckGo } from "./websearch";
+import { parseDuckDuckGo, websearchTool } from "./websearch";
 
 describe("htmlToText", () => {
   it("strips tags, scripts, and decodes entities", () => {
@@ -35,5 +35,17 @@ describe("parseDuckDuckGo", () => {
 
   it("returns empty for a page with no results", () => {
     expect(parseDuckDuckGo("<html>nothing</html>")).toEqual([]);
+  });
+});
+
+describe("websearchTool", () => {
+  it("declares a network permission kind, a target, and a description", () => {
+    expect(websearchTool.readOnly).toBe(true);
+    expect(websearchTool.permissionKind).toBe("network");
+    const args = { query: "termcoder release notes" };
+    expect(websearchTool.target?.(args, { cwd: "/tmp" })).toContain(
+      encodeURIComponent(args.query),
+    );
+    expect(websearchTool.describe?.(args, { cwd: "/tmp" }).title).toContain(args.query);
   });
 });
