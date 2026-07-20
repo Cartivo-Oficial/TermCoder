@@ -2,6 +2,18 @@
 
 New releases and improvements to TermCoder.
 
+## 0.11.1
+2026-07-19
+
+### Security
+- **The file-search tools could reach outside your project.** `glob` and `grep` accepted a search pattern that could point above the folder you opened, letting them list and read files elsewhere on your machine. They are now confined to the project: a pattern pointing outside is refused, and every match is re-checked against the project root before the file is read.
+- **Fetching a URL and searching the web now ask for permission.** Both tools run under a new `network` permission, which you can set per project or per agent. This is a visible change: the first web search or fetch in a session now prompts, and you can allow it for the rest of the session. The prompt shows the address being contacted.
+- Both web tools now refuse addresses on your own machine or local network, and re-check after each redirect.
+- **A tool that declares a permission is now always checked.** Read-only tools previously skipped the permission check entirely — which is why the two changes above needed this fix to take effect at all.
+- Read-only agents now deny network access along with writing, editing and shell commands.
+
+Updating is recommended if you open projects you did not write yourself, or run agents over untrusted input such as fetched web pages or issue text.
+
 ## 0.11.0
 2026-07-19
 
