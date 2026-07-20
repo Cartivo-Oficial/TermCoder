@@ -105,7 +105,7 @@ export function RoomView({ room, myName, onChangeName, onClose }: RoomViewProps)
 
       <div className="room-view-body">
         <div className="room-stage-wrap">
-          <div className="room-stage">
+          <div className={`room-stage${alone ? " alone" : ""}`}>
             <Tile name={room.self.name || t("room.me")} speaking={call.selfSpeaking} stream={call.selfVideo} muted />
             {call.remotes.map((tile) => (
               <Tile
@@ -116,13 +116,13 @@ export function RoomView({ room, myName, onChangeName, onClose }: RoomViewProps)
                 stream={tile.stream}
               />
             ))}
-            {alone ? (
-              <div className="room-stage-empty">
-                <p className="hint">{t("room.shareToInvite")}</p>
-                <RoomInvite links={room.links} />
-              </div>
-            ) : null}
           </div>
+          {alone ? (
+            <div className="room-stage-empty">
+              <p className="hint">{t("room.shareToInvite")}</p>
+              <RoomInvite links={room.links} />
+            </div>
+          ) : null}
           {call.error ? <p className="room-call-err">{call.error}</p> : null}
           <RoomControls call={call} actions={room.actions} />
         </div>
