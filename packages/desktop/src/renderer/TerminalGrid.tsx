@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { resizeTracks } from "./terminal/grid";
 import { useGridLayout } from "./terminal/useGridLayout";
 
@@ -18,16 +18,6 @@ export function TerminalGrid({
   const count = terminals.length;
   const { cols, rows, setCols, setRows, resetCol, resetRow } = useGridLayout(count);
   const bodyRef = useRef<HTMLDivElement | null>(null);
-  const [size, setSize] = useState({ w: 0, h: 0 });
-
-  useLayoutEffect(() => {
-    const el = bodyRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setSize({ w: el.clientWidth, h: el.clientHeight }));
-    ro.observe(el);
-    setSize({ w: el.clientWidth, h: el.clientHeight });
-    return () => ro.disconnect();
-  }, []);
 
   function startDrag(
     axis: "col" | "row",
@@ -36,9 +26,11 @@ export function TerminalGrid({
   ) {
     e.preventDefault();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    const body = bodyRef.current;
+    if (!body) return;
     const startTracks = axis === "col" ? cols.slice() : rows.slice();
     const start = axis === "col" ? e.clientX : e.clientY;
-    const axisSize = axis === "col" ? size.w : size.h;
+    const axisSize = axis === "col" ? body.clientWidth : body.clientHeight;
     if (axisSize <= 0) return;
     const minFraction = Math.min(0.45, MIN_CELL_PX / axisSize);
     const move = (ev: PointerEvent) => {
@@ -77,15 +69,6 @@ export function TerminalGrid({
           {renderPane(id)}
         </div>
       ))}
-      {cols.slice(0, -1).map((_, i) => (
-        <div
-          key={`c${i}`}
-          className="term-grid-gutter col"
-          style={{ left: `${cumulative(cols, i) * 100}%` }}
-          onPointerDown={(e) => startDrag("col", i, e)}
-          onDoubleClick={() => resetCol(i)}
-        />
-      ))}
       {rows.slice(0, -1).map((_, i) => (
         <div
           key={`r${i}`}
@@ -93,6 +76,15 @@ export function TerminalGrid({
           style={{ top: `${cumulative(rows, i) * 100}%` }}
           onPointerDown={(e) => startDrag("row", i, e)}
           onDoubleClick={() => resetRow(i)}
+        />
+      ))}
+      {cols.slice(0, -1).map((_, i) => (
+        <div
+          key={`c${i}`}
+          className="term-grid-gutter col"
+          style={{ left: `${cumulative(cols, i) * 100}%` }}
+          onPointerDown={(e) => startDrag("col", i, e)}
+          onDoubleClick={() => resetCol(i)}
         />
       ))}
     </div>
