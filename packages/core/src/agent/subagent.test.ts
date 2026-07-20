@@ -7,7 +7,7 @@ import { loadConfig, type Config } from "../config/config";
 import { PermissionManager } from "../permission/permission";
 import { SessionStore } from "../storage/storage";
 import { ToolRegistry } from "../tools";
-import type { ModelRunner } from "../session/session";
+import type { ModelRunner, SessionEvent } from "../session/session";
 import { createSubagentTool } from "./subagent";
 
 interface Step {
@@ -100,5 +100,32 @@ describe("createSubagentTool", () => {
     expect(t.name).toBe("task");
     expect(t.readOnly).toBe(true);
     expect(registry.get("task")).toBeUndefined();
+  });
+
+  it("emits start, forwards tagged sub-events, and emits end", async () => {
+    const t = tool(
+      scriptedRunner([
+        {
+          chunks: [
+            { type: "reasoning-delta", text: "thinking" },
+            { type: "text-delta", text: "hello from sub" },
+          ],
+          finishReason: "stop",
+          responseMessages: [{ role: "assistant", content: "hello from sub" }],
+        },
+      ]),
+    );
+    const events: SessionEvent[] = [];
+    const res = await t.run(
+      { prompt: "do a thing", agent: "general" },
+      { cwd: dir, toolCallId: "call-1", emit: (e) => events.push(e) },
+    );
+    const types = events.map((e) => e.type);
+    expect(types[0]).toBe("subagent-start");
+    expect(types[types.length - 1]).toBe("subagent-end");
+    const forwarded = events.filter((e) => e.sourceId);
+    expect(forwarded.length).toBeGreaterThan(0);
+    expect(forwarded.every((e) => e.sourceId === (res.meta as { sessionId: string }).sessionId)).toBe(true);
+    expect(res.output).toContain("hello from sub");
   });
 });

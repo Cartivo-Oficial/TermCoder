@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { generateText, streamText, type ModelMessage, type ToolSet } from "ai";
 import { agentCanMutate, agentToolFilter, resolveAgent, type AgentDef } from "../agent/agents";
 import { CheckpointManager, checkpointDir } from "../checkpoint/checkpoint";
+import { EventQueue } from "./event-queue";
 import { formatFile } from "../format/formatters";
 import type { Config } from "../config/config";
 import type { PermissionManager } from "../permission/permission";
@@ -22,15 +23,19 @@ import { discoverMemories, recallMemories } from "../memory/memory";
 import { ensureFreshClaudeConfig } from "../auth/oauth";
 import { ensureFreshChatGPTConfig } from "../auth/chatgpt-oauth";
 
-export type SessionEvent =
+export type SessionEventKind =
   | { type: "text-delta"; text: string }
   | { type: "reasoning-delta"; text: string }
   | { type: "reasoning-end" }
   | { type: "tool-call"; id: string; name: string; args: unknown; title?: string; detail?: string }
   | { type: "tool-result"; id: string; name: string; output: string; isError: boolean }
   | { type: "usage"; inputTokens: number; outputTokens: number }
+  | { type: "subagent-start"; sessionId: string; agent: string; prompt: string; parentToolCallId?: string }
+  | { type: "subagent-end"; sessionId: string; status: "done" | "error" }
   | { type: "done" }
   | { type: "error"; error: string };
+
+export type SessionEvent = SessionEventKind & { sourceId?: string };
 
 export interface ModelStreamResult {
   fullStream: AsyncIterable<{ type: string; text?: string; error?: unknown }>;
@@ -608,20 +613,34 @@ export class Session {
           this.checkpoint.capture(join(ctx.cwd, inputPath));
         }
       }
-      try {
-        output = (await tool.run(call.input, ctx)).output;
-        if (tool.permissionKind === "write" || tool.permissionKind === "edit") {
-          const editedPath = (call.input as { path?: unknown }).path;
-          if (typeof editedPath === "string") {
-            try {
-              formatFile(this.deps.config, join(ctx.cwd, editedPath), ctx.cwd);
-            } catch {
-            }
+      const queue = new EventQueue<SessionEvent>();
+      const runCtx: ToolContext = {
+        cwd: ctx.cwd,
+        toolCallId: call.toolCallId,
+        emit: (e) => queue.push(e),
+      };
+      const runPromise = (async () => {
+        try {
+          const r = await tool.run(call.input, runCtx);
+          return { output: r.output, isError: false };
+        } catch (err) {
+          return { output: `Error: ${stringifyError(err)}`, isError: true };
+        } finally {
+          queue.close();
+        }
+      })();
+      for await (const e of queue.drain()) yield e;
+      const res = await runPromise;
+      output = res.output;
+      isError = res.isError;
+      if (!isError && (tool.permissionKind === "write" || tool.permissionKind === "edit")) {
+        const editedPath = (call.input as { path?: unknown }).path;
+        if (typeof editedPath === "string") {
+          try {
+            formatFile(this.deps.config, join(ctx.cwd, editedPath), ctx.cwd);
+          } catch {
           }
         }
-      } catch (err) {
-        output = `Error: ${stringifyError(err)}`;
-        isError = true;
       }
     }
 
