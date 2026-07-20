@@ -62,17 +62,24 @@ export function createSubagentTool(deps: SubagentDeps): TermTool {
       const texts: string[] = [];
       const toolsUsed: string[] = [];
       let failed = false;
-      for await (const event of sub.prompt(args.prompt)) {
-        ctx.emit?.({ ...event, sourceId: sub.record.id });
-        if (event.type === "text-delta") texts.push(event.text);
-        else if (event.type === "tool-call") toolsUsed.push(event.name);
-        else if (event.type === "error") {
-          failed = true;
-          ctx.emit?.({ type: "subagent-end", sessionId: sub.record.id, status: "error" });
-          return { output: `Sub-agent error: ${event.error}`, meta: { sessionId: sub.record.id } };
+      let ended = false;
+      try {
+        for await (const event of sub.prompt(args.prompt)) {
+          ctx.emit?.({ ...event, sourceId: sub.record.id });
+          if (event.type === "text-delta") texts.push(event.text);
+          else if (event.type === "tool-call") toolsUsed.push(event.name);
+          else if (event.type === "error") {
+            failed = true;
+            ended = true;
+            ctx.emit?.({ type: "subagent-end", sessionId: sub.record.id, status: "error" });
+            return { output: `Sub-agent error: ${event.error}`, meta: { sessionId: sub.record.id } };
+          }
         }
+        ended = true;
+        ctx.emit?.({ type: "subagent-end", sessionId: sub.record.id, status: failed ? "error" : "done" });
+      } finally {
+        if (!ended) ctx.emit?.({ type: "subagent-end", sessionId: sub.record.id, status: "error" });
       }
-      ctx.emit?.({ type: "subagent-end", sessionId: sub.record.id, status: failed ? "error" : "done" });
 
       const summary = texts.join("").trim() || "(sub-agent produced no text)";
       const used = toolsUsed.length

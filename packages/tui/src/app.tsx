@@ -482,6 +482,7 @@ export function App({ config, cwd, registry: registryProp, notices }: AppProps) 
           localLive.push({ kind: "notice", text: "⛔ Interrupted." });
           break;
         }
+        if ((event as { sourceId?: string }).sourceId || event.type === "subagent-start" || event.type === "subagent-end") continue;
         switch (event.type) {
           case "reasoning-delta": {
             if (config.reasoning === false) break;

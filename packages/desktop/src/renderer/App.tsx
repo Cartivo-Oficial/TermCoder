@@ -1263,6 +1263,7 @@ export function App() {
 
   function onEvent(e: StreamEvent) {
     setGraph((g) => reduceGraph(g, e as unknown as SessionEventLike));
+    if ((e as { sourceId?: string }).sourceId || e.type === "subagent-start" || e.type === "subagent-end") return;
     if (e.type === "room-locked") {
       setMessages((prev) => [...prev, { role: "notice", text: t("pro.roomLocked") }]);
       return;
