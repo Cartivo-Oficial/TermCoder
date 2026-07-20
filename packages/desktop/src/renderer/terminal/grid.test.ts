@@ -57,7 +57,7 @@ describe("resizeTracks", () => {
     const out = resizeTracks([0.5, 0.5], 0, 0.1, 0.05);
     expect(out[0]).toBeCloseTo(0.6);
     expect(out[1]).toBeCloseTo(0.4);
-    expect(out[0] + out[1]).toBeCloseTo(1);
+    expect(out[0]! + out[1]!).toBeCloseTo(1);
   });
   it("clamps so neither track drops below minFraction", () => {
     const out = resizeTracks([0.5, 0.5], 0, 0.9, 0.1);
