@@ -1,6 +1,6 @@
 {
   "name": "@termcoder/tui",
-  "version": "0.11.1",
+  "version": "0.11.2",
   "description": "Ink (React) terminal UI for termcoder — ships the `term`/`termcoder` binary.",
   "license": "MIT",
   "author": "Eduardo <eduardo.wankax@gmail.com>",

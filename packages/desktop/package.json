@@ -1,6 +1,6 @@
 {
   "name": "@termcoder/desktop",
-  "version": "0.11.1",
+  "version": "0.11.2",
   "description": "Desktop app for termcoder — Electron shell around the local server with a React UI.",
   "license": "MIT",
   "author": "termcoder <eduardo.wankax@gmail.com>",

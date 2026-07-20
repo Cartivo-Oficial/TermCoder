@@ -2,6 +2,17 @@
 
 New releases and improvements to TermCoder.
 
+## 0.11.2
+2026-07-20
+
+### Desktop
+- **Agent canvas.** A new Canvas tab visualizes a run as it happens: the main agent and every sub-agent it spawns appear as connected nodes, each pulsing while it works. Click a node to open its brain — the sub-agent's own live reasoning and the tools it is running — so you can watch delegated work instead of only seeing a final summary.
+- **Resizable terminal grid.** The terminal grid's dividers are now draggable on both axes — widen the pane you are working in and shrink the others — with a double-click to reset and the sizes remembered per number of terminals. Tabs view is unchanged.
+- **Live rooms, rebuilt.** The room panel is now a call-first screen: the video stage is the focus, and the camera and screen-share controls are visible up front (they enable once you join) instead of hidden until you were already in the call. Invite, participants, and chat move into a tidier side rail with a one-click Share.
+
+### Core
+- Sub-agents now stream their events to the app while they work, so tools and views can follow a delegated task live. The main chat transcript is unaffected — the forwarded events feed only the canvas.
+
 ## 0.11.1
 2026-07-19
 
