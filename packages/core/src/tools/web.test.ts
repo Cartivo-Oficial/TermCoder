@@ -48,4 +48,11 @@ describe("websearchTool", () => {
     );
     expect(websearchTool.describe?.(args, { cwd: "/tmp" }).title).toContain(args.query);
   });
+
+  it("surfaces the destination URL in the description detail", () => {
+    const args = { query: "termcoder release notes" };
+    const described = websearchTool.describe?.(args, { cwd: "/tmp" });
+    expect(described?.detail).toContain("duckduckgo.com");
+    expect(described?.detail).toContain(encodeURIComponent(args.query));
+  });
 });

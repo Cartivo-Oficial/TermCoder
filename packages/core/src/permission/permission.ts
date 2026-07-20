@@ -93,7 +93,7 @@ export class PermissionManager {
   }
 
   async check(request: PermissionRequest): Promise<boolean> {
-    if (this.autoApprove) return true;
+    if (this.autoApprove && request.kind !== "network") return true;
     const rule = this.agentPermission?.[request.kind] ?? this.config?.[request.kind];
     const mode = resolvePermissionMode(rule, request.target);
     if (mode === "allow") return true;

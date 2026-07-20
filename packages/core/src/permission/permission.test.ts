@@ -8,7 +8,7 @@ import {
 const baseConfig = { bash: "ask", write: "ask", edit: "ask", mcp: "ask", network: "ask" } as const;
 
 function req(
-  kind: "bash" | "write" | "edit" | "mcp" = "write",
+  kind: "bash" | "write" | "edit" | "mcp" | "network" = "write",
   target?: string,
 ) {
   return { toolName: kind, kind, title: `do ${kind}`, target };
@@ -45,6 +45,34 @@ describe("PermissionManager", () => {
 
     expect(await pm.check(req("write"))).toBe(true);
     expect(await pm.check(req("write"))).toBe(true);
+    expect(asker).toHaveBeenCalledOnce();
+  });
+
+  it("auto-approve still auto-allows bash and write without asking", async () => {
+    const asker = vi.fn();
+    const pm = new PermissionManager(baseConfig, asker);
+    pm.setAutoApprove(true);
+
+    expect(await pm.check(req("bash"))).toBe(true);
+    expect(await pm.check(req("write"))).toBe(true);
+    expect(asker).not.toHaveBeenCalled();
+  });
+
+  it("auto-approve does not cover network: still consults the asker", async () => {
+    const asker = vi.fn(async () => "allow" as PermissionDecision);
+    const pm = new PermissionManager(baseConfig, asker);
+    pm.setAutoApprove(true);
+
+    expect(await pm.check(req("network"))).toBe(true);
+    expect(asker).toHaveBeenCalledOnce();
+  });
+
+  it("auto-approve does not bypass a deny resolved for network", async () => {
+    const asker = vi.fn(async () => "deny" as PermissionDecision);
+    const pm = new PermissionManager({ ...baseConfig, network: "ask" }, asker);
+    pm.setAutoApprove(true);
+
+    expect(await pm.check(req("network"))).toBe(false);
     expect(asker).toHaveBeenCalledOnce();
   });
 });
