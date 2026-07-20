@@ -18,6 +18,8 @@ import { ClassroomPanel } from "./ClassroomPanel";
 import { ModelBrowser } from "./ModelBrowser";
 import { Rail } from "./Rail";
 import { TerminalDeck } from "./TerminalDeck";
+import { AgentCanvas } from "./canvas/AgentCanvas";
+import { emptyGraph, reduceGraph, type SessionEventLike } from "./canvas/runGraph";
 import { SidePanel } from "./SidePanel";
 import { SessionsPanel } from "./SessionsPanel";
 import { DiffBlock, DiffBody, ToolCard, type DiffComment } from "./ToolCard";
@@ -381,7 +383,8 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [connected, setConnected] = useState(false);
   const [cwd, setCwd] = useState<string | null>(null);
-  const [centerTab, setCenterTab] = useState<"chat" | "terminal">("chat");
+  const [centerTab, setCenterTab] = useState<"chat" | "terminal" | "canvas">("chat");
+  const [graph, setGraph] = useState(() => emptyGraph("root"));
   const [termMounted, setTermMounted] = useState(false);
   const [model, setModel] = useState<string>(MODELS[0]!);
   const [tokens, setTokens] = useState(0);
@@ -963,6 +966,7 @@ export function App() {
       setModel(record.model);
     }
     setMessages([]);
+    setGraph(emptyGraph("root"));
     setWorkingDir(record.cwd);
     connect(record.id);
     pushNav(record.id);
@@ -991,6 +995,7 @@ export function App() {
       localStorage.setItem("tc-session", id);
       setModel(record.model);
       setMessages(segments.map(segToMessage));
+      setGraph(emptyGraph("root"));
       setWorkingDir(record.cwd);
       connect(id);
       pushNav(id);
@@ -1257,6 +1262,7 @@ export function App() {
   }
 
   function onEvent(e: StreamEvent) {
+    setGraph((g) => reduceGraph(g, e as unknown as SessionEventLike));
     if (e.type === "room-locked") {
       setMessages((prev) => [...prev, { role: "notice", text: t("pro.roomLocked") }]);
       return;
@@ -1854,6 +1860,9 @@ export function App() {
             >
               {t("tab.terminal")}
             </button>
+            <button className={centerTab === "canvas" ? "active" : ""} onClick={() => setCenterTab("canvas")}>
+              {t("canvas.tab")}
+            </button>
           </div>
           <div className="chat-head">
             {editingTitle ? (
@@ -2260,6 +2269,8 @@ export function App() {
               themeKey={`${theme}:${colorTheme}:${accent}`}
             />
           ) : null}
+
+          <AgentCanvas graph={graph} hidden={centerTab !== "canvas"} />
         </main>
 
         {sidePanel ? (
