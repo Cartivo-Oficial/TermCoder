@@ -6,6 +6,8 @@ import { CommandPalette, type PaletteItem } from "./CommandPalette";
 import { Settings, type ServerStatus, type SettingsTab } from "./Settings";
 import { Welcome } from "./Welcome";
 import { Hero } from "./Hero";
+import { HomeView, type HomeRecent } from "./home/HomeView";
+import { relativeTime } from "./home/relativeTime";
 import { useI18n } from "./i18n";
 import { COLOR_THEMES, THEME_VARS } from "./themes";
 import { KEYBIND_ACTIONS, comboFor, matchCombo } from "./keybinds";
@@ -1705,8 +1707,197 @@ export function App() {
     })),
   ];
 
+  const sessionTime = (_s: SessionSummary) => Date.now();
+  const recent: HomeRecent[] = sessions
+    .filter((s) => s.messageCount > 0)
+    .slice(0, 6)
+    .map((s) => ({
+      id: s.id,
+      name: sessionLabel(s),
+      meta: `${s.messageCount} ${t("home.turns")}`,
+      when: relativeTime(sessionTime(s), Date.now()),
+    }));
+  const isHome = centerTab === "chat" && messages.length === 0;
+
+  const composerEl = (
+    <div
+      className={`composer ${busy ? "busy" : ""}`}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault();
+        for (const f of Array.from(e.dataTransfer.files)) addImageFile(f);
+      }}
+      onPaste={(e) => {
+        const imgs = Array.from(e.clipboardData.items).filter((it) => it.type.startsWith("image/"));
+        if (imgs.length) {
+          e.preventDefault();
+          for (const it of imgs) {
+            const f = it.getAsFile();
+            if (f) addImageFile(f);
+          }
+        }
+      }}
+    >
+      <div className="composer-status">
+        <span className={`dot ${busy ? "gen" : connected ? "on" : "off"}`} />
+        {busy ? (
+          <span className="cs-working">
+            {workingLabel}
+            {workingDetail ? <span className="muted"> · {workingDetail}</span> : null}
+            {workingTokens > 0 ? <span className="cs-tok">{fmtTokens(workingTokens)} {t("chat.tok")}</span> : null}
+          </span>
+        ) : (
+          <>
+            {(() => {
+              const ctxPct = lastCtx > 0 ? Math.round((lastCtx / ((catalog.find((c) => c.id === model)?.contextK ?? 128) * 1000)) * 100) : 0;
+              return lastCtx > 0 ? (
+                <span className={`cs-item ${ctxPct > 70 ? "hot" : ctxPct > 40 ? "warm" : ""}`}>ctx {fmtTokens(lastCtx)} ({ctxPct}%)</span>
+              ) : null;
+            })()}
+            {tokensIn || tokensOut ? <span className="cs-item">↓{fmtTokens(tokensIn)} ↑{fmtTokens(tokensOut)}</span> : null}
+          </>
+        )}
+      </div>
+      <textarea
+        ref={inputRef}
+        value={input}
+        placeholder={t("composer.placeholder")}
+        onChange={(e) => {
+          setInput(e.target.value);
+          updateMention(e.target.value, e.target.selectionStart ?? e.target.value.length);
+          updateCommand(e.target.value);
+        }}
+        onKeyDown={(e) => {
+          if (cmdMatch) {
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              setCmdMatch((m) => (m ? { ...m, active: Math.min(m.active + 1, m.items.length - 1) } : m));
+              return;
+            }
+            if (e.key === "ArrowUp") {
+              e.preventDefault();
+              setCmdMatch((m) => (m ? { ...m, active: Math.max(m.active - 1, 0) } : m));
+              return;
+            }
+            if (e.key === "Enter" || e.key === "Tab") {
+              e.preventDefault();
+              pickCommand(cmdMatch.items[cmdMatch.active]!.name);
+              return;
+            }
+            if (e.key === "Escape") {
+              setCmdMatch(null);
+              return;
+            }
+          }
+          if (mention) {
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              setMention((m) => (m ? { ...m, active: Math.min(m.active + 1, m.items.length - 1) } : m));
+              return;
+            }
+            if (e.key === "ArrowUp") {
+              e.preventDefault();
+              setMention((m) => (m ? { ...m, active: Math.max(m.active - 1, 0) } : m));
+              return;
+            }
+            if (e.key === "Enter" || e.key === "Tab") {
+              e.preventDefault();
+              insertMention(mention.items[mention.active]!);
+              return;
+            }
+            if (e.key === "Escape") {
+              setMention(null);
+              return;
+            }
+          }
+          if (e.key === "Escape" && busy) {
+            e.preventDefault();
+            stop();
+            return;
+          }
+          const wantSend = sendOnEnter
+            ? e.key === "Enter" && !e.shiftKey
+            : e.key === "Enter" && (e.ctrlKey || e.metaKey);
+          if (wantSend) {
+            e.preventDefault();
+            send();
+          }
+        }}
+      />
+      <div className="composer-actions">
+        {!studentMode ? (
+        <div className="menu-wrap">
+          <button
+            className={`chip ${agents.find((a) => a.name === agent)?.readOnly ? "armed" : ""}`}
+            title={t("mode.title")}
+            onClick={() => setAgentOpen((v) => !v)}
+          >
+            {agent} ▾
+          </button>
+          {agentOpen ? (
+            <div className="menu mode-pop" onMouseLeave={() => setAgentOpen(false)}>
+              {(agents.length ? agents : [{ name: "build", description: "", mode: "primary", builtin: true, readOnly: false } as AgentInfo])
+                .filter((a) => a.mode !== "subagent")
+                .map((a) => (
+                  <button
+                    key={a.name}
+                    className={agent === a.name ? "active" : ""}
+                    onClick={() => { setAgent(a.name); setAgentOpen(false); }}
+                  >
+                    <div className="mode-opt">
+                      <div className="mode-name">
+                        {a.name}
+                        {a.readOnly ? <span className="agent-ro">read-only</span> : null}
+                        {!a.builtin ? <span className="agent-custom">custom</span> : null}
+                      </div>
+                      {a.description ? <div className="mode-desc">{a.description}</div> : null}
+                    </div>
+                    {agent === a.name ? <span className="check">✓</span> : null}
+                  </button>
+                ))}
+              <div className="menu-sep" />
+              <button onClick={() => setAutoApprove((v) => !v)}>
+                {t("settings.autoApprove")}<span className="mk">{autoApprove ? "On" : "Off"}</span>
+              </button>
+              <button onClick={() => { setAgentOpen(false); setSettingsTab("agents"); setSettingsOpen(true); }}>
+                {t("agents.manage")}
+              </button>
+            </div>
+          ) : null}
+        </div>
+        ) : null}
+        <button className="chip model" title={t("models.browse")} onClick={() => setBrowserOpen(true)}>
+          {model} ▾
+        </button>
+        <span className="ca-spacer" />
+        <button className="attach" title={t("composer.attach")} onClick={() => void attachFiles()}><IconPlus /></button>
+        <button
+          className="attach"
+          title={autonomous ? "Autonomous mode: ON — runs to the goal, verifies, and keeps fixing" : "Autonomous mode: OFF"}
+          onClick={() => setAutonomous((v) => !v)}
+          style={autonomous ? { color: "var(--accent)" } : undefined}
+        >
+          <IconBolt />
+        </button>
+        <button
+          className={`attach mic ${recording ? "recording" : ""} ${transcribing ? "transcribing" : ""}`}
+          title={transcribing ? t("voice.transcribing") : recording ? t("voice.stop") : t("composer.mic")}
+          onClick={() => void toggleMic()}
+          disabled={transcribing}
+        >
+          <IconMic />
+        </button>
+        {isGuest ? null : busy ? (
+          <button className="send stop" onClick={stop} title={t("chat.stop")}><IconStop /></button>
+        ) : (
+          <button className="send" onClick={send} disabled={!connected}><IconSend /></button>
+        )}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="shell">
+    <div className={`shell${isHome ? " home" : ""}`}>
       <Rail
         active={sidePanel ?? (leftOpen ? "chat" : null)}
         busy={busy}
@@ -1865,6 +2056,18 @@ export function App() {
               {t("canvas.tab")}
             </button>
           </div>
+          {isHome ? (
+            <HomeView
+              composer={composerEl}
+              recent={recent}
+              onOpenSession={(id) => void openSession(id)}
+              onOpenTerminal={() => { setTermMounted(true); setCenterTab("terminal"); }}
+              onOpenCanvas={() => setCenterTab("canvas")}
+              onOpenCommands={() => setPaletteOpen(true)}
+              project={project}
+            />
+          ) : (
+          <>
           <div className="chat-head">
             {editingTitle ? (
               <input
@@ -2086,182 +2289,11 @@ export function App() {
                 ))}
               </div>
             ) : null}
-            <div
-              className={`composer ${busy ? "busy" : ""}`}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                for (const f of Array.from(e.dataTransfer.files)) addImageFile(f);
-              }}
-              onPaste={(e) => {
-                const imgs = Array.from(e.clipboardData.items).filter((it) => it.type.startsWith("image/"));
-                if (imgs.length) {
-                  e.preventDefault();
-                  for (const it of imgs) {
-                    const f = it.getAsFile();
-                    if (f) addImageFile(f);
-                  }
-                }
-              }}
-            >
-              <div className="composer-status">
-                <span className={`dot ${busy ? "gen" : connected ? "on" : "off"}`} />
-                {busy ? (
-                  <span className="cs-working">
-                    {workingLabel}
-                    {workingDetail ? <span className="muted"> · {workingDetail}</span> : null}
-                    {workingTokens > 0 ? <span className="cs-tok">{fmtTokens(workingTokens)} {t("chat.tok")}</span> : null}
-                  </span>
-                ) : (
-                  <>
-                    {(() => {
-                      const ctxPct = lastCtx > 0 ? Math.round((lastCtx / ((catalog.find((c) => c.id === model)?.contextK ?? 128) * 1000)) * 100) : 0;
-                      return lastCtx > 0 ? (
-                        <span className={`cs-item ${ctxPct > 70 ? "hot" : ctxPct > 40 ? "warm" : ""}`}>ctx {fmtTokens(lastCtx)} ({ctxPct}%)</span>
-                      ) : null;
-                    })()}
-                    {tokensIn || tokensOut ? <span className="cs-item">↓{fmtTokens(tokensIn)} ↑{fmtTokens(tokensOut)}</span> : null}
-                  </>
-                )}
-              </div>
-              <textarea
-                ref={inputRef}
-                value={input}
-                placeholder={t("composer.placeholder")}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  updateMention(e.target.value, e.target.selectionStart ?? e.target.value.length);
-                  updateCommand(e.target.value);
-                }}
-                onKeyDown={(e) => {
-                  if (cmdMatch) {
-                    if (e.key === "ArrowDown") {
-                      e.preventDefault();
-                      setCmdMatch((m) => (m ? { ...m, active: Math.min(m.active + 1, m.items.length - 1) } : m));
-                      return;
-                    }
-                    if (e.key === "ArrowUp") {
-                      e.preventDefault();
-                      setCmdMatch((m) => (m ? { ...m, active: Math.max(m.active - 1, 0) } : m));
-                      return;
-                    }
-                    if (e.key === "Enter" || e.key === "Tab") {
-                      e.preventDefault();
-                      pickCommand(cmdMatch.items[cmdMatch.active]!.name);
-                      return;
-                    }
-                    if (e.key === "Escape") {
-                      setCmdMatch(null);
-                      return;
-                    }
-                  }
-                  if (mention) {
-                    if (e.key === "ArrowDown") {
-                      e.preventDefault();
-                      setMention((m) => (m ? { ...m, active: Math.min(m.active + 1, m.items.length - 1) } : m));
-                      return;
-                    }
-                    if (e.key === "ArrowUp") {
-                      e.preventDefault();
-                      setMention((m) => (m ? { ...m, active: Math.max(m.active - 1, 0) } : m));
-                      return;
-                    }
-                    if (e.key === "Enter" || e.key === "Tab") {
-                      e.preventDefault();
-                      insertMention(mention.items[mention.active]!);
-                      return;
-                    }
-                    if (e.key === "Escape") {
-                      setMention(null);
-                      return;
-                    }
-                  }
-                  if (e.key === "Escape" && busy) {
-                    e.preventDefault();
-                    stop();
-                    return;
-                  }
-                  const wantSend = sendOnEnter
-                    ? e.key === "Enter" && !e.shiftKey
-                    : e.key === "Enter" && (e.ctrlKey || e.metaKey);
-                  if (wantSend) {
-                    e.preventDefault();
-                    send();
-                  }
-                }}
-              />
-              <div className="composer-actions">
-                {!studentMode ? (
-                <div className="menu-wrap">
-                  <button
-                    className={`chip ${agents.find((a) => a.name === agent)?.readOnly ? "armed" : ""}`}
-                    title={t("mode.title")}
-                    onClick={() => setAgentOpen((v) => !v)}
-                  >
-                    {agent} ▾
-                  </button>
-                  {agentOpen ? (
-                    <div className="menu mode-pop" onMouseLeave={() => setAgentOpen(false)}>
-                      {(agents.length ? agents : [{ name: "build", description: "", mode: "primary", builtin: true, readOnly: false } as AgentInfo])
-                        .filter((a) => a.mode !== "subagent")
-                        .map((a) => (
-                          <button
-                            key={a.name}
-                            className={agent === a.name ? "active" : ""}
-                            onClick={() => { setAgent(a.name); setAgentOpen(false); }}
-                          >
-                            <div className="mode-opt">
-                              <div className="mode-name">
-                                {a.name}
-                                {a.readOnly ? <span className="agent-ro">read-only</span> : null}
-                                {!a.builtin ? <span className="agent-custom">custom</span> : null}
-                              </div>
-                              {a.description ? <div className="mode-desc">{a.description}</div> : null}
-                            </div>
-                            {agent === a.name ? <span className="check">✓</span> : null}
-                          </button>
-                        ))}
-                      <div className="menu-sep" />
-                      <button onClick={() => setAutoApprove((v) => !v)}>
-                        {t("settings.autoApprove")}<span className="mk">{autoApprove ? "On" : "Off"}</span>
-                      </button>
-                      <button onClick={() => { setAgentOpen(false); setSettingsTab("agents"); setSettingsOpen(true); }}>
-                        {t("agents.manage")}
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-                ) : null}
-                <button className="chip model" title={t("models.browse")} onClick={() => setBrowserOpen(true)}>
-                  {model} ▾
-                </button>
-                <span className="ca-spacer" />
-                <button className="attach" title={t("composer.attach")} onClick={() => void attachFiles()}><IconPlus /></button>
-                <button
-                  className="attach"
-                  title={autonomous ? "Autonomous mode: ON — runs to the goal, verifies, and keeps fixing" : "Autonomous mode: OFF"}
-                  onClick={() => setAutonomous((v) => !v)}
-                  style={autonomous ? { color: "var(--accent)" } : undefined}
-                >
-                  <IconBolt />
-                </button>
-                <button
-                  className={`attach mic ${recording ? "recording" : ""} ${transcribing ? "transcribing" : ""}`}
-                  title={transcribing ? t("voice.transcribing") : recording ? t("voice.stop") : t("composer.mic")}
-                  onClick={() => void toggleMic()}
-                  disabled={transcribing}
-                >
-                  <IconMic />
-                </button>
-                {isGuest ? null : busy ? (
-                  <button className="send stop" onClick={stop} title={t("chat.stop")}><IconStop /></button>
-                ) : (
-                  <button className="send" onClick={send} disabled={!connected}><IconSend /></button>
-                )}
-              </div>
-            </div>
+            {composerEl}
             </div>
           </div>
+          </>
+          )}
 
           {termMounted ? (
             <TerminalDeck
