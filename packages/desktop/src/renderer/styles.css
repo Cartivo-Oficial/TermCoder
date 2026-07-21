@@ -1073,3 +1073,15 @@ button.chip { cursor: pointer; }
 .home-sess-meta { font-size: 11.5px; color: var(--faint); font-family: var(--mono, ui-monospace, monospace); }
 .home-sess-when { font-size: 11.5px; color: var(--faint); }
 .shell.home .left { display: none; }
+
+.view-switcher { position: relative; margin-left: auto; }
+.vs-trigger { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 8px; background: transparent; border: 1px solid transparent; color: var(--muted); font-size: 12px; cursor: pointer; }
+.vs-trigger:hover, .vs-trigger[aria-expanded="true"] { color: var(--text); background: var(--elev); border-color: var(--border); }
+.vs-trigger > svg { width: 14px; height: 14px; }
+.vs-chev { width: 12px; height: 12px; opacity: 0.6; }
+.view-menu { position: absolute; top: calc(100% + 6px); right: 0; min-width: 172px; background: var(--elev); border: 1px solid var(--border); border-radius: 10px; padding: 5px; box-shadow: 0 12px 30px -12px #000000aa; z-index: 30; }
+.vs-item { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 7px 9px; border-radius: 7px; background: transparent; border: none; color: var(--text); font-size: 12.5px; cursor: pointer; }
+.vs-item:hover { background: var(--elev2); }
+.vs-item > svg { width: 14px; height: 14px; }
+.vs-item.sel { color: var(--accent); }
+.vs-check { margin-left: auto; width: 13px; height: 13px; }
