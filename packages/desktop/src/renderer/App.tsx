@@ -16,6 +16,7 @@ import { ErrorBoundary } from "./ErrorBoundary";
 import { RoomView } from "./room/RoomView";
 import { useRoom } from "./room/useRoom";
 import { RecipesPanel } from "./RecipesPanel";
+import { ViewSwitcher } from "./ViewSwitcher";
 import { ClassroomPanel } from "./ClassroomPanel";
 import { ModelBrowser } from "./ModelBrowser";
 import { Rail } from "./Rail";
@@ -1999,7 +2000,7 @@ export function App() {
         ) : null}
 
         <main className="center">
-          {openTabs.length ? (
+          {openTabs.length || !isHome ? (
             <div className="session-tabs">
               {openTabs.map((id) => {
                 const s = sessions.find((x) => x.id === id);
@@ -2034,28 +2035,21 @@ export function App() {
               <button className="stab-new" title={t("nav.newSession")} onClick={() => void newSession()}>
                 +
               </button>
+              {!isHome ? (
+                <ViewSwitcher
+                  view={centerTab}
+                  onSelect={(v) => {
+                    if (v === "terminal") {
+                      setTermMounted(true);
+                      setCenterTab("terminal");
+                    } else {
+                      setCenterTab(v);
+                    }
+                  }}
+                />
+              ) : null}
             </div>
           ) : null}
-          <div className="center-tabs">
-            <button
-              className={centerTab === "chat" ? "active" : ""}
-              onClick={() => setCenterTab("chat")}
-            >
-              {t("tab.chat")}
-            </button>
-            <button
-              className={centerTab === "terminal" ? "active" : ""}
-              onClick={() => {
-                setTermMounted(true);
-                setCenterTab("terminal");
-              }}
-            >
-              {t("tab.terminal")}
-            </button>
-            <button className={centerTab === "canvas" ? "active" : ""} onClick={() => setCenterTab("canvas")}>
-              {t("canvas.tab")}
-            </button>
-          </div>
           {isHome ? (
             <HomeView
               composer={composerEl}

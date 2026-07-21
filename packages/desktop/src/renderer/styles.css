@@ -988,10 +988,6 @@ button.chip { cursor: pointer; }
 .stab-close svg { width: 11px; height: 11px; }
 .stab-new { background: none; border: none; color: var(--faint); padding: 5px 10px; border-radius: 7px; cursor: pointer; font-size: 14px; }
 .stab-new:hover { color: var(--text); background: var(--elev); }
-.center-tabs { display: flex; gap: 2px; padding: 6px 10px 0; flex-shrink: 0; }
-.center-tabs button { font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); background: none; border: none; border-radius: 7px; padding: 5px 10px; cursor: pointer; }
-.center-tabs button:hover { color: var(--text); background: var(--elev); }
-.center-tabs button.active { color: var(--text); background: var(--elev2); box-shadow: inset 0 -2px 0 var(--accent); }
 .term-deck { position: absolute; inset: 34px 0 0 0; display: flex; flex-direction: column; background: var(--bg); z-index: 5; }
 .term-deck.hidden { display: none; }
 .term-tabs { display: flex; align-items: center; gap: 4px; padding: 5px 8px; border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto; }
@@ -1051,7 +1047,6 @@ button.chip { cursor: pointer; }
 .agent-tool-row.err { border-color: #e5484d; }
 .agent-tool-name { color: var(--accent); font-family: var(--mono); font-size: 11.5px; }
 .agent-tool-out { color: var(--muted); font-family: var(--mono); font-size: 11px; white-space: pre-wrap; }
-.shell.home .center-tabs,
 .shell.home .search { display: none; }
 .home { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; overflow-y: auto; padding: 24px 24px 40px; }
 .home-stage { position: relative; display: flex; align-items: center; justify-content: center; padding: 30px 0 22px; }
