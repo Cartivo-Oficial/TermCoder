@@ -667,8 +667,8 @@ svg { display: block; }
 .connector-form { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
 .connector-form .settings-input { width: 100%; }
 
-.room-card { display: flex; flex-direction: column; gap: 4px; }
-.room-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.room-card { display: flex; flex-direction: column; gap: 4px; padding: 20px 22px 22px; max-height: 84vh; overflow-y: auto; }
+.room-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .room-head h3 { margin: 0; font-size: 15px; }
 .room-label { display: block; margin: 12px 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); }
 .room-links { display: flex; flex-direction: column; gap: 6px; }
@@ -693,7 +693,14 @@ svg { display: block; }
 .call-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--faint); vertical-align: middle; }
 .call-dot.live { background: var(--accent); box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 55%, transparent); }
 .room-call-err { color: var(--accent); font-size: 12px; margin: 2px 0; }
-.btn-2.sharing { border-color: var(--accent); color: var(--accent); }
+.btn-2 { display: inline-flex; align-items: center; justify-content: center; gap: 7px; background: var(--elev); border: 1px solid var(--border); color: var(--text); border-radius: 9px; padding: 8px 14px; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; transition: background .12s, border-color .12s, opacity .12s; }
+.btn-2:hover { background: var(--elev2); }
+.btn-2:disabled { color: var(--faint); cursor: default; opacity: 0.7; }
+.btn-2.go { background: var(--text); border-color: var(--text); color: var(--bg); }
+.btn-2.go:hover { background: var(--text); opacity: 0.88; }
+.btn-2.go:disabled { background: var(--elev); border-color: var(--border); color: var(--faint); opacity: 1; }
+.btn-2.sharing { background: transparent; border-color: var(--border); color: var(--muted); }
+.btn-2.sharing:hover { color: var(--text); background: var(--elev); }
 
 .room-view { position: absolute; inset: 0; z-index: 30; background: var(--floating); display: flex; flex-direction: column; animation: fadeIn var(--t-fast) var(--ease); }
 .room-view-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
@@ -746,7 +753,8 @@ svg { display: block; }
 .recipe-form-row > div { flex: 1; }
 .recipe-steps-input { font-family: var(--mono); resize: vertical; line-height: 1.5; }
 .recipe-form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
-.recipe-new { width: 100%; justify-content: center; margin-top: 8px; }
+.recipe-new { width: 100%; justify-content: center; margin-top: 8px; background: transparent; border: 1px dashed var(--border); color: var(--muted); }
+.recipe-new:hover { background: var(--elev); color: var(--text); border-color: var(--faint); }
 
 .pro-pane { display: flex; flex-direction: column; gap: 6px; }
 .pro-status { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; background: var(--elev); margin-bottom: 8px; }

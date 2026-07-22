@@ -151,7 +151,7 @@ export function RecipesPanel({ port, cwd, onClose, onRun }: RecipesPanelProps) {
             </div>
           </div>
         ) : (
-          <button className="btn-2 go recipe-new" onClick={() => setCreating(true)}>+ {t("recipes.new")}</button>
+          <button className="btn-2 recipe-new" onClick={() => setCreating(true)}>+ {t("recipes.new")}</button>
         )}
       </div>
     </div>

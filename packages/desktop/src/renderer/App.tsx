@@ -1678,6 +1678,8 @@ export function App() {
         setCenterTab("terminal");
       },
     },
+    { id: "canvas", label: t("canvas.tab"), hint: t("palette.hint.command"), run: () => setCenterTab("canvas") },
+    { id: "chat", label: t("tab.chat"), hint: t("palette.hint.command"), run: () => setCenterTab("chat") },
     {
       id: "theme",
       label: t("palette.switchTheme", { theme: t(theme === "dark" ? "theme.light" : "theme.dark") }),
