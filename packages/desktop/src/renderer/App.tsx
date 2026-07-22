@@ -38,7 +38,6 @@ import {
   IconMoon,
   IconServer,
   IconPlus,
-  IconSearch,
   IconSend,
   IconSun,
 } from "./Icons";
@@ -1934,11 +1933,48 @@ export function App() {
           <button className="icon dim" title={t("nav.forward")} onClick={navForward}><IconForward /></button>
         </div>
         <div className="tb-center">
-          <button className="search" onClick={() => setPaletteOpen(true)}>
-            <IconSearch />
-            <span className="search-label">{t("search.placeholder", { project })}</span>
-            <span className="kbd">Ctrl K</span>
-          </button>
+          {openTabs.length || !isHome ? (
+            <div className="session-tabs">
+              {openTabs.map((id) => {
+                const s = sessions.find((x) => x.id === id);
+                if (!s) return null;
+                return (
+                  <div
+                    key={id}
+                    className={`stab ${id === currentId ? "active" : ""}`}
+                    draggable
+                    onDragStart={() => { dragTabRef.current = id; }}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => reorderTabs(id)}
+                    onClick={() => void openSession(id)}
+                    title={sessionLabel(s)}
+                  >
+                    <svg className="stab-ico" width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="M11.3 2.7l2 2-7 7-2.6.6.6-2.6 7-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+                    </svg>
+                    <span className="stab-name">{sessionLabel(s)}</span>
+                    <button
+                      className="stab-close"
+                      title={t("session.closeTab")}
+                      onClick={(e) => { e.stopPropagation(); closeSessionTab(id); }}
+                    >
+                      <IconClose />
+                    </button>
+                  </div>
+                );
+              })}
+              <button className="stab-new" title={t("nav.newSession")} onClick={() => void newSession()}>+</button>
+              {!isHome ? (
+                <ViewSwitcher
+                  view={centerTab}
+                  onSelect={(v) => {
+                    if (v === "terminal") { setTermMounted(true); setCenterTab("terminal"); }
+                    else { setCenterTab(v); }
+                  }}
+                />
+              ) : null}
+            </div>
+          ) : null}
         </div>
         <div className="tb-right">
           <div className="menu-wrap">
@@ -2000,64 +2036,11 @@ export function App() {
         ) : null}
 
         <main className="center">
-          {openTabs.length || !isHome ? (
-            <div className="session-tabs">
-              {openTabs.map((id) => {
-                const s = sessions.find((x) => x.id === id);
-                if (!s) return null;
-                return (
-                  <div
-                    key={id}
-                    className={`stab ${id === currentId ? "active" : ""}`}
-                    draggable
-                    onDragStart={() => {
-                      dragTabRef.current = id;
-                    }}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => reorderTabs(id)}
-                    onClick={() => void openSession(id)}
-                    title={sessionLabel(s)}
-                  >
-                    <span className="stab-name">{sessionLabel(s)}</span>
-                    <button
-                      className="stab-close"
-                      title={t("session.closeTab")}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        closeSessionTab(id);
-                      }}
-                    >
-                      <IconClose />
-                    </button>
-                  </div>
-                );
-              })}
-              <button className="stab-new" title={t("nav.newSession")} onClick={() => void newSession()}>
-                +
-              </button>
-              {!isHome ? (
-                <ViewSwitcher
-                  view={centerTab}
-                  onSelect={(v) => {
-                    if (v === "terminal") {
-                      setTermMounted(true);
-                      setCenterTab("terminal");
-                    } else {
-                      setCenterTab(v);
-                    }
-                  }}
-                />
-              ) : null}
-            </div>
-          ) : null}
           {isHome ? (
             <HomeView
               composer={composerEl}
               recent={recent}
               onOpenSession={(id) => void openSession(id)}
-              onOpenTerminal={() => { setTermMounted(true); setCenterTab("terminal"); }}
-              onOpenCanvas={() => setCenterTab("canvas")}
-              onOpenCommands={() => setPaletteOpen(true)}
               project={project}
             />
           ) : (
