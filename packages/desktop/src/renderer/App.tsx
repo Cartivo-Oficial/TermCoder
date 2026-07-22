@@ -403,6 +403,7 @@ export function App() {
   const [compareBase, setCompareBaseState] = useState("");
   const compareBaseRef = useRef("");
   const [branches, setBranches] = useState<string[]>([]);
+  const [currentBranch, setCurrentBranch] = useState("");
   const [reviewComments, setReviewComments] = useState<DiffComment[]>([]);
   const [hunkIndex, setHunkIndex] = useState(0);
   const [hunkCount, setHunkCount] = useState(0);
@@ -871,7 +872,7 @@ export function App() {
     setCompareBaseState("");
     void refreshGit();
     void window.api?.allFiles(dir).then(setFileList);
-    void window.api?.gitBranches(dir).then((r) => setBranches(r?.branches ?? []));
+    void window.api?.gitBranches(dir).then((r) => { setBranches(r?.branches ?? []); setCurrentBranch(r?.current ?? ""); });
     try {
       const saved = JSON.parse(localStorage.getItem(`tc-review-comments:${dir}`) || "[]");
       setReviewComments(Array.isArray(saved) ? saved : []);
@@ -1738,6 +1739,18 @@ export function App() {
         }
       }}
     >
+      <div className="composer-pills">
+        <button className="cpill" title={t("nav.openFolder")} onClick={() => void chooseFolder()}>
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1.8 4.2c0-.7.5-1.2 1.2-1.2h3l1.4 1.5h5.6c.7 0 1.2.5 1.2 1.2v6.1c0 .7-.5 1.2-1.2 1.2H3c-.7 0-1.2-.5-1.2-1.2V4.2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" /></svg>
+          <span className="cpill-t">{project}</span>
+        </button>
+        {currentBranch ? (
+          <span className="cpill static">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="4.5" cy="3.5" r="1.6" stroke="currentColor" strokeWidth="1.2" /><circle cx="4.5" cy="12.5" r="1.6" stroke="currentColor" strokeWidth="1.2" /><circle cx="11.5" cy="4.5" r="1.6" stroke="currentColor" strokeWidth="1.2" /><path d="M4.5 5.1v5.8M6.1 4.5h2.4c1 0 1.5.5 1.5 1.5v.6M11.5 6.1c0 3-2 3.4-7 3.4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" /></svg>
+            <span className="cpill-t">{currentBranch}</span>
+          </span>
+        ) : null}
+      </div>
       <div className="composer-status">
         <span className={`dot ${busy ? "gen" : connected ? "on" : "off"}`} />
         {busy ? (
