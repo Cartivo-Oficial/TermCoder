@@ -414,14 +414,15 @@ svg { display: block; }
 .mb-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--muted); }
 .mb-head input { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-size: 15px; }
 .mb-filters { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
-.mb-filters button { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 999px; padding: 4px 12px; font-size: 12px; }
-.mb-filters button.active { background: var(--elev2); color: var(--text); border-color: var(--elev2); }
+.mb-filters button { background: transparent; border: 1px solid transparent; color: var(--muted); border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 500; transition: background 0.12s, color 0.12s; }
+.mb-filters button:hover { background: var(--elev); color: var(--text); }
+.mb-filters button.active { background: var(--elev); color: var(--text); border-color: transparent; }
 .mb-count { margin-left: auto; color: var(--faint); font-size: 12px; }
 .mb-list { overflow-y: auto; padding: 6px; }
 .mb-empty { padding: 24px; text-align: center; color: var(--muted); }
 .mb-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left; background: transparent; border: 1px solid transparent; border-radius: 9px; padding: 9px 12px; color: var(--text); }
 .mb-item:hover { background: var(--elev); }
-.mb-item.active { background: var(--elev2); border-color: var(--border); box-shadow: inset 2px 0 0 var(--accent); }
+.mb-item.active { background: var(--elev); border-color: transparent; }
 .mb-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .mb-name { font-weight: 600; }
 .mb-id { font-family: ui-monospace, monospace; font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
@@ -436,8 +437,8 @@ svg { display: block; }
   transition: border-color var(--t-med), box-shadow var(--t-med);
 }
 .composer:focus-within {
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--accent-glow), 0 0 28px var(--accent-glow), inset 0 1px 0 var(--seam);
+  border-color: color-mix(in srgb, var(--text) 16%, var(--border));
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 var(--seam);
 }
 .composer.busy { animation: composerGlow 2.4s ease-in-out infinite; }
 @keyframes composerGlow {
@@ -468,12 +469,12 @@ svg { display: block; }
 .attach.mic.transcribing { color: var(--accent); animation: micPulse 0.9s ease-in-out infinite; }
 @keyframes micPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 .send {
-  background: var(--accent); color: #1a0d06; border: none;
+  background: var(--text); color: var(--bg); border: none;
   width: 34px; height: 34px; border-radius: 10px;
   display: inline-flex; align-items: center; justify-content: center;
-  transition: transform 0.14s var(--ease), background 0.14s;
+  transition: transform 0.14s var(--ease), background 0.14s, opacity 0.14s;
 }
-.send:hover { background: var(--accent-hot); }
+.send:hover { background: var(--text); opacity: 0.88; }
 .send:active:not(:disabled) { transform: scale(0.94); }
 .send:disabled { background: var(--elev2); color: var(--faint); cursor: default; }
 .send.stop { background: var(--bad); color: #fff; }
@@ -489,11 +490,12 @@ svg { display: block; }
 
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
-  background: transparent; border: 1px solid var(--border); border-radius: 8px;
-  color: var(--muted); padding: 5px 10px; font-size: 12px; font-family: var(--mono);
+  background: transparent; border: 1px solid transparent; border-radius: 8px;
+  color: var(--muted); padding: 5px 10px; font-size: 12.5px; font-weight: 500;
 }
-.chip:hover { background: var(--elev); }
-.chip.model { color: var(--text); padding: 3px 6px 3px 10px; }
+.chip:hover { background: var(--elev); color: var(--text); }
+.chip.model { color: var(--muted); padding: 5px 8px 5px 10px; }
+.chip.model:hover { color: var(--text); }
 .chip select { background: transparent; border: none; color: var(--text); font: inherit; outline: none; cursor: pointer; }
 .chip select option { background: var(--elev); color: var(--text); }
 
