@@ -9,7 +9,7 @@ export interface ColorTheme {
 export const THEME_VARS = ["--bg", "--panel", "--panel2", "--elev", "--elev2", "--border", "--text", "--muted", "--faint"];
 
 export const COLOR_THEMES: ColorTheme[] = [
-  { id: "default", name: "Ember", dark: true, accent: "#FF7A45", vars: {} },
+  { id: "default", name: "Clean", dark: true, accent: "#E9E6E1", vars: {} },
   {
     id: "mono",
     name: "Mono",

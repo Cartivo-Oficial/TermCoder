@@ -16,7 +16,7 @@ function readTheme() {
   return {
     background: v("--bg", "#0C0B0A"),
     foreground: v("--text", "#ECEAE6"),
-    cursor: v("--accent", "#FF7A45"),
+    cursor: v("--accent", "#E9E6E1"),
     cursorAccent: v("--bg", "#0C0B0A"),
     selectionBackground: v("--elev2", "#232019"),
   };

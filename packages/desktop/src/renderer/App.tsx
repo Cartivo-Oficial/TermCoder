@@ -818,20 +818,6 @@ export function App() {
     navStack.current.push(id);
     navPos.current = navStack.current.length - 1;
   }
-  function navBack() {
-    if (navPos.current > 0) {
-      navPos.current -= 1;
-      navigating.current = true;
-      void openSession(navStack.current[navPos.current]!);
-    }
-  }
-  function navForward() {
-    if (navPos.current < navStack.current.length - 1) {
-      navPos.current += 1;
-      navigating.current = true;
-      void openSession(navStack.current[navPos.current]!);
-    }
-  }
 
   function connect(id: string) {
     stopReconnect.current = false;
@@ -1942,10 +1928,9 @@ export function App() {
               </div>
             ) : null}
           </div>
-          <button className="icon dim" title={t("nav.back")} onClick={navBack}><IconBack /></button>
-          <button className="icon dim" title={t("nav.forward")} onClick={navForward}><IconForward /></button>
-        </div>
-        <div className="tb-center">
+          <button className="icon" title={t("nav.commandPalette")} onClick={() => setPaletteOpen(true)}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2.4" y="2.4" width="4.6" height="4.6" rx="1.3" stroke="currentColor" strokeWidth="1.3" /><rect x="9" y="2.4" width="4.6" height="4.6" rx="1.3" stroke="currentColor" strokeWidth="1.3" /><rect x="2.4" y="9" width="4.6" height="4.6" rx="1.3" stroke="currentColor" strokeWidth="1.3" /><rect x="9" y="9" width="4.6" height="4.6" rx="1.3" stroke="currentColor" strokeWidth="1.3" /></svg>
+          </button>
           {openTabs.length || !isHome ? (
             <div className="session-tabs">
               {openTabs.map((id) => {
