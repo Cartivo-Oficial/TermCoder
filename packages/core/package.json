@@ -36,6 +36,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
     "@types/diff": "^7.0.0"
   },
   "dependencies": {
@@ -44,6 +45,7 @@
     "@ai-sdk/openai": "^2.0.0",
     "@modelcontextprotocol/sdk": "^1.18.0",
     "ai": "^5.0.0",
+    "better-sqlite3": "^11.8.1",
     "diff": "^7.0.0",
     "tinyglobby": "^0.2.10",
     "vscode-jsonrpc": "^8.2.1",
