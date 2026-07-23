@@ -20,13 +20,14 @@ export function buildToolBridge(
       if (calls > opts.maxCalls) {
         throw new Error("CodeMode: tool-call limit reached (" + opts.maxCalls + ")");
       }
-      const schema = t.inputSchema as { parse: (a: unknown) => unknown };
-      const parsed = schema.parse(args ?? {});
+      const schema = t.inputSchema as { parse?: (a: unknown) => unknown };
+      const parsed = typeof schema.parse === "function" ? schema.parse(args ?? {}) : (args ?? {});
       const result = await t.run(parsed, ctx);
       return result.output;
     };
   }
 
+  for (const fn of Object.values(tools)) Object.freeze(fn);
   Object.freeze(tools);
   return { tools, callCount: () => calls };
 }

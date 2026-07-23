@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { z } from "zod";
 import { buildToolBridge } from "./bridge";
-import { defineTool } from "../tools/types";
+import { defineTool, type TermTool } from "../tools/types";
 
 const echo = defineTool({
   name: "echo",
@@ -55,5 +55,19 @@ describe("buildToolBridge", () => {
     const bridge = buildToolBridge([t], ctx, { maxCalls: 10 });
     await bridge.tools.t({});
     expect(spy).toHaveBeenCalledWith({}, ctx);
+  });
+
+  it("does not crash on a non-Zod schema and forwards args unchanged", async () => {
+    const spy = vi.fn(async () => ({ output: "ok" }));
+    const nonZod: TermTool = {
+      name: "mcp_tool",
+      description: "mcp_tool",
+      inputSchema: { validate() {} } as unknown as TermTool["inputSchema"],
+      readOnly: true,
+      run: spy,
+    };
+    const bridge = buildToolBridge([nonZod], ctx, { maxCalls: 10 });
+    await expect(bridge.tools.mcp_tool({ any: 1 })).resolves.toBe("ok");
+    expect(spy).toHaveBeenCalledWith({ any: 1 }, ctx);
   });
 });
