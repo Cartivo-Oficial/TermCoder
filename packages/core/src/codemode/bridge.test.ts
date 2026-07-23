@@ -57,6 +57,22 @@ describe("buildToolBridge", () => {
     expect(spy).toHaveBeenCalledWith({}, ctx);
   });
 
+  it("excludes permission-gated tools from the surface", () => {
+    const writeLike = defineTool({
+      name: "writeLike",
+      description: "write-like",
+      inputSchema: z.object({ path: z.string() }),
+      readOnly: false,
+      permissionKind: "write",
+      async run() {
+        return { output: "" };
+      },
+    });
+    const bridge = buildToolBridge([echo, writeLike], ctx, { maxCalls: 10 });
+    expect(bridge.tools.writeLike).toBeUndefined();
+    expect(typeof bridge.tools.echo).toBe("function");
+  });
+
   it("does not crash on a non-Zod schema and forwards args unchanged", async () => {
     const spy = vi.fn(async () => ({ output: "ok" }));
     const nonZod: TermTool = {

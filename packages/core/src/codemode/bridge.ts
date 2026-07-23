@@ -15,6 +15,7 @@ export function buildToolBridge(
 
   for (const t of toolList) {
     if (t.name === "run_code") continue;
+    if (t.permissionKind) continue;
     tools[t.name] = async (args: unknown) => {
       calls += 1;
       if (calls > opts.maxCalls) {
