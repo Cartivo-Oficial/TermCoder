@@ -36,4 +36,27 @@ describe("migrateJsonSessions", () => {
     expect(existsSync(join(dir, "a.json.bak"))).toBe(true);
     expect(readdirSync(dir)).toContain("bad.json");
   });
+
+  it("skips a structurally-invalid file whose import throws, without aborting the others", () => {
+    writeFileSync(join(dir, "good.json"), JSON.stringify(rec("good")), "utf8");
+    writeFileSync(join(dir, "invalid.json"), JSON.stringify({ title: "no id here" }), "utf8");
+    const imported: string[] = [];
+    const store = {
+      exists: (id: string) => imported.includes(id),
+      import: (r: SessionRecord) => {
+        if (!r.id) throw new Error("NOT NULL constraint failed: sessions.id");
+        imported.push(r.id);
+      },
+    };
+
+    let result = -1;
+    expect(() => {
+      result = migrateJsonSessions(dir, store);
+    }).not.toThrow();
+    expect(result).toBe(1);
+    expect(imported).toEqual(["good"]);
+    expect(existsSync(join(dir, "good.json.bak"))).toBe(true);
+    expect(existsSync(join(dir, "invalid.json"))).toBe(false);
+    expect(existsSync(join(dir, "invalid.json.failed"))).toBe(true);
+  });
 });

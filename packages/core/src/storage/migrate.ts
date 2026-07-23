@@ -17,11 +17,17 @@ export function migrateJsonSessions(
     } catch {
       continue;
     }
-    if (!store.exists(record.id)) {
-      store.import(record);
-      migrated += 1;
+    try {
+      if (!store.exists(record.id)) {
+        store.import(record);
+        migrated += 1;
+      }
+      renameSync(full, full + ".bak");
+    } catch {
+      try {
+        renameSync(full, full + ".failed");
+      } catch {}
     }
-    renameSync(full, full + ".bak");
   }
   return migrated;
 }

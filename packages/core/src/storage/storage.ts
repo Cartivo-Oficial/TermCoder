@@ -138,8 +138,8 @@ export class SessionStore {
     const rows = this.db.prepare(
       `SELECT s.*, (SELECT COUNT(*) FROM messages m2 WHERE m2.sessionId = s.id) AS messageCount
        FROM sessions s
-       WHERE s.title LIKE ? ESCAPE '\\' COLLATE NOCASE
-          OR EXISTS (SELECT 1 FROM messages m WHERE m.sessionId = s.id AND m.text LIKE ? ESCAPE '\\' COLLATE NOCASE)
+       WHERE s.title LIKE ? ESCAPE '\\'
+          OR EXISTS (SELECT 1 FROM messages m WHERE m.sessionId = s.id AND m.text LIKE ? ESCAPE '\\')
        ORDER BY s.updatedAt DESC`,
     ).all(like, like) as (SessionRow & { messageCount: number })[];
     return rows.map((r) => this.summaryFromRow(r, r.messageCount));
