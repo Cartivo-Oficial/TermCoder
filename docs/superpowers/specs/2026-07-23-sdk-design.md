@@ -46,8 +46,8 @@ Types (all exported from `@termcoder/core` unless noted):
 WebSocket protocol (`handleSocket`, `packages/server/src/server.ts:1209`):
 - Connect: `ws://<host>/sessions/:id/stream?name=<label>`.
 - On connect the server sends `{ type: "room-welcome", you, peerId, participants, peers, joinToken }`, then presence.
-- Client (driver) → server messages: `{ type: "prompt", text, images? }`, `{ type: "background", goal }`, `{ type: "stop" }`, `{ type: "decision", id, decision }` (permission), plus room-only `chat`/`signal` (out of scope).
-- Server → client: the driver's `{ type: "room-prompt", from, text }` echo, then the streamed `SessionEvent`s, plus `{ type: "error", error }`, `{ type: "stopped" }`, `{ type: "room-locked", error }`, and permission-request events. The SDK forwards `SessionEvent`s and surfaces the control events (`error`/`stopped`/permission) via the stream.
+- Client (driver) → server messages (verified at `server.ts:1275-1299`): `{ type: "prompt", text, images? }`, `{ type: "background", goal }`, `{ type: "stop" }`, `{ type: "permission-decision", id, decision }`, plus room-only `chat`/`signal` (out of scope).
+- Server → client frames the SDK maps: the driver's `{ type: "room-prompt", from, text }` echo; the streamed `SessionEvent`s (broadcast as `{ type: <event.type>, ... }`); `{ type: "permission-request", id, request }`; `{ type: "stopped" }`; `{ type: "error", error }`; `{ type: "room-locked", error }`. Ignored in v1: `room-welcome`, presence/peers, `room-chat`, `signal`, `peer-left`, and the `background-*` control frames (the autonomous run's underlying `SessionEvent`s still flow through as `event`). Note the `type: "error"` collision — a `SessionEvent` of type `"error"` and a control `{ type: "error", error }` are both mapped to `{ kind: "error" }`, which is acceptable (both are errors surfaced to the consumer).
 
 ## Architecture
 
@@ -109,7 +109,7 @@ createClient({ baseUrl }) resolves fetch/WebSocket (config or global)
   client.sessions.stream(id)         -> openStream: WS /sessions/:id/stream
       .prompt(text)                  -> ws.send {type:"prompt",text}
       for await (const ev of stream) -> {kind:"event", event: SessionEvent} | prompt | permission | stopped | error
-      .respondPermission(id, "allow")-> ws.send {type:"decision",id,decision}
+      .respondPermission(id, "allow")-> ws.send {type:"permission-decision",id,decision}
       .stop()/.close()               -> ws.send {type:"stop"} / socket close + iterator end
 ```
 
