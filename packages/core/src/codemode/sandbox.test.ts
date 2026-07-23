@@ -39,6 +39,11 @@ describe("runProgram", () => {
     expect(r.returnValue).toBeUndefined();
   });
 
+  it("extracts the exact message from a vm-thrown Error (cross-realm)", async () => {
+    const r = await runProgram("throw new Error('boom');", {}, { timeoutMs: 2000, maxLog: 4096 });
+    expect(r.error).toBe("boom");
+  });
+
   it("aborts a synchronous infinite loop via timeout", async () => {
     const r = await runProgram("while (true) {}", {}, { timeoutMs: 200, maxLog: 4096 });
     expect(r.error).toBeTruthy();

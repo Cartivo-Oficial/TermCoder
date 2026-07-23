@@ -49,6 +49,9 @@ function safeStringify(value: unknown): string {
 }
 
 function errorMessage(err: unknown): string {
-  if (err instanceof Error) return err.message;
+  if (err && typeof err === "object" && "message" in err) {
+    const m = (err as { message: unknown }).message;
+    if (typeof m === "string" && m.length > 0) return m;
+  }
   return String(err);
 }
