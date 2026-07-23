@@ -18,20 +18,20 @@ const ctx = { cwd: "/tmp" };
 describe("buildToolBridge", () => {
   it("exposes each tool as a validated async function returning output", async () => {
     const bridge = buildToolBridge([echo], ctx, { maxCalls: 10 });
-    const out = await bridge.tools.echo({ text: "hi" });
+    const out = await bridge.tools.echo!({ text: "hi" });
     expect(out).toBe("echo:hi");
     expect(bridge.callCount()).toBe(1);
   });
 
   it("rejects invalid args with a readable message", async () => {
     const bridge = buildToolBridge([echo], ctx, { maxCalls: 10 });
-    await expect(bridge.tools.echo({ text: 5 })).rejects.toThrow();
+    await expect(bridge.tools.echo!({ text: 5 })).rejects.toThrow();
   });
 
   it("enforces the tool-call cap", async () => {
     const bridge = buildToolBridge([echo], ctx, { maxCalls: 1 });
-    await bridge.tools.echo({ text: "a" });
-    await expect(bridge.tools.echo({ text: "b" })).rejects.toThrow(/limit/);
+    await bridge.tools.echo!({ text: "a" });
+    await expect(bridge.tools.echo!({ text: "b" })).rejects.toThrow(/limit/);
   });
 
   it("excludes run_code from the surface", () => {
@@ -53,7 +53,7 @@ describe("buildToolBridge", () => {
     const spy = vi.fn(async () => ({ output: "ok" }));
     const t = defineTool({ name: "t", description: "t", inputSchema: z.object({}), readOnly: true, run: spy });
     const bridge = buildToolBridge([t], ctx, { maxCalls: 10 });
-    await bridge.tools.t({});
+    await bridge.tools.t!({});
     expect(spy).toHaveBeenCalledWith({}, ctx);
   });
 
@@ -83,7 +83,7 @@ describe("buildToolBridge", () => {
       run: spy,
     };
     const bridge = buildToolBridge([nonZod], ctx, { maxCalls: 10 });
-    await expect(bridge.tools.mcp_tool({ any: 1 })).resolves.toBe("ok");
+    await expect(bridge.tools.mcp_tool!({ any: 1 })).resolves.toBe("ok");
     expect(spy).toHaveBeenCalledWith({ any: 1 }, ctx);
   });
 });
