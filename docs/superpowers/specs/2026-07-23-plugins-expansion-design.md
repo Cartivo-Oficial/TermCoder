@@ -60,7 +60,7 @@ sandbox — plugins are trusted installed code; safety stays at the tool level
     plugins: Array<{ name: string; version?: string; description?: string; ok: boolean; toolCount: number; commandCount: number; hookCount: number; error?: string }>;
   }
   ```
-- `discoverPluginSpecifiers(dir: string): string[]` (exported) — if `dir` exists, for each entry return an import specifier: a `.mjs/.js/.cjs` file → its `file:` URL; a subdirectory → the subdir path (Node resolves its `package.json` main/exports). Non-matching entries are ignored. Returns [] if the dir is absent.
+- `discoverPluginSpecifiers(dir: string): string[]` (exported) — if `dir` exists, for each entry return an import specifier: a `.mjs/.js/.cjs` file → its `file:` URL; a subdirectory → its `index.{mjs,js,cjs}` (first match) as a `file:` URL. Non-matching entries (including subdirs without an `index.*` file) are ignored. Returns [] if the dir is absent. (v1 does not resolve a subdir's `package.json` main/exports — a packaged plugin should expose an `index.*` entry.)
 - `loadPlugins(specifiers, context)`:
   - `context` gains an optional `pluginsDir?: string` (default `join(homedir(), ".termcoder", "plugins")`).
   - Build the load list = `specifiers` (config.plugins) ++ `discoverPluginSpecifiers(pluginsDir)`, deduped (by resolved specifier string).
