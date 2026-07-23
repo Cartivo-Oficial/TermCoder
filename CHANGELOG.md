@@ -2,6 +2,20 @@
 
 New releases and improvements to TermCoder.
 
+## 0.11.3
+2026-07-23
+
+### Desktop
+- **A calmer, redesigned app.** The desktop app was rebuilt around a quieter, monochrome look — the orange accent is gone. An empty session now opens on a spacious Home with the TermCoder wordmark, the title bar is a slim seamless strip with a left-aligned tab row, and the composer, model browser and settings were all restyled to match.
+- **Your project and branch, in the composer.** The prompt box now shows the current project and its git branch as small pills, so you always know where a run will land.
+- **A quieter way to move around a session.** The stamped centre tabs were replaced by an unobtrusive view switcher, so jumping between chat, terminals and the canvas no longer dominates the header.
+- **The Agent Canvas, explored deeper.** The Canvas tab gained a zoomable, pannable viewport with fit-to-view, per-node metrics (tokens and time), collapsible sub-agent branches, and a richer inspector — so a large delegated run stays navigable instead of overflowing the screen.
+
+### Core
+- **Sessions are now stored in a local database.** History moved from loose JSON files to a single SQLite store with full-text search over your past sessions. Existing sessions migrate themselves once, automatically, the first time you open the new version.
+- **CodeMode — one program instead of many round-trips.** A new opt-in `run_code` tool lets the agent write a single, confined JavaScript program that calls your read and analysis tools together in one pass, instead of a long back-and-forth of separate tool calls. It runs behind a permission prompt, exactly like a shell command, and is never handed to read-only agents.
+- **A bigger plugin system.** Plugins can now register slash commands and react to session events as they stream, carry a name, version and description, and be auto-discovered from `~/.termcoder/plugins/` — all on top of the existing ability to add tools. Plugin-added tools go through the same permission checks as the built-ins.
+
 ## 0.11.2
 2026-07-20
 
