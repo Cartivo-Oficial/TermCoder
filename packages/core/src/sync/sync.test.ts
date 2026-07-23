@@ -377,27 +377,37 @@ describe("session sync", () => {
   let dirB: string;
   let envA: NodeJS.ProcessEnv;
   let envB: NodeJS.ProcessEnv;
+  let storeA: SessionStore | undefined;
+  let storeB: SessionStore | undefined;
   beforeEach(() => {
     dirA = mkdtempSync(join(tmpdir(), "tc-ssA-"));
     dirB = mkdtempSync(join(tmpdir(), "tc-ssB-"));
     envA = { XDG_CONFIG_HOME: join(dirA, "cfg") };
     envB = { XDG_CONFIG_HOME: join(dirB, "cfg") };
+    storeA = undefined;
+    storeB = undefined;
   });
   afterEach(() => {
+    try {
+      storeA?.close();
+    } catch {}
+    try {
+      storeB?.close();
+    } catch {}
     rmSync(dirA, { recursive: true, force: true });
     rmSync(dirB, { recursive: true, force: true });
   });
 
   it("carries sessions to a fresh device that discovers the gist by description", async () => {
     const client = discoverableClient();
-    const storeA = new SessionStore(join(dirA, "sessions"));
+    storeA = new SessionStore(join(dirA, "sessions"));
     const s1 = storeA.create({ cwd: "/a", model: "m", title: "First" });
     s1.messages.push({ role: "user", content: "hi" } as never);
     storeA.save(s1);
     storeA.create({ cwd: "/a", model: "m", title: "Second" });
     expect(await pushSessions(storeA, client, envA)).toBe(2);
 
-    const storeB = new SessionStore(join(dirB, "sessions"));
+    storeB = new SessionStore(join(dirB, "sessions"));
     expect(storeB.list()).toHaveLength(0);
     const merged = await pullSessions(storeB, client, envB);
     expect(merged).toBe(2);
@@ -407,11 +417,11 @@ describe("session sync", () => {
 
   it("does not overwrite a locally newer session on pull", async () => {
     const client = discoverableClient();
-    const storeA = new SessionStore(join(dirA, "sessions"));
+    storeA = new SessionStore(join(dirA, "sessions"));
     const s = storeA.create({ cwd: "/a", model: "m", title: "Old" });
     await pushSessions(storeA, client, envA);
 
-    const storeB = new SessionStore(join(dirB, "sessions"));
+    storeB = new SessionStore(join(dirB, "sessions"));
     await pullSessions(storeB, client, envB);
     const local = storeB.load(s.id);
     local.title = "Edited on B";

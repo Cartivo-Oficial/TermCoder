@@ -46,7 +46,12 @@ describe("createSubagentTool", () => {
     registry = new ToolRegistry();
     config = loadConfig({ cwd: dir, configDir: join(dir, "cfg"), env: {} });
   });
-  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+  afterEach(() => {
+    try {
+      store.close();
+    } catch {}
+    rmSync(dir, { recursive: true, force: true });
+  });
 
   function tool(runner: ModelRunner) {
     const permission = new PermissionManager(config.permission, async () => "deny");

@@ -1,45 +1,19 @@
 import { tool, type Schema, type ToolSet } from "ai";
 import type { z } from "zod";
 import type { TermTool } from "./types";
-import { readTool } from "./read";
-import { lsTool } from "./ls";
-import { globTool } from "./glob";
-import { grepTool } from "./grep";
-import { writeTool } from "./write";
-import { editTool } from "./edit";
-import { bashTool } from "./bash";
-import { webfetchTool } from "./webfetch";
-import { websearchTool } from "./websearch";
-import { skillTool } from "./skill";
-import { memoryTool } from "./memory";
-import { recipeTool } from "./recipe";
-import { repomapTool } from "./repomap";
-import { symbolsTool } from "./symbols";
+import { builtinTools } from "./builtins";
+import { runCodeTool } from "../codemode";
 
 export type { TermTool, ToolContext, ToolResult } from "./types";
 export { defineTool } from "./types";
+export { builtinTools } from "./builtins";
 
-export const builtinTools: TermTool[] = [
-  readTool,
-  lsTool,
-  globTool,
-  grepTool,
-  writeTool,
-  editTool,
-  bashTool,
-  webfetchTool,
-  websearchTool,
-  skillTool,
-  memoryTool,
-  recipeTool,
-  repomapTool,
-  symbolsTool,
-];
+export const registryTools: TermTool[] = [...builtinTools, runCodeTool];
 
 export class ToolRegistry {
   private readonly byName = new Map<string, TermTool>();
 
-  constructor(tools: TermTool[] = builtinTools) {
+  constructor(tools: TermTool[] = registryTools) {
     for (const t of tools) this.byName.set(t.name, t);
   }
 

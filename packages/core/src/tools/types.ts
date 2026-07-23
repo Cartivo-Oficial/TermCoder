@@ -7,6 +7,7 @@ export interface ToolContext {
   cwd: string;
   toolCallId?: string;
   emit?: (event: SessionEvent) => void;
+  tools?: TermTool[];
 }
 
 export interface ToolResult {

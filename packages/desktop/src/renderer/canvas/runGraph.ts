@@ -18,6 +18,10 @@ export interface RunNode {
   activity: RunActivity[];
   parentId?: string;
   prompt?: string;
+  tokensIn: number;
+  tokensOut: number;
+  startedAt: number;
+  endedAt?: number;
 }
 
 export interface RunGraph {
@@ -38,10 +42,10 @@ export type SessionEventLike =
   | { type: "done"; sourceId?: string }
   | { type: "error"; error: string; sourceId?: string };
 
-export function emptyGraph(rootId: string): RunGraph {
+export function emptyGraph(rootId: string, now: number = Date.now()): RunGraph {
   return {
     rootId,
-    nodes: { [rootId]: { id: rootId, agent: "primary", status: "idle", reasoning: "", activity: [] } },
+    nodes: { [rootId]: { id: rootId, agent: "primary", status: "idle", reasoning: "", activity: [], tokensIn: 0, tokensOut: 0, startedAt: now } },
     order: [rootId],
   };
 }
@@ -52,7 +56,7 @@ function nodeIdFor(graph: RunGraph, event: SessionEventLike): string {
   return graph.rootId;
 }
 
-export function reduceGraph(graph: RunGraph, event: SessionEventLike): RunGraph {
+export function reduceGraph(graph: RunGraph, event: SessionEventLike, now: number = Date.now()): RunGraph {
   const nodes = { ...graph.nodes };
   let order = graph.order;
 
@@ -68,6 +72,9 @@ export function reduceGraph(graph: RunGraph, event: SessionEventLike): RunGraph 
       activity: [],
       parentId,
       prompt: event.prompt,
+      tokensIn: 0,
+      tokensOut: 0,
+      startedAt: now,
     };
     order = order.includes(event.sessionId) ? order : [...order, event.sessionId];
     return { ...graph, nodes, order };
@@ -96,16 +103,22 @@ export function reduceGraph(graph: RunGraph, event: SessionEventLike): RunGraph 
       node.status = "thinking";
       break;
     }
+    case "usage":
+      node.tokensIn += event.inputTokens;
+      node.tokensOut += event.outputTokens;
+      break;
     case "subagent-end":
       if (nodes[event.sessionId]) {
-        nodes[event.sessionId] = { ...nodes[event.sessionId]!, status: event.status };
+        nodes[event.sessionId] = { ...nodes[event.sessionId]!, status: event.status, endedAt: now };
       }
       return { ...graph, nodes, order };
     case "done":
       node.status = "done";
+      node.endedAt = now;
       break;
     case "error":
       node.status = "error";
+      node.endedAt = now;
       break;
     default:
       break;

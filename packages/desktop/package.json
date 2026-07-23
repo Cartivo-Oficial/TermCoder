@@ -11,14 +11,16 @@
   "private": true,
   "main": "out/main/index.js",
   "scripts": {
+    "predev": "pnpm rebuild:native",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "build:web": "vite build --config vite.web.config.ts",
     "start": "electron-vite preview",
     "stage:pty": "node scripts/stage-pty.mjs",
-    "package": "pnpm stage:pty && electron-vite build && electron-builder",
-    "package:ci": "pnpm stage:pty && electron-vite build && electron-builder --publish never",
-    "package:dir": "pnpm stage:pty && electron-vite build && electron-builder --dir",
+    "rebuild:native": "electron-rebuild -f -w better-sqlite3",
+    "package": "pnpm stage:pty && pnpm rebuild:native && electron-vite build && electron-builder",
+    "package:ci": "pnpm stage:pty && pnpm rebuild:native && electron-vite build && electron-builder --publish never",
+    "package:dir": "pnpm stage:pty && pnpm rebuild:native && electron-vite build && electron-builder --dir",
     "typecheck": "tsc --noEmit"
   },
   "build": {
@@ -45,6 +47,9 @@
         "from": "build/pty/node_modules/@lydell",
         "to": "pty/node_modules/@lydell"
       }
+    ],
+    "asarUnpack": [
+      "**/node_modules/better-sqlite3/**"
     ],
     "win": {
       "icon": "build/icon.ico",
@@ -157,6 +162,7 @@
     "@lydell/node-pty-win32-x64": "1.1.0"
   },
   "devDependencies": {
+    "@electron/rebuild": "^3.6.0",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",

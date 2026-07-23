@@ -75,6 +75,9 @@ describe("server", () => {
 
   afterEach(async () => {
     await new Promise<void>((resolve) => server.close(() => resolve()));
+    try {
+      store.close();
+    } catch {}
     rmSync(dir, { recursive: true, force: true });
     rmSync(webDir, { recursive: true, force: true });
   });

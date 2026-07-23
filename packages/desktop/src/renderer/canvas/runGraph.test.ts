@@ -57,3 +57,36 @@ describe("reduceGraph", () => {
     expect(g.nodes.ghost).toBeUndefined();
   });
 });
+
+describe("runGraph metrics", () => {
+  it("seeds root with tokens and startedAt", () => {
+    const g = emptyGraph("root", 1000);
+    expect(g.nodes.root!.tokensIn).toBe(0);
+    expect(g.nodes.root!.tokensOut).toBe(0);
+    expect(g.nodes.root!.startedAt).toBe(1000);
+  });
+
+  it("accumulates usage tokens on the sourced node", () => {
+    let g = emptyGraph("root", 0);
+    g = reduceGraph(g, { type: "usage", inputTokens: 10, outputTokens: 4 }, 5);
+    g = reduceGraph(g, { type: "usage", inputTokens: 3, outputTokens: 1 }, 6);
+    expect(g.nodes.root!.tokensIn).toBe(13);
+    expect(g.nodes.root!.tokensOut).toBe(5);
+  });
+
+  it("stamps startedAt on a subagent and endedAt on end", () => {
+    let g = emptyGraph("root", 0);
+    g = reduceGraph(g, { type: "subagent-start", sessionId: "s1", agent: "explore", prompt: "go" }, 100);
+    expect(g.nodes.s1!.startedAt).toBe(100);
+    expect(g.nodes.s1!.tokensIn).toBe(0);
+    g = reduceGraph(g, { type: "subagent-end", sessionId: "s1", status: "done" }, 250);
+    expect(g.nodes.s1!.endedAt).toBe(250);
+    expect(g.nodes.s1!.status).toBe("done");
+  });
+
+  it("stamps endedAt on the sourced node on done/error", () => {
+    let g = emptyGraph("root", 0);
+    g = reduceGraph(g, { type: "done" }, 400);
+    expect(g.nodes.root!.endedAt).toBe(400);
+  });
+});
