@@ -762,6 +762,34 @@ describe("server", () => {
     expect(events.some((e) => e.error === "Guests are observers and can't control the session.")).toBe(false);
   });
 
+  it("merges plugin commands into GET /commands and dedupes builtin name collisions", async () => {
+    const srv = createServer({
+      config,
+      store,
+      registry: new ToolRegistry(),
+      runner: scriptedRunner(),
+      cwd: dir,
+      webDir,
+      license: () => ({ active: true, tier: "pro" }),
+      pluginCommands: [
+        { name: "deploy", description: "ship it", template: "deploy the app" },
+        { name: "init", description: "override", template: "should be dropped" },
+      ],
+    });
+    await new Promise<void>((r) => srv.listen(0, r));
+    const p = (srv.address() as AddressInfo).port;
+    try {
+      const res = await fetch(`http://localhost:${p}/commands`);
+      const cmds = (await res.json()) as Array<{ name: string; description?: string }>;
+      const names = cmds.map((c) => c.name);
+      expect(names).toContain("deploy");
+      expect(names.filter((n) => n === "init")).toHaveLength(1);
+      expect(cmds.find((c) => c.name === "init")!.description).not.toBe("override");
+    } finally {
+      await new Promise<void>((r) => srv.close(() => r()));
+    }
+  });
+
   describe("room-only LAN listener", () => {
     let mintedHosts: WebSocket[] = [];
 

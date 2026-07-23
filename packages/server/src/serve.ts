@@ -58,7 +58,15 @@ async function main() {
     lsp: lsp.servers,
     plugins: plugins.plugins,
   };
-  const server = createServer({ config, registry, cwd, webDir, status });
+  const server = createServer({
+    config,
+    registry,
+    cwd,
+    webDir,
+    status,
+    pluginCommands: plugins.commands,
+    pluginHooks: plugins.hooks,
+  });
   server.listen(port, apiHost(), () => {
     if (isLanHost(apiHost())) {
       process.stderr.write(

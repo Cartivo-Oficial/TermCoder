@@ -17,6 +17,9 @@ import {
   discoverAgents,
   discoverCommands,
   discoverMemories,
+  runHooks,
+  type CommandDef,
+  type SessionEvent,
   discoverSkills,
   saveMemory,
   deleteMemory,
@@ -111,6 +114,8 @@ export interface ServerDeps {
   status?: ServerStatus;
   webDir?: string;
   license?: () => LicenseInfo;
+  pluginCommands?: CommandDef[];
+  pluginHooks?: Array<(event: SessionEvent) => void>;
 }
 
 // A live room = every socket attached to one session. One shared agent runner;
@@ -142,6 +147,8 @@ interface Ctx {
   license: () => LicenseInfo;
   roomListener?: { server: Server; wss: WebSocketServer; port: number } | null;
   roomListenerPending?: Promise<number> | null;
+  pluginCommands: CommandDef[];
+  pluginHooks: Array<(event: SessionEvent) => void>;
 }
 
 export function createServer(deps: ServerDeps = {}): Server {
@@ -156,6 +163,8 @@ export function createServer(deps: ServerDeps = {}): Server {
     rooms: new Map(),
     roomTokens: new Map(),
     license: deps.license ?? (() => licenseStatus()),
+    pluginCommands: deps.pluginCommands ?? [],
+    pluginHooks: deps.pluginHooks ?? [],
   };
 
   const http = createHttpServer((req, res) => {
@@ -173,6 +182,12 @@ export function createServer(deps: ServerDeps = {}): Server {
   });
 
   return http;
+}
+
+function mergedCommands(cwd: string, pluginCommands: CommandDef[]): CommandDef[] {
+  const base = discoverCommands({ cwd });
+  const names = new Set(base.map((c) => c.name));
+  return [...base, ...pluginCommands.filter((c) => !names.has(c.name))];
 }
 
 function ensureRoomListener(ctx: Ctx): Promise<number> {
@@ -670,7 +685,7 @@ async function handleHttp(
   }
 
   if (req.method === "GET" && parts.length === 1 && parts[0] === "commands") {
-    const cmds = discoverCommands({ cwd: ctx.cwd }).map((c) => ({
+    const cmds = mergedCommands(ctx.cwd, ctx.pluginCommands).map((c) => ({
       name: c.name,
       description: c.description,
       agent: c.agent,
@@ -683,7 +698,7 @@ async function handleHttp(
     const body = await readJson(req);
     const name = typeof body.name === "string" ? body.name : "";
     const args = typeof body.args === "string" ? body.args : "";
-    const cmd = discoverCommands({ cwd: ctx.cwd }).find((c) => c.name === name);
+    const cmd = mergedCommands(ctx.cwd, ctx.pluginCommands).find((c) => c.name === name);
     if (!cmd) return sendJson(res, 404, { error: "command not found" });
     const prompt = expandCommand(cmd.template, args, ctx.cwd);
     return sendJson(res, 200, { prompt, agent: cmd.agent, model: cmd.model });
@@ -1145,6 +1160,7 @@ async function roomRunPrompt(
   try {
     const session = Session.resume({ ...ctx, registry: room.registry, permission: room.permission }, room.id);
     for await (const event of session.prompt(text, { signal, attachments })) {
+      runHooks(ctx.pluginHooks, event);
       roomBroadcast(room, event);
     }
     if (signal.aborted) roomBroadcast(room, { type: "stopped" });
@@ -1170,7 +1186,10 @@ async function roomRunBackground(ctx: Ctx, room: Room, goal: string): Promise<vo
     const verifyCommand = detectVerifyCommand(session.record.cwd);
     roomBroadcast(room, { type: "background-start", verify: verifyCommand ?? null });
     for await (const ae of runAutonomous({ session, goal, verifyCommand, signal })) {
-      if (ae.type === "session") roomBroadcast(room, ae.event);
+      if (ae.type === "session") {
+        runHooks(ctx.pluginHooks, ae.event);
+        roomBroadcast(room, ae.event);
+      }
       else if (ae.type === "round") roomBroadcast(room, { type: "background-round", round: ae.round });
       else if (ae.type === "verify")
         roomBroadcast(room, { type: "background-verify", ok: ae.ok, output: ae.output.slice(-2000) });
