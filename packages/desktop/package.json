@@ -48,9 +48,7 @@
         "to": "pty/node_modules/@lydell"
       }
     ],
-    "asarUnpack": [
-      "**/node_modules/better-sqlite3/**"
-    ],
+    "asar": false,
     "win": {
       "icon": "build/icon.ico",
       "target": [
