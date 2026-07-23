@@ -145,13 +145,16 @@ delete       -> cascade
 
 `better-sqlite3` is a native module. The core + server library and their tests
 run under Node (vitest env `node`), where `better-sqlite3`'s prebuilt binary
-loads fine. The open question is the PACKAGED desktop app: `SessionStore` runs
-in whatever process the server sidecar uses. The plan must (1) determine
-whether that process is a plain Node runtime (Node ABI — prebuilt binary works,
-mirroring the node-pty prebuilt approach) or the Electron main process
-(Electron ABI — needs `electron-rebuild` or an electron-targeted prebuild), and
-(2) wire the binary into the build + `asarUnpack` accordingly. This is a build
-concern only; it does not affect the library design or its Node tests.
+loads fine. Planning determined that the desktop runs the server (and thus `SessionStore`)
+IN the Electron main process — `packages/desktop/src/main/index.ts` imports
+`createServer` from `@termcoder/server` and calls `server.listen(...)` inline,
+not via a Node sidecar. So the native module needs the ELECTRON ABI: the plan
+wires `@electron/rebuild` for `better-sqlite3` plus `asarUnpack`, in both dev
+and packaging (the node prebuild will not load in Electron). This is a build
+concern only; it does not affect the library design or its Node/vitest tests
+(which load the Node prebuild). If the rebuild proves insufficient it splits
+into a focused follow-up (pin the Electron version, or move the server to a
+Node sidecar) without blocking the core storage improvement.
 
 ## Testing (vitest, Node env — `better-sqlite3` loads natively)
 
