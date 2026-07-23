@@ -236,8 +236,17 @@ function renderAtWidth(tree: JSX.Element, columns: number) {
   const stdout = new FixedWidthStdout(columns);
   const stderr = new FixedWidthStdout(columns);
   const stdin = new EventEmitter() as unknown as NodeJS.ReadStream;
-  Object.assign(stdin, { isTTY: true, setRawMode: () => {}, ref: () => {}, unref: () => {}, read: () => null });
-  inkRender(tree, {
+  Object.assign(stdin, {
+    isTTY: true,
+    setRawMode: () => {},
+    setEncoding: () => {},
+    resume: () => {},
+    pause: () => {},
+    ref: () => {},
+    unref: () => {},
+    read: () => null,
+  });
+  const instance = inkRender(tree, {
     stdout: stdout as unknown as NodeJS.WriteStream,
     stderr: stderr as unknown as NodeJS.WriteStream,
     stdin,
@@ -245,7 +254,9 @@ function renderAtWidth(tree: JSX.Element, columns: number) {
     exitOnCtrlC: false,
     patchConsole: false,
   });
-  return { lastFrame: stdout.lastFrame };
+  const frame = stdout.lastFrame();
+  instance.unmount();
+  return { lastFrame: () => frame };
 }
 
 describe("StatusBar", () => {
