@@ -59,6 +59,8 @@ export {
 export {
   definePlugin,
   loadPlugins,
+  discoverPluginSpecifiers,
+  runHooks,
   type Plugin,
   type PluginApi,
   type LoadPluginsResult,
