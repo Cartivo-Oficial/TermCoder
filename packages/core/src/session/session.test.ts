@@ -85,6 +85,9 @@ describe("Session agent loop", () => {
   });
 
   afterEach(() => {
+    try {
+      store.close();
+    } catch {}
     rmSync(dir, { recursive: true, force: true });
     clearProviderHealth();
   });

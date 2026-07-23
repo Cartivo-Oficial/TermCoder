@@ -133,12 +133,13 @@ export class SessionStore {
   }
 
   search(query: string): SessionSummary[] {
-    const like = `%${query}%`;
+    const esc = query.replace(/[\\%_]/g, (c) => "\\" + c);
+    const like = `%${esc}%`;
     const rows = this.db.prepare(
       `SELECT s.*, (SELECT COUNT(*) FROM messages m2 WHERE m2.sessionId = s.id) AS messageCount
        FROM sessions s
-       WHERE s.title LIKE ? COLLATE NOCASE
-          OR EXISTS (SELECT 1 FROM messages m WHERE m.sessionId = s.id AND m.text LIKE ? COLLATE NOCASE)
+       WHERE s.title LIKE ? ESCAPE '\\' COLLATE NOCASE
+          OR EXISTS (SELECT 1 FROM messages m WHERE m.sessionId = s.id AND m.text LIKE ? ESCAPE '\\' COLLATE NOCASE)
        ORDER BY s.updatedAt DESC`,
     ).all(like, like) as (SessionRow & { messageCount: number })[];
     return rows.map((r) => this.summaryFromRow(r, r.messageCount));

@@ -131,6 +131,14 @@ describe("SessionStore SQLite", () => {
     expect(store.search("nothing-here")).toEqual([]);
   });
 
+  it("treats a literal % in the query as a literal character, not a wildcard", () => {
+    const a = store.create({ cwd: "/w", model: "m", title: "100% done" });
+    store.save(a);
+    const b = store.create({ cwd: "/w", model: "m", title: "1000 done" });
+    store.save(b);
+    expect(store.search("100%").map((s) => s.id)).toEqual([a.id]);
+  });
+
   it("migrates legacy json files on construction", () => {
     const legacy = { id: "legacy-1", title: "Old", createdAt: 1, updatedAt: 2, cwd: "/w", model: "m", messages: [{ role: "user", content: "hi" }] };
     const dir2 = mkdtempSync(join(tmpdir(), "tc-legacy-"));
