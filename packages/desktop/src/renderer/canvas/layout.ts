@@ -3,7 +3,18 @@ import type { RunGraph } from "./runGraph";
 const COL = 220;
 const ROW = 140;
 
-export function layoutGraph(graph: RunGraph): Record<string, { x: number; y: number }> {
+export function layoutGraph(graph: RunGraph, collapsed: Set<string> = new Set()): Record<string, { x: number; y: number }> {
+  const hidden = (id: string): boolean => {
+    let cur = graph.nodes[id]?.parentId;
+    while (cur) {
+      if (collapsed.has(cur)) return true;
+      cur = graph.nodes[cur]?.parentId;
+    }
+    return false;
+  };
+
+  const visible = graph.order.filter((id) => !hidden(id));
+
   const depth: Record<string, number> = {};
   const compute = (id: string): number => {
     if (depth[id] !== undefined) return depth[id]!;
@@ -11,10 +22,10 @@ export function layoutGraph(graph: RunGraph): Record<string, { x: number; y: num
     depth[id] = parent && graph.nodes[parent] ? compute(parent) + 1 : 0;
     return depth[id]!;
   };
-  for (const id of graph.order) compute(id);
+  for (const id of visible) compute(id);
 
   const byDepth: Record<number, string[]> = {};
-  for (const id of graph.order) {
+  for (const id of visible) {
     const d = depth[id]!;
     (byDepth[d] ||= []).push(id);
   }
