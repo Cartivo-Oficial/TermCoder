@@ -5,7 +5,7 @@ import type { RunNode } from "./runGraph";
 
 export function Inspector({ node, now, onClose }: { node: RunNode; now: number; onClose: () => void }) {
   const { t } = useI18n();
-  const dur = (node.endedAt ?? now) - node.startedAt;
+  const dur = Math.max(0, (node.endedAt ?? now) - node.startedAt);
   return (
     <div className="agent-inspector">
       <div className="agent-inspector-head">

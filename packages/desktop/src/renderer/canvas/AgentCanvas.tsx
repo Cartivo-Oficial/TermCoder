@@ -17,6 +17,7 @@ export function AgentCanvas({ graph, hidden }: { graph: RunGraph; hidden: boolea
 
   useEffect(() => {
     if (hidden) return;
+    setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [hidden]);

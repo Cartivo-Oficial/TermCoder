@@ -7,7 +7,7 @@ export function NodeCard({ node, selected, hasChildren, collapsed, now, onSelect
   onSelect: () => void; onToggleCollapse: () => void;
 }) {
   const { t } = useI18n();
-  const dur = (node.endedAt ?? now) - node.startedAt;
+  const dur = Math.max(0, (node.endedAt ?? now) - node.startedAt);
   const current = node.activity.filter((a) => !a.done).map((a) => a.title || a.name).slice(-1)[0]
     ?? (node.activity.length ? `${node.activity.length} ${t("canvas.tools")}` : "");
   return (
