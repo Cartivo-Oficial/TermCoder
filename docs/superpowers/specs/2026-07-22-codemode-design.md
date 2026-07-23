@@ -37,6 +37,15 @@ path a normal tool call uses.
   normal tool calls). `isolated-vm` is a future hardening option, out of scope.
 - No persistence of programs, no cross-call state, no scheduling.
 
+## Known limitations
+
+- Because both the `runInContext` timeout and the outer `withTimeout` race run on
+  the single Node event loop, a program that `await`s something and then enters a
+  synchronous infinite loop can block that loop entirely, so neither timeout ever
+  fires and the process hangs; this is inherent to the `node:vm`-only approach,
+  and moving to `isolated-vm` or a worker thread (see Non-goals) is the follow-up
+  that would let the host actually preempt a stuck program.
+
 ## Existing context
 
 - Tools implement `TermTool` (`packages/core/src/tools/types.ts`):

@@ -9,8 +9,15 @@ export async function runProgram(
 ): Promise<SandboxResult> {
   const buffer: string[] = [];
   let size = 0;
+  let truncated = false;
   const capture = (...parts: unknown[]) => {
-    if (size >= opts.maxLog) return;
+    if (size >= opts.maxLog) {
+      if (!truncated) {
+        truncated = true;
+        buffer.push("[log truncated]");
+      }
+      return;
+    }
     const line = parts.map((p) => (typeof p === "string" ? p : safeStringify(p))).join(" ");
     size += line.length + 1;
     buffer.push(line);

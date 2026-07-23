@@ -19,6 +19,8 @@ export const runCodeTool: TermTool = defineTool({
     "No filesystem, network, or process access except through the tools. `return` a value and `console.log` for output.",
   inputSchema: z.object({ code: z.string().describe("The JavaScript program to run.") }),
   readOnly: false,
+  permissionKind: "bash",
+  describe: () => ({ title: "run code" }),
   async run({ code }, ctx: ToolContext) {
     const list = ctx.tools ?? builtinTools;
     const bridge = buildToolBridge(list, ctx, { maxCalls: CODEMODE_LIMITS.maxCalls });
@@ -52,5 +54,6 @@ function stringify(value: unknown): string {
 
 function truncate(text: string, max: number): string {
   if (text.length <= max) return text;
-  return text.slice(0, max) + "\n… [truncated]";
+  const marker = "\n… [truncated]";
+  return text.slice(0, Math.max(0, max - marker.length)) + marker;
 }

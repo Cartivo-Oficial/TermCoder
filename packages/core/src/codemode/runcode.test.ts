@@ -34,4 +34,8 @@ describe("run_code tool", () => {
     expect(runCodeTool.name).toBe("run_code");
     expect(runCodeTool.readOnly).toBe(false);
   });
+
+  it("is gated with a permissionKind so it prompts", () => {
+    expect(runCodeTool.permissionKind).toBe("bash");
+  });
 });
