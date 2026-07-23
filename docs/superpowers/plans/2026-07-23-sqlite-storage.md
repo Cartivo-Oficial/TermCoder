@@ -521,3 +521,14 @@ Run from `packages/desktop`: `pnpm build` is heavy (electron-builder); instead r
 - Types consistent: `openDb`/`messageText`/`Database`, `migrateJsonSessions(baseDir, store)`, `SessionRecord`/`SessionSummary`, `search`.
 - Backward compat: only caller `server.ts:150` (`new SessionStore()`) is unchanged; API identical plus additive `search`.
 - Risk called out: Electron ABI for the native module (T4), with a follow-up path if the rebuild is not enough.
+
+## Post-merge dev note (from the final review)
+
+`better-sqlite3` is a single hoisted binary shared by `@termcoder/core` (Node
+ABI) and `@termcoder/desktop` (Electron ABI). `rebuild:native` (run by
+`predev`/`package*`) clobbers it to the Electron ABI, so running core's Node
+vitest suite in the same checkout afterwards fails with `ERR_DLOPEN_FAILED`
+until you `pnpm rebuild better-sqlite3` (or reinstall). The shipped app is
+unaffected (packaging rebuilds for Electron before `electron-builder`). Order
+CI/dev accordingly: run Node tests and the desktop rebuild in separate steps or
+re-run `pnpm rebuild better-sqlite3` between them.
