@@ -444,7 +444,14 @@ app.whenReady().then(async () => {
   );
 
   registerPtyIpc();
-  await startServer();
+  try {
+    await startServer();
+  } catch (err) {
+    dialog.showErrorBox(
+      "termcoder failed to start",
+      String(err instanceof Error ? (err.stack ?? err.message) : err),
+    );
+  }
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
