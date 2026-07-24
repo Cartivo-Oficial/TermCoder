@@ -186,6 +186,22 @@ importers:
         specifier: 1.1.0
         version: 1.1.0
 
+  packages/sdk:
+    dependencies:
+      '@termcoder/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@termcoder/server':
+        specifier: workspace:*
+        version: link:../server
+      '@types/ws':
+        specifier: ^8.5.13
+        version: 8.18.1
+      ws:
+        specifier: ^8.18.0
+        version: 8.21.0
+
   packages/server:
     dependencies:
       '@termcoder/core':
