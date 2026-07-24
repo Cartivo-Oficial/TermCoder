@@ -2,6 +2,12 @@
 
 New releases and improvements to TermCoder.
 
+## 0.11.4
+2026-07-23
+
+### Desktop
+- **Fixed: the app would not open.** On 0.11.3 the desktop app could fail to start with no window and no error — a regression from the new local database. Its native module was bundled incorrectly, so it could not load at launch and startup aborted before the window appeared. The module is now loaded correctly, and if startup ever fails again the app opens and shows the error instead of doing nothing. Update to 0.11.4 if 0.11.3 would not launch.
+
 ## 0.11.3
 2026-07-23
 
