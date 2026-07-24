@@ -20,9 +20,8 @@ class AsyncQueue<T> {
 
   async *drain(): AsyncGenerator<T> {
     while (true) {
-      const item = this.items.shift();
-      if (item !== undefined) {
-        yield item;
+      if (this.items.length) {
+        yield this.items.shift()!;
         continue;
       }
       if (this.done) return;
