@@ -206,7 +206,7 @@ export default function Pricing() {
             <div className="mt-6 flex flex-wrap items-start gap-3">
               <div className="flex-1 rounded-md border border-primary/40 bg-primary/5 p-4">
                 <div className="font-mono text-[11px] uppercase tracking-widest text-primary">host</div>
-                <div className="mt-2 text-[13.5px] text-foreground">pays $9 / month</div>
+                <div className="mt-2 text-[13.5px] text-foreground">pays $9 once</div>
                 <div className="mt-1 font-mono text-[11px] text-muted-foreground/60">one licence</div>
               </div>
               {["guest", "guest", "guest"].map((g, i) => (
