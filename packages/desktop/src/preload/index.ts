@@ -15,6 +15,18 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.invoke("read-file", path),
   writeFile: (path: string, content: string): Promise<{ ok: boolean; error?: string }> =>
     ipcRenderer.invoke("write-file", path, content),
+  createFile: (path: string, content?: string): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke("create-file", path, content),
+  createDir: (path: string): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke("create-dir", path),
+  renamePath: (from: string, to: string): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke("rename-path", from, to),
+  deletePath: (path: string): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke("delete-path", path),
+  duplicatePath: (path: string): Promise<{ ok: boolean; newPath?: string; error?: string }> =>
+    ipcRenderer.invoke("duplicate-path", path),
+  revealPath: (path: string, select?: boolean): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke("reveal-path", path, select),
   saveFile: (defaultName: string, content: string): Promise<{ ok: boolean; path?: string; error?: string }> =>
     ipcRenderer.invoke("save-file", defaultName, content),
   gitStatus: (dir: string, base?: string): Promise<{ map: Record<string, string>; count: number }> =>

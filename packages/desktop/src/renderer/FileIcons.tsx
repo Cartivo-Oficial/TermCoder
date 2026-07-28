@@ -65,6 +65,8 @@ import {
   SiErlang,
   SiGradle,
   SiCmake,
+  SiDotnet,
+  SiNuget,
 } from "react-icons/si";
 import {
   FaImage,
@@ -80,7 +82,11 @@ import {
   FaFileCsv,
   FaFilePdf,
   FaFont,
+  FaWindows,
+  FaCog,
+  FaTerminal,
 } from "react-icons/fa";
+import { MdBuild } from "react-icons/md";
 
 
 const NEUTRAL = "#8b8b93";
@@ -191,6 +197,10 @@ const STARTS: Array<[RegExp, () => ReactNode]> = [
   [/^cypress\.config/i, ico(SiCypress, "#69d3a7")],
   [/^schema\.prisma$/i, ico(SiPrisma, "#2d3748")],
   [/^\.storybook/i, ico(SiStorybook, "#ff4785")],
+  // NuGet config
+  [/^nuget\.config$/i, ico(SiNuget, "#004880")],
+  [/^global\.json$/i, ico(SiDotnet, "#512bd4")],
+  [/^Directory\.Build\.(props|targets)$/i, ico(MdBuild, "#d4813a")],
 ];
 
 const EXT: Record<string, () => ReactNode> = {
@@ -226,9 +236,28 @@ const EXT: Record<string, () => ReactNode> = {
   cc: ico(SiCplusplus, "#00599c"),
   cxx: ico(SiCplusplus, "#00599c"),
   hpp: ico(SiCplusplus, "#00599c"),
+  // shell / scripting
   sh: ico(SiGnubash, "#4eaa25"),
   bash: ico(SiGnubash, "#4eaa25"),
   zsh: ico(SiGnubash, "#4eaa25"),
+  fish: ico(SiGnubash, "#4eaa25"),
+  // Windows scripting
+  bat: ico(FaTerminal, "#c1c100"),
+  cmd: ico(FaTerminal, "#c1c100"),
+  ps1: ico(FaTerminal, "#2671be"),
+  psm1: ico(FaTerminal, "#2671be"),
+  psd1: ico(FaTerminal, "#2671be"),
+  // .NET / Visual Studio
+  cs: ico(SiSharp, "#68217a"),
+  csproj: ico(SiDotnet, "#512bd4"),
+  vbproj: ico(SiDotnet, "#512bd4"),
+  fsproj: ico(SiDotnet, "#512bd4"),
+  sln: ico(FaCog, "#5c2d91"),
+  props: ico(MdBuild, "#d4813a"),
+  targets: ico(MdBuild, "#d4813a"),
+  nuspec: ico(SiNuget, "#004880"),
+  nupkg: ico(SiNuget, "#004880"),
+  // misc
   sql: ico(FaDatabase, "#6a9fb5"),
   java: ico(SiOpenjdk, "#ea2d2e"),
   kt: ico(SiKotlin, "#7f52ff"),
@@ -244,7 +273,6 @@ const EXT: Record<string, () => ReactNode> = {
   jl: ico(SiJulia, "#9558b2"),
   pl: ico(SiPerl, "#39457e"),
   clj: ico(SiClojure, "#5881d8"),
-  cs: ico(SiSharp, "#68217a"),
   zig: ico(SiZig, "#f7a41d"),
   tf: ico(SiTerraform, "#7b42bc"),
   tfvars: ico(SiTerraform, "#7b42bc"),
@@ -260,6 +288,8 @@ const EXT: Record<string, () => ReactNode> = {
   zip: ico(FaFileArchive, "#9a9aa2"),
   tar: ico(FaFileArchive, "#9a9aa2"),
   gz: ico(FaFileArchive, "#9a9aa2"),
+  rar: ico(FaFileArchive, "#9a9aa2"),
+  "7z": ico(FaFileArchive, "#9a9aa2"),
   woff: ico(FaFont, "#a371f7"),
   woff2: ico(FaFont, "#a371f7"),
   ttf: ico(FaFont, "#a371f7"),
@@ -271,8 +301,20 @@ const EXT: Record<string, () => ReactNode> = {
   gif: ico(FaImage, "#a371f7"),
   webp: ico(FaImage, "#a371f7"),
   ico: ico(FaImage, "#a371f7"),
+  bmp: ico(FaImage, "#a371f7"),
+  tiff: ico(FaImage, "#a371f7"),
   lock: ico(FaLock, "#9a9aa2"),
   txt: ico(FaFileAlt, "#9a9aa2"),
+  log: ico(FaFileAlt, NEUTRAL),
+  // config / misc
+  ini: ico(FaCog, NEUTRAL),
+  cfg: ico(FaCog, NEUTRAL),
+  conf: ico(FaCog, NEUTRAL),
+  env: ico(SiDotenv, "#ecd53f"),
+  // Windows-specific
+  exe: ico(FaWindows, "#0078d4"),
+  dll: ico(FaWindows, "#0078d4"),
+  msi: ico(FaWindows, "#0078d4"),
 };
 
 export function fileIcon(name: string): ReactNode {

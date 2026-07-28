@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
@@ -31,7 +32,9 @@ import { blobToWav, blobToBase64 } from "./audio";
 import {
   IconBack,
   IconClose,
+  IconDesktop,
   IconForward,
+  IconIDE,
   IconMaximize,
   IconMenu,
   IconMinimize,
@@ -41,6 +44,7 @@ import {
   IconSend,
   IconSun,
 } from "./Icons";
+import { IDELayout, type IDEMessage } from "./IDELayout";
 
 declare global {
   interface Window {
@@ -53,6 +57,12 @@ declare global {
       allFiles: (dir: string) => Promise<string[]>;
       readFile: (path: string) => Promise<{ content: string; error?: string }>;
       writeFile: (path: string, content: string) => Promise<{ ok: boolean; error?: string }>;
+      createFile: (path: string, content?: string) => Promise<{ ok: boolean; error?: string }>;
+      createDir: (path: string) => Promise<{ ok: boolean; error?: string }>;
+      renamePath: (from: string, to: string) => Promise<{ ok: boolean; error?: string }>;
+      deletePath: (path: string) => Promise<{ ok: boolean; error?: string }>;
+      duplicatePath: (path: string) => Promise<{ ok: boolean; newPath?: string; error?: string }>;
+      revealPath: (path: string, select?: boolean) => Promise<{ ok: boolean; error?: string }>;
       saveFile: (defaultName: string, content: string) => Promise<{ ok: boolean; path?: string; error?: string }>;
       notify: (title: string, body: string) => void;
       checkUpdate: () => Promise<{ current: string; latest: string; hasUpdate: boolean }>;
@@ -193,7 +203,7 @@ function playChime() {
   }
 }
 
-interface Tab {
+export interface Tab {
   id: string;
   name: string;
   kind: "file" | "diff";
@@ -484,6 +494,16 @@ export function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [serversOpen, setServersOpen] = useState(false);
   const [fileList, setFileList] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<"desktop" | "ide">(
+    () => (localStorage.getItem("tc-viewmode") as "desktop" | "ide") || "desktop",
+  );
+  useEffect(() => {
+    localStorage.setItem("tc-viewmode", viewMode);
+  }, [viewMode]);
+  const toggleViewMode = () => {
+    setViewMode((v) => (v === "desktop" ? "ide" : "desktop"));
+  };
+  const mentionActiveRef = useRef(-1);
   const autoApproveRef = useRef(autoApprove);
   const navStack = useRef<string[]>([]);
   const navPos = useRef(-1);
@@ -706,7 +726,10 @@ export function App() {
     const bind = (id: string) =>
       comboFor(keybinds, KEYBIND_ACTIONS.find((a) => a.id === id)!);
     const onKey = (e: KeyboardEvent) => {
-      if (matchCombo(e, bind("commandPalette"))) {
+      if ((e.ctrlKey || e.metaKey) && e.altKey && (e.key === "]" || e.key === "}" )) {
+        e.preventDefault();
+        toggleViewMode();
+      } else if (matchCombo(e, bind("commandPalette"))) {
         e.preventDefault();
         setPaletteOpen((v) => !v);
       } else if (matchCombo(e, bind("newSession"))) {
@@ -1180,7 +1203,7 @@ export function App() {
       prev.some((t) => t.id === tab.id) ? prev.map((t) => (t.id === tab.id ? tab : t)) : [...prev, tab],
     );
     setActiveTab(tab.id);
-    setViewerOpen(true);
+    if (viewMode !== "ide") setViewerOpen(true);
   }
 
   function closeTab(id: string) {
@@ -1189,6 +1212,24 @@ export function App() {
     if (rest.length === 0) setViewerOpen(false);
     else if (activeTab === id) setActiveTab(rest[rest.length - 1]!.id);
   }
+  function closeOtherTabs(id: string) {
+    const keep = tabs.filter((t) => t.id === id);
+    setTabs(keep);
+    setActiveTab(keep[0]?.id ?? null);
+  }
+  function closeRightTabs(id: string) {
+    const i = tabs.findIndex((t) => t.id === id);
+    if (i < 0) return;
+    const rest = tabs.slice(0, i + 1);
+    setTabs(rest);
+    if (!rest.find((t) => t.id === activeTab)) setActiveTab(rest[rest.length - 1]?.id ?? null);
+  }
+  function closeAllTabs() {
+    setTabs([]);
+    setActiveTab(null);
+    setViewerOpen(false);
+  }
+  const reopenTabFn = () => null as Tab | null;
 
   async function openFile(path: string) {
     const res = await window.api?.readFile(path);
@@ -1898,20 +1939,40 @@ export function App() {
   );
 
   return (
-    <div className={`shell${isHome ? " home" : ""}`}>
-      <Rail
-        active={sidePanel ?? (leftOpen ? "chat" : null)}
-        busy={busy}
-        connected={connected}
-        onSelect={(item) => {
-          if (item === "chat") setLeftOpen((v) => !v);
-          else setSidePanel((p) => (p === item ? null : item));
-        }}
-        onSettings={() => setSettingsOpen(true)}
-      />
+    <div className={`shell${isHome ? " home" : ""} view-${viewMode}`}>
+      {viewMode === "desktop" ? (
+        <Rail
+          active={sidePanel ?? (leftOpen ? "chat" : null)}
+          busy={busy}
+          connected={connected}
+          onSelect={(item) => {
+            if (item === "chat") setLeftOpen((v) => !v);
+            else setSidePanel((p) => (p === item ? null : item));
+          }}
+          onSettings={() => setSettingsOpen(true)}
+        />
+      ) : null}
       <div className="app-col">
+      <div key={viewMode} className={`view-mode-wrap view-mode-${viewMode}`}>
+      {viewMode === "desktop" ? (
+        <>
       <header className="titlebar">
         <div className="tb-left">
+          <div className="mode-switch-wrap" title={`Switch to IDE Mode (Ctrl+Alt+])`}>
+            <button
+              className="mode-seg"
+              onClick={toggleViewMode}
+            >
+              <IconIDE />
+              <span>IDE</span>
+            </button>
+            <button
+              className="mode-seg active"
+            >
+              <IconDesktop />
+              <span>Desktop</span>
+            </button>
+          </div>
           <div className="menu-wrap">
             <button className="icon" title={t("nav.menu")} onClick={() => setMenuOpen((v) => !v)}><IconMenu /></button>
             {menuOpen ? (
@@ -2306,7 +2367,72 @@ export function App() {
           />
         ) : null}
       </div>
-      </div>
+        </>
+      ) : (
+        <IDELayout
+          mode={viewMode}
+          onToggleMode={toggleViewMode}
+          cwd={cwd}
+          status={status}
+          changes={changes}
+          tabs={tabs}
+          activeTab={activeTab}
+          onActivateTab={setActiveTab}
+          onCloseTab={closeTab}
+          onCloseOtherTabs={closeOtherTabs}
+          onCloseRightTabs={closeRightTabs}
+          onCloseAllTabs={closeAllTabs}
+          onReopenTab={reopenTabFn}
+          onOpenFile={(p) => void openFile(p)}
+          onEditTab={editTab}
+          onSaveTab={saveTab}
+          onAskAIAboutTab={askAboutFile}
+          codeTheme={codeTheme}
+          port={port}
+          wordWrap={wordWrap}
+          messages={messages as IDEMessage[]}
+          input={input}
+          onInputChange={setInput}
+          onSend={() => void send()}
+          onStop={stop}
+          busy={busy}
+          connected={connected}
+          sendOnEnter={sendOnEnter}
+          mention={mention}
+          onInsertMention={insertMention}
+          mentionActiveRef={mentionActiveRef}
+          pendingImages={pendingImages}
+          onAddImage={addImageFile}
+          onRemoveImage={removeImage}
+          onAttachFiles={() => void attachFiles()}
+          autonomous={autonomous}
+          onToggleAutonomous={() => setAutonomous((v) => !v)}
+          recording={recording}
+          transcribing={transcribing}
+          onToggleMic={() => void toggleMic()}
+          model={model}
+          agent={agent}
+          onChangeModel={(m) => { void changeModel(m); }}
+          onChangeAgent={(a) => { setAgent(a); }}
+          workingLabel={workingLabel}
+          workingDetail={workingDetail}
+          workingTokens={workingTokens}
+          tokensIn={tokensIn}
+          tokensOut={tokensOut}
+          lastCtx={lastCtx}
+          catalog={catalog}
+          onToggleFiles={() => setSidePanel((p) => (p === "files" ? null : "files"))}
+          onChooseFolder={() => void chooseFolder()}
+          projectName={project}
+          t={t}
+          fmtTokens={fmtTokens}
+          onCopyText={(txt) => void navigator.clipboard.writeText(txt)}
+          refreshTree={() => { void refreshStatus(); void refreshGit(); }}
+          onToggleSettings={() => setSettingsOpen(true)}
+        />
+      )}
+      </div>{/* view-mode-wrap */}
+      </div>{/* app-col */}
 
       {recipesOpen ? (
         <RecipesPanel port={port} cwd={cwd} onClose={() => setRecipesOpen(false)} onRun={runRecipe} />
@@ -2324,7 +2450,7 @@ export function App() {
         <RoomView room={room} myName={myName} onChangeName={setMyName} onClose={() => setRoomOpen(false)} />
       ) : null}
 
-      {viewerOpen && tabs.length ? (
+      {viewerOpen && tabs.length && viewMode !== "ide" ? (
         <TabbedViewer
           tabs={tabs}
           activeTab={activeTab}

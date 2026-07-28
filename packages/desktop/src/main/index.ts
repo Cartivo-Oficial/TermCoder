@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync, copyFileSync } from "node:fs";
+import { dirname, join, parse, resolve } from "node:path";
 import {
   app,
   BrowserWindow,
@@ -227,6 +227,84 @@ ipcMain.handle("read-file", (_event, path: string) => {
     return { content: content.length > max ? `${content.slice(0, max)}\n…(truncated)` : content };
   } catch (err) {
     return { content: "", error: String(err) };
+  }
+});
+
+ipcMain.handle("create-file", (_event, path: string, content = "") => {
+  try {
+    if (existsSync(path)) return { ok: false, error: "File already exists" };
+    const dir = dirname(path);
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    writeFileSync(path, content, "utf8");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+});
+
+ipcMain.handle("create-dir", (_event, path: string) => {
+  try {
+    mkdirSync(path, { recursive: true });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+});
+
+ipcMain.handle("rename-path", (_event, from: string, to: string) => {
+  try {
+    if (existsSync(to)) return { ok: false, error: "Destination already exists" };
+    renameSync(from, to);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+});
+
+ipcMain.handle("delete-path", (_event, path: string) => {
+  try {
+    rmSync(path, { recursive: true, force: true });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+});
+
+ipcMain.handle("duplicate-path", (_event, path: string) => {
+  try {
+    if (!existsSync(path)) return { ok: false, error: "Source does not exist" };
+    const info = parse(path);
+    const isDir = statSync(path).isDirectory();
+    let newPath = path;
+    let i = 1;
+    while (existsSync(newPath)) {
+      newPath = join(info.dir, `${info.name} copy${i > 1 ? ` ${i}` : ""}${info.ext}`);
+      if (isDir) newPath = `${newPath}/`.slice(0, -1);
+      i++;
+    }
+    const copyRecursive = (src: string, dest: string) => {
+      const s = statSync(src);
+      if (s.isDirectory()) {
+        mkdirSync(dest, { recursive: true });
+        for (const n of readdirSync(src)) copyRecursive(join(src, n), join(dest, n));
+      } else {
+        copyFileSync(src, dest);
+      }
+    };
+    copyRecursive(path, newPath);
+    return { ok: true, newPath };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+});
+
+ipcMain.handle("reveal-path", (_event, path: string, select = true) => {
+  try {
+    if (select) shell.showItemInFolder(resolve(path));
+    else shell.openPath(resolve(dirname(path)));
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: String(err) };
   }
 });
 
