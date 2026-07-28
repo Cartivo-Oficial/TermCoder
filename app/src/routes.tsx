@@ -76,7 +76,7 @@ export const ROUTES: RouteDef[] = [
     description:
       "Sign in to your TermCoder dashboard with GitHub or Google. Optional — TermCoder runs with no account and no API key.",
     Component: Login,
-    scripts: ["config.js?v=4", "auth.js?v=6"],
+    scripts: ["config.js?v=4", "auth.js?v=7"],
   },
   {
     path: "/dashboard.html",

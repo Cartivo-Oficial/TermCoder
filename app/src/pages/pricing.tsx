@@ -59,16 +59,26 @@ function Check({ tone = "warm" }: { tone?: "warm" | "cool" }) {
 
 export default function Pricing() {
   const [session, setSession] = useState<Session | null>(null);
-  useEffect(() => setSession(readSession()), []);
+  const [payReady, setPayReady] = useState(true);
+  const [notice, setNotice] = useState("");
+  useEffect(() => {
+    setSession(readSession());
+    setPayReady(payConfigured());
+  }, []);
 
   const getPro = () => {
+    if (!payConfigured()) {
+      setNotice("Checkout isn't live yet. The app already activates licence keys in Settings — ask for a key in the docs and you can start today.");
+      return;
+    }
     const s = readSession();
-    if (!s || !payConfigured()) {
+    if (!s) {
       location.href = "login.html";
       return;
     }
+    setNotice("");
     void openCheckout(s).catch(() => {
-      location.href = "login.html";
+      setNotice("Could not open the checkout window. Please try again in a moment.");
     });
   };
 
@@ -154,8 +164,13 @@ export default function Pricing() {
                 onClick={getPro}
                 className={cn(buttonVariants({ variant: "outline" }), "mt-7 h-11 w-full rounded-md border-study/40 font-mono text-[14px] text-study hover:bg-study/10")}
               >
-                {session ? "Get Pro" : "Sign in to get Pro"}
+                {!payReady ? "Checkout opens soon" : session ? "Get Pro" : "Sign in to get Pro"}
               </button>
+              {notice && (
+                <p className="mt-4 rounded-md border border-study/30 bg-study/5 px-4 py-3 text-[12.5px] leading-relaxed text-muted-foreground">
+                  {notice}
+                </p>
+              )}
               <p className="mt-4 text-[11.5px] leading-relaxed text-muted-foreground/60">
                 One year, paid once — Pix, card or PayPal. Your key lands in your{" "}
                 <a href="dashboard.html" className="text-study underline underline-offset-2">dashboard</a>.

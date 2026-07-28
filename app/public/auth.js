@@ -88,6 +88,16 @@
     }
   }
 
+  // A panel that needs a provider the current session lacks (e.g. the gist-backed
+  // panels when you signed in with Google) links here as login.html?connect=github.
+  // Start that provider's flow straight away instead of showing the picker again.
+  function autoConnect() {
+    var want = new URLSearchParams(location.search).get("connect");
+    if (!want || !configured(want)) return false;
+    beginLogin(want);
+    return true;
+  }
+
   function wireLoginButtons() {
     document.querySelectorAll(".auth-btn[data-provider]").forEach(function (b) {
       b.addEventListener("click", function (e) {
@@ -176,6 +186,7 @@
     signOut: signOut,
   };
   document.addEventListener("DOMContentLoaded", function () {
+    if (autoConnect()) return;
     wireLoginButtons();
     hydrateDashboard();
   });

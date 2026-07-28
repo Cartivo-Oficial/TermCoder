@@ -123,10 +123,14 @@ export function SettingsPanel() {
       <div>
         <h2 className="font-display text-3xl font-light tracking-[-0.03em] text-foreground">Your preferences.</h2>
         <p className="mt-3 max-w-xl text-[14.5px] leading-relaxed text-muted-foreground">
-          Settings sync needs a GitHub sign-in — it rides on your private gist.
+          You are signed in with Google. Your settings sync through your own private GitHub gist, so this panel needs
+          a GitHub connection too — nothing is stored on our servers.
         </p>
-        <a href="login.html" className={cn(buttonVariants(), "mt-6 h-11 rounded-md px-5 font-mono text-[14px]")}>
-          Sign in with GitHub →
+        <a
+          href="login.html?connect=github"
+          className={cn(buttonVariants(), "mt-6 h-11 rounded-md px-5 font-mono text-[14px]")}
+        >
+          Connect GitHub →
         </a>
       </div>
     );
