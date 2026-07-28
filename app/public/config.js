@@ -9,7 +9,7 @@ window.TC_AUTH = {
 };
 
 window.TC_PAY = {
-  environment: "sandbox",
-  clientToken: "",
-  priceId: "",
+  environment: "production",
+  clientToken: "live_becd348d09c5e13c88ce9d00603", // Paddle client-side token — public by design
+  priceId: "pri_01kymns6ma2tnnmsfqknxa241f", // Pro, one-time — must match PADDLE_PRICE_ID in website/auth/wrangler.toml
 };

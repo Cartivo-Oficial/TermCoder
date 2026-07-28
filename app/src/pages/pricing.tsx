@@ -77,8 +77,13 @@ export default function Pricing() {
       return;
     }
     setNotice("");
-    void openCheckout(s).catch(() => {
-      setNotice("Could not open the checkout window. Please try again in a moment.");
+    void openCheckout(s).catch((err: unknown) => {
+      const reason = err instanceof Error ? err.message : "";
+      setNotice(
+        reason.includes("sign in")
+          ? "Your sign-in is out of date. Please sign out and back in, then try again."
+          : "Could not open the checkout window. Please try again in a moment.",
+      );
     });
   };
 
@@ -146,7 +151,7 @@ export default function Pricing() {
               <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-study">pro · for whoever leads</div>
               <div className="mt-2 flex items-baseline gap-1.5">
                 <span className="font-display text-5xl font-light tracking-[-0.04em] text-foreground">$9</span>
-                <span className="font-mono text-[13px] text-muted-foreground/60">/ month</span>
+                <span className="font-mono text-[13px] text-muted-foreground/60">once · one year</span>
               </div>
               <p className="mt-5 text-[14px] leading-relaxed text-muted-foreground">
                 One teacher pays; thirty students don&apos;t. That is the whole deal — and it is how the project
