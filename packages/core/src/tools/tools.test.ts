@@ -114,3 +114,49 @@ describe("tools", () => {
     await expect(readTool.run({ path: "../outside.txt" }, ctx)).rejects.toThrow(/escapes workspace/);
   });
 });
+
+describe("describe() carries a positional patch", () => {
+  let dir: string;
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), "tc-patch-"));
+  });
+  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("write positions the patch against the previous file", () => {
+    writeFileSync(join(dir, "a.txt"), "um\ndois\ntres\n", "utf8");
+    const out = writeTool.describe!({ path: "a.txt", content: "um\nDOIS\ntres\n" }, { cwd: dir } as never);
+    expect(out.patch).toBeDefined();
+    expect(out.patch!.some((h) => h.lines.includes("+DOIS"))).toBe(true);
+  });
+
+  it("edit positions the patch by where the fragment sits in the file, not in the fragment", () => {
+    const body = Array.from({ length: 30 }, (_, i) => `linha ${i + 1}`).join("\n") + "\n";
+    writeFileSync(join(dir, "b.txt"), body, "utf8");
+    const out = editTool.describe!(
+      { path: "b.txt", oldString: "linha 20", newString: "LINHA 20", replaceAll: false },
+      { cwd: dir } as never,
+    );
+    expect(out.patch).toBeDefined();
+    const hunk = out.patch![0]!;
+    expect(hunk.newStart).toBeGreaterThan(10);
+    expect(hunk.lines).toContain("+LINHA 20");
+  });
+
+  it("edit describes without a patch when the file is missing, and does not throw", () => {
+    const out = editTool.describe!(
+      { path: "nope.txt", oldString: "a", newString: "b", replaceAll: false },
+      { cwd: dir } as never,
+    );
+    expect(out.patch).toBeUndefined();
+    expect(out.title).toContain("nope.txt");
+  });
+
+  it("edit describes without a patch when oldString is not in the file", () => {
+    writeFileSync(join(dir, "c.txt"), "conteudo\n", "utf8");
+    const out = editTool.describe!(
+      { path: "c.txt", oldString: "ausente", newString: "x", replaceAll: false },
+      { cwd: dir } as never,
+    );
+    expect(out.patch).toBeUndefined();
+  });
+});

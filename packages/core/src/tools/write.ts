@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, relative } from "node:path";
 import { z } from "zod";
-import { formatDiff } from "../util/diff";
+import { formatDiff, filePatch } from "../util/diff";
 import { resolveInside } from "../util/path";
 import { defineTool } from "./types";
 
@@ -26,6 +26,7 @@ export const writeTool = defineTool({
     return {
       title: `${exists ? "Overwrite" : "Create"} ${rel}`,
       detail: formatDiff(previous, args.content),
+      patch: filePatch(previous, args.content),
     };
   },
   async run(args, ctx) {

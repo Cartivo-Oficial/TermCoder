@@ -1,7 +1,7 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { relative } from "node:path";
 import { z } from "zod";
-import { formatDiff } from "../util/diff";
+import { formatDiff, filePatch } from "../util/diff";
 import { resolveInside } from "../util/path";
 import { defineTool } from "./types";
 
@@ -35,8 +35,21 @@ export const editTool = defineTool({
     return relative(ctx.cwd, resolveInside(ctx.cwd, args.path)).split("\\").join("/");
   },
   describe(args, ctx) {
-    const rel = relative(ctx.cwd, resolveInside(ctx.cwd, args.path)).split("\\").join("/");
-    return { title: `Edit ${rel}`, detail: formatDiff(args.oldString, args.newString) };
+    const abs = resolveInside(ctx.cwd, args.path);
+    const rel = relative(ctx.cwd, abs).split("\\").join("/");
+    const base = { title: `Edit ${rel}`, detail: formatDiff(args.oldString, args.newString) };
+    if (!existsSync(abs)) return base;
+    let original: string;
+    try {
+      original = readFileSync(abs, "utf8");
+    } catch {
+      return base;
+    }
+    if (!original.includes(args.oldString)) return base;
+    const updated = args.replaceAll
+      ? original.split(args.oldString).join(args.newString)
+      : original.replace(args.oldString, args.newString);
+    return { ...base, patch: filePatch(original, updated) };
   },
   async run(args, ctx) {
     const abs = resolveInside(ctx.cwd, args.path);
