@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
@@ -1411,13 +1411,11 @@ export function App() {
   };
   const answerAll = () => {
     if (isGuest) return;
-    setReviewQueue((q) => {
-      const { next, ids } = resolveAll(q);
-      for (const id of ids) {
-        wsRef.current?.send(JSON.stringify({ type: "permission-decision", id, decision: "allow" }));
-      }
-      return next;
-    });
+    const { next, ids } = resolveAll(reviewQueue);
+    for (const id of ids) {
+      wsRef.current?.send(JSON.stringify({ type: "permission-decision", id, decision: "allow" }));
+    }
+    setReviewQueue(next);
   };
 
   function send() {
@@ -1929,7 +1927,10 @@ export function App() {
     const rel = dir && tab.path.startsWith(dir) ? tab.path.slice(dir.length).replace(/^[\\/]+/, "") : tab.path;
     return rel.split("\\").join("/");
   })();
-  const reviewMarks = marksFromPatch(findByTarget(reviewQueue, openFilePath ?? "")?.patch ?? []);
+  const reviewMarks = useMemo(
+    () => marksFromPatch(findByTarget(reviewQueue, openFilePath ?? "")?.patch ?? []),
+    [reviewQueue, openFilePath],
+  );
 
   return (
     <div className={`shell${isHome ? " home" : ""}`}>
