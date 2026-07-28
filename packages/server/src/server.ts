@@ -215,10 +215,29 @@ function ensureRoomListener(ctx: Ctx): Promise<number> {
 }
 
 const CORS = {
-  "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET,POST,DELETE,OPTIONS",
   "access-control-allow-headers": "content-type",
 };
+
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+
+export function isLocalHostHeader(host: string | undefined): boolean {
+  if (!host) return false;
+  const name = host.startsWith("[") ? host.slice(0, host.indexOf("]") + 1) : host.split(":")[0];
+  return LOCAL_HOSTS.has(name ?? "");
+}
+
+export function allowedOrigin(origin: string | undefined): string {
+  if (!origin || origin === "null") return "null";
+  try {
+    const u = new URL(origin);
+    if (u.protocol === "file:") return "null";
+    if ((u.protocol === "http:" || u.protocol === "https:") && isLocalHostHeader(u.host)) return origin;
+  } catch {
+    return "";
+  }
+  return "";
+}
 
 let claudeVerifier: string | null = null;
 let chatgptLogin: { state: string; error?: string } = { state: "idle" };
@@ -372,6 +391,15 @@ async function handleHttp(
   ctx: Ctx,
   lanOnly = false,
 ): Promise<void> {
+  const origin = allowedOrigin(req.headers.origin);
+  res.setHeader("access-control-allow-origin", origin);
+  res.setHeader("vary", "Origin");
+
+  if (!lanOnly && !isLocalHostHeader(req.headers.host)) {
+    res.writeHead(403, { "content-type": "application/json" });
+    return void res.end(JSON.stringify({ error: "bad_host" }));
+  }
+
   if (req.method === "OPTIONS") {
     res.writeHead(204, CORS);
     return void res.end();
@@ -1207,6 +1235,10 @@ async function roomRunBackground(ctx: Ctx, room: Room, goal: string): Promise<vo
 }
 
 function handleSocket(ws: WebSocket, req: IncomingMessage, ctx: Ctx, lanOnly = false): void {
+  if (!lanOnly && req.headers.origin && !allowedOrigin(req.headers.origin)) {
+    ws.close(1008, "origin not allowed");
+    return;
+  }
   const url = new URL(req.url ?? "/", "http://localhost");
   const parts = url.pathname.split("/").filter(Boolean);
   if (parts.length !== 3 || parts[0] !== "sessions" || parts[2] !== "stream") {

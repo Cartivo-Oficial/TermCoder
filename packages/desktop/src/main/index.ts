@@ -191,6 +191,8 @@ const IMAGE_MIME: Record<string, string> = {
 };
 
 ipcMain.handle("write-file", (_event, path: string, content: string) => {
+  const denied = guardPath(path);
+  if (denied) return denied;
   try {
     writeFileSync(path, content, "utf8");
     return { ok: true };
@@ -226,6 +228,7 @@ ipcMain.handle("read-image", (_event, path: string) => {
 const HIDE_NAMES = new Set(["node_modules", "desktop.ini", "thumbs.db", "$recycle.bin"]);
 
 ipcMain.handle("list-dir", (_event, dir: string) => {
+  if (guardPath(dir)) return [];
   try {
     return readdirSync(dir, { withFileTypes: true })
       .filter((d) => {
@@ -247,6 +250,8 @@ ipcMain.handle("list-dir", (_event, dir: string) => {
 });
 
 ipcMain.handle("read-file", (_event, path: string) => {
+  const denied = guardPath(path);
+  if (denied) return { content: "", error: denied.error };
   try {
     const content = readFileSync(path, "utf8");
     const max = 200_000;

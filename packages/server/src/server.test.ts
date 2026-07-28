@@ -1,3 +1,4 @@
+import { request as httpRequest } from "node:http";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -870,5 +871,67 @@ describe("server", () => {
       expect(welcomed).toBe(true);
       guest.close();
     });
+  });
+});
+
+describe("the local API is not reachable from the web", () => {
+  let guard: ReturnType<typeof createServer>;
+  let guardPort: number;
+  let guardDir: string;
+
+  beforeEach(async () => {
+    guardDir = mkdtempSync(join(tmpdir(), "tc-guard-"));
+    guard = createServer({
+      config: loadConfig({ cwd: guardDir, configDir: join(guardDir, "cfg"), env: {} }),
+      store: { list: () => [], exists: () => false, close: () => {} } as unknown as SessionStore,
+      registry: new ToolRegistry(),
+      cwd: guardDir,
+    });
+    await new Promise<void>((r) => guard.listen(0, r));
+    guardPort = (guard.address() as AddressInfo).port;
+  });
+
+  afterEach(async () => {
+    await new Promise<void>((r) => guard.close(() => r()));
+    rmSync(guardDir, { recursive: true, force: true });
+  });
+
+  const at = (p: string, headers?: Record<string, string>) =>
+    fetch(`http://localhost:${guardPort}${p}`, { headers });
+
+  it("refuses a request whose Host is not localhost, which is how DNS rebinding arrives", async () => {
+    const answer = await new Promise<{ status: number; body: string }>((resolve, reject) => {
+      const r = httpRequest(
+        { host: "127.0.0.1", port: guardPort, path: "/config", method: "GET", headers: { host: "evil.com" } },
+        (res) => {
+          let body = "";
+          res.on("data", (c) => (body += c));
+          res.on("end", () => resolve({ status: res.statusCode ?? 0, body }));
+        },
+      );
+      r.on("error", reject);
+      r.end();
+    });
+    expect(answer.status).toBe(403);
+    expect(JSON.parse(answer.body)).toEqual({ error: "bad_host" });
+  });
+
+  it("never lets a web origin read the response", async () => {
+    const res = await at("/config", { origin: "https://evil.com" });
+    expect(res.headers.get("access-control-allow-origin")).toBe("");
+  });
+
+  it("allows the packaged renderer, which has a null origin", async () => {
+    const res = await at("/config", { origin: "null" });
+    expect(res.headers.get("access-control-allow-origin")).toBe("null");
+  });
+
+  it("allows the dev renderer on another localhost port", async () => {
+    const res = await at("/config", { origin: "http://localhost:5173" });
+    expect(res.headers.get("access-control-allow-origin")).toBe("http://localhost:5173");
+  });
+
+  it("keeps answering an ordinary localhost request", async () => {
+    expect((await at("/config")).status).toBe(200);
   });
 });
