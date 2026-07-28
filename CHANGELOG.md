@@ -2,6 +2,17 @@
 
 New releases and improvements to TermCoder.
 
+## 0.11.5
+2026-07-28
+
+### Pro
+- **Pro is now on sale, and licences are signed with a production key.** The key that verifies your licence was, until now, the development one shipped in the public source — anyone could have forged a Pro licence with it. It has been replaced. **Update to 0.11.5 to activate a Pro licence: keys issued from now on are not recognised by 0.11.4 or earlier.**
+
+### Website
+- **Fixed: "Get Pro" sent you in a circle.** Clicking it took you to the sign-in page, and clicking it again once signed in simply dropped you back on the dashboard — checkout never opened, because it had not been configured. Checkout is now wired up; while it is unavailable the button says so instead of bouncing you around.
+- **Fixed: the dashboard asked you to sign in when you already were.** Connectors and Settings sync through your own private GitHub gist, so they need a GitHub connection — but signing in with Google left them showing a bare "sign in with GitHub" that led back to the same picker. They now explain why GitHub is needed and connect it in one click.
+- The Pro price read "$9 / month" beside its own fine print promising a year for a single payment. It is one payment covering a year, and the page now says so.
+
 ## 0.11.4
 2026-07-23
 
