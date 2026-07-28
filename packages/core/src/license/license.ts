@@ -5,7 +5,7 @@ import { configFile } from "../util/paths";
 
 export const PRO_PUBLIC_KEY =
   "-----BEGIN PUBLIC KEY-----\n" +
-  "MCowBQYDK2VwAyEAJysWJNL0V46+EV+YufYiMOOULa+UjmnmFLs/xPkOHHE=\n" +
+  "MCowBQYDK2VwAyEAljHyXp6hGIcnFryhYfdyauYkNFgLsCzDbJGA6lD6ZzM=\n" +
   "-----END PUBLIC KEY-----\n";
 
 export interface LicenseInfo {
