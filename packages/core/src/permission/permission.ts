@@ -1,4 +1,5 @@
 import type { Config, PermissionMode, PermissionRule } from "../config/config";
+import type { PatchHunk } from "../util/diff";
 
 export type PermissionKind = "bash" | "write" | "edit" | "mcp" | "network";
 
@@ -10,6 +11,7 @@ export interface PermissionRequest {
   title: string;
   detail?: string;
   target?: string;
+  patch?: PatchHunk[];
 }
 
 export type PermissionDecision = "allow" | "deny" | "allow-always";

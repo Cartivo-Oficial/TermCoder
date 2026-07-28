@@ -77,6 +77,8 @@ export {
 
 export { configDir, configFile } from "./util/paths";
 
+export { filePatch, type PatchHunk } from "./util/diff";
+
 export {
   loadDecks,
   saveDecks,
