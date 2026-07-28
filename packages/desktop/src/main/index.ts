@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync, copyFileSync } from "node:fs";
-import { dirname, join, parse, resolve } from "node:path";
+import { dirname, join, parse, resolve, sep } from "node:path";
 import {
   app,
   BrowserWindow,
@@ -43,6 +43,7 @@ async function startServer(): Promise<void> {
       cwd = app.getPath("home");
     }
   }
+  allowRoot(cwd);
   const config = loadConfig({ cwd });
 
   const mcp = await connectMcpServers(config);
@@ -142,16 +143,41 @@ function createWindow(): void {
   }
 }
 
+const allowedRoots = new Set<string>();
+
+function allowRoot(path: string): void {
+  if (path) allowedRoots.add(resolve(path));
+}
+
+function insideAllowedRoot(target: string): boolean {
+  const full = resolve(target);
+  for (const root of allowedRoots) {
+    if (full === root || full.startsWith(root + sep)) return true;
+  }
+  return false;
+}
+
+function guardPath(target: string): { ok: false; error: string } | null {
+  if (!target || !insideAllowedRoot(target)) {
+    return { ok: false, error: "Path is outside the folders you opened" };
+  }
+  return null;
+}
+
 ipcMain.handle("pick-folder", async () => {
   const result = await dialog.showOpenDialog({ properties: ["openDirectory"] });
-  return result.canceled || !result.filePaths[0] ? null : result.filePaths[0];
+  if (result.canceled || !result.filePaths[0]) return null;
+  allowRoot(result.filePaths[0]);
+  return result.filePaths[0];
 });
 
 ipcMain.handle("pick-file", async () => {
   const result = await dialog.showOpenDialog({
     properties: ["openFile", "multiSelections"],
   });
-  return result.canceled ? [] : result.filePaths;
+  if (result.canceled) return [];
+  for (const p of result.filePaths) allowRoot(dirname(p));
+  return result.filePaths;
 });
 
 const IMAGE_MIME: Record<string, string> = {
@@ -231,6 +257,8 @@ ipcMain.handle("read-file", (_event, path: string) => {
 });
 
 ipcMain.handle("create-file", (_event, path: string, content = "") => {
+  const denied = guardPath(path);
+  if (denied) return denied;
   try {
     if (existsSync(path)) return { ok: false, error: "File already exists" };
     const dir = dirname(path);
@@ -243,6 +271,8 @@ ipcMain.handle("create-file", (_event, path: string, content = "") => {
 });
 
 ipcMain.handle("create-dir", (_event, path: string) => {
+  const denied = guardPath(path);
+  if (denied) return denied;
   try {
     mkdirSync(path, { recursive: true });
     return { ok: true };
@@ -252,6 +282,8 @@ ipcMain.handle("create-dir", (_event, path: string) => {
 });
 
 ipcMain.handle("rename-path", (_event, from: string, to: string) => {
+  const denied = guardPath(from) ?? guardPath(to);
+  if (denied) return denied;
   try {
     if (existsSync(to)) return { ok: false, error: "Destination already exists" };
     renameSync(from, to);
@@ -262,6 +294,8 @@ ipcMain.handle("rename-path", (_event, from: string, to: string) => {
 });
 
 ipcMain.handle("delete-path", (_event, path: string) => {
+  const denied = guardPath(path);
+  if (denied) return denied;
   try {
     rmSync(path, { recursive: true, force: true });
     return { ok: true };
@@ -271,6 +305,8 @@ ipcMain.handle("delete-path", (_event, path: string) => {
 });
 
 ipcMain.handle("duplicate-path", (_event, path: string) => {
+  const denied = guardPath(path);
+  if (denied) return denied;
   try {
     if (!existsSync(path)) return { ok: false, error: "Source does not exist" };
     const info = parse(path);
