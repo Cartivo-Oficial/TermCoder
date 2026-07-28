@@ -740,6 +740,38 @@ describe("Session agent loop", () => {
     expect(result && "output" in result ? result.output : "").toMatch(/Permission denied/);
   });
 
+  it("forwards the positional patch from describe() to the permission asker", async () => {
+    writeFileSync(join(dir, "alvo.txt"), "um\ndois\ntres\n");
+    config.permission.write = "ask";
+    const seen: Array<{ patch?: unknown }> = [];
+    const permission = new PermissionManager(config.permission, async (request) => {
+      seen.push({ patch: request.patch });
+      return "deny";
+    });
+    const runner = scriptedRunner([
+      {
+        chunks: [],
+        finishReason: "tool-calls",
+        toolCalls: [
+          { toolCallId: "t1", toolName: "write", input: { path: "alvo.txt", content: "um\nDOIS\ntres\n" } },
+        ],
+        responseMessages: [{ role: "assistant", content: "" }],
+      },
+      {
+        chunks: [{ type: "text-delta", text: "ok" }],
+        finishReason: "stop",
+        responseMessages: [{ role: "assistant", content: "ok" }],
+      },
+    ]);
+    const session = Session.create({ store, registry, config, permission, runner }, { cwd: dir });
+    await collect(session, "muda o arquivo");
+
+    expect(seen).toHaveLength(1);
+    const patch = seen[0]!.patch as Array<{ newStart: number; lines: string[] }> | undefined;
+    expect(patch).toBeDefined();
+    expect(patch![0]!.lines).toContain("+DOIS");
+  });
+
   it("leaves read-only tools with no permission kind on the auto-allow path", async () => {
     writeFileSync(join(dir, "note.txt"), "hi");
     const askerCalls: Array<{ toolName: string; kind: string }> = [];
