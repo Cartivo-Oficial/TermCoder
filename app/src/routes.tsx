@@ -10,6 +10,9 @@ import Docs from "@/pages/docs";
 import Viewer from "@/pages/viewer";
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
+import Terms from "@/pages/terms";
+import Privacy from "@/pages/privacy";
+import Refunds from "@/pages/refunds";
 
 export interface RouteDef {
   path: string;
@@ -98,6 +101,25 @@ export const ROUTES: RouteDef[] = [
     description:
       "Every TermCoder release, newest first: what changed in the engine, the CLI, the desktop app and the site.",
     Component: Changelog,
+  },
+  {
+    path: "/terms.html",
+    title: "TermCoder — terms of service",
+    description: "The terms covering a TermCoder Pro licence: what it unlocks, how it is delivered, and for how long.",
+    Component: Terms,
+  },
+  {
+    path: "/privacy.html",
+    title: "TermCoder — privacy policy",
+    description:
+      "What TermCoder does with your data: no trackers, no user database, and syncing through your own private gist.",
+    Component: Privacy,
+  },
+  {
+    path: "/refunds.html",
+    title: "TermCoder — refund policy",
+    description: "Thirty days, no questions asked. How to ask for a refund on a TermCoder Pro licence.",
+    Component: Refunds,
   },
 ];
 

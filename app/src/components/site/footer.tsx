@@ -4,12 +4,13 @@ const COLUMNS = [
   ["Build", [["Features", "index.html#build"], ["Install", "install.html"], ["Download", "download.html"], ["Docs", "docs.html"]]],
   ["Study", [["TermExplorer", "study.html"], ["Flashcards", "study.html"], ["Classrooms", "study.html"], ["Live rooms", "study.html"]]],
   ["Project", [["GitHub", "https://github.com/Cartivo-Oficial/TermCoder"], ["Changelog", "changelog.html"], ["Pricing", "pricing.html"], ["npm", "https://www.npmjs.com/package/@termcoder/tui"]]],
+  ["Legal", [["Terms of service", "terms.html"], ["Privacy policy", "privacy.html"], ["Refund policy", "refunds.html"]]],
 ] as const;
 
 export function Footer() {
   return (
     <footer className="mt-auto border-t border-border">
-      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-8 px-6 py-14 md:grid-cols-4">
+      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-8 px-6 py-14 md:grid-cols-5">
         <div className="col-span-2 md:col-span-1">
           <a href="index.html" className="flex items-center gap-2.5">
             <Mark size={18} />
