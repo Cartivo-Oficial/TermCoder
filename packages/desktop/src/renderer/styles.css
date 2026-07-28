@@ -1119,7 +1119,7 @@ button.chip { cursor: pointer; }
 .vs-item > svg { width: 14px; height: 14px; }
 .vs-item.sel { color: var(--accent); }
 .vs-check { margin-left: auto; width: 13px; height: 13px; }
-.review-strip { border-bottom: 1px solid var(--border); background: var(--elev); padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }
+.review-strip { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(560px, calc(100% - 32px)); max-width: 560px; z-index: 30; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--elev); padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 12px 40px rgba(0,0,0,0.45); }
 .review-strip-head { display: flex; align-items: baseline; gap: 10px; }
 .review-strip-count { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
 .review-strip-title { font-size: 13px; color: var(--text); }
@@ -1127,5 +1127,6 @@ button.chip { cursor: pointer; }
 .review-strip-actions { display: flex; gap: 8px; }
 .review-strip-actions button { border: 1px solid var(--border); background: transparent; color: var(--text); border-radius: 6px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
 .review-accept { border-color: color-mix(in srgb, var(--accent) 50%, transparent) !important; }
+.review-always { border-color: color-mix(in srgb, var(--accent) 30%, transparent) !important; }
 .cm-review-add { background: color-mix(in srgb, #3fb950 16%, transparent); }
 .cm-review-remove { background: color-mix(in srgb, #f85149 16%, transparent); }

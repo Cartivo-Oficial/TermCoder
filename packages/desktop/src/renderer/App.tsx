@@ -1404,7 +1404,7 @@ export function App() {
     }
   }
 
-  const answer = (id: string, decision: "allow" | "deny") => {
+  const answer = (id: string, decision: "allow" | "deny" | "allow-always") => {
     if (isGuest) return;
     wsRef.current?.send(JSON.stringify({ type: "permission-decision", id, decision }));
     setReviewQueue((q) => resolveItem(q, id));
@@ -1920,9 +1920,10 @@ export function App() {
   );
 
   const openFilePath = (() => {
+    if (!viewerOpen) return undefined;
     const tab = tabs.find((tt) => tt.id === activeTab);
     if (!tab?.path) return undefined;
-    if (tab.kind === "diff") return tab.path.split("\\").join("/");
+    if (tab.kind === "diff") return undefined;
     const dir = cwdRef.current;
     const rel = dir && tab.path.startsWith(dir) ? tab.path.slice(dir.length).replace(/^[\\/]+/, "") : tab.path;
     return rel.split("\\").join("/");
@@ -2237,6 +2238,7 @@ export function App() {
               openFile={openFilePath}
               onAccept={(id) => answer(id, "allow")}
               onReject={(id) => answer(id, "deny")}
+              onAlways={(id) => answer(id, "allow-always")}
               onAcceptAll={answerAll}
             />
           ) : null}

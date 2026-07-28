@@ -11,7 +11,9 @@ export function marksFromPatch(hunks: PatchHunk[]): ReviewMark[] {
     let line = hunk.newStart;
     for (const raw of hunk.lines ?? []) {
       const sign = raw.charAt(0);
-      if (sign === "+") {
+      if (sign === "\\") {
+        continue;
+      } else if (sign === "+") {
         marks.push({ line, kind: "add" });
         line += 1;
       } else if (sign === "-") {

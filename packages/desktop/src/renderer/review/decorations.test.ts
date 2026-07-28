@@ -40,4 +40,21 @@ describe("marksFromPatch", () => {
   it("returns nothing for an empty patch", () => {
     expect(marksFromPatch([])).toEqual([]);
   });
+
+  it("does not let the no-newline marker shift later marks", () => {
+    const marks = marksFromPatch([
+      {
+        oldStart: 1,
+        oldLines: 2,
+        newStart: 1,
+        newLines: 3,
+        lines: [" um", "-dois", "\\ No newline at end of file", "+dois", "+tres"],
+      },
+    ]);
+    expect(marks).toEqual([
+      { line: 2, kind: "remove" },
+      { line: 2, kind: "add" },
+      { line: 3, kind: "add" },
+    ]);
+  });
 });
