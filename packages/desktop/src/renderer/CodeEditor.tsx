@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { EditorView, basicSetup } from "codemirror";
-import { EditorState, StateEffect, StateField } from "@codemirror/state";
-import { drawSelection, highlightActiveLine, keymap, lineNumbers, highlightActiveLineGutter } from "@codemirror/view";
+import { EditorState, RangeSetBuilder, StateEffect, StateField } from "@codemirror/state";
+import {
+  Decoration,
+  type DecorationSet,
+  drawSelection,
+  highlightActiveLine,
+  keymap,
+  lineNumbers,
+  highlightActiveLineGutter,
+} from "@codemirror/view";
 import {
   defaultKeymap,
   history,
@@ -33,6 +41,7 @@ import { inlineCompletion } from "./copilot";
 import { editorTheme } from "./editorThemes";
 import { highlightSelectionMatches, search, openSearchPanel, setSearchQuery, searchKeymap, SearchQuery } from "@codemirror/search";
 import { LSPManager, type LSPCompletion, useLSP } from "./LSPManager";
+import type { ReviewMark } from "./review/decorations";
 
 const lineColEffect = StateEffect.define<{ line: number; col: number; totalLines: number; selChars: number }>();
 export const cursorPosField = StateField.define<{ line: number; col: number; totalLines: number; selChars: number }>({
@@ -51,6 +60,32 @@ export function gotoLine(view: EditorView, line: number, col = 1) {
   });
   view.focus();
 }
+
+const setReviewMarks = StateEffect.define<ReviewMark[]>();
+
+const reviewField = StateField.define<DecorationSet>({
+  create: () => Decoration.none,
+  update(deco, tr) {
+    for (const e of tr.effects) {
+      if (e.is(setReviewMarks)) {
+        const builder = new RangeSetBuilder<Decoration>();
+        const total = tr.state.doc.lines;
+        for (const m of e.value) {
+          if (m.line < 1 || m.line > total) continue;
+          const line = tr.state.doc.line(m.line);
+          builder.add(
+            line.from,
+            line.from,
+            Decoration.line({ class: m.kind === "add" ? "cm-review-add" : "cm-review-remove" }),
+          );
+        }
+        return builder.finish();
+      }
+    }
+    return deco.map(tr.changes);
+  },
+  provide: (f) => EditorView.decorations.from(f),
+});
 
 function langFor(name: string): Extension {
   const ext = (name.includes(".") ? name.split(".").pop() : "")?.toLowerCase() ?? "";
@@ -91,6 +126,7 @@ export function CodeEditor({
   wordWrap = false,
   handle,
   onCursorChange,
+  marks,
 }: {
   name: string;
   value: string;
@@ -102,15 +138,16 @@ export function CodeEditor({
   wordWrap?: boolean;
   handle?: React.MutableRefObject<CodeEditorHandle | null>;
   onCursorChange?: (p: { line: number; col: number; totalLines: number; selChars: number }) => void;
+  marks?: ReviewMark[];
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<EditorView | null>(null);
   const saveRef = useRef(onSave);
   saveRef.current = onSave;
   const aiRef = useRef(aiSuggest);
   aiRef.current = aiSuggest;
   const cursorCbRef = useRef(onCursorChange);
   cursorCbRef.current = onCursorChange;
-  const viewRef = useRef<EditorView | null>(null);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -188,6 +225,7 @@ export function CodeEditor({
           ]),
           editorTheme(theme),
           langFor(name),
+          reviewField,
           EditorView.updateListener.of((u) => {
             if (u.docChanged) onChange(u.state.doc.toString());
           }),
@@ -252,6 +290,10 @@ export function CodeEditor({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name, theme, wordWrap]);
+
+  useEffect(() => {
+    viewRef.current?.dispatch({ effects: setReviewMarks.of(marks ?? []) });
+  }, [marks]);
 
   return <div className="cm-wrap" ref={ref} />;
 }

@@ -666,6 +666,7 @@ export class Session {
       kind: tool.permissionKind,
       title: described.title,
       detail: described.detail,
+      patch: described.patch,
       target: tool.target?.(input, ctx),
     });
   }

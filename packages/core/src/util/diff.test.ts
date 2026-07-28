@@ -23,3 +23,51 @@ describe("formatDiff", () => {
     expect(out).toContain("+ added");
   });
 });
+
+import { filePatch } from "./diff";
+
+describe("filePatch", () => {
+  const before = "um\ndois\ntres\nquatro\ncinco\nseis\nsete\n";
+
+  it("locates a change by its line number in the new file", () => {
+    const after = "um\ndois\ntres\nQUATRO\ncinco\nseis\nsete\n";
+    const hunks = filePatch(before, after);
+    expect(hunks).toHaveLength(1);
+    expect(hunks[0]!.newStart).toBe(1);
+    expect(hunks[0]!.lines).toContain("-quatro");
+    expect(hunks[0]!.lines).toContain("+QUATRO");
+  });
+
+  it("returns no hunks when the two sides are identical", () => {
+    expect(filePatch(before, before)).toEqual([]);
+  });
+
+  it("reports two hunks for two separated changes", () => {
+    const long = Array.from({ length: 40 }, (_, i) => `linha ${i + 1}`).join("\n") + "\n";
+    const edited = long.replace("linha 3", "LINHA 3").replace("linha 38", "LINHA 38");
+    const hunks = filePatch(long, edited);
+    expect(hunks.length).toBe(2);
+    expect(hunks[0]!.newStart).toBeLessThan(hunks[1]!.newStart);
+  });
+
+  it("handles an empty original", () => {
+    const hunks = filePatch("", "nova\n");
+    expect(hunks).toHaveLength(1);
+    expect(hunks[0]!.lines.some((l) => l.startsWith("+"))).toBe(true);
+  });
+
+  it("offsets newStart from oldStart when earlier lines were inserted", () => {
+    const origLines = Array.from({ length: 40 }, (_, i) => `line${i + 1}`);
+    const newLines = [...origLines];
+    newLines.splice(2, 0, "extra1", "extra2", "extra3", "extra4", "extra5");
+    const idx = newLines.indexOf("line35");
+    newLines[idx] = "LINE35";
+    const before = origLines.join("\n") + "\n";
+    const after = newLines.join("\n") + "\n";
+    const hunks = filePatch(before, after);
+    expect(hunks.length).toBe(2);
+    expect(hunks[1]!.oldStart).toBe(32);
+    expect(hunks[1]!.newStart).not.toBe(hunks[1]!.oldStart);
+    expect(hunks[1]!.newStart).toBe(37);
+  });
+});

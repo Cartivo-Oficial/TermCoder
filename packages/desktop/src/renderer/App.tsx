@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -26,8 +26,11 @@ import { AgentCanvas } from "./canvas/AgentCanvas";
 import { emptyGraph, reduceGraph, type SessionEventLike } from "./canvas/runGraph";
 import { SidePanel } from "./SidePanel";
 import { SessionsPanel } from "./SessionsPanel";
-import { DiffBlock, DiffBody, ToolCard, type DiffComment } from "./ToolCard";
+import { DiffBody, ToolCard, type DiffComment } from "./ToolCard";
 import { CodeEditor } from "./CodeEditor";
+import { enqueue, resolveItem, resolveAll, findByTarget, type ReviewQueue } from "./review/queue";
+import { marksFromPatch, type ReviewMark } from "./review/decorations";
+import { ReviewStrip } from "./review/ReviewStrip";
 import { blobToWav, blobToBase64 } from "./audio";
 import {
   IconBack,
@@ -178,7 +181,6 @@ interface Segment {
 type StreamEvent = any;
 
 const IMG_EXT = /\.(png|jpe?g|gif|webp|bmp|svg)$/i;
-const isDiff = (t: string) => /^[+-] /m.test(t);
 const baseName = (p: string) => p.split(/[\\/]/).filter(Boolean).pop() ?? "project";
 const fmtTokens = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
 
@@ -233,6 +235,7 @@ function TabbedViewer({
   onNextHunk,
   onSendComments,
   compareBase,
+  reviewMarks,
 }: {
   tabs: Tab[];
   activeTab: string | null;
@@ -254,6 +257,7 @@ function TabbedViewer({
   onNextHunk: () => void;
   onSendComments: () => void;
   compareBase: string;
+  reviewMarks: ReviewMark[];
 }) {
   const { t } = useI18n();
   const tab = tabs.find((tt) => tt.id === activeTab) ?? tabs[0];
@@ -305,6 +309,7 @@ function TabbedViewer({
               port={port}
               aiSuggest={aiSuggest}
               theme={codeTheme}
+              marks={reviewMarks}
             />
           </div>
         ) : (
@@ -406,7 +411,7 @@ export function App() {
   const [liveTokens, setLiveTokens] = useState(0);
   const [status, setStatus] = useState<Record<string, string>>({});
   const [changes, setChanges] = useState(0);
-  const [perm, setPerm] = useState<{ id: string; title: string; detail?: string } | null>(null);
+  const [reviewQueue, setReviewQueue] = useState<ReviewQueue>({ items: [] });
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -1109,7 +1114,7 @@ export function App() {
     if (isGuest) return;
     wsRef.current?.send(JSON.stringify({ type: "stop" }));
     setBusy(false);
-    setPerm(null);
+    setReviewQueue({ items: [] });
     appendRef.current = false;
     setMessages((prev) => [...prev, { role: "notice", text: t("chat.stopped") }]);
   }
@@ -1304,7 +1309,16 @@ export function App() {
         wsRef.current?.send(JSON.stringify({ type: "permission-decision", id: e.id, decision: "allow" }));
         return;
       }
-      setPerm({ id: e.id, title: e.request.title, detail: e.request.detail });
+      setReviewQueue((q) =>
+        enqueue(q, {
+          id: e.id,
+          title: e.request.title,
+          detail: e.request.detail,
+          target: e.request.target,
+          kind: e.request.kind,
+          patch: e.request.patch,
+        }),
+      );
       return;
     }
     if (e.type === "usage") {
@@ -1431,11 +1445,19 @@ export function App() {
     }
   }
 
-  function decide(decision: "allow" | "deny" | "allow-always") {
+  const answer = (id: string, decision: "allow" | "deny" | "allow-always") => {
     if (isGuest) return;
-    if (perm) wsRef.current?.send(JSON.stringify({ type: "permission-decision", id: perm.id, decision }));
-    setPerm(null);
-  }
+    wsRef.current?.send(JSON.stringify({ type: "permission-decision", id, decision }));
+    setReviewQueue((q) => resolveItem(q, id));
+  };
+  const answerAll = () => {
+    if (isGuest) return;
+    const { next, ids } = resolveAll(reviewQueue);
+    for (const id of ids) {
+      wsRef.current?.send(JSON.stringify({ type: "permission-decision", id, decision: "allow" }));
+    }
+    setReviewQueue(next);
+  };
 
   function send() {
     if (isGuest) return;
@@ -1938,6 +1960,20 @@ export function App() {
     </div>
   );
 
+  const openFilePath = (() => {
+    if (!viewerOpen) return undefined;
+    const tab = tabs.find((tt) => tt.id === activeTab);
+    if (!tab?.path) return undefined;
+    if (tab.kind === "diff") return undefined;
+    const dir = cwdRef.current;
+    const rel = dir && tab.path.startsWith(dir) ? tab.path.slice(dir.length).replace(/^[\\/]+/, "") : tab.path;
+    return rel.split("\\").join("/");
+  })();
+  const reviewMarks = useMemo(
+    () => marksFromPatch(findByTarget(reviewQueue, openFilePath ?? "")?.patch ?? []),
+    [reviewQueue, openFilePath],
+  );
+
   return (
     <div className={`shell${isHome ? " home" : ""} view-${viewMode}`}>
       {viewMode === "desktop" ? (
@@ -2257,19 +2293,15 @@ export function App() {
             </div>
           </div>
 
-          {perm && !isGuest ? (
-            <div className="perm">
-              <div className="perm-card">
-                <div className="perm-title">{t("perm.title")}</div>
-                <div className="perm-detail">{perm.title}</div>
-                {perm.detail ? (isDiff(perm.detail) ? <DiffBlock text={perm.detail} /> : <pre className="detail">{perm.detail}</pre>) : null}
-                <div className="perm-actions">
-                  <button className="allow" onClick={() => decide("allow")}>{t("perm.allow")}</button>
-                  <button className="always" onClick={() => decide("allow-always")}>{t("perm.always")}</button>
-                  <button className="deny" onClick={() => decide("deny")}>{t("perm.deny")}</button>
-                </div>
-              </div>
-            </div>
+          {!isGuest ? (
+            <ReviewStrip
+              queue={reviewQueue}
+              openFile={openFilePath}
+              onAccept={(id) => answer(id, "allow")}
+              onReject={(id) => answer(id, "deny")}
+              onAlways={(id) => answer(id, "allow-always")}
+              onAcceptAll={answerAll}
+            />
           ) : null}
 
           <div className="dock">
@@ -2472,6 +2504,7 @@ export function App() {
           onNextHunk={() => setHunkIndex((i) => Math.min(hunkCount - 1, i + 1))}
           onSendComments={sendReviewComments}
           compareBase={compareBase}
+          reviewMarks={reviewMarks}
         />
       ) : null}
       {paletteOpen ? <CommandPalette items={paletteItems} onClose={() => setPaletteOpen(false)} /> : null}

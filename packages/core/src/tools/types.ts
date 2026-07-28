@@ -2,6 +2,7 @@ import type { Schema } from "ai";
 import type { z } from "zod";
 import type { PermissionKind } from "../permission/permission";
 import type { SessionEvent } from "../session/session";
+import type { PatchHunk } from "../util/diff";
 
 export interface ToolContext {
   cwd: string;
@@ -18,6 +19,7 @@ export interface ToolResult {
 export interface ToolDescription {
   title: string;
   detail?: string;
+  patch?: PatchHunk[];
 }
 
 export interface TermTool<Args = any> {
