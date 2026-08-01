@@ -24,7 +24,7 @@ The repository contains three site folders. Only one ships:
 | --- | --- | --- |
 | `app/` | React 19 + Vite, SSR entry + `prerender.mjs`, Tailwind 4, shadcn primitives | **live** — `pages.yml` builds it and publishes `app/dist` |
 | `site/` | an Astro rewrite | dead |
-| `website/` | the original static HTML | dead |
+| `website/` | the original static HTML | dead **except** `website/auth/`, a Cloudflare Worker whose tests still run in CI via the root `vitest.config.ts` |
 
 All work in this spec happens in `app/`.
 
@@ -175,10 +175,13 @@ Named here so none of it reads as an oversight:
 At the end of every phase:
 
 ```bash
-cd app && npm run build && node verify.mjs && npx vitest run && npx oxlint
+cd app && npm run build && node verify.mjs && npx oxlint
+pnpm test          # from the repository root
 ```
 
-`verify.mjs` is an existing and strict guard: it requires at least 11 generated pages by name, the OAuth files (`auth.js`, `config.js`, `callback.html`), and that `callback.html` still loads both scripts and calls `handleCallback`. A broken route fails the deploy instead of publishing a broken site.
+`verify.mjs` is an existing and strict guard: it requires at least 11 generated pages by name, the OAuth files (`auth.js`, `config.js`, `callback.html`), and that `callback.html` still loads both scripts and calls `handleCallback`. A broken route fails the deploy instead of publishing a broken site. **It is also where this redesign's own invariants go** — banned colour tokens, the pre-paint theme script, the absence of `Dither` — so the guard that already blocks a bad deploy blocks a half-migrated one too.
+
+Note on the test setup: the root `vitest.config.ts` includes `packages/*/src/**` and `website/auth/**` but **not** `app/`, and `app/package.json` declares no test runner. `app/src/lib/gist.test.ts` therefore exists but has never run. Wiring `app/` into the root config is the first task of the implementation plan.
 
 Beyond the commands: a visual pass over both themes on every page, and a reload test in dark mode to confirm no flash.
 
@@ -188,7 +191,7 @@ Beyond the commands: a visual pass over both themes on every page, and a reload 
 
 ## Out of scope
 
-Deleting `site/` and `website/`. They are dead — roughly 900 and 1,500 lines that nothing builds — and after this redesign they will confuse anyone arriving at the repository. Removing two directories is the author's call, and is tracked separately.
+Deleting `site/` and `website/`. Their pages are dead — nothing builds them — and after this redesign they will confuse anyone arriving at the repository. But `website/auth/` is **not** dead: it holds the Cloudflare Worker for OAuth and the Paddle licence flow, and its `*.test.mjs` files still run in CI through the root `vitest.config.ts`. That worker must be relocated, not deleted. Removing the directories is the author's call, and is tracked separately.
 
 ## Risks
 
