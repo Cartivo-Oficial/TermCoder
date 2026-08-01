@@ -822,7 +822,7 @@ Remove from `home.tsx`: both `<Dither />` elements, the `Cmd` helper (replaced b
 | 1 | Hero | `Heading level={1}`, `Lead`, two buttons, fact line | fact line: `MIT · 12 providers · 16 tools · Windows · macOS · Linux · no telemetry`, as plain `text-muted-foreground`, separated by `·` |
 | 2 | Anchor shot | `Screenshot priority` | full container width, `caption` naming the tabs |
 | 3 | Providers | `Section`, `Eyebrow`, `Heading`, `CardGrid cols={3}` | the existing `PROVIDERS` array; heading *"It opens on a free model. Twelve more are one command away."* |
-| 4 | The builder | `Section`, `FeatureBlock` | keep the struck-through "to start you need" list; `✗` uses `text-bad` |
+| 4 | The builder | `Section`, `FeatureBlock` | keep the struck-through "to start you need" list. The `✗` is **`text-muted-foreground`, not `text-bad`** — nothing in that list has failed, so it is not state, and spending the error colour on decorative negation devalues its one real use in block 7. The negation must also reach the accessibility tree: `<s>` alone is not announced by NVDA or VoiceOver, so a hidden `✗` plus struck text reads aloud as the exact opposite of the claim |
 | 5 | A real shell | `Section`, `FeatureBlock reverse` | — |
 | 6 | Memory + retrieval | `Section`, `FeatureBlock` | — |
 | 7 | Autonomous | `Section`, `FeatureBlock reverse` | the round list keeps `text-ok` / `text-bad` — this is the sanctioned use of colour |
