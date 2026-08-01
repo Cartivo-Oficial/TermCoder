@@ -1172,3 +1172,67 @@ git commit -m "feat(site): retire the dither, close the guard, fix the Pages tri
 - Deleting `site/` and `website/`. Tracked separately. `website/auth/` is a live Cloudflare Worker whose tests run in CI through the root `vitest.config.ts`; it must be relocated, not deleted.
 - Any change to the desktop app beyond launching it to take screenshots.
 - Social proof of any kind.
+
+---
+
+## Phase 3b — Synara fidelity pass (added 2026-08-01, after the Task 7 review gate)
+
+The author reviewed the pilot against trysynara.com and asked for closer fidelity.
+Three earlier decisions are revised here, and this task must land BEFORE Group A,
+or the remaining thirteen pages inherit the superseded look.
+
+### Task 8b: Warm palette, Synara nav, brand marks, invite block
+
+**Files:**
+- Modify: `app/src/index.css` (warm ramps + accent), `app/src/components/site/nav.tsx`,
+  `app/src/components/site/section.tsx` (heading scale), `app/src/pages/home.tsx`,
+  `app/src/components/site/card-grid.tsx`, `app/verify.mjs` (accent is no longer banned)
+- Create: `app/src/components/site/brand-icon.tsx`, `app/src/components/site/invite.tsx`
+- Add dependency: `simple-icons`
+
+**Revised decisions, superseding the spec:**
+
+1. **The palette is no longer pure monochrome.** Synara's background is a warm
+   off-white, not `#ffffff`, and it spends a restrained orange on links and arrows.
+   Pure white reads colder and cheaper beside it. Light: background `#f7f6f4`,
+   card `#ffffff`, border `#e7e4e0`, foreground `#1a1a19`, muted-foreground `#6b6862`.
+   Dark: keep the neutral ramp but warm it a shade — background `#0f0e0d`,
+   card `#171615`, foreground `#f2efeb`. Add `--accent-link: #d8622e` (light) /
+   `#ff8a5c` (dark), used ONLY on inline links, "read more" arrows and the eyebrow
+   rules. It is not a button colour and not a heading colour.
+2. **No testimonials.** The repository has one star; fabricated social proof is
+   still refused. In its place, an **invite block**: states plainly that the project
+   is new, and links to issues and discussions. Honest, and it fills the slot
+   Synara's testimonials occupy.
+3. **Brand marks beside the providers**, from `simple-icons` — single-colour SVG
+   paths for Anthropic, OpenAI, Google, Groq, Mistral, DeepSeek, xAI, OpenRouter,
+   Together, Cerebras and Ollama. `termcoderfree` uses the product's own mark.
+   They inherit `currentColor`, so both themes work from one asset.
+
+**Also in this task, from the author's review of the reference:**
+- **Nav**: logo and wordmark left, links centred, right-hand cluster of theme toggle,
+  a GitHub link and the Download button — the reference's arrangement, not ours.
+- **Typography**: the reference's h1 is larger and less tightly tracked than ours.
+  Raise the h1 ceiling and loosen `tracking` one step; section headings go bolder.
+- **Icons in cards**: the security and secondary cards get a small rounded-square
+  icon, as the reference does. Draw these as inline SVG in the monochrome style —
+  do not pull an icon font.
+
+- [ ] **Step 1** Install `simple-icons` in `app/`, and write `brand-icon.tsx`
+      exporting `<BrandIcon slug="anthropic" size={20} />` reading the path data
+      from the package. Render `currentColor`. Unknown slug renders nothing rather
+      than throwing.
+- [ ] **Step 2** Rewrite the two ramps in `index.css` to the warm values above and
+      add `--accent-link`. Register it in `@theme inline` as `--color-accent-link`.
+- [ ] **Step 3** Loosen `verify.mjs` so the accent token is permitted, but keep every
+      other banned pattern intact. The old orange `ff7a45` stays banned — the new
+      accent is a different value with a different job, and conflating them would
+      reopen the door the guard exists to close.
+- [ ] **Step 4** Rework the nav to the reference's three-zone arrangement.
+- [ ] **Step 5** Raise the heading scale in `section.tsx`.
+- [ ] **Step 6** Put brand marks in the providers grid, icons in the security and
+      secondary cards, and replace nothing else on the page.
+- [ ] **Step 7** Add the invite block where the reference puts testimonials.
+- [ ] **Step 8** `cd app && npm run build && node verify.mjs && npx oxlint`, then
+      confirm in `dist/index.html` that the accent appears ONLY on links and arrows.
+- [ ] **Step 9** Commit.
