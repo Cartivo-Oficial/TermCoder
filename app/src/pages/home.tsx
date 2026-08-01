@@ -25,11 +25,11 @@ const PROVIDERS: [string, string, string, string][] = [
   ["Google", "google", "gemini-2.5 pro · flash", "Pro for the hard turns, Flash for everything else."],
   ["Groq", "groq", "llama · fast", "Open models answered quickly enough to feel local."],
   ["Mistral", "mistral", "large · codestral", "Codestral is built for the completion half of the job."],
-  ["DeepSeek", "deepseek", "chat · coder", "The cheapest tokens on this list by a wide margin."],
+  ["DeepSeek", "deepseek", "chat · coder", "A budget-priced reasoning and coding pair, hosted for you."],
   ["xAI", "xai", "grok", "Grok, if that is the key you already hold."],
   ["OpenRouter", "openrouter", "anything", "One key in front of nearly every model on the market."],
   ["Together", "together", "open models", "Open weights, hosted, without you renting a GPU."],
-  ["Cerebras", "cerebras", "very fast", "Open models on their own silicon, at unusual speed."],
+  ["Cerebras", "cerebras", "very fast", "Open models served on custom inference silicon, not GPUs."],
   ["Ollama", "ollama", "local · private", "Whatever you have pulled. Nothing leaves the machine."],
   ["termcoderfree", "termcoderfree", "free · no key", "The default it opens on. No card, no account, no setup."],
 ];
@@ -187,7 +187,7 @@ export default function Home() {
                       fallback={
                         slug === "termcoderfree"
                           ? <Mark size={14} />
-                          : <span className="font-mono text-[12px] leading-none">{name.slice(0, 1)}</span>
+                          : <span className="font-mono text-[12px] leading-none">{name.slice(0, 1).toUpperCase()}</span>
                       }
                     />
                   </IconTile>

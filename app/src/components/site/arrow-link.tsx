@@ -11,7 +11,7 @@ export function ArrowLink({
       href={href}
       className={cn(
         "group/arrow inline-flex items-center gap-1.5 font-medium text-accent-link",
-        "underline decoration-accent-link/35 underline-offset-4 transition-colors hover:decoration-accent-link",
+        "underline decoration-accent-link/60 underline-offset-4 transition-colors hover:decoration-accent-link",
         className,
       )}
     >
@@ -29,7 +29,7 @@ export function InlineLink({
     <a
       href={href}
       className={cn(
-        "text-accent-link underline decoration-accent-link/35 underline-offset-4",
+        "text-accent-link underline decoration-accent-link/60 underline-offset-4",
         "transition-colors hover:decoration-accent-link",
         className,
       )}
