@@ -11,10 +11,15 @@ export default defineConfig({
       "@termcoder/core": fileURLToPath(
         new URL("./packages/core/src/index.ts", import.meta.url),
       ),
+      "@": fileURLToPath(new URL("./app/src", import.meta.url)),
     },
   },
   test: {
-    include: ["packages/*/src/**/*.{test,spec}.{ts,tsx}", "website/auth/**/*.test.mjs"],
+    include: [
+      "packages/*/src/**/*.{test,spec}.{ts,tsx}",
+      "app/src/**/*.{test,spec}.{ts,tsx}",
+      "website/auth/**/*.test.mjs",
+    ],
     environment: "node",
   },
 });
