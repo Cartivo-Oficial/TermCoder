@@ -12,19 +12,25 @@ export function Section({
 
 export function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[13px] font-medium uppercase tracking-[0.14em] text-muted-foreground">{children}</p>
+    <p className="flex items-center gap-2.5 text-[13px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+      <span aria-hidden className="h-px w-6 flex-none bg-accent-link" />
+      {children}
+    </p>
   );
 }
 
+// Larger and less compressed than the first pass: the h1 ceiling goes up and
+// the tracking comes back a step, which is most of what separated our type
+// from the reference's.
 export function Heading({ children, level = 2 }: { children: React.ReactNode; level?: 1 | 2 }) {
   const Tag = level === 1 ? "h1" : "h2";
   return (
     <Tag
       className={cn(
-        "mt-4 font-semibold tracking-[-0.03em] text-balance text-foreground",
+        "mt-4 text-balance text-foreground",
         level === 1
-          ? "max-w-[16ch] text-[clamp(40px,7vw,72px)] leading-[1.02]"
-          : "max-w-[24ch] text-[clamp(28px,4vw,40px)] leading-[1.1]",
+          ? "max-w-[17ch] text-[clamp(44px,7.6vw,84px)] font-semibold leading-[1.04] tracking-[-0.018em]"
+          : "max-w-[22ch] text-[clamp(31px,4.4vw,46px)] font-bold leading-[1.08] tracking-[-0.024em]",
       )}
     >
       {children}

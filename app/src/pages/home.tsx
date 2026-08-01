@@ -2,6 +2,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CopyButton } from "@/components/copy-button";
 import appShot from "@/assets/app-hero.png";
+import { Mark } from "@/components/mark";
 import { Nav } from "@/components/site/nav";
 import { Footer } from "@/components/site/footer";
 import { Section, Eyebrow, Heading, Lead } from "@/components/site/section";
@@ -9,12 +10,28 @@ import { CardGrid } from "@/components/site/card-grid";
 import { Screenshot } from "@/components/site/screenshot";
 import { FeatureBlock } from "@/components/site/feature-block";
 import { FAQ } from "@/components/site/faq";
+import { BrandIcon } from "@/components/site/brand-icon";
+import { Glyph, IconTile } from "@/components/site/glyph";
+import { Invite } from "@/components/site/invite";
+import { InlineLink } from "@/components/site/arrow-link";
 
-const PROVIDERS: [string, string][] = [
-  ["Anthropic", "claude-sonnet-5 · haiku"], ["OpenAI", "gpt-4o · 4o-mini"], ["Google", "gemini-2.5 pro · flash"],
-  ["Groq", "llama · fast"], ["Mistral", "large · codestral"], ["DeepSeek", "chat · coder"],
-  ["xAI", "grok"], ["OpenRouter", "anything"], ["Together", "open models"],
-  ["Cerebras", "very fast"], ["Ollama", "local · private"], ["termcoderfree", "free · no key"],
+// [name, simple-icons slug, mono label, one line]. Five of these — OpenAI,
+// Groq, xAI, Together, Cerebras — have no entry in simple-icons, so the slug
+// resolves to nothing and the row falls back to a monogram rather than to an
+// invented mark.
+const PROVIDERS: [string, string, string, string][] = [
+  ["Anthropic", "anthropic", "sonnet · haiku", "Claude through your own key, on the tier you pay for."],
+  ["OpenAI", "openai", "gpt-4o · 4o-mini", "The models most tooling assumes, straight from your account."],
+  ["Google", "google", "gemini-2.5 pro · flash", "Pro for the hard turns, Flash for everything else."],
+  ["Groq", "groq", "llama · fast", "Open models answered quickly enough to feel local."],
+  ["Mistral", "mistral", "large · codestral", "Codestral is built for the completion half of the job."],
+  ["DeepSeek", "deepseek", "chat · coder", "The cheapest tokens on this list by a wide margin."],
+  ["xAI", "xai", "grok", "Grok, if that is the key you already hold."],
+  ["OpenRouter", "openrouter", "anything", "One key in front of nearly every model on the market."],
+  ["Together", "together", "open models", "Open weights, hosted, without you renting a GPU."],
+  ["Cerebras", "cerebras", "very fast", "Open models on their own silicon, at unusual speed."],
+  ["Ollama", "ollama", "local · private", "Whatever you have pulled. Nothing leaves the machine."],
+  ["termcoderfree", "termcoderfree", "free · no key", "The default it opens on. No card, no account, no setup."],
 ];
 
 const TOOLS: [string, string][] = [
@@ -35,31 +52,35 @@ const ROUNDS: { round: string; what: string; result: string; ok: boolean }[] = [
   { round: "round 3", what: "fix test → build", result: "✓ passed", ok: true },
 ];
 
-const SECONDARY: [string, string][] = [
+const SECONDARY: [string, string, string][] = [
   [
+    "file",
     "Agents, skills, commands, recipes",
     "Everything it knows about your project is markdown in your repo — .termcoder/agents/ (own model, prompt, tools, permissions), commands/ (slash commands with $ARGUMENTS), skills/ (playbooks loaded only when needed), recipes/ (saved multi-step workflows) and memory/ (facts it keeps about the project). Readable, diffable, reviewable in a pull request, not settings in someone else's dashboard. Skills load progressively: only the name and a one-line description sit in the prompt until the agent reaches for the body.",
   ],
   [
+    "plug",
     "MCP connectors",
     "A curated catalog — filesystem, git, github, postgres, fetch, brave-search, slack, puppeteer, memory, sequential-thinking. Pick one, fill in the inputs it asks for, and it writes the config. No memorising transports or npx incantations.",
   ],
   [
+    "cap",
     "The tutor",
     "The part no other coding agent has. Built because students shouldn't need a credit card to learn — and because copying an answer teaches nothing. It explains step by step in your language, and hands homework back as worked steps instead of a solution to paste. /flashcards builds a deck, /review grades you 0–5, /decks shows what is due, /quiz runs a practice exam — all scheduled with SM-2.",
   ],
   [
+    "people",
     "Classrooms and live rooms",
     "A teacher creates a class, shares packs of agents and skills, sets assignments and grades submissions — all of it riding on a private gist, with nothing to host. Live rooms are peer to peer: voice, camera, screen share and chat straight between you, with no media server in the middle. Joining is always free.",
   ],
 ];
 
-const SECURITY: [string, string][] = [
-  ["Local first", "Your config, your memory and your sessions are plain files on disk. Nothing is uploaded to be read back later, and you can delete any of it with rm."],
-  ["No telemetry", "No analytics, no crash pings, no usage counters. Nothing about what you build is collected, ever."],
-  ["Direct to your provider", "Prompts go from your machine to the model you chose and nowhere else. There is no TermCoder server in the middle to trust."],
-  ["No account", "Nothing to sign up for. It opens on a free model that needs no key, and connecting your own key is a line in a file you own."],
-  ["Five permission gates", "Bash, writes, edits, MCP calls and network access each default to asking first. Reading is cheap; running a command or writing a file asks first."],
+const SECURITY: [string, string, string][] = [
+  ["disk", "Local first", "Your config, your memory and your sessions are plain files on disk. Nothing is uploaded to be read back later, and you can delete any of it with rm."],
+  ["eyeOff", "No telemetry", "No analytics, no crash pings, no usage counters. Nothing about what you build is collected, ever."],
+  ["route", "Direct to your provider", "Prompts go from your machine to the model you chose and nowhere else. There is no TermCoder server in the middle to trust."],
+  ["noAccount", "No account", "Nothing to sign up for. It opens on a free model that needs no key, and connecting your own key is a line in a file you own."],
+  ["shield", "Five permission gates", "Bash, writes, edits, MCP calls and network access each default to asking first. Reading is cheap; running a command or writing a file asks first."],
 ];
 
 const PROOF: [string, string][] = [
@@ -145,14 +166,39 @@ export default function Home() {
           No card, no sign-up. Connect a key when you want one, or sign in with a Claude or ChatGPT subscription
           instead of paying per token — both experimental.
         </Lead>
-        <CardGrid cols={3}>
-          {PROVIDERS.map(([name, models]) => (
-            <div key={name} className={cn(CARD, "flex items-baseline justify-between gap-4 py-4")}>
-              <span className={CARD_TITLE}>{name}</span>
-              <span className="truncate font-mono text-[12px] text-muted-foreground">{models}</span>
-            </div>
-          ))}
-        </CardGrid>
+        {/* One white card, subdivided by hairlines, rather than twelve floating
+            ones — the rules do the separating so the page keeps its calm. */}
+        <div className="mt-10 overflow-hidden rounded-xl border border-border bg-card">
+          <div className="grid sm:grid-cols-2">
+            {PROVIDERS.map(([name, slug, label, blurb]) => (
+              <div
+                key={name}
+                className={cn(
+                  "border-t border-border px-5 py-4",
+                  "[&:first-child]:border-t-0 sm:[&:nth-child(2)]:border-t-0",
+                  "sm:[&:nth-child(odd)]:border-r",
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <IconTile className="h-8 w-8 rounded-lg">
+                    <BrandIcon
+                      slug={slug}
+                      size={15}
+                      fallback={
+                        slug === "termcoderfree"
+                          ? <Mark size={14} />
+                          : <span className="font-mono text-[12px] leading-none">{name.slice(0, 1)}</span>
+                      }
+                    />
+                  </IconTile>
+                  <span className={CARD_TITLE}>{name}</span>
+                  <span className="ml-auto truncate pl-3 font-mono text-[11.5px] text-muted-foreground">{label}</span>
+                </div>
+                <p className="mt-2.5 text-[13.5px] leading-relaxed text-muted-foreground">{blurb}</p>
+              </div>
+            ))}
+          </div>
+        </div>
         <div className="mt-16 grid gap-8 lg:grid-cols-[1fr_1.2fr] lg:gap-16">
           <div>
             <h3 className="text-[clamp(22px,2.6vw,28px)] font-semibold tracking-[-0.025em] text-foreground">
@@ -338,9 +384,10 @@ complex  → tier.strong   <span className="text-muted-foreground">gemini-pro ·
           caption="The tutor and the classroom — the half of the product that is not about shipping."
         />
         <CardGrid cols={4}>
-          {SECONDARY.map(([title, body]) => (
+          {SECONDARY.map(([icon, title, body]) => (
             <div key={title} className={CARD}>
-              <h3 className={CARD_TITLE}>{title}</h3>
+              <IconTile><Glyph name={icon} /></IconTile>
+              <h3 className={cn(CARD_TITLE, "mt-4")}>{title}</h3>
               <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">{body}</p>
             </div>
           ))}
@@ -356,9 +403,10 @@ complex  → tier.strong   <span className="text-muted-foreground">gemini-pro ·
           except the model you pointed it at.
         </Lead>
         <CardGrid cols={2}>
-          {SECURITY.map(([title, body], i) => (
+          {SECURITY.map(([icon, title, body], i) => (
             <div key={title} className={cn(CARD, i === SECURITY.length - 1 && "sm:col-span-2")}>
-              <h3 className={CARD_TITLE}>{title}</h3>
+              <IconTile><Glyph name={icon} /></IconTile>
+              <h3 className={cn(CARD_TITLE, "mt-4")}>{title}</h3>
               <p className="mt-3 max-w-[62ch] text-[15px] leading-relaxed text-muted-foreground">{body}</p>
             </div>
           ))}
@@ -381,24 +429,23 @@ complex  → tier.strong   <span className="text-muted-foreground">gemini-pro ·
         </div>
         <p className="mt-12 text-[16px] leading-relaxed text-muted-foreground">
           Every claim on this page is a file you can read.{" "}
-          <a
-            href="https://github.com/Cartivo-Oficial/TermCoder"
-            className="text-foreground underline underline-offset-4"
-          >
-            Read the source on GitHub
-          </a>
-          .
+          <InlineLink href="https://github.com/Cartivo-Oficial/TermCoder">Read the source on GitHub</InlineLink>.
         </p>
       </Section>
 
-      {/* ── 11 · faq ─────────────────────────────────────────────────── */}
+      {/* ── 11 · the invite ──────────────────────────────────────────── */}
+      <Section>
+        <Invite />
+      </Section>
+
+      {/* ── 12 · faq ─────────────────────────────────────────────────── */}
       <Section>
         <Eyebrow>Questions</Eyebrow>
         <Heading>The ones people actually ask.</Heading>
         <FAQ items={FAQ_ITEMS} />
       </Section>
 
-      {/* ── 12 · final cta ───────────────────────────────────────────── */}
+      {/* ── 13 · final cta ───────────────────────────────────────────── */}
       <Section className="text-center">
         <div className="mx-auto w-fit">
           <Heading>One install. Both minds.</Heading>
