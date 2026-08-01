@@ -65,7 +65,6 @@ for (const page of pages) {
 // deletes entries here; the guard fails while any listed file has been
 // migrated in appearance but not in fact.
 const NOT_YET_MIGRATED = [
-  "pages/pricing.tsx",
   "pages/download.tsx", "pages/install.tsx", "pages/docs.tsx",
   "pages/changelog.tsx", "pages/privacy.tsx", "pages/terms.tsx",
   "pages/refunds.tsx", "pages/dashboard.tsx", "pages/viewer.tsx",
