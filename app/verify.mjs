@@ -82,6 +82,9 @@ const BANNED = [
   /bg-\[#/, /text-\[#/, /border-\[#/, /ring-\[#/,
   /bg-white\//, /text-white\//, /border-white\//, /ring-white\//,
   /bg-black\//, /text-black\//, /border-black\//, /ring-black\//,
+  // Faded body text fails WCAG AA. muted-foreground is already the quiet
+  // colour; dropping it to 60% opacity on 11px text lands around 2.4:1.
+  /text-muted-foreground\/[0-9]/,
 ];
 
 // The one chromatic value on the site. It is a token, declared once per ramp

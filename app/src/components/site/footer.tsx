@@ -22,7 +22,7 @@ export function Footer() {
         </div>
         {COLUMNS.map(([title, links]) => (
           <div key={title}>
-            <h3 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground/70">{title}</h3>
+            <h3 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">{title}</h3>
             <ul className="mt-4 space-y-2.5">
               {links.map(([label, href]) => (
                 <li key={label}>
@@ -35,7 +35,7 @@ export function Footer() {
           </div>
         ))}
       </div>
-      <div className="mx-auto flex max-w-6xl items-center justify-between border-t border-border px-6 py-5 font-mono text-xs text-muted-foreground/70">
+      <div className="mx-auto flex max-w-6xl items-center justify-between border-t border-border px-6 py-5 font-mono text-xs text-muted-foreground">
         <span>termcoder · MIT</span>
         <span>built in the open</span>
       </div>

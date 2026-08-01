@@ -58,9 +58,9 @@ export default function Download() {
                   <li key={file} className="border-t border-border py-3 first:border-t-0 first:pt-0">
                     <a href={BASE + file} className="flex items-baseline justify-between gap-3 hover:underline">
                       <span className="text-[15px] text-foreground">{label}</span>
-                      <span className="font-mono text-[11px] text-muted-foreground/60">.{file.split(".").pop()}</span>
+                      <span className="font-mono text-[11px] text-muted-foreground">.{file.split(".").pop()}</span>
                     </a>
-                    <p className="mt-1 font-mono text-[11px] text-muted-foreground/60">{note}</p>
+                    <p className="mt-1 font-mono text-[11px] text-muted-foreground">{note}</p>
                   </li>
                 ))}
               </ul>
@@ -90,7 +90,7 @@ export default function Download() {
               The CLI is one npm command and needs Node 20 or newer. It is the same engine — the app just wraps it in
               a window.
             </p>
-            <div className="mt-5 inline-flex items-center gap-3 rounded-xl border border-border bg-muted px-3.5 py-2.5 font-mono text-[13px]">
+            <div className="mt-5 inline-flex max-w-full flex-wrap items-center gap-3 rounded-xl border border-border bg-muted px-3.5 py-2.5 font-mono text-[13px]">
               <code className="text-foreground">{INSTALL}</code>
               <CopyButton text={INSTALL} />
             </div>

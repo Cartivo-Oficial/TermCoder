@@ -30,7 +30,7 @@ export function PrimaryDownload() {
       >
         Download for {os} →
       </a>
-      <span className="font-mono text-[12px] text-muted-foreground/60">{PRIMARY[os]} · latest release</span>
+      <span className="font-mono text-[12px] text-muted-foreground">{PRIMARY[os]} · latest release</span>
     </div>
   );
 }

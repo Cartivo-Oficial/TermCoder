@@ -87,7 +87,7 @@ export default function Install() {
                     <CopyButton text={cmd.replace(/^❯\s*/, "")} />
                   </div>
                 )}
-                <p className="mt-3 font-mono text-[11.5px] leading-relaxed text-muted-foreground/60">
+                <p className="mt-3 font-mono text-[11.5px] leading-relaxed text-muted-foreground">
                   {withInlineCode(note)}
                 </p>
               </div>
@@ -121,7 +121,7 @@ export default function Install() {
                 <span aria-hidden>❯</span> ollama pull qwen2.5-coder
               </div>
               <div>
-                <span aria-hidden>❯</span> /model <span className="text-muted-foreground/60">→ pick it under Local</span>
+                <span aria-hidden>❯</span> /model <span className="text-muted-foreground">→ pick it under Local</span>
               </div>
             </div>
           </div>
