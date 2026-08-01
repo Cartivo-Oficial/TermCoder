@@ -230,7 +230,7 @@ complex  → tier.strong   <span className="text-muted-foreground">gemini-pro ·
           level={2}
           eyebrow="The builder"
           title="A real agent loop, with real tools."
-          body="Not a prompt box with autocomplete. It maps the stack, the scripts and the entry points before you type anything, then plans, edits with minimal diffs, runs your command, reads the failure and goes again until it passes. Every turn is checkpointed, so you can walk any of it back."
+          body="Not a prompt box with autocomplete. It maps the stack, the scripts and the entry points before you type anything, then plans, edits with minimal diffs, runs your command, reads the failure and goes again until it passes. The last turn is checkpointed, so one undo puts every file it touched back."
         >
           <Screenshot
             src={appShot}
@@ -351,7 +351,7 @@ complex  → tier.strong   <span className="text-muted-foreground">gemini-pro ·
           reverse
           eyebrow="Autonomous"
           title="Give it a goal and a way to check."
-          body="Hand it a command that tells the truth about your project — a build, a test run, a linter — and it works, runs the command, reads the failure and goes again until the command exits zero. Auto-approve is on for the run, so every round is checkpointed and any of it can be walked back."
+          body="Hand it a command that tells the truth about your project — a build, a test run, a linter — and it works, runs the command, reads the failure and goes again until the command exits zero. Auto-approve is on for the run, and the last round stays checkpointed, so one undo unwinds it."
         >
           <div className={PANEL}>
             <div className="text-muted-foreground"><span aria-hidden>❯</span> termcoder --background &quot;make the build green&quot;</div>
