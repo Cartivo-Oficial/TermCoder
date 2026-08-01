@@ -85,6 +85,14 @@ const BANNED = [
   /bg-black\//, /text-black\//, /border-black\//, /ring-black\//,
 ];
 
+// The one chromatic value on the site. It is a token, declared once per ramp
+// in index.css and reached everywhere else as `accent-link`. Hardcoding the
+// literal anywhere but index.css is how a token quietly becomes a theme, so
+// the hex is banned outside the ramps. This permits the accent and nothing
+// else: `ff7a45`, the old identity orange, stays banned everywhere, including
+// index.css — a different value doing a different job.
+const ACCENT_HEX = [/b84d18/i, /ff8a5c/i];
+
 const srcDir = join(root, "src");
 const walk = (dir) =>
   readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
@@ -98,7 +106,16 @@ for (const file of walk(srcDir)) {
   const body = readFileSync(file, "utf8");
   for (const re of BANNED)
     check(!re.test(body), `${rel} still matches ${re}`);
+  if (rel !== "index.css")
+    for (const re of ACCENT_HEX)
+      check(!re.test(body), `${rel} hardcodes the accent ${re} — use the accent-link token`);
 }
+
+// The accent has to exist in both ramps, or `accent-link` silently renders as
+// nothing in one theme.
+const css = readFileSync(join(srcDir, "index.css"), "utf8");
+check(/--color-accent-link:\s*var\(--accent-link\)/.test(css), "index.css does not register --color-accent-link in @theme inline");
+check((css.match(/^\s*--accent-link:/gm) ?? []).length === 2, "index.css does not declare --accent-link in both ramps");
 
 // The pre-paint theme script must sit in the built HTML, or a dark-theme
 // visitor gets a white flash on every navigation.
