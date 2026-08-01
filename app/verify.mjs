@@ -60,6 +60,53 @@ for (const page of pages) {
     check(new RegExp(`${BASE}assets/`).test(html), `${page}: references no ${BASE}assets/ bundle`);
 }
 
+// ── redesign invariants ────────────────────────────────────────────────
+// Files still carrying the old dark/orange identity. Each redesign phase
+// deletes entries here; the guard fails while any listed file has been
+// migrated in appearance but not in fact.
+const NOT_YET_MIGRATED = [
+  "pages/features.tsx", "pages/study.tsx", "pages/pricing.tsx",
+  "pages/download.tsx", "pages/install.tsx", "pages/docs.tsx",
+  "pages/changelog.tsx", "pages/privacy.tsx", "pages/terms.tsx",
+  "pages/refunds.tsx", "pages/dashboard.tsx", "pages/viewer.tsx",
+  "pages/login.tsx", "components/docs.tsx", "components/licence-panel.tsx",
+  "components/settings-panel.tsx", "components/connectors-panel.tsx",
+  "components/download-cards.tsx", "components/dither.tsx",
+];
+
+// Regexes, not substrings: "text-primary" is a prefix of the perfectly
+// legitimate "text-primary-foreground", and a plain includes() would ban
+// every solid button in the kit.
+const BANNED = [
+  /ff7a45/, /31d0b4/, /\btext-study\b/, /\btext-primary\b(?!-)/,
+  /shadow-primary/, /build-soft/, /study-soft/, /Funnel Display/, /<Dither/,
+];
+
+const srcDir = join(root, "src");
+const walk = (dir) =>
+  readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)],
+  );
+
+for (const file of walk(srcDir)) {
+  if (!/\.(tsx?|css)$/.test(file)) continue;
+  const rel = file.slice(srcDir.length + 1).replace(/\\/g, "/");
+  if (NOT_YET_MIGRATED.includes(rel)) continue;
+  const body = readFileSync(file, "utf8");
+  for (const re of BANNED)
+    check(!re.test(body), `${rel} still matches ${re}`);
+}
+
+// The pre-paint theme script must sit in the built HTML, or a dark-theme
+// visitor gets a white flash on every navigation.
+for (const p of ["index", "features", "docs"]) {
+  const html = join(dist, `${p}.html`);
+  if (!existsSync(html)) continue;
+  const body = readFileSync(html, "utf8");
+  check(body.includes("__termcoder_theme"), `${p}.html has no pre-paint theme script`);
+  check(!body.includes('<html lang="en" class="dark">'), `${p}.html still hardcodes the dark class`);
+}
+
 if (fail.length) {
   console.error(`verify: ${fail.length} problem(s)\n` + fail.map((f) => "  - " + f).join("\n"));
   process.exit(1);
