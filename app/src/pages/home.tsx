@@ -201,7 +201,7 @@ complex  → tier.strong   <span className="text-muted-foreground">gemini-pro ·
             <h3 className="text-[clamp(22px,2.6vw,28px)] font-semibold tracking-[-0.025em] text-foreground">
               Seventeen real tools.
             </h3>
-            <p className="text-[14px] text-muted-foreground">Reading is free; the rest ask first.</p>
+            <p className="text-[14px] text-muted-foreground">Reading and search run freely. Running a command, writing a file, reaching the network or executing code asks first.</p>
           </div>
           <div className="mt-8 grid grid-cols-1 gap-x-10 sm:grid-cols-3 lg:grid-cols-4">
             {TOOLS.map(([t, d]) => (
