@@ -20,7 +20,8 @@
 - Colour is permitted **only** for state: one green and one red, used for pass/fail and form validation. Nowhere else.
 - Mono is the system stack. No mono webfont ships.
 - `pricing.tsx` carries the Paddle checkout. Presentation may change; checkout behaviour may not.
-- Every phase ends green on: `cd app && npm run build && node verify.mjs && npx oxlint`, and `pnpm test` from the repository root.
+- Every phase ends green on: `cd app && npm run build && node verify.mjs && npx oxlint`.
+- `pnpm test` from the repository root does **not** exit zero, and is not expected to: 7 test files fail on a pre-existing `better-sqlite3` native-binding problem unrelated to the site. The binding requirement is narrower — `app/src/**` tests pass, and the count of pre-existing failures is unchanged from the 95 recorded at Task 1. A new failure outside `app/` means you broke something; the existing 95 do not.
 
 ---
 
