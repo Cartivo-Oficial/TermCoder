@@ -1,8 +1,6 @@
 import markUrl from "@/assets/mark.png";
 
-const BRAND = "linear-gradient(135deg,#ff7a45 0%,#ff9a5f 46%,#31d0b4 100%)";
-
-export function Mark({ size = 22, gradient = BRAND }: { size?: number; gradient?: string }) {
+export function Mark({ size = 22 }: { size?: number }) {
   return (
     <span
       aria-hidden="true"
@@ -11,7 +9,7 @@ export function Mark({ size = 22, gradient = BRAND }: { size?: number; gradient?
         height: size,
         display: "inline-block",
         flex: "none",
-        background: gradient,
+        background: "currentColor",
         WebkitMaskImage: `url(${markUrl})`,
         maskImage: `url(${markUrl})`,
         WebkitMaskSize: "contain",
