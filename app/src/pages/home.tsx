@@ -14,7 +14,7 @@ const PROVIDERS: [string, string][] = [
   ["Anthropic", "claude-sonnet-5 · haiku"], ["OpenAI", "gpt-4o · 4o-mini"], ["Google", "gemini-2.5 pro · flash"],
   ["Groq", "llama · fast"], ["Mistral", "large · codestral"], ["DeepSeek", "chat · coder"],
   ["xAI", "grok"], ["OpenRouter", "anything"], ["Together", "open models"],
-  ["Cerebras", "very fast"], ["Ollama", "local · private"], ["Pollinations", "free · no key"],
+  ["Cerebras", "very fast"], ["Ollama", "local · private"], ["termcoderfree", "free · no key"],
 ];
 
 const TOOLS: [string, string][] = [
@@ -22,9 +22,10 @@ const TOOLS: [string, string][] = [
   ["grep", "search contents"], ["glob", "find by pattern"], ["ls", "list a folder"], ["symbols", "go to definition"],
   ["repomap", "map the project"], ["memory", "recall & save"], ["skill", "load a playbook"], ["recipe", "run a workflow"],
   ["webfetch", "read a URL"], ["websearch", "search the web"], ["diagnostics", "read LSP errors"], ["task", "spawn a sub-agent"],
+  ["run_code", "run confined code"],
 ];
 
-const FACTS = ["MIT", "12 providers", "16 tools", "Windows", "macOS", "Linux", "no telemetry"];
+const FACTS = ["MIT", "12 providers", "17 tools", "Windows", "macOS", "Linux", "no telemetry"];
 
 const NOT_NEEDED = ["a credit card", "an account", "an API key", "a config file"];
 
@@ -37,7 +38,7 @@ const ROUNDS: { round: string; what: string; result: string; ok: boolean }[] = [
 const SECONDARY: [string, string][] = [
   [
     "Agents, skills, commands, recipes",
-    "Everything it knows about your project is markdown in your repo — .termcoder/agents, commands, skills, recipes and memory. Readable, diffable, reviewable in a pull request, not settings in someone else's dashboard. Skills load progressively: only the name and a one-line description sit in the prompt until the agent reaches for the body.",
+    "Everything it knows about your project is markdown in your repo — .termcoder/agents/ (own model, prompt, tools, permissions), commands/ (slash commands with $ARGUMENTS), skills/ (playbooks loaded only when needed), recipes/ (saved multi-step workflows) and memory/ (facts it keeps about the project). Readable, diffable, reviewable in a pull request, not settings in someone else's dashboard. Skills load progressively: only the name and a one-line description sit in the prompt until the agent reaches for the body.",
   ],
   [
     "MCP connectors",
@@ -45,7 +46,7 @@ const SECONDARY: [string, string][] = [
   ],
   [
     "The tutor",
-    "The part no other coding agent has. It explains step by step in your language, and hands homework back as worked steps instead of a solution to paste. /flashcards builds a deck, /review grades you 0–5, /decks shows what is due, /quiz runs a practice exam — all scheduled with SM-2.",
+    "The part no other coding agent has. Built because students shouldn't need a credit card to learn — and because copying an answer teaches nothing. It explains step by step in your language, and hands homework back as worked steps instead of a solution to paste. /flashcards builds a deck, /review grades you 0–5, /decks shows what is due, /quiz runs a practice exam — all scheduled with SM-2.",
   ],
   [
     "Classrooms and live rooms",
@@ -58,12 +59,12 @@ const SECURITY: [string, string][] = [
   ["No telemetry", "No analytics, no crash pings, no usage counters. Nothing about what you build is collected, ever."],
   ["Direct to your provider", "Prompts go from your machine to the model you chose and nowhere else. There is no TermCoder server in the middle to trust."],
   ["No account", "Nothing to sign up for. It opens on a free model that needs no key, and connecting your own key is a line in a file you own."],
-  ["Per-tool permission", "Every one of the sixteen tools sits behind a permission you control. Reading is cheap; running a command or writing a file asks first, and you can revoke either at any time."],
+  ["Five permission gates", "Bash, writes, edits, MCP calls and network access each default to asking first. Reading is cheap; running a command or writing a file asks first."],
 ];
 
 const PROOF: [string, string][] = [
   ["MIT", "licence"],
-  ["16", "tools"],
+  ["17", "tools"],
   ["12", "providers"],
   ["0", "servers holding your code"],
 ];
@@ -180,6 +181,7 @@ complex  → tier.strong   <span className="text-muted-foreground">gemini-pro ·
       {/* ── 04 · the builder ─────────────────────────────────────────── */}
       <Section id="build">
         <FeatureBlock
+          level={2}
           eyebrow="The builder"
           title="A real agent loop, with real tools."
           body="Not a prompt box with autocomplete. It maps the stack, the scripts and the entry points before you type anything, then plans, edits with minimal diffs, runs your command, reads the failure and goes again until it passes. Every turn is checkpointed, so you can walk any of it back."
@@ -197,11 +199,11 @@ complex  → tier.strong   <span className="text-muted-foreground">gemini-pro ·
         <div className="mt-16">
           <div className="flex flex-wrap items-baseline justify-between gap-4">
             <h3 className="text-[clamp(22px,2.6vw,28px)] font-semibold tracking-[-0.025em] text-foreground">
-              Sixteen real tools.
+              Seventeen real tools.
             </h3>
-            <p className="text-[14px] text-muted-foreground">Each one behind a permission you control.</p>
+            <p className="text-[14px] text-muted-foreground">Reading is free; the rest ask first.</p>
           </div>
-          <div className="mt-8 grid grid-cols-2 gap-x-10 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="mt-8 grid grid-cols-1 gap-x-10 sm:grid-cols-3 lg:grid-cols-4">
             {TOOLS.map(([t, d]) => (
               <div key={t} className="flex items-baseline gap-2 border-b border-border py-3">
                 <span className="font-mono text-[13px] text-foreground">{t}</span>
@@ -213,7 +215,7 @@ complex  → tier.strong   <span className="text-muted-foreground">gemini-pro ·
 
         <div className={cn(CARD, "mt-10 flex flex-wrap items-center gap-x-6 gap-y-3")}>
           <span className="text-[13px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-            To start you need
+            To start you need none of this
           </span>
           {NOT_NEEDED.map((x) => (
             <span key={x} className="font-mono text-[13px] text-muted-foreground">
@@ -227,6 +229,7 @@ complex  → tier.strong   <span className="text-muted-foreground">gemini-pro ·
       {/* ── 05 · a real shell ────────────────────────────────────────── */}
       <Section>
         <FeatureBlock
+          level={2}
           reverse
           eyebrow="Chat and terminal"
           title="A real shell, in the same window."
@@ -246,6 +249,7 @@ complex  → tier.strong   <span className="text-muted-foreground">gemini-pro ·
       {/* ── 06 · memory + retrieval ──────────────────────────────────── */}
       <Section>
         <FeatureBlock
+          level={2}
           eyebrow="Memory and retrieval"
           title="It remembers you, and it finds the file."
           body="Tell it once that you use pnpm and it keeps that across sessions — shared with your team through git, or kept private on your machine. Finding things is lexical ranking over your own project: no embeddings, no index server, no new dependency, cheap enough to run every turn."
@@ -280,9 +284,9 @@ complex  → tier.strong   <span className="text-muted-foreground">gemini-pro ·
             <div className={PANEL}>
               <div className="text-muted-foreground">{"// retrieval — pointers, not file bodies"}</div>
               <div className="mt-3 space-y-1.5 text-foreground">
-                <div>❯ symbols resolveModel</div>
+                <div><span aria-hidden>❯</span> symbols resolveModel</div>
                 <div className="text-muted-foreground">provider.ts:98 · function</div>
-                <div>❯ repomap</div>
+                <div><span aria-hidden>❯</span> repomap</div>
                 <div className="text-muted-foreground">pnpm monorepo · 4 packages · vitest</div>
               </div>
             </div>
@@ -297,13 +301,14 @@ complex  → tier.strong   <span className="text-muted-foreground">gemini-pro ·
       {/* ── 07 · autonomous ──────────────────────────────────────────── */}
       <Section>
         <FeatureBlock
+          level={2}
           reverse
           eyebrow="Autonomous"
           title="Give it a goal and a way to check."
           body="Hand it a command that tells the truth about your project — a build, a test run, a linter — and it works, runs the command, reads the failure and goes again until the command exits zero. Auto-approve is on for the run, so every round is checkpointed and any of it can be walked back."
         >
           <div className={PANEL}>
-            <div className="text-muted-foreground">❯ termcoder --background &quot;make the build green&quot;</div>
+            <div className="text-muted-foreground"><span aria-hidden>❯</span> termcoder --background &quot;make the build green&quot;</div>
             <ol className="mt-4 space-y-3">
               {ROUNDS.map(({ round, what, result, ok }) => (
                 <li key={round} className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
@@ -394,14 +399,14 @@ complex  → tier.strong   <span className="text-muted-foreground">gemini-pro ·
       </Section>
 
       {/* ── 12 · final cta ───────────────────────────────────────────── */}
-      <Section bordered className="text-center">
+      <Section className="text-center">
         <div className="mx-auto w-fit">
           <Heading>One install. Both minds.</Heading>
         </div>
         <p className="mx-auto mt-5 max-w-[46ch] text-[17px] leading-relaxed text-muted-foreground">
           It runs the moment it opens — no account, no key, nothing to configure.
         </p>
-        <div className="mx-auto mt-9 inline-flex items-center gap-4 rounded-xl border border-border bg-muted px-4 py-3 font-mono text-[13px]">
+        <div className="mx-auto mt-9 inline-flex max-w-full flex-wrap items-center gap-4 rounded-xl border border-border bg-muted px-4 py-3 font-mono text-[13px]">
           <code className="text-foreground">{INSTALL}</code>
           <CopyButton text={INSTALL} />
         </div>
