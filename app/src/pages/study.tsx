@@ -55,7 +55,7 @@ const TOGETHER: [string, string, string][] = [
   [
     "route",
     "A live room is peer to peer",
-    "Open a room and the app on your machine hands out an invite link on your local network. Someone opens it and lands in your session — chat, voice, camera and screen share travel straight between the two of you, discovered through a public STUN server. There is no media server in the middle and no relay: nothing of ours ever sees the stream.",
+    "Open a room and the app on your machine hands out an invite link on your local network. Someone opens it and lands in your session — chat, voice, camera and screen share travel straight between the two of you, discovered through a public STUN server. There is no media server in the middle and no relay: nothing of ours ever sees the stream. Joining is always free, and so is a room of two; hosting a third person in the room needs a Pro licence.",
   ],
 ];
 
