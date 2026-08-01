@@ -22,7 +22,7 @@ export function Footer() {
         </div>
         {COLUMNS.map(([title, links]) => (
           <div key={title}>
-            <h4 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground/70">{title}</h4>
+            <h3 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground/70">{title}</h3>
             <ul className="mt-4 space-y-2.5">
               {links.map(([label, href]) => (
                 <li key={label}>

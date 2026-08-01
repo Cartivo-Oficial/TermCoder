@@ -34,7 +34,7 @@ export function CopyButton({ text }: { text: string }) {
         setState(ok ? "done" : "failed");
         setTimeout(() => setState("idle"), 1400);
       }}
-      className="rounded border border-white/15 px-2.5 py-1 font-mono text-[11px] uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
+      className="rounded border border-border px-2.5 py-1 font-mono text-[11px] uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
     >
       {state === "done" ? "Copied" : state === "failed" ? "Select it" : "Copy"}
     </button>

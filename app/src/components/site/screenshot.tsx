@@ -8,7 +8,7 @@ export function Screenshot({
 }) {
   return (
     <figure className={cn("mt-10", className)}>
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-[0_24px_60px_-32px_rgba(0,0,0,0.35)]">
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-[0_24px_60px_-32px_rgba(0,0,0,0.35)] dark:shadow-none dark:ring-1 dark:ring-ring/30">
         <img
           src={src}
           alt={alt}
