@@ -50,7 +50,7 @@ export function parseChangelog(md: string): Release[] {
     });
 }
 
-const CODE = "rounded bg-white/6 px-1 py-0.5 font-mono text-[0.9em] text-foreground";
+const CODE = "rounded bg-muted px-1 py-0.5 font-mono text-[0.9em] text-foreground";
 
 const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 

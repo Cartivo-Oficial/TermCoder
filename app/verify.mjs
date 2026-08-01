@@ -78,8 +78,11 @@ const NOT_YET_MIGRATED = [
 // legitimate "text-primary-foreground", and a plain includes() would ban
 // every solid button in the kit.
 const BANNED = [
-  /ff7a45/, /31d0b4/, /\btext-study\b/, /\btext-primary\b(?!-)/,
+  /ff7a45/i, /31d0b4/i, /\btext-study\b/, /\btext-primary\b(?!-)/,
   /shadow-primary/, /build-soft/, /study-soft/, /Funnel Display/, /<Dither/,
+  /bg-\[#/, /text-\[#/, /border-\[#/, /ring-\[#/,
+  /bg-white\//, /text-white\//, /border-white\//, /ring-white\//,
+  /bg-black\//, /text-black\//, /border-black\//, /ring-black\//,
 ];
 
 const srcDir = join(root, "src");
