@@ -1,11 +1,14 @@
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Dither } from "@/components/dither";
 import { CopyButton } from "@/components/copy-button";
-import { Mark } from "@/components/mark";
 import appShot from "@/assets/app-hero.png";
 import { Nav } from "@/components/site/nav";
 import { Footer } from "@/components/site/footer";
+import { Section, Eyebrow, Heading, Lead } from "@/components/site/section";
+import { CardGrid } from "@/components/site/card-grid";
+import { Screenshot } from "@/components/site/screenshot";
+import { FeatureBlock } from "@/components/site/feature-block";
+import { FAQ } from "@/components/site/faq";
 
 const PROVIDERS: [string, string][] = [
   ["Anthropic", "claude-sonnet-5 · haiku"], ["OpenAI", "gpt-4o · 4o-mini"], ["Google", "gemini-2.5 pro · flash"],
@@ -21,459 +24,392 @@ const TOOLS: [string, string][] = [
   ["webfetch", "read a URL"], ["websearch", "search the web"], ["diagnostics", "read LSP errors"], ["task", "spawn a sub-agent"],
 ];
 
-const btn = "h-11 rounded-md px-5 text-[14px] font-mono shadow-[0_14px_44px_-14px] shadow-primary/70";
-const btnOutline = "h-11 rounded-md px-5 text-[14px] font-mono";
+const FACTS = ["MIT", "12 providers", "16 tools", "Windows", "macOS", "Linux", "no telemetry"];
 
-function Cmd({ children, tone = "build" }: { children: React.ReactNode; tone?: "build" | "study" }) {
-  return (
-    <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
-      <span className={tone === "build" ? "text-primary" : "text-study"}>❯</span> {children}
-    </p>
-  );
-}
+const NOT_NEEDED = ["a credit card", "an account", "an API key", "a config file"];
 
-function H2({ children }: { children: React.ReactNode }) {
-  return <h2 className="mt-4 max-w-[22ch] font-display text-4xl font-light leading-[1.05] tracking-[-0.03em] text-balance text-foreground sm:text-5xl">{children}</h2>;
-}
+const ROUNDS: { round: string; what: string; result: string; ok: boolean }[] = [
+  { round: "round 1", what: "edit → npm run build", result: "✗ 2 type errors", ok: false },
+  { round: "round 2", what: "fix types → build", result: "✗ 1 test failing", ok: false },
+  { round: "round 3", what: "fix test → build", result: "✓ passed", ok: true },
+];
 
-function Lead({ children }: { children: React.ReactNode }) {
-  return <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">{children}</p>;
-}
+const SECONDARY: [string, string][] = [
+  [
+    "Agents, skills, commands, recipes",
+    "Everything it knows about your project is markdown in your repo — .termcoder/agents, commands, skills, recipes and memory. Readable, diffable, reviewable in a pull request, not settings in someone else's dashboard. Skills load progressively: only the name and a one-line description sit in the prompt until the agent reaches for the body.",
+  ],
+  [
+    "MCP connectors",
+    "A curated catalog — filesystem, git, github, postgres, fetch, brave-search, slack, puppeteer, memory, sequential-thinking. Pick one, fill in the inputs it asks for, and it writes the config. No memorising transports or npx incantations.",
+  ],
+  [
+    "The tutor",
+    "The part no other coding agent has. It explains step by step in your language, and hands homework back as worked steps instead of a solution to paste. /flashcards builds a deck, /review grades you 0–5, /decks shows what is due, /quiz runs a practice exam — all scheduled with SM-2.",
+  ],
+  [
+    "Classrooms and live rooms",
+    "A teacher creates a class, shares packs of agents and skills, sets assignments and grades submissions — all of it riding on a private gist, with nothing to host. Live rooms are peer to peer: voice, camera, screen share and chat straight between you, with no media server in the middle. Joining is always free.",
+  ],
+];
 
-function Section({ children }: { children: React.ReactNode }) {
-  return <section className="border-t border-border"><div className="mx-auto max-w-6xl px-6 py-20">{children}</div></section>;
-}
+const SECURITY: [string, string][] = [
+  ["Local first", "Your config, your memory and your sessions are plain files on disk. Nothing is uploaded to be read back later, and you can delete any of it with rm."],
+  ["No telemetry", "No analytics, no crash pings, no usage counters. Nothing about what you build is collected, ever."],
+  ["Direct to your provider", "Prompts go from your machine to the model you chose and nowhere else. There is no TermCoder server in the middle to trust."],
+  ["No account", "Nothing to sign up for. It opens on a free model that needs no key, and connecting your own key is a line in a file you own."],
+  ["Per-tool permission", "Every one of the sixteen tools sits behind a permission you control. Reading is cheap; running a command or writing a file asks first, and you can revoke either at any time."],
+];
+
+const PROOF: [string, string][] = [
+  ["MIT", "licence"],
+  ["16", "tools"],
+  ["12", "providers"],
+  ["0", "servers holding your code"],
+];
+
+const FAQ_ITEMS = [
+  { q: "Do I need an API key?",
+    a: "No. It opens on a free, community-hosted model with no sign-up and no card. It is rate-limited when busy, and prompts go to a third party we do not run — point it at a local Ollama to keep everything on your machine." },
+  { q: "Is it really free?",
+    a: "The agent and the tutor are MIT licensed and free forever, and joining any room or class is free. Only hosting a room is paid." },
+  { q: "Does it work offline?",
+    a: "With a local model, yes. Point it at Ollama and nothing leaves your machine — retrieval, memory and the tool loop all run locally." },
+  { q: "Does it run on Windows?",
+    a: "Yes. The CLI runs on Windows, macOS and Linux, and the desktop app ships installers for all three with Node bundled." },
+  { q: "Where does my code go?",
+    a: "To the model provider you choose, and nowhere else. There is no TermCoder server in the middle, no telemetry, and no account. Your config, memory and sessions are plain files on disk." },
+  { q: "How is this different from Claude Code?",
+    a: "It is provider-agnostic rather than tied to one vendor, it routes each turn to a model tier on its own, and it has a study mode — flashcards, quizzes and worked homework — that no other coding agent ships." },
+];
+
+const INSTALL = "npm install -g @termcoder/tui";
+
+const CARD = "rounded-xl border border-border bg-card p-6";
+const PANEL = "rounded-xl border border-border bg-muted p-5 font-mono text-[12.5px] leading-relaxed";
+const CARD_TITLE = "text-[15px] font-medium tracking-tight text-foreground";
+const BTN = "h-11 rounded-lg px-5 text-[14px]";
 
 export default function Home() {
   return (
     <div className="flex min-h-full flex-col">
       <Nav active="home" />
 
-      {/* ─────────── 01 · hero ─────────── */}
-      <section className="relative overflow-hidden">
-        <Dither className="pointer-events-none absolute inset-0 h-full w-full opacity-90" side="both" tone="seam" />
-        <div className="relative mx-auto max-w-6xl px-6 pt-20 pb-10">
-          <Cmd>open source · MIT · no API key</Cmd>
-          <h1 className="mt-6 max-w-[14ch] font-display text-6xl font-light leading-[0.94] tracking-[-0.04em] text-balance text-foreground sm:text-7xl lg:text-[104px]">
-            One terminal.{" "}
-            <span className="bg-gradient-to-r from-[#ff7a45] via-[#ff9a5f] to-[#31d0b4] bg-clip-text text-transparent">Two minds.</span>
-          </h1>
-          <p className="mt-7 max-w-2xl text-[17px] leading-relaxed text-muted-foreground">
-            One is a <span className="text-primary">builder</span> — it reads your repo, edits files, runs your tests and
-            loops until they pass. The other is a <span className="text-study">tutor</span> — it explains, drills you with
-            flashcards and tracks what you actually learned. Same engine. Same install. No API key.
-          </p>
+      {/* ── 01 · hero ────────────────────────────────────────────────── */}
+      <section>
+        <div className="mx-auto max-w-[1120px] px-6 pt-16 pb-2 sm:pt-24">
+          <Heading level={1}>
+            One terminal. <span className="text-muted-foreground">Two minds.</span>
+          </Heading>
+          <Lead>
+            One is a <span className="text-foreground">builder</span> — it reads your repo, edits files, runs your
+            tests and loops until they pass. The other is a <span className="text-foreground">tutor</span> — it
+            explains, drills you with flashcards and tracks what you actually learned. Same engine, same install,
+            no API key.
+          </Lead>
           <div className="mt-9 flex flex-wrap items-center gap-3">
-            <a href="#" className={cn(buttonVariants(), btn)}>Get the app →</a>
-            <a href="#" className={cn(buttonVariants({ variant: "outline" }), btnOutline)}>Install the CLI</a>
+            <a href="download.html" className={cn(buttonVariants(), BTN)}>Get the app</a>
+            <a href="install.html" className={cn(buttonVariants({ variant: "outline" }), BTN)}>Install the CLI</a>
           </div>
-          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[11.5px] text-muted-foreground/60">
-            {["MIT licensed", "12 providers", "16 tools", "Windows · macOS · Linux", "no telemetry"].map((s, i) => (
-              <span key={s} className="flex items-center gap-6">
-                {i > 0 && <span className="h-1 w-1 rounded-full bg-border" />}{s}
+          <p className="mt-8 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] text-muted-foreground">
+            {FACTS.map((f, i) => (
+              <span key={f} className="inline-flex items-center gap-2.5">
+                {i > 0 && <span aria-hidden>·</span>}
+                {f}
               </span>
             ))}
-          </div>
-        </div>
-
-        {/* the product, for real */}
-        <div className="relative mx-auto max-w-6xl px-6 pb-20">
-          <div className="relative">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -inset-x-8 -top-6 bottom-0 rounded-[28px] opacity-70 blur-3xl"
-              style={{ background: "linear-gradient(100deg, rgba(255,122,69,0.30), rgba(49,208,180,0.26))" }}
-            />
-            <div className="relative overflow-hidden rounded-lg border border-white/12 bg-[#0d0c0e] shadow-[0_60px_140px_-40px_rgba(0,0,0,0.95)]">
-              <img
-                src={appShot}
-                width={1034}
-                height={740}
-                alt="The TermCoder desktop app on open: the session rail, Chat and Terminal tabs, the pixel TERMCODER wordmark, suggestion chips, and a composer with the model picker."
-                className="block w-full"
-              />
-            </div>
-          </div>
-          <div className="mt-4 grid gap-x-10 gap-y-2 font-mono text-[11.5px] sm:grid-cols-3">
-            {[
-              ["chat · terminal", "a real shell, in the same window"],
-              ["any model, one picker", "or the free one it opens on"],
-              ["speaks your language", "eleven of them, including yours"],
-            ].map(([a, b]) => (
-              <div key={a} className="border-t border-border pt-2.5">
-                <div className="text-foreground">{a}</div>
-                <div className="text-[11px] text-muted-foreground/60">{b}</div>
-              </div>
-            ))}
-          </div>
+          </p>
         </div>
       </section>
 
-      {/* ─────────── 02 · quickstart (timeline, not cards) ─────────── */}
-      <Section>
-        <div className="grid gap-10 lg:grid-cols-[320px_1fr]">
-          <div>
-            <Cmd>quickstart</Cmd>
-            <H2>Running in ten seconds.</H2>
-            <div className="mt-6 inline-flex items-center gap-3 rounded-md border border-white/15 bg-[#0d0c0e] px-3.5 py-2.5 font-mono text-[13px]">
-              <span className="text-primary">❯</span>
-              <code className="text-foreground">npm install -g @termcoder/tui</code>
-              <CopyButton text="npm install -g @termcoder/tui" />
-            </div>
-          </div>
-          <ol className="relative">
-            <span className="absolute left-[13px] top-3 bottom-3 w-px bg-border" />
-            {[
-              ["Install it", "One npm command, or download the desktop app. The CLI needs Node 18+; the app bundles its own."],
-              ["Open a folder", "It maps the stack, the scripts and the entry points before you type anything."],
-              ["Ask for the change", "Plain language. It reads, edits, runs your tests, and shows you the diff."],
-            ].map(([t, d], i) => (
-              <li key={t} className="relative flex gap-5 pb-8 last:pb-0">
-                <span className="relative z-10 mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full border border-border bg-background font-mono text-[11px] text-primary">
-                  {i + 1}
-                </span>
-                <div>
-                  <h3 className="font-display text-xl font-normal tracking-tight text-foreground">{t}</h3>
-                  <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-muted-foreground">{d}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
+      {/* ── 02 · anchor shot ─────────────────────────────────────────── */}
+      <section>
+        <div className="mx-auto max-w-[1120px] px-6 pb-16 sm:pb-24">
+          <Screenshot
+            src={appShot}
+            width={1034}
+            height={740}
+            priority
+            alt="The TermCoder desktop app on open: the session rail on the left, the Chat and Terminal tabs across the top, and a composer with the model picker at the bottom."
+            caption="The desktop app on open — the session rail, the Chat and Terminal tabs, and the composer with the model picker."
+          />
         </div>
-      </Section>
+      </section>
 
-      {/* ─────────── 03 · providers (table, not chips) ─────────── */}
+      {/* ── 03 · providers ───────────────────────────────────────────── */}
       <Section>
-        <Cmd>bring your own model — or none at all</Cmd>
-        <H2>It opens on a free model. Twelve more are one command away.</H2>
-        <div className="mt-8 grid gap-x-10 sm:grid-cols-2 lg:grid-cols-3">
+        <Eyebrow>Bring your own model — or none at all</Eyebrow>
+        <Heading>It opens on a free model. Twelve more are one command away.</Heading>
+        <Lead>
+          No card, no sign-up. Connect a key when you want one, or sign in with a Claude or ChatGPT subscription
+          instead of paying per token — both experimental.
+        </Lead>
+        <CardGrid cols={3}>
           {PROVIDERS.map(([name, models]) => (
-            <div key={name} className="flex items-baseline justify-between gap-4 border-b border-border/60 py-2.5">
-              <span className="font-mono text-[13px] text-foreground">{name}</span>
-              <span className="truncate font-mono text-[11px] text-muted-foreground/60">{models}</span>
+            <div key={name} className={cn(CARD, "flex items-baseline justify-between gap-4 py-4")}>
+              <span className={CARD_TITLE}>{name}</span>
+              <span className="truncate font-mono text-[12px] text-muted-foreground">{models}</span>
             </div>
           ))}
-        </div>
-        <Lead>
-          No card, no sign-up. Connect a key when you want one, or sign in with a Claude or ChatGPT subscription instead of
-          paying per token — both experimental.
-        </Lead>
-      </Section>
-
-      {/* ─────────── 04 · the builder (split statement) ─────────── */}
-      <section id="build" className="border-t border-border">
-        <div className="mx-auto max-w-6xl px-6 py-20">
-          <div className="grid gap-12 lg:grid-cols-[1fr_380px]">
-            <div>
-              <Cmd>termcoder</Cmd>
-              <h2 className="mt-4 font-display text-5xl font-light tracking-[-0.035em] text-foreground sm:text-6xl">
-                The <span className="text-primary">builder</span>.
-              </h2>
-              <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-muted-foreground">
-                A real agent loop with real tools — not a prompt box with autocomplete. It reads the repo, plans, edits with
-                minimal diffs, runs your command, reads the failure, and goes again until it passes. Every turn is
-                checkpointed, so you can walk any of it back.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3 font-mono text-[12.5px] text-muted-foreground">
-                <span><span className="text-primary">1</span> read</span>
-                <span><span className="text-primary">2</span> plan</span>
-                <span><span className="text-primary">3</span> edit</span>
-                <span><span className="text-primary">4</span> run</span>
-                <span><span className="text-primary">5</span> verify</span>
-                <span className="text-primary/70">↺ until green</span>
-              </div>
-            </div>
-            <div className="rounded-md border border-border bg-card p-6">
-              <div className="font-mono text-[11px] uppercase tracking-widest text-primary">to start you need</div>
-              <div className="mt-4 space-y-2 font-mono text-[13px]">
-                {["a credit card", "an account", "an API key", "a config file"].map((x) => (
-                  <div key={x} className="text-muted-foreground/50"><span className="text-[#ff6b6b]">✗</span> <s>{x}</s></div>
-                ))}
-                <div className="pt-1 text-foreground"><span className="text-primary">❯</span> just run it</div>
-              </div>
-            </div>
+        </CardGrid>
+        <div className="mt-16 grid gap-8 lg:grid-cols-[1fr_1.2fr] lg:gap-16">
+          <div>
+            <h3 className="text-[clamp(22px,2.6vw,28px)] font-semibold tracking-[-0.025em] text-foreground">
+              The right model, per turn.
+            </h3>
+            <p className="mt-4 max-w-[52ch] text-[16px] leading-relaxed text-muted-foreground">
+              <span className="font-mono text-[14px] text-foreground">termcoder/auto</span> classifies the prompt and
+              picks a tier. There is no model in the routing loop — it is a regex and a table, so it costs nothing
+              and never stalls.
+            </p>
           </div>
-        </div>
-      </section>
-
-      {/* ─────────── 05 · routing (full-width code) ─────────── */}
-      <Section>
-        <Cmd>provider/routing.ts</Cmd>
-        <H2>The right model, per turn.</H2>
-        <Lead>
-          <span className="text-foreground">termcoder/auto</span> classifies the prompt and picks a tier. There is no LLM in
-          the routing loop — it is a regex and a table, so it costs nothing and never stalls.
-        </Lead>
-        <pre className="mt-7 overflow-x-auto rounded-md border border-border bg-[#0d0c0e] p-5 font-mono text-[12.5px] leading-relaxed text-[#d7d2cc]">
-<span className="text-muted-foreground/50">// classify(prompt)</span>{"\n"}
-len &gt; 600                        <span className="text-primary">→ complex</span>{"\n"}
-/architect|debug|race|security/  <span className="text-primary">→ complex</span>{"\n"}
-/across|codebase|multiple files/ <span className="text-primary">→ complex</span>{"\n"}
-else                             <span className="text-[#58d38c]">→ simple</span>{"\n"}
+          <pre className={cn(PANEL, "overflow-x-auto text-foreground")}>
+<span className="text-muted-foreground">{"// classify(prompt)"}</span>{"\n"}
+len &gt; 600                        → complex{"\n"}
+/architect|debug|race|security/  → complex{"\n"}
+/across|codebase|multiple files/ → complex{"\n"}
+else                             → simple{"\n"}
 {"\n"}
-<span className="text-muted-foreground/50">// route(complexity)</span>{"\n"}
-<span className="text-[#58d38c]">simple</span>   → tier.fast     <span className="text-muted-foreground/50">gemini-flash · haiku · 4o-mini</span>{"\n"}
-<span className="text-primary">complex</span>  → tier.strong   <span className="text-muted-foreground/50">gemini-pro · sonnet · 4o</span>
-        </pre>
+<span className="text-muted-foreground">{"// route(complexity)"}</span>{"\n"}
+simple   → tier.fast     <span className="text-muted-foreground">gemini-flash · haiku · 4o-mini</span>{"\n"}
+complex  → tier.strong   <span className="text-muted-foreground">gemini-pro · sonnet · 4o</span>
+          </pre>
+        </div>
       </Section>
 
-      {/* ─────────── 06 · toolbox (table) ─────────── */}
-      <Section>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <Cmd>the toolbox</Cmd>
-            <H2>Sixteen real tools.</H2>
+      {/* ── 04 · the builder ─────────────────────────────────────────── */}
+      <Section id="build">
+        <FeatureBlock
+          eyebrow="The builder"
+          title="A real agent loop, with real tools."
+          body="Not a prompt box with autocomplete. It maps the stack, the scripts and the entry points before you type anything, then plans, edits with minimal diffs, runs your command, reads the failure and goes again until it passes. Every turn is checkpointed, so you can walk any of it back."
+        >
+          <Screenshot
+            src={appShot}
+            width={1034}
+            height={740}
+            className="mt-0"
+            alt="The builder mid-turn: a plan in the chat pane, a minimal diff with added and removed lines, and the test command running underneath."
+            caption="A turn in full — the plan, the diff it proposes, and the test run that decides whether it goes again."
+          />
+        </FeatureBlock>
+
+        <div className="mt-16">
+          <div className="flex flex-wrap items-baseline justify-between gap-4">
+            <h3 className="text-[clamp(22px,2.6vw,28px)] font-semibold tracking-[-0.025em] text-foreground">
+              Sixteen real tools.
+            </h3>
+            <p className="text-[14px] text-muted-foreground">Each one behind a permission you control.</p>
           </div>
-          <p className="font-mono text-[11.5px] text-muted-foreground/60">each one behind a permission you control</p>
+          <div className="mt-8 grid grid-cols-2 gap-x-10 sm:grid-cols-3 lg:grid-cols-4">
+            {TOOLS.map(([t, d]) => (
+              <div key={t} className="flex items-baseline gap-2 border-b border-border py-3">
+                <span className="font-mono text-[13px] text-foreground">{t}</span>
+                <span className="truncate text-[12px] text-muted-foreground">{d}</span>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="mt-8 grid grid-cols-2 gap-x-10 sm:grid-cols-3 lg:grid-cols-4">
-          {TOOLS.map(([t, d]) => (
-            <div key={t} className="flex items-baseline gap-2 border-b border-border/60 py-2.5">
-              <b className="font-mono text-[13px] font-normal text-foreground">{t}</b>
-              <span className="truncate text-[11px] text-muted-foreground/60">{d}</span>
-            </div>
+
+        <div className={cn(CARD, "mt-10 flex flex-wrap items-center gap-x-6 gap-y-3")}>
+          <span className="text-[13px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+            To start you need
+          </span>
+          {NOT_NEEDED.map((x) => (
+            <span key={x} className="font-mono text-[13px] text-muted-foreground">
+              <span aria-hidden>✗</span> <s>{x}</s>
+            </span>
           ))}
+          <span className="font-mono text-[13px] text-foreground">Just run it.</span>
         </div>
       </Section>
 
-      {/* ─────────── 07 · memory + retrieval (two artefacts) ─────────── */}
+      {/* ── 05 · a real shell ────────────────────────────────────────── */}
       <Section>
-        <Cmd>memory · retrieval</Cmd>
-        <H2>It remembers you, and it finds the file.</H2>
-        <div className="mt-8 grid gap-8 lg:grid-cols-2">
+        <FeatureBlock
+          reverse
+          eyebrow="Chat and terminal"
+          title="A real shell, in the same window."
+          body="The Terminal tab is a real shell, not a transcript of one — run the build, tail a log, poke at git, and hand the output straight back to the agent in the next message. Nothing to alt-tab to, nothing to copy and paste. The whole interface speaks eleven languages, including yours."
+        >
+          <Screenshot
+            src={appShot}
+            width={1034}
+            height={740}
+            className="mt-0"
+            alt="The Terminal tab of the desktop app running a build command next to the Chat tab, both inside the same window."
+            caption="The Terminal tab — a real shell one click from the conversation about it."
+          />
+        </FeatureBlock>
+      </Section>
+
+      {/* ── 06 · memory + retrieval ──────────────────────────────────── */}
+      <Section>
+        <FeatureBlock
+          eyebrow="Memory and retrieval"
+          title="It remembers you, and it finds the file."
+          body="Tell it once that you use pnpm and it keeps that across sessions — shared with your team through git, or kept private on your machine. Finding things is lexical ranking over your own project: no embeddings, no index server, no new dependency, cheap enough to run every turn."
+        >
+          <Screenshot
+            src={appShot}
+            width={1034}
+            height={740}
+            className="mt-0"
+            alt="The memory pane listing the facts the agent has kept about the project, beside a symbol lookup resolving a function to its file and line."
+            caption="What it kept about this project, and how it gets from a symbol name to a line number."
+          />
+        </FeatureBlock>
+
+        <div className="mt-16 grid gap-8 lg:grid-cols-2 lg:gap-16">
           <div>
-            <div className="rounded-md border border-border bg-[#0d0c0e] p-4 font-mono text-[12px]">
-              <div className="text-muted-foreground/50">~/.termcoder/memory/project.md</div>
-              <div className="mt-2 space-y-1 text-[#d7d2cc]">
+            <div className={PANEL}>
+              <div className="text-muted-foreground">~/.termcoder/memory/project.md</div>
+              <div className="mt-3 space-y-1.5 text-foreground">
                 <div>· uses pnpm, never npm</div>
                 <div>· the auth module is fragile — tread carefully</div>
                 <div>· no barrel files</div>
-                <div>· tests run with <span className="text-primary">npm test</span>, not a watcher</div>
+                <div>· tests run with npm test, not a watcher</div>
               </div>
             </div>
-            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              Tell it once and it keeps that across sessions — shared with your team through git, or kept private on your
-              machine. A guard refuses to store anything that looks like a secret.
+            <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">
+              Plain markdown you can edit, review in a pull request or delete. A guard refuses to store anything that
+              looks like a secret.
             </p>
           </div>
           <div>
-            <div className="rounded-md border border-border bg-[#0d0c0e] p-4 font-mono text-[12px]">
-              <div className="text-muted-foreground/50">// retrieval — pointers, not file bodies</div>
-              <div className="mt-2 space-y-1 text-[#d7d2cc]">
-                <div><span className="text-primary">❯</span> symbols resolveModel</div>
-                <div className="text-muted-foreground/60">provider.ts:98 <span className="text-muted-foreground/40">· function</span></div>
-                <div><span className="text-primary">❯</span> repomap</div>
-                <div className="text-muted-foreground/60">pnpm monorepo · 4 packages · vitest</div>
+            <div className={PANEL}>
+              <div className="text-muted-foreground">{"// retrieval — pointers, not file bodies"}</div>
+              <div className="mt-3 space-y-1.5 text-foreground">
+                <div>❯ symbols resolveModel</div>
+                <div className="text-muted-foreground">provider.ts:98 · function</div>
+                <div>❯ repomap</div>
+                <div className="text-muted-foreground">pnpm monorepo · 4 packages · vitest</div>
               </div>
             </div>
-            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              Lexical ranking over your project — no embeddings, no index server, no new dependency. Cheap enough to run
-              every turn, so it stops re-reading the repo to find where a thing lives.
+            <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">
+              It sends the agent a pointer instead of a file, so it stops re-reading the repo to work out where a
+              thing lives — and your context stays cheap.
             </p>
           </div>
         </div>
       </Section>
 
-      {/* ─────────── 08 · autonomous (vertical rail) ─────────── */}
+      {/* ── 07 · autonomous ──────────────────────────────────────────── */}
       <Section>
-        <div className="grid gap-10 lg:grid-cols-[360px_1fr]">
-          <div>
-            <Cmd>autonomous</Cmd>
-            <H2>Give it a goal and a way to check.</H2>
-            <Lead>
-              It works, runs your verify command, reads the failure, and goes again — until the command exits zero. Auto-approve
-              is on, so every round is checkpointed.
-            </Lead>
-          </div>
-          <div>
-            <div className="font-mono text-[12.5px] text-muted-foreground/70">❯ termcoder --background &quot;make the build green&quot;</div>
-            <ol className="relative mt-5">
-              <span className="absolute left-[5px] top-2 bottom-2 w-px bg-border" />
-              {[
-                ["round 1", "edit → npm run build", "✗ 2 type errors", "bad"],
-                ["round 2", "fix types → build", "✗ 1 test failing", "bad"],
-                ["round 3", "fix test → build", "✓ passed", "ok"],
-              ].map(([r, what, res, kind]) => (
-                <li key={r} className="relative flex items-baseline gap-4 pb-5 last:pb-0">
-                  <span className={cn("relative z-10 mt-1.5 h-2.5 w-2.5 flex-none rounded-full", kind === "ok" ? "bg-[#28c840]" : "bg-border")} />
-                  <span className="w-16 flex-none font-mono text-[12.5px] text-foreground">{r}</span>
-                  <span className="font-mono text-[12.5px] text-muted-foreground/60">{what}</span>
-                  <span className={cn("ml-auto font-mono text-[12.5px]", kind === "ok" ? "text-[#28c840]" : "text-[#ff6b6b]")}>{res}</span>
+        <FeatureBlock
+          reverse
+          eyebrow="Autonomous"
+          title="Give it a goal and a way to check."
+          body="Hand it a command that tells the truth about your project — a build, a test run, a linter — and it works, runs the command, reads the failure and goes again until the command exits zero. Auto-approve is on for the run, so every round is checkpointed and any of it can be walked back."
+        >
+          <div className={PANEL}>
+            <div className="text-muted-foreground">❯ termcoder --background &quot;make the build green&quot;</div>
+            <ol className="mt-4 space-y-3">
+              {ROUNDS.map(({ round, what, result, ok }) => (
+                <li key={round} className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                  <span className="w-16 flex-none text-foreground">{round}</span>
+                  <span className="text-muted-foreground">{what}</span>
+                  <span className={cn("ml-auto", ok ? "text-ok" : "text-bad")}>{result}</span>
                 </li>
               ))}
             </ol>
           </div>
-        </div>
+        </FeatureBlock>
       </Section>
 
-      {/* ─────────── 09 · extend it (file tree + connectors) ─────────── */}
+      {/* ── 08 · secondary ───────────────────────────────────────────── */}
       <Section>
-        <Cmd>agents · commands · skills · recipes · mcp</Cmd>
-        <H2>Teach it your way.</H2>
+        <Eyebrow>Everything else in the box</Eyebrow>
+        <Heading>Teach it your way, or learn from it.</Heading>
         <Lead>
-          Everything it knows about your project is markdown in your repo — readable, diffable, reviewable in a PR. Not
-          settings in someone else&apos;s dashboard.
+          The same install carries the parts that are not the agent loop — the customisation that lives in your repo,
+          the connectors, the tutor, and the classrooms and rooms built on top of it.
         </Lead>
-        <div className="mt-8 grid gap-8 lg:grid-cols-2">
-          <div className="rounded-md border border-border bg-[#0d0c0e] p-4 font-mono text-[12px] leading-relaxed">
-            <div className="text-muted-foreground/50">.termcoder/</div>
-            <div className="mt-2 space-y-1">
-              {[
-                ["├─ agents/", "own model, prompt, tools, permissions"],
-                ["├─ commands/", "/slash commands with $ARGUMENTS"],
-                ["├─ skills/", "playbooks — loaded only when needed"],
-                ["├─ recipes/", "saved multi-step workflows"],
-                ["└─ memory/", "facts it keeps about the project"],
-              ].map(([a, b]) => (
-                <div key={a} className="flex flex-wrap gap-x-3">
-                  <span className="text-[#d7d2cc]">{a}</span>
-                  <span className="text-muted-foreground/50">{b}</span>
-                </div>
-              ))}
+        <Screenshot
+          src={appShot}
+          width={1034}
+          height={740}
+          alt="The study side of the app: a flashcard deck mid-review with a grading row, next to the class panel listing assignments."
+          caption="The tutor and the classroom — the half of the product that is not about shipping."
+        />
+        <CardGrid cols={4}>
+          {SECONDARY.map(([title, body]) => (
+            <div key={title} className={CARD}>
+              <h3 className={CARD_TITLE}>{title}</h3>
+              <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">{body}</p>
             </div>
-          </div>
-          <div>
-            <h3 className="font-display text-2xl font-normal tracking-tight text-foreground">Connectors, one click.</h3>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              A curated MCP catalog — pick one, fill the inputs it asks for, and it writes the config. No memorising
-              transports or <span className="font-mono text-foreground">npx</span> incantations.
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {["filesystem", "git", "github", "postgres", "fetch", "brave-search", "slack", "puppeteer", "memory", "sequential-thinking"].map((m) => (
-                <span key={m} className="rounded border border-border px-2.5 py-1 font-mono text-[11.5px] text-muted-foreground">{m}</span>
-              ))}
-            </div>
-            <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
-              Skills use progressive disclosure: only the name and one-line description sit in the prompt — the body loads
-              when the agent actually reaches for it, so context stays cheap.
-            </p>
-          </div>
-        </div>
+          ))}
+        </CardGrid>
       </Section>
 
-      {/* ─────────── 10 · the seam ─────────── */}
-      <section className="relative overflow-hidden border-t border-border">
-        <Dither className="pointer-events-none absolute inset-0 h-full w-full opacity-80" side="field" tone="seam" density={0.5} />
-        <div className="relative mx-auto max-w-6xl px-6 py-24 text-center">
-          <Mark size={30} />
-          <h2 className="mx-auto mt-6 max-w-[18ch] font-display text-4xl font-light tracking-[-0.03em] text-balance text-foreground sm:text-5xl">
-            Same engine.{" "}
-            <span className="bg-gradient-to-r from-[#ff7a45] to-[#31d0b4] bg-clip-text text-transparent">Different mind.</span>
-          </h2>
-          <p className="mx-auto mt-5 max-w-xl text-muted-foreground">
-            Switch the model and the whole personality changes — the tools it gets, the prompt it runs, the way it talks to
-            you. The student and the shipper install the same thing.
-          </p>
-        </div>
-      </section>
-
-      {/* ─────────── 11 · the tutor ─────────── */}
-      <section id="study" className="border-t border-border">
-        <div className="mx-auto max-w-6xl px-6 py-20">
-          <div className="grid gap-12 lg:grid-cols-[1fr_380px]">
-            <div>
-              <Cmd tone="study">termexplorer</Cmd>
-              <h2 className="mt-4 font-display text-5xl font-light tracking-[-0.035em] text-foreground sm:text-6xl">
-                The <span className="text-study">tutor</span>.
-              </h2>
-              <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-muted-foreground">
-                The part no other coding agent has. Built because students shouldn&apos;t need a credit card to learn — and
-                because copying an answer teaches nothing. It explains step by step, in your language, and gives homework
-                back as worked steps instead of a solution to paste.
-              </p>
-              <div className="mt-8 grid gap-x-10 gap-y-2.5 sm:grid-cols-2">
-                {[["/flashcards <topic>", "generate a deck"], ["/review", "grade yourself 0–5"], ["/decks", "see what's due"], ["/quiz", "practice exam"]].map(([c, d]) => (
-                  <div key={c} className="flex items-baseline gap-3 border-b border-border/60 py-2">
-                    <code className="font-mono text-[12.5px] text-study">{c}</code>
-                    <span className="text-[11.5px] text-muted-foreground/60">{d}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="rounded-md border border-study/20 bg-card p-6">
-              <div className="font-mono text-[11px] uppercase tracking-widest text-study">this week</div>
-              <div className="mt-5 flex items-end gap-1.5">
-                {[3, 5, 2, 6, 4, 7, 5].map((h, i) => <span key={i} className="flex-1 rounded-sm bg-study/70" style={{ height: h * 8 }} />)}
-              </div>
-              <div className="mt-3 flex justify-between font-mono text-[10.5px] text-muted-foreground/50">
-                <span>mon</span><span>sun</span>
-              </div>
-              <div className="mt-5 border-t border-border pt-4 font-mono text-[12.5px]">
-                <div className="flex justify-between"><span className="text-muted-foreground">streak</span><span className="text-study">6 days</span></div>
-                <div className="mt-1.5 flex justify-between"><span className="text-muted-foreground">due today</span><span className="text-foreground">12 cards</span></div>
-                <div className="mt-1.5 flex justify-between"><span className="text-muted-foreground">scheduler</span><span className="text-foreground">SM-2</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─────────── 12 · classrooms + rooms ─────────── */}
+      {/* ── 09 · security is a feature ───────────────────────────────── */}
       <Section>
-        <Cmd tone="study">classrooms · live rooms</Cmd>
-        <H2>Learn together — with no server to run.</H2>
-        <div className="mt-8 grid gap-8 lg:grid-cols-2">
-          <div className="border-l-2 border-study/40 pl-6">
-            <h3 className="font-display text-2xl font-normal tracking-tight text-foreground">A class, over GitHub.</h3>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              A teacher creates a class, shares packs of agents and skills, sets assignments and grades submissions. It all
-              rides on a private gist — nothing to host, nothing to pay for, and it works asynchronously.
-            </p>
-            <div className="mt-4 font-mono text-[12px] text-muted-foreground/60">
-              <div><span className="text-study">❯</span> /class create &quot;Algoritmos 2&quot;</div>
-              <div><span className="text-study">❯</span> /class submit a1</div>
+        <Eyebrow>Security is a feature</Eyebrow>
+        <Heading>Your code never leaves a path you chose.</Heading>
+        <Lead>
+          The privacy story is not a policy page — it is the architecture. There is nowhere for your code to go
+          except the model you pointed it at.
+        </Lead>
+        <CardGrid cols={2}>
+          {SECURITY.map(([title, body], i) => (
+            <div key={title} className={cn(CARD, i === SECURITY.length - 1 && "sm:col-span-2")}>
+              <h3 className={CARD_TITLE}>{title}</h3>
+              <p className="mt-3 max-w-[62ch] text-[15px] leading-relaxed text-muted-foreground">{body}</p>
             </div>
-          </div>
-          <div className="border-l-2 border-study/40 pl-6">
-            <h3 className="font-display text-2xl font-normal tracking-tight text-foreground">Live rooms, peer to peer.</h3>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              Share a link and someone joins your session — voice, camera, screen share and chat, straight between the two of
-              you. No media server sits in the middle. Joining is always free.
-            </p>
-            <div className="mt-4 font-mono text-[12px] text-muted-foreground/60">
-              <div><span className="text-study">❯</span> http://192.168.0.5:4096?session=…</div>
-              <div>2 present · voice + screen</div>
-            </div>
-          </div>
-        </div>
+          ))}
+        </CardGrid>
       </Section>
 
-      {/* ─────────── 13 · open (fact row) ─────────── */}
+      {/* ── 10 · technical proof ─────────────────────────────────────── */}
       <Section>
-        <Cmd>built in the open</Cmd>
-        <H2>MIT. Local first. No telemetry.</H2>
-        <div className="mt-8 grid gap-x-10 gap-y-6 sm:grid-cols-3">
-          {[
-            ["Yours", "Your keys, your files and your prompts stay on your machine. Nothing is collected, ever."],
-            ["Open", "MIT licensed, on GitHub and npm. Read it, fork it, or ship a patch."],
-            ["Free where it counts", "The solo agent — and joining any room or class — is free forever. Only hosting is paid."],
-          ].map(([t, d]) => (
-            <div key={t} className="border-t border-border pt-4">
-              <h3 className="font-display text-xl font-normal tracking-tight text-foreground">{t}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{d}</p>
+        <Eyebrow>Built in the open</Eyebrow>
+        <Heading>Nothing here asks you to take our word for it.</Heading>
+        <div className="mt-12 grid gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+          {PROOF.map(([value, label]) => (
+            <div key={label} className="border-t border-border pt-5">
+              <div className="text-[clamp(32px,4.5vw,48px)] font-semibold leading-none tracking-[-0.03em] text-foreground">
+                {value}
+              </div>
+              <div className="mt-3 max-w-[20ch] text-[14px] text-muted-foreground">{label}</div>
             </div>
           ))}
         </div>
+        <p className="mt-12 text-[16px] leading-relaxed text-muted-foreground">
+          Every claim on this page is a file you can read.{" "}
+          <a
+            href="https://github.com/Cartivo-Oficial/TermCoder"
+            className="text-foreground underline underline-offset-4"
+          >
+            Read the source on GitHub
+          </a>
+          .
+        </p>
       </Section>
 
-      {/* ─────────── 14 · cta ─────────── */}
-      <section className="border-t border-border px-6 py-24">
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="font-display text-4xl font-light tracking-[-0.03em] text-balance text-foreground sm:text-5xl">
-            One install. Both minds.
-          </h2>
-          <p className="mx-auto mt-4 max-w-md text-muted-foreground">It runs the moment it opens — no account, no key, nothing to configure.</p>
-          <div className="mx-auto mt-8 inline-flex items-center gap-4 rounded-md border border-white/15 bg-[#0d0c0e] px-4 py-3 font-mono text-sm">
-            <span className="bg-gradient-to-r from-[#ff7a45] to-[#31d0b4] bg-clip-text text-transparent">❯</span>
-            <code className="text-foreground">npm install -g @termcoder/tui</code>
-            <CopyButton text="npm install -g @termcoder/tui" />
-          </div>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <a href="#" className={cn(buttonVariants(), btn)}>Get the app →</a>
-            <a href="#" className={cn(buttonVariants({ variant: "outline" }), btnOutline)}>Read the docs</a>
-          </div>
+      {/* ── 11 · faq ─────────────────────────────────────────────────── */}
+      <Section>
+        <Eyebrow>Questions</Eyebrow>
+        <Heading>The ones people actually ask.</Heading>
+        <FAQ items={FAQ_ITEMS} />
+      </Section>
+
+      {/* ── 12 · final cta ───────────────────────────────────────────── */}
+      <Section bordered className="text-center">
+        <div className="mx-auto w-fit">
+          <Heading>One install. Both minds.</Heading>
         </div>
-      </section>
+        <p className="mx-auto mt-5 max-w-[46ch] text-[17px] leading-relaxed text-muted-foreground">
+          It runs the moment it opens — no account, no key, nothing to configure.
+        </p>
+        <div className="mx-auto mt-9 inline-flex items-center gap-4 rounded-xl border border-border bg-muted px-4 py-3 font-mono text-[13px]">
+          <code className="text-foreground">{INSTALL}</code>
+          <CopyButton text={INSTALL} />
+        </div>
+        <div className="mt-9 flex flex-wrap justify-center gap-3">
+          <a href="download.html" className={cn(buttonVariants(), BTN)}>Get the app</a>
+          <a href="docs.html" className={cn(buttonVariants({ variant: "outline" }), BTN)}>Read the docs</a>
+        </div>
+      </Section>
 
       <Footer />
     </div>
