@@ -16,7 +16,7 @@
 - `app/public/auth.js`, `app/public/config.js` and `app/public/callback.html` are untouchable. `verify.mjs` asserts `callback.html` still loads both scripts and calls `handleCallback`.
 - Site copy stays in English.
 - No invented social proof: no testimonials, no star counts, no download counters. The repository has 1 star.
-- Banned in `app/src/**` once a file is migrated: `ff7a45`, `31d0b4`, `text-study`, `text-primary`, `shadow-primary`, `build-soft`, `study-soft`, `Funnel Display`, `<Dither`.
+- Banned in `app/src/**` once a file is migrated, as the regexes the guard uses: `/ff7a45/`, `/31d0b4/`, `/\btext-study\b/`, `/\btext-primary\b(?!-)/`, `/shadow-primary/`, `/build-soft/`, `/study-soft/`, `/Funnel Display/`, `/<Dither/`. Note `text-primary-foreground` is **permitted and expected** — it is the text colour of a solid button. Only bare `text-primary` is banned.
 - Colour is permitted **only** for state: one green and one red, used for pass/fail and form validation. Nowhere else.
 - Mono is the system stack. No mono webfont ships.
 - `pricing.tsx` carries the Paddle checkout. Presentation may change; checkout behaviour may not.
