@@ -1,231 +1,329 @@
+import { cn } from "@/lib/utils";
+import appShot from "@/assets/app-hero.png";
 import { Nav } from "@/components/site/nav";
 import { Footer } from "@/components/site/footer";
-import { Dither } from "@/components/dither";
+import { Section, Eyebrow, Heading, Lead } from "@/components/site/section";
+import { CardGrid } from "@/components/site/card-grid";
+import { Screenshot } from "@/components/site/screenshot";
+import { FeatureBlock } from "@/components/site/feature-block";
+import { Glyph, IconTile } from "@/components/site/glyph";
+import { ArrowLink } from "@/components/site/arrow-link";
+
+const FACTS = ["9 built-in agents", "17 tools", "5 permission gates", "MIT"];
+
+const NOT_NEEDED = ["a credit card", "an account", "an API key", "a config file"];
 
 const KEYS: [string, string][] = [
   ["shift+tab", "switch between Build and Plan"],
-  ["@", "mention a file into the prompt"],
+  ["@", "mention a file, with a preview"],
   ["/", "slash commands, with a live menu"],
   ["$", "hand the task to a sub-agent"],
   ["ctrl+p", "the command palette"],
-  ["esc", "stop the turn"],
+  ["esc", "interrupt the running turn"],
 ];
 
+// The built-in sub-agents, straight from BUILTIN_AGENTS in core. `build` and
+// `plan` are the two primary modes rather than sub-agents, so they belong to
+// the modes section above and not to this table.
 const AGENTS: [string, string, string][] = [
-  ["build", "mutate", "the default — reads, edits, runs"],
-  ["plan", "read-only", "proposes without touching a file"],
-  ["explore", "read-only", "broad search, reports back"],
-  ["reviewer", "read-only", "reads the diff for real bugs"],
-  ["architect", "read-only", "designs before anyone edits"],
-  ["tester", "mutate", "writes and runs the tests"],
-  ["debugger", "mutate", "reproduces, then fixes"],
+  ["general", "mutate", "full access, for multi-step work"],
+  ["explore", "read-only", "navigates the codebase, reports back"],
+  ["scout", "read-only", "docs and dependency research"],
+  ["reviewer", "read-only", "critiques the code and the diff"],
+  ["architect", "read-only", "designs the approach before anyone edits"],
+  ["tester", "mutate", "writes and runs focused tests"],
+  ["debugger", "mutate", "reproduces, root-causes, then fixes"],
 ];
 
-function Row({ children }: { children: React.ReactNode }) {
-  return <section className="border-t border-border py-16"><div className="mx-auto max-w-6xl px-6">{children}</div></section>;
-}
+const BACKBONE: [string, string, string][] = [
+  [
+    "disk",
+    "/sync",
+    "Favourites, drafts, decks, progress and settings mirror to one private gist, so a second machine picks up where you left off. Nothing to host, nothing to sign up for beyond the GitHub account you already have.",
+  ],
+  [
+    "file",
+    "/publish",
+    "Publishes the session as a gist and opens it in a read-only viewer, so you can hand someone the transcript without handing them the repo. /import pulls a shared one back in.",
+  ],
+  [
+    "people",
+    "/pack install",
+    "A pack bundles your agents, skills and commands into one gist. A team — or a class — installs the whole setup in a single command instead of copying files around.",
+  ],
+];
 
-function Label({ children }: { children: React.ReactNode }) {
-  return <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-primary">{children}</p>;
-}
+const EXTEND: [string, string, string][] = [
+  [
+    "plug",
+    "MCP connectors",
+    "A curated one-click catalogue — filesystem, git, github, postgres, fetch, brave-search, slack, puppeteer, memory and sequential-thinking. Fill in the inputs it asks for and their tools sit next to the built-ins.",
+  ],
+  [
+    "route",
+    "Language servers",
+    "A language server gives it a diagnostics tool that returns your real compiler errors, so it reads the failure your editor sees instead of inferring one from the source.",
+  ],
+  [
+    "shield",
+    "Plugins",
+    "A plugin is a module that exports { name, register } and can add tools, commands and hooks. Anything that fails to load is reported by name and never blocks startup.",
+  ],
+];
 
-function Title({ children }: { children: React.ReactNode }) {
-  return <h2 className="mt-3 max-w-[20ch] font-display text-3xl font-light leading-[1.1] tracking-[-0.03em] text-foreground sm:text-4xl">{children}</h2>;
-}
-
-function Body({ children }: { children: React.ReactNode }) {
-  return <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted-foreground">{children}</p>;
-}
+const CARD = "rounded-xl border border-border bg-card p-6";
+const PANEL = "rounded-xl border border-border bg-muted p-5 font-mono text-[12.5px] leading-relaxed";
+const CARD_TITLE = "text-[15px] font-medium tracking-tight text-foreground";
+const SUBHEAD = "text-[clamp(22px,2.6vw,28px)] font-semibold tracking-[-0.025em] text-foreground";
 
 export default function Features() {
   return (
     <div className="flex min-h-full flex-col">
-      <Nav />
+      <Nav active="features" />
 
-      <section className="relative overflow-hidden border-b border-border">
-        <Dither className="pointer-events-none absolute inset-0 h-full w-full opacity-70" side="both" tone="warm" band={0.2} />
-        <div className="relative mx-auto max-w-6xl px-6 py-20">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
-            <span className="text-primary">❯</span> termcoder · the builder
-          </p>
-          <h1 className="mt-5 max-w-[14ch] font-display text-5xl font-light leading-[1] tracking-[-0.035em] text-foreground sm:text-6xl">
-            Everything it does.
-          </h1>
-          <p className="mt-5 max-w-2xl text-[17px] leading-relaxed text-muted-foreground">
-            A real agent loop with real tools, on your machine, behind permissions you control. No prompt box with
-            autocomplete — it reads, plans, edits, runs, and checks its own work.
-          </p>
-        </div>
-      </section>
+      {/* ── 01 · hero ────────────────────────────────────────────────── */}
+      <Section bordered={false} className="pb-2">
+        <Eyebrow>The builder</Eyebrow>
+        <Heading level={1}>Everything it does.</Heading>
+        <Lead>
+          A real agent loop with real tools, on your machine, behind permissions you control. Not a prompt box with
+          autocomplete — it reads, plans, edits with minimal diffs, runs your command, and reviews its own work before
+          it hands anything back.
+        </Lead>
+        <p className="mt-8 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] text-muted-foreground">
+          {FACTS.map((f, i) => (
+            <span key={f} className="inline-flex items-center gap-2.5">
+              {i > 0 && <span aria-hidden>·</span>}
+              {f}
+            </span>
+          ))}
+        </p>
+      </Section>
 
-      {/* no key */}
-      <Row>
-        <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
-          <div>
-            <Label>no key</Label>
-            <Title>It runs before you configure anything.</Title>
-            <Body>
-              TermCoder opens on a keyless, community-hosted model. It is rate-limited when busy and your prompts go to a
-              third party we do not run — so it is an on-ramp, not the destination. Point it at Ollama for privacy, or
-              connect a provider for quality. Both take one command.
-            </Body>
-          </div>
-          <div className="rounded-md border border-border bg-card p-5">
-            <div className="space-y-2 font-mono text-[13px]">
-              {["a credit card", "an account", "an API key", "a config file"].map((x) => (
-                <div key={x} className="text-muted-foreground/50"><span className="text-[#ff6b6b]">✗</span> <s>{x}</s></div>
+      {/* ── 02 · anchor shot ─────────────────────────────────────────── */}
+      <Section bordered={false} className="pt-0">
+        <Screenshot
+          src={appShot}
+          width={1034}
+          height={740}
+          priority
+          alt="The TermCoder desktop app: the session rail on the left, the Chat and Terminal tabs across the top, and the composer with the model picker at the bottom."
+          caption="The same engine behind the CLI, in the desktop app — session rail, Chat and Terminal tabs, and the composer with the model picker."
+        />
+      </Section>
+
+      {/* ── 03 · no key ──────────────────────────────────────────────── */}
+      <Section>
+        <FeatureBlock
+          level={2}
+          eyebrow="No key"
+          title="It runs before you configure anything."
+          body="TermCoder opens on a keyless, community-hosted model. It is rate-limited when busy and your prompts go to a third party we do not run — so it is an on-ramp, not the destination. Point it at Ollama for privacy, or connect a provider for quality. Both take one command."
+        >
+          <div className={PANEL}>
+            <div className="text-muted-foreground">To start you need none of this</div>
+            <div className="mt-3 space-y-1.5 text-muted-foreground">
+              {NOT_NEEDED.map((x) => (
+                <div key={x}>
+                  <span aria-hidden>✗</span> <s>{x}</s>
+                </div>
               ))}
-              <div className="pt-1 text-foreground"><span className="text-primary">❯</span> just run it</div>
+            </div>
+            <div className="mt-3 text-foreground">
+              <span aria-hidden>❯</span> just run it
             </div>
           </div>
-        </div>
-      </Row>
+        </FeatureBlock>
+      </Section>
 
-      {/* terminal-first */}
-      <Row>
-        <Label>terminal-first</Label>
-        <Title>Built for the keyboard.</Title>
-        <Body>
-          Multi-line input with real cursor movement, {<code className="rounded bg-white/6 px-1 py-0.5 font-mono text-[0.9em] text-foreground">@file</code>} mentions with a preview, a live slash-command menu, syntax
-          highlighting, diffs with line numbers, and a trust prompt before the interface ever appears.
-        </Body>
-        <div className="mt-8 grid gap-x-10 sm:grid-cols-2 lg:grid-cols-3">
+      {/* ── 04 · terminal-first ──────────────────────────────────────── */}
+      <Section>
+        <Eyebrow>Terminal-first</Eyebrow>
+        <Heading>Built for the keyboard.</Heading>
+        <Lead>
+          Multi-line input with real cursor movement, @file mentions that preview the first lines of the file, a live
+          slash-command menu, syntax highlighting, diffs with line numbers, and a prompt asking whether you trust the
+          folder before the interface ever appears.
+        </Lead>
+        <div className="mt-10 grid grid-cols-1 gap-x-10 sm:grid-cols-2 lg:grid-cols-3">
           {KEYS.map(([k, d]) => (
-            <div key={k} className="flex items-baseline gap-3 border-b border-border/60 py-2.5">
-              <code className="font-mono text-[12.5px] text-primary">{k}</code>
-              <span className="text-[12px] text-muted-foreground/70">{d}</span>
+            <div key={k} className="flex items-baseline gap-3 border-b border-border py-3">
+              <code className="font-mono text-[13px] text-foreground">{k}</code>
+              <span className="truncate text-[12px] text-muted-foreground">{d}</span>
             </div>
           ))}
         </div>
-      </Row>
+      </Section>
 
-      {/* modes + auto */}
-      <Row>
-        <div className="grid gap-10 lg:grid-cols-2">
+      {/* ── 05 · modes and routing ───────────────────────────────────── */}
+      <Section>
+        <Eyebrow>Modes and routing</Eyebrow>
+        <Heading>Plan first, or just go.</Heading>
+        <Lead>
+          Plan reads and proposes without touching a file. Build carries it out. shift+tab flips between them
+          mid-session, so you can think before you commit to a change — and on the auto model, the turn does not end
+          the moment the edits land.
+        </Lead>
+        <div className="mt-14 grid gap-8 lg:grid-cols-2 lg:gap-16">
           <div>
-            <Label>modes</Label>
-            <Title>Plan first, or just go.</Title>
-            <Body>
-              Plan reads and proposes without touching a file. Build carries it out. {<code className="rounded bg-white/6 px-1 py-0.5 font-mono text-[0.9em] text-foreground">shift+tab</code>} flips between them mid-session,
-              so you can think before you commit to a change.
-            </Body>
+            <h3 className={SUBHEAD}>It reviews its own diff.</h3>
+            <p className="mt-4 max-w-[52ch] text-[16px] leading-relaxed text-muted-foreground">
+              When the auto model finishes a build turn that changed files, it reads the real{" "}
+              <span className="font-mono text-[14px] text-foreground">git diff</span> back to a strict reviewer — bugs
+              and broken logic only, no style notes. If the review finds something, it fixes it before handing back.
+              One pass per turn, so it cannot argue with itself forever.
+            </p>
+            <div className={cn(PANEL, "mt-6")}>
+              <div className="text-muted-foreground">{"// after a build turn that changed files"}</div>
+              <div className="mt-3 space-y-1.5 text-foreground">
+                <div><span aria-hidden>❯</span> git diff --no-color</div>
+                <div className="text-muted-foreground">reviewing changes…</div>
+                <div>the empty-list branch returns undefined</div>
+                <div className="text-muted-foreground">fixing the review&apos;s findings…</div>
+                <div><span aria-hidden>✓</span> review passed</div>
+              </div>
+            </div>
           </div>
           <div>
-            <Label>termcoder/auto</Label>
-            <Title>A brain that reviews itself.</Title>
-            <Body>
-              On a build turn that edited files, it runs a grounded review pass over the real {<code className="rounded bg-white/6 px-1 py-0.5 font-mono text-[0.9em] text-foreground">git diff</code>} — and if it finds a
-              genuine bug, it fixes it before handing back. It also escalates to a stronger model when the first one errors.
-            </Body>
+            <h3 className={SUBHEAD}>It recovers without you.</h3>
+            <p className="mt-4 max-w-[52ch] text-[16px] leading-relaxed text-muted-foreground">
+              A rate limit or an overloaded provider is retried with a backoff. If the model keeps failing, the turn
+              moves to another model you already have a key for and says so in the stream rather than dying with a
+              stack trace.
+            </p>
+            <div className={cn(PANEL, "mt-6")}>
+              <div className="text-muted-foreground">{"// a provider goes down mid-turn"}</div>
+              <div className="mt-3 space-y-1.5 text-foreground">
+                <div>attempt 1 <span className="text-muted-foreground">429 rate limited</span></div>
+                <div>retry <span className="text-muted-foreground">after a backoff</span></div>
+                <div>switching to google/gemini-2.5-flash…</div>
+                <div className="text-muted-foreground">the turn continues where it stopped</div>
+              </div>
+            </div>
           </div>
         </div>
-      </Row>
+      </Section>
 
-      {/* specialists */}
-      <Row>
-        <Label>specialists</Label>
-        <Title>Sub-agents, each with its own permissions.</Title>
-        <Body>
-          Hand a focused sub-task to a specialist and it works in a nested session, then reports back a summary. Read-only
-          agents cannot edit — the permission is enforced by the tool filter, not by asking nicely.
-        </Body>
-        <div className="mt-8 overflow-x-auto">
+      {/* ── 06 · specialists ─────────────────────────────────────────── */}
+      <Section>
+        <Eyebrow>Specialists</Eyebrow>
+        <Heading>Sub-agents, each with its own permissions.</Heading>
+        <Lead>
+          Hand a focused sub-task to a specialist and it works in a nested session, then reports back a summary. A
+          read-only agent cannot edit — the tools that would let it are filtered out of the set it is given, rather
+          than left in place and asked nicely.
+        </Lead>
+        <div className="mt-10 overflow-x-auto">
           <table className="w-full min-w-[520px] text-left">
             <thead>
-              <tr className="border-b border-border font-mono text-[11px] uppercase tracking-widest text-muted-foreground/50">
-                <th className="pb-2 font-normal">agent</th>
-                <th className="pb-2 font-normal">access</th>
-                <th className="pb-2 font-normal">what it is for</th>
+              <tr className="border-b border-border text-[12px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                <th className="pb-3 font-medium">agent</th>
+                <th className="pb-3 font-medium">access</th>
+                <th className="pb-3 font-medium">what it is for</th>
               </tr>
             </thead>
             <tbody>
               {AGENTS.map(([name, access, what]) => (
-                <tr key={name} className="border-b border-border/60">
-                  <td className="py-2.5 font-mono text-[13px] text-foreground">{name}</td>
-                  <td className={`py-2.5 font-mono text-[12px] ${access === "mutate" ? "text-primary" : "text-muted-foreground/60"}`}>{access}</td>
-                  <td className="py-2.5 text-[13px] text-muted-foreground">{what}</td>
+                <tr key={name} className="border-b border-border">
+                  <td className="py-3 font-mono text-[13px] text-foreground">{name}</td>
+                  <td
+                    className={cn(
+                      "py-3 font-mono text-[12px]",
+                      access === "mutate" ? "text-foreground" : "text-muted-foreground",
+                    )}
+                  >
+                    {access}
+                  </td>
+                  <td className="py-3 text-[13px] text-muted-foreground">{what}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="mt-5 max-w-xl font-mono text-[12px] text-muted-foreground/60">
-          Drop a markdown file in <span className="text-foreground">.termcoder/agents/</span> to define your own — with its
-          own model, prompt, tools, and per-path permissions.
+        <p className="mt-6 max-w-[62ch] text-[15px] leading-relaxed text-muted-foreground">
+          Drop a markdown file in{" "}
+          <span className="font-mono text-[14px] text-foreground">.termcoder/agents/</span> to define your own — with
+          its own model, prompt, tool list and permissions.
         </p>
-      </Row>
+      </Section>
 
-      {/* permissions */}
-      <Row>
-        <div className="grid gap-10 lg:grid-cols-[320px_1fr]">
-          <div>
-            <Label>permissions · checkpoints</Label>
-            <Title>Nothing happens without you.</Title>
-            <Body>
-              Every tool that touches your machine asks first, and you can make an answer sticky. Permissions can be scoped
-              per path — let it edit {<code className="rounded bg-white/6 px-1 py-0.5 font-mono text-[0.9em] text-foreground">docs/**</code>} and nothing else.
-            </Body>
-          </div>
-          <div className="rounded-md border border-border bg-[#0d0c0e] p-5 font-mono text-[12.5px] leading-relaxed">
-            <div className="text-muted-foreground/50">.termcoder/agents/docs-writer.md</div>
-            <div className="mt-2 text-[#d7d2cc]">
-              <div><span className="text-muted-foreground/50">---</span></div>
-              <div>edit: {"{"} <span className="text-[#58d38c]">&quot;docs/**&quot;: allow</span>, <span className="text-[#ff6b6b]">&quot;**&quot;: deny</span> {"}"}</div>
-              <div>bash: ask</div>
-              <div><span className="text-muted-foreground/50">---</span></div>
+      {/* ── 07 · permissions ─────────────────────────────────────────── */}
+      <Section>
+        <FeatureBlock
+          level={2}
+          reverse
+          eyebrow="Permissions and checkpoints"
+          title="Nothing happens without you."
+          body="Bash, writes, edits, MCP calls and network access are five separate gates, each asking before it acts, and any answer can be made sticky for the rest of the session. Scope them per path in an agent file — let it edit docs and nothing else. And because the old contents of every file a turn touches are captured first, reverting that turn puts them back."
+        >
+          <div className={PANEL}>
+            <div className="text-muted-foreground">.termcoder/agents/docs-writer.md</div>
+            <div className="mt-3 space-y-1.5 text-foreground">
+              <div className="text-muted-foreground">---</div>
+              <div>permission:</div>
+              <div>
+                {"  "}edit: {"{"} <span className="text-ok">&quot;docs/**&quot;: allow</span>,{" "}
+                <span className="text-bad">&quot;**&quot;: deny</span> {"}"}
+              </div>
+              <div>{"  "}bash: ask</div>
+              <div className="text-muted-foreground">---</div>
             </div>
-            <p className="mt-4 text-[11.5px] text-muted-foreground/60">
-              Last match wins. And every turn is checkpointed — <span className="text-foreground">/revert</span> walks the
-              whole thing back, including the files.
+            <p className="mt-5 font-sans text-[13px] leading-relaxed text-muted-foreground">
+              Last match wins, so the broad deny at the end closes everything the line before it did not open.
             </p>
           </div>
-        </div>
-      </Row>
+        </FeatureBlock>
+      </Section>
 
-      {/* github backbone */}
-      <Row>
-        <Label>github backbone</Label>
-        <Title>Sync, share and packs — with no server.</Title>
-        <Body>
-          Your favourites, drafts, decks and progress mirror to one private gist, so a second machine picks up where you
-          left off. Sessions publish to a gist and open in a read-only viewer. Packs bundle your agents, skills and
-          commands so a team — or a class — installs your whole setup in one command.
-        </Body>
-        <div className="mt-7 grid gap-x-10 gap-y-2 font-mono text-[12.5px] sm:grid-cols-3">
-          {[["/sync", "mirror to a private gist"], ["/publish", "share a session, read-only"], ["/pack install", "someone else's setup"]].map(([c, d]) => (
-            <div key={c} className="border-t border-border pt-2.5">
-              <div className="text-primary">{c}</div>
-              <div className="text-[11px] text-muted-foreground/60">{d}</div>
+      {/* ── 08 · github backbone ─────────────────────────────────────── */}
+      <Section>
+        <Eyebrow>GitHub backbone</Eyebrow>
+        <Heading>Sync, share and packs — with no server.</Heading>
+        <Lead>
+          The parts that usually need a backend run on gists in your own GitHub account instead. There is nothing of
+          ours in the middle, and nothing to pay for.
+        </Lead>
+        <CardGrid cols={3}>
+          {BACKBONE.map(([icon, title, body]) => (
+            <div key={title} className={CARD}>
+              <IconTile><Glyph name={icon} /></IconTile>
+              <h3 className={cn(CARD_TITLE, "mt-4 font-mono")}>{title}</h3>
+              <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">{body}</p>
             </div>
           ))}
-        </div>
-      </Row>
+        </CardGrid>
+      </Section>
 
-      {/* extend */}
-      <Row>
-        <Label>extend</Label>
-        <Title>MCP, language servers, plugins.</Title>
-        <Body>
-          Connect MCP servers from a curated one-click catalogue — filesystem, git, github, postgres, brave-search and more
-          — and their tools sit next to the built-ins. Language servers give it a {<code className="rounded bg-white/6 px-1 py-0.5 font-mono text-[0.9em] text-foreground">diagnostics</code>} tool that returns your real
-          compiler errors. A plugin is a module that exports {<code className="rounded bg-white/6 px-1 py-0.5 font-mono text-[0.9em] text-foreground">{"{ name, register }"}</code>}.
-        </Body>
-        <p className="mt-5 font-mono text-[12px] text-muted-foreground/60">
-          Anything that fails to load is reported, and never blocks startup.
+      {/* ── 09 · extend ──────────────────────────────────────────────── */}
+      <Section>
+        <Eyebrow>Extend</Eyebrow>
+        <Heading>MCP, language servers, plugins.</Heading>
+        <Lead>
+          Three ways to give it more than it ships with, none of which asks you to fork it.
+        </Lead>
+        <CardGrid cols={3}>
+          {EXTEND.map(([icon, title, body]) => (
+            <div key={title} className={CARD}>
+              <IconTile><Glyph name={icon} /></IconTile>
+              <h3 className={cn(CARD_TITLE, "mt-4")}>{title}</h3>
+              <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">{body}</p>
+            </div>
+          ))}
+        </CardGrid>
+      </Section>
+
+      {/* ── 10 · to the tutor ────────────────────────────────────────── */}
+      <Section className="text-center">
+        <div className="mx-auto w-fit">
+          <Heading>And when you want to learn it, not just ship it —</Heading>
+        </div>
+        <p className="mx-auto mt-5 max-w-[46ch] text-[17px] leading-relaxed text-muted-foreground">
+          the same install has a tutor inside. Same engine, different mind.
         </p>
-      </Row>
-
-      <section className="border-t border-border px-6 py-20">
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="font-display text-3xl font-light tracking-[-0.03em] text-foreground sm:text-4xl">
-            And when you want to learn it, not just ship it —
-          </h2>
-          <p className="mx-auto mt-4 max-w-md text-muted-foreground">
-            the same install has a tutor inside. Same engine, different mind.
-          </p>
-          <a href="study.html" className="mt-6 inline-block font-mono text-[13px] text-study">Meet the tutor →</a>
+        <div className="mt-9 flex justify-center">
+          <ArrowLink href="study.html">Meet the tutor</ArrowLink>
         </div>
-      </section>
+      </Section>
 
       <Footer />
     </div>
