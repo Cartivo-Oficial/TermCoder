@@ -26,7 +26,7 @@ export function PrimaryDownload() {
     <div className="mt-8 flex flex-wrap items-center gap-4">
       <a
         href={BASE + PRIMARY[os]}
-        className={cn(buttonVariants(), "h-12 rounded-md px-6 font-mono text-[15px] shadow-[0_14px_44px_-14px] shadow-primary/70")}
+        className={cn(buttonVariants(), "h-12 rounded-lg px-6 font-mono text-[15px]")}
       >
         Download for {os} →
       </a>

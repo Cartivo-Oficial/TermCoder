@@ -65,12 +65,12 @@ for (const page of pages) {
 // deletes entries here; the guard fails while any listed file has been
 // migrated in appearance but not in fact.
 const NOT_YET_MIGRATED = [
-  "pages/download.tsx", "pages/install.tsx", "pages/docs.tsx",
+  "pages/install.tsx", "pages/docs.tsx",
   "pages/changelog.tsx", "pages/privacy.tsx", "pages/terms.tsx",
   "pages/refunds.tsx", "pages/dashboard.tsx", "pages/viewer.tsx",
   "pages/login.tsx", "components/docs.tsx", "components/licence-panel.tsx",
   "components/settings-panel.tsx", "components/connectors-panel.tsx",
-  "components/download-cards.tsx", "components/dither.tsx",
+  "components/dither.tsx",
 ];
 
 // Regexes, not substrings: "text-primary" is a prefix of the perfectly
