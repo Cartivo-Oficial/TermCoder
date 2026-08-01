@@ -1,6 +1,20 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
+    <script>
+      window.__termcoder_theme = (function () {
+        try {
+          var s = localStorage.getItem("termcoder-theme");
+          var t = s === "light" || s === "dark"
+            ? s
+            : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+          if (t === "dark") document.documentElement.classList.add("dark");
+          return t;
+        } catch (e) {
+          return "light";
+        }
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><!--app-title--></title>
