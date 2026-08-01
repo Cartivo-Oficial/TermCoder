@@ -66,7 +66,7 @@ const SECONDARY: [string, string, string][] = [
   [
     "cap",
     "The tutor",
-    "The part no other coding agent has. Built because students shouldn't need a credit card to learn — and because copying an answer teaches nothing. It explains step by step in your language, and hands homework back as worked steps instead of a solution to paste. /flashcards builds a deck, /review grades you 0–5, /decks shows what is due, /quiz runs a practice exam — all scheduled with SM-2.",
+    "The part no other coding agent has. Built because students shouldn't need a credit card to learn — and because copying an answer teaches nothing. It explains step by step in your language, and hands homework back as worked steps instead of a solution to paste. /flashcards builds a deck, /review grades you 0–5, and /decks shows what is due — all scheduled with SM-2.",
   ],
   [
     "people",
@@ -102,7 +102,7 @@ const FAQ_ITEMS = [
   { q: "Where does my code go?",
     a: "To the model provider you choose, and nowhere else. There is no TermCoder server in the middle, no telemetry, and no account. Your config, memory and sessions are plain files on disk." },
   { q: "How is this different from Claude Code?",
-    a: "It is provider-agnostic rather than tied to one vendor, it routes each turn to a model tier on its own, and it has a study mode — flashcards, quizzes and worked homework — that no other coding agent ships." },
+    a: "It is provider-agnostic rather than tied to one vendor, it routes each turn to a model tier on its own, and it has a study mode — spaced-repetition flashcards and worked homework — that no other coding agent ships." },
 ];
 
 const INSTALL = "npm install -g @termcoder/tui";
