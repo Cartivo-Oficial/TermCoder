@@ -69,7 +69,7 @@ export const ROUTES: RouteDef[] = [
     path: "/pricing.html",
     title: "TermCoder — pricing",
     description:
-      "The agent, the tutor and the source are free forever. Pro is $9/month for the person who hosts a room or teaches a class — joining is always free.",
+      "The agent, the tutor and the source are free. Pro is one payment of $9 for a year — no subscription, no renewal — for the person who hosts a room or teaches a class. Joining is always free.",
     Component: Pricing,
     scripts: ["config.js?v=4"],
   },
