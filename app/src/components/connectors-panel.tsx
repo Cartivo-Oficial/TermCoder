@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { readSession } from "@/lib/session";
 import { createOptimisticQueue, findSyncGist, readStore, writeStore, type OptimisticQueue } from "@/lib/gist";
 import { buttonVariants } from "@/components/ui/button";
-import { Row, Badge } from "@/pages/dashboard";
+import { Row, Badge, PANEL_HEADING } from "@/pages/dashboard";
 import { cn } from "@/lib/utils";
 import siteConnectors from "@/generated/connectors.json";
 
@@ -68,7 +68,10 @@ function withConnectors(map: SettingsMap, next: ConnectorEntry[]): SettingsMap {
 }
 
 const INPUT_CLS =
-  "w-full rounded-md border border-border bg-card px-2.5 py-1.5 font-mono text-[12.5px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/40 hover:border-white/25 focus-visible:border-primary/50";
+  "w-full rounded-lg border border-input bg-card px-2.5 py-1.5 font-mono text-[12.5px] text-foreground transition-colors placeholder:text-muted-foreground hover:border-ring/40 focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+
+const BTN = "h-11 rounded-lg px-5 text-[14px]";
+const LEAD = "mt-4 max-w-[64ch] text-[15px] leading-relaxed text-muted-foreground";
 
 function ConnectorForm({
   connector,
@@ -81,16 +84,18 @@ function ConnectorForm({
   const missing = connector.inputs.some((i) => i.required && !(values[i.key] ?? "").trim());
 
   return (
-    <div className="flex flex-col gap-2 border-b border-border/60 py-3">
+    <div className="flex flex-col gap-2 border-b border-border py-3">
       <div className="flex items-center gap-4">
         <span className="w-[38%] shrink-0 font-mono text-[13px] text-foreground">{connector.name}</span>
-        <span className="flex-1 truncate text-[12.5px] text-muted-foreground/70">{connector.description}</span>
+        <span className="flex-1 truncate text-[12.5px] text-muted-foreground">{connector.description}</span>
       </div>
       {connector.inputs.length > 0 && (
         <div className="grid gap-2 sm:grid-cols-2">
           {connector.inputs.map((input) => (
             <input
               key={input.key}
+              aria-label={`${connector.name} — ${input.label}`}
+              aria-required={input.required || undefined}
               className={INPUT_CLS}
               placeholder={input.placeholder || input.label}
               value={values[input.key] ?? ""}
@@ -103,7 +108,7 @@ function ConnectorForm({
         type="button"
         disabled={missing}
         onClick={() => onAdd(values)}
-        className={cn(buttonVariants({ size: "sm" }), "w-fit font-mono text-[11.5px] disabled:opacity-40")}
+        className={cn(buttonVariants({ size: "sm" }), "w-fit rounded-lg px-3 text-[12.5px] disabled:opacity-40")}
       >
         Add
       </button>
@@ -158,8 +163,9 @@ export function ConnectorsPanel() {
   if (phase === "loading") {
     return (
       <div>
-        <h2 className="font-display text-3xl font-light tracking-[-0.03em] text-foreground">One-click MCP.</h2>
-        <p className="mt-3 font-mono text-[13px] text-muted-foreground">Checking…</p>
+        <h1 className={PANEL_HEADING}>One-click MCP.</h1>
+        <h2 className="sr-only">Available connectors</h2>
+        <p className="mt-4 font-mono text-[13px] text-muted-foreground">Checking…</p>
       </div>
     );
   }
@@ -167,11 +173,10 @@ export function ConnectorsPanel() {
   if (phase === "signed-out") {
     return (
       <div>
-        <h2 className="font-display text-3xl font-light tracking-[-0.03em] text-foreground">One-click MCP.</h2>
-        <p className="mt-3 max-w-xl text-[14.5px] leading-relaxed text-muted-foreground">
-          Sign in to enable connectors.
-        </p>
-        <a href="login.html" className={cn(buttonVariants(), "mt-6 h-11 rounded-md px-5 font-mono text-[14px]")}>
+        <h1 className={PANEL_HEADING}>One-click MCP.</h1>
+        <h2 className="sr-only">Available connectors</h2>
+        <p className={LEAD}>Sign in to enable connectors.</p>
+        <a href="login.html" className={cn(buttonVariants(), BTN, "mt-6")}>
           Sign in
         </a>
       </div>
@@ -181,16 +186,14 @@ export function ConnectorsPanel() {
   if (phase === "google-only") {
     return (
       <div>
-        <h2 className="font-display text-3xl font-light tracking-[-0.03em] text-foreground">One-click MCP.</h2>
-        <p className="mt-3 max-w-xl text-[14.5px] leading-relaxed text-muted-foreground">
+        <h1 className={PANEL_HEADING}>One-click MCP.</h1>
+        <h2 className="sr-only">Available connectors</h2>
+        <p className={LEAD}>
           You are signed in with Google. Your connectors sync through your own private GitHub gist, so this panel
           needs a GitHub connection too — nothing is stored on our servers.
         </p>
-        <a
-          href="login.html?connect=github"
-          className={cn(buttonVariants(), "mt-6 h-11 rounded-md px-5 font-mono text-[14px]")}
-        >
-          Connect GitHub →
+        <a href="login.html?connect=github" className={cn(buttonVariants(), BTN, "mt-6")}>
+          Connect GitHub
         </a>
       </div>
     );
@@ -199,9 +202,11 @@ export function ConnectorsPanel() {
   if (phase === "no-gist") {
     return (
       <div>
-        <h2 className="font-display text-3xl font-light tracking-[-0.03em] text-foreground">One-click MCP.</h2>
-        <p className="mt-3 max-w-xl text-[14.5px] leading-relaxed text-muted-foreground">
-          Run <span className="text-foreground">/sync</span> in the app once and connectors appear here.
+        <h1 className={PANEL_HEADING}>One-click MCP.</h1>
+        <h2 className="sr-only">Available connectors</h2>
+        <p className={LEAD}>
+          Run <span className="font-mono text-[14px] text-foreground">/sync</span> in the app once and connectors
+          appear here.
         </p>
       </div>
     );
@@ -211,13 +216,14 @@ export function ConnectorsPanel() {
 
   return (
     <div>
-      <h2 className="font-display text-3xl font-light tracking-[-0.03em] text-foreground">One-click MCP.</h2>
-      <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed text-muted-foreground">
+      <h1 className={PANEL_HEADING}>One-click MCP.</h1>
+      <h2 className="sr-only">Available connectors</h2>
+      <p className={LEAD}>
         Add a Model Context Protocol server without memorizing commands. Pick a connector, fill in what it needs, and
         it lands in your synced config, disabled.
       </p>
 
-      <div className="mt-7">
+      <div className="mt-8">
         {CONNECTORS.map((connector) => {
           const entry = added.find((a) => a.id === connector.id);
           if (entry) {
@@ -231,8 +237,9 @@ export function ConnectorsPanel() {
                     <Badge tone="ok">added</Badge>
                     <button
                       type="button"
+                      aria-label={`Remove ${connector.name}`}
                       onClick={() => setConnectors(added.filter((a) => a.id !== connector.id))}
-                      className="font-mono text-[11.5px] text-muted-foreground transition-colors hover:text-destructive"
+                      className="rounded font-mono text-[11.5px] text-bad underline decoration-transparent underline-offset-4 transition-colors hover:decoration-bad focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                     >
                       Remove
                     </button>
@@ -251,8 +258,9 @@ export function ConnectorsPanel() {
         })}
       </div>
 
-      <p className="mt-7 font-mono text-[11.5px] leading-relaxed text-muted-foreground/60">
-        Enable it in the app — Settings → MCP — after your next <span className="text-foreground">/sync</span>.
+      <p className="mt-8 text-[13px] leading-relaxed text-muted-foreground">
+        Enable it in the app — Settings → MCP — after your next{" "}
+        <span className="font-mono text-[13px] text-foreground">/sync</span>.
       </p>
     </div>
   );

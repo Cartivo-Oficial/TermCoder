@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { readSession } from "@/lib/session";
 import { createOptimisticQueue, findSyncGist, readStore, writeStore, type OptimisticQueue } from "@/lib/gist";
 import { buttonVariants } from "@/components/ui/button";
-import { Row, Badge } from "@/pages/dashboard";
+import { Row, Badge, PANEL_HEADING } from "@/pages/dashboard";
 import { cn } from "@/lib/utils";
 
 type Phase = "loading" | "signed-out" | "google-only" | "no-gist" | "ready";
@@ -49,7 +49,10 @@ function withValue(map: SettingsMap, key: string, value: unknown): SettingsMap {
 }
 
 const SELECT_CLS =
-  "shrink-0 rounded-md border border-border bg-card px-2.5 py-1.5 font-mono text-[12.5px] text-foreground outline-none transition-colors hover:border-white/25 focus-visible:border-primary/50";
+  "shrink-0 rounded-lg border border-input bg-card px-2.5 py-1.5 font-mono text-[12.5px] text-foreground transition-colors hover:border-ring/40 focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+
+const BTN = "h-11 rounded-lg px-5 text-[14px]";
+const LEAD = "mt-4 max-w-[64ch] text-[15px] leading-relaxed text-muted-foreground";
 
 export function SettingsPanel() {
   const [phase, setPhase] = useState<Phase>("loading");
@@ -98,8 +101,9 @@ export function SettingsPanel() {
   if (phase === "loading") {
     return (
       <div>
-        <h2 className="font-display text-3xl font-light tracking-[-0.03em] text-foreground">Your preferences.</h2>
-        <p className="mt-3 font-mono text-[13px] text-muted-foreground">Checking…</p>
+        <h1 className={PANEL_HEADING}>Your preferences.</h1>
+        <h2 className="sr-only">Synced preferences</h2>
+        <p className="mt-4 font-mono text-[13px] text-muted-foreground">Checking…</p>
       </div>
     );
   }
@@ -107,11 +111,10 @@ export function SettingsPanel() {
   if (phase === "signed-out") {
     return (
       <div>
-        <h2 className="font-display text-3xl font-light tracking-[-0.03em] text-foreground">Your preferences.</h2>
-        <p className="mt-3 max-w-xl text-[14.5px] leading-relaxed text-muted-foreground">
-          Sign in to manage your settings.
-        </p>
-        <a href="login.html" className={cn(buttonVariants(), "mt-6 h-11 rounded-md px-5 font-mono text-[14px]")}>
+        <h1 className={PANEL_HEADING}>Your preferences.</h1>
+        <h2 className="sr-only">Synced preferences</h2>
+        <p className={LEAD}>Sign in to manage your settings.</p>
+        <a href="login.html" className={cn(buttonVariants(), BTN, "mt-6")}>
           Sign in
         </a>
       </div>
@@ -121,16 +124,14 @@ export function SettingsPanel() {
   if (phase === "google-only") {
     return (
       <div>
-        <h2 className="font-display text-3xl font-light tracking-[-0.03em] text-foreground">Your preferences.</h2>
-        <p className="mt-3 max-w-xl text-[14.5px] leading-relaxed text-muted-foreground">
+        <h1 className={PANEL_HEADING}>Your preferences.</h1>
+        <h2 className="sr-only">Synced preferences</h2>
+        <p className={LEAD}>
           You are signed in with Google. Your settings sync through your own private GitHub gist, so this panel needs
           a GitHub connection too — nothing is stored on our servers.
         </p>
-        <a
-          href="login.html?connect=github"
-          className={cn(buttonVariants(), "mt-6 h-11 rounded-md px-5 font-mono text-[14px]")}
-        >
-          Connect GitHub →
+        <a href="login.html?connect=github" className={cn(buttonVariants(), BTN, "mt-6")}>
+          Connect GitHub
         </a>
       </div>
     );
@@ -139,9 +140,11 @@ export function SettingsPanel() {
   if (phase === "no-gist") {
     return (
       <div>
-        <h2 className="font-display text-3xl font-light tracking-[-0.03em] text-foreground">Your preferences.</h2>
-        <p className="mt-3 max-w-xl text-[14.5px] leading-relaxed text-muted-foreground">
-          Run <span className="text-foreground">/sync</span> in the app once and your settings appear here.
+        <h1 className={PANEL_HEADING}>Your preferences.</h1>
+        <h2 className="sr-only">Synced preferences</h2>
+        <p className={LEAD}>
+          Run <span className="font-mono text-[14px] text-foreground">/sync</span> in the app once and your settings
+          appear here.
         </p>
       </div>
     );
@@ -155,17 +158,20 @@ export function SettingsPanel() {
 
   return (
     <div>
-      <h2 className="font-display text-3xl font-light tracking-[-0.03em] text-foreground">Your preferences.</h2>
-      <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed text-muted-foreground">
-        These sync via your GitHub gist — the same one the app reads on <span className="text-foreground">/sync</span>.
+      <h1 className={PANEL_HEADING}>Your preferences.</h1>
+      <h2 className="sr-only">Synced preferences</h2>
+      <p className={LEAD}>
+        These sync via your GitHub gist — the same one the app reads on{" "}
+        <span className="font-mono text-[14px] text-foreground">/sync</span>. Nothing is stored on our servers.
       </p>
 
-      <div className="mt-7">
+      <div className="mt-8">
         <Row
           c1="Theme"
           c2="App color theme"
           right={
             <select
+              aria-label="App color theme"
               className={SELECT_CLS}
               value={theme}
               onChange={(e) => update("theme", e.target.value)}
@@ -183,6 +189,7 @@ export function SettingsPanel() {
           c2="Used for new sessions"
           right={
             <select
+              aria-label="Default model for new sessions"
               className={SELECT_CLS}
               value={model}
               onChange={(e) => update("model", e.target.value)}
@@ -199,15 +206,22 @@ export function SettingsPanel() {
           c1="Reasoning"
           c2="Extended thinking on capable models"
           right={
-            <button type="button" onClick={() => update("reasoning", !reasoning)} className="shrink-0">
+            <button
+              type="button"
+              aria-label="Extended thinking on capable models"
+              aria-pressed={reasoning}
+              onClick={() => update("reasoning", !reasoning)}
+              className="shrink-0 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
               <Badge tone={reasoning ? "ok" : undefined}>{reasoning ? "on" : "off"}</Badge>
             </button>
           }
         />
       </div>
 
-      <p className="mt-7 font-mono text-[11.5px] leading-relaxed text-muted-foreground/60">
-        Changes reach the app the next time it syncs — run <span className="text-foreground">/sync</span>.
+      <p className="mt-8 text-[13px] leading-relaxed text-muted-foreground">
+        Changes reach the app the next time it syncs — run{" "}
+        <span className="font-mono text-[13px] text-foreground">/sync</span>.
       </p>
     </div>
   );

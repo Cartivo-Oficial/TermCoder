@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Footer } from "@/components/site/footer";
-import { Dither } from "@/components/dither";
 import { Mark } from "@/components/mark";
 import { cn } from "@/lib/utils";
 import { readSession, signOut, type Session } from "@/lib/session";
@@ -70,10 +69,10 @@ const TABS = ["licence", "overview", "models", "sessions", "recipes", "connector
 type Tab = (typeof TABS)[number];
 
 const MODELS: [string, string, string][] = [
-  ["termcoder/auto", "routes to your best available", "ready"],
+  ["termcoder/auto", "routes each turn to the best model you have", "ready"],
   ["termexplorer/auto", "study & schoolwork tutor", "ready"],
   ["termcoderfree/auto", "keyless — no API key needed", "ready"],
-  ["anthropic/claude-sonnet-5", "complex tasks", "needs key"],
+  ["anthropic/claude-sonnet-5", "the shipped default · complex tasks", "needs key"],
   ["google/gemini-2.5-pro", "free tier available", "needs key"],
   ["ollama/llama3.1", "local · unlimited · private", "local"],
 ];
@@ -92,46 +91,52 @@ const RECIPES: [string, string, string][] = [
   ["photosynthesis", "guided lesson, one step at a time", "study · 5 steps"],
 ];
 
-function Eyebrow({ children, sample }: { children: React.ReactNode; sample?: boolean }) {
+// A working surface, not a landing page: one h1 per view, no eyebrow rule, no
+// marketing rhythm. The kit's tokens and type scale, a step down in size.
+export const PANEL_HEADING = "text-[clamp(24px,3vw,30px)] font-semibold tracking-[-0.022em] text-foreground";
+
+function Title({ children, sample }: { children: React.ReactNode; sample?: boolean }) {
   return (
-    <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
-      <span className="text-primary">//</span> {children}
-      {sample && (
-        <span className="ml-2 rounded border border-border px-1.5 py-0.5 text-[9.5px] tracking-normal text-muted-foreground/50">
-          sample
-        </span>
-      )}
-    </p>
+    <div className="flex flex-wrap items-center gap-3">
+      <h1 className={PANEL_HEADING}>{children}</h1>
+      {sample && <Badge>sample</Badge>}
+    </div>
   );
 }
 
-function H2({ children }: { children: React.ReactNode }) {
-  return <h2 className="mt-3 font-display text-3xl font-light tracking-[-0.03em] text-foreground">{children}</h2>;
+function Sub({ children }: { children: React.ReactNode }) {
+  return <p className="mt-4 max-w-[64ch] text-[15px] leading-relaxed text-muted-foreground">{children}</p>;
 }
 
-function Sub({ children }: { children: React.ReactNode }) {
-  return <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed text-muted-foreground">{children}</p>;
+// Every tab's list gets a real h2, so the outline reads h1 → h2 → h3 (the
+// footer) whichever tab is open. Most of them would only repeat the h1 on
+// screen, so they are named for assistive tech and hidden from sight.
+export function ListHeading({ children, visible }: { children: React.ReactNode; visible?: boolean }) {
+  return (
+    <h2 className={visible ? "mt-10 text-[17px] font-semibold tracking-tight text-foreground" : "sr-only"}>
+      {children}
+    </h2>
+  );
 }
 
 export function Row({ c1, c2, right }: { c1: string; c2: string; right: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-4 border-b border-border/60 py-3">
+    <div className="flex items-center gap-4 border-b border-border py-3">
       <span className="w-[38%] shrink-0 font-mono text-[13px] text-foreground">{c1}</span>
-      <span className="flex-1 truncate text-[12.5px] text-muted-foreground/70">{c2}</span>
+      <span className="flex-1 truncate text-[12.5px] text-muted-foreground">{c2}</span>
       {right}
     </div>
   );
 }
 
-export function Badge({ children, tone }: { children: React.ReactNode; tone?: "ok" | "local" | "tag" }) {
+// The only colour a row is allowed to spend is state: `ok` marks something that
+// is genuinely on. Everything else is a neutral outline.
+export function Badge({ children, tone }: { children: React.ReactNode; tone?: "ok" }) {
   return (
     <span
       className={cn(
-        "shrink-0 rounded border px-2 py-0.5 font-mono text-[10.5px]",
-        tone === "ok" && "border-primary/40 text-primary",
-        tone === "local" && "border-study/40 text-study",
-        !tone && "border-border text-muted-foreground/60",
-        tone === "tag" && "border-border text-muted-foreground/60",
+        "shrink-0 rounded-md border px-2 py-0.5 font-mono text-[10.5px]",
+        tone === "ok" ? "border-ok/40 text-ok" : "border-border text-muted-foreground",
       )}
     >
       {children}
@@ -141,8 +146,8 @@ export function Badge({ children, tone }: { children: React.ReactNode; tone?: "o
 
 function Stat({ k, v }: { k: string; v: string }) {
   return (
-    <div className="rounded-md border border-border bg-card p-4">
-      <div className="font-mono text-[10.5px] uppercase tracking-widest text-muted-foreground/50">{k}</div>
+    <div className="rounded-xl border border-border bg-card p-4">
+      <div className="font-mono text-[10.5px] uppercase tracking-widest text-muted-foreground">{k}</div>
       <div className="mt-1.5 font-mono text-[15px] text-foreground">{v}</div>
     </div>
   );
@@ -151,7 +156,7 @@ function Stat({ k, v }: { k: string; v: string }) {
 function DeckList({ decks, signedIn }: { decks: Deck[] | null; signedIn: boolean }) {
   if (decks === null || decks.length === 0) {
     return (
-      <p className="border-t border-border py-5 text-[13px] text-muted-foreground/60">
+      <p className="border-t border-border py-5 text-[13px] text-muted-foreground">
         {signedIn ? "No synced decks yet. Create some in the app." : "Sign in and sync from the app to see your study decks here."}
       </p>
     );
@@ -216,42 +221,47 @@ export default function Dashboard() {
 
   return (
     <div className="flex min-h-full flex-col">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/75 backdrop-blur-xl">
-        <div className="mx-auto flex h-[60px] max-w-6xl items-center gap-7 px-6">
+      {/* The dashboard keeps its own chrome — it carries the account, which the
+          marketing Nav does not — but wears the same bar as the rest of the site. */}
+      <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-[1120px] items-center gap-7 px-6">
           <a href="index.html" className="flex items-center gap-2.5">
             <Mark size={20} />
-            <span className="font-display text-[17px] font-light tracking-tight text-foreground">termcoder</span>
+            <span className="text-[16px] font-semibold tracking-tight text-foreground">termcoder</span>
           </a>
-          <nav className="hidden items-center gap-6 font-mono text-[12.5px] text-muted-foreground md:flex">
+          <nav className="hidden items-center gap-7 text-[14px] text-muted-foreground md:flex">
             <a href="index.html" className="transition-colors hover:text-foreground">home</a>
             <a href="features.html" className="transition-colors hover:text-foreground">features</a>
             <a href="docs.html" className="transition-colors hover:text-foreground">docs</a>
           </nav>
           <div className="ml-auto flex items-center gap-3">
             {session?.avatar && <img src={session.avatar} alt="" className="h-6 w-6 rounded-full" />}
-            <span className="hidden font-mono text-[12px] text-muted-foreground sm:block">
+            <span className="hidden text-[13px] text-muted-foreground sm:block">
               {session?.email || session?.name || "you@example.com"}
             </span>
-            <button onClick={signOut} className="font-mono text-[12px] text-muted-foreground transition-colors hover:text-primary">
+            <button
+              onClick={signOut}
+              className="rounded-md px-1 text-[14px] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
               Sign out
             </button>
           </div>
         </div>
       </header>
 
-      <div className="relative flex-1 overflow-hidden">
-        <Dither className="pointer-events-none absolute inset-0 h-full w-full opacity-40" side="right" tone="seam" band={0.22} />
-
-        <div className="relative mx-auto grid w-full max-w-6xl gap-10 px-6 py-10 lg:grid-cols-[180px_1fr]">
+      <div className="flex-1">
+        <div className="mx-auto grid w-full max-w-[1120px] gap-10 px-6 py-10 lg:grid-cols-[180px_1fr]">
           <aside>
             <div className="sticky top-[84px] flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
               {TABS.map((t) => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
+                  aria-pressed={tab === t}
                   className={cn(
-                    "shrink-0 rounded-md px-3 py-2 text-left font-mono text-[12.5px] capitalize transition-colors",
-                    tab === t ? "bg-white/[0.06] text-foreground" : "text-muted-foreground/70 hover:text-foreground",
+                    "shrink-0 rounded-lg px-3 py-2 text-left text-[14px] capitalize transition-colors",
+                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                    tab === t ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   {t}
@@ -265,32 +275,36 @@ export default function Dashboard() {
 
             {tab === "overview" && (
               <div>
-                <Eyebrow>overview</Eyebrow>
-                <H2>Welcome back{session?.name ? `, ${session.name.split(" ")[0]}` : ""}.</H2>
+                <Title>Welcome back{session?.name ? `, ${session.name.split(" ")[0]}` : ""}.</Title>
                 <Sub>
-                  Everything you sync from the app and CLI, in one place. Nothing here is billed — TermCoder runs with
-                  no API key and no account; this only mirrors your own data.
+                  Everything you sync from the app and CLI, in one place. Nothing here is billed, and nothing is stored
+                  on our servers — this only mirrors your own data. TermCoder needs no account at all; pick{" "}
+                  <span className="font-mono text-[14px] text-foreground">termcoder/auto</span> in the app to run
+                  without an API key.
                 </Sub>
-                <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <Stat k="Default model" v="termcoder/auto" />
+                <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <Stat k="Default model" v="anthropic/claude-sonnet-5" />
                   <Stat k="Study streak" v={dash(streak, "day")} />
                   <Stat k="Due today" v={dueCount === null ? "—" : `${dueCount} cards`} />
                   <Stat k="Decks" v={decks === null ? "—" : String(decks.length)} />
                 </div>
-                <h3 className="mt-9 font-display text-lg font-normal text-foreground">Your decks</h3>
+                <ListHeading visible>Your decks</ListHeading>
                 <DeckList decks={decks} signedIn={signedIn} />
               </div>
             )}
 
             {tab === "models" && (
               <div>
-                <Eyebrow>models</Eyebrow>
-                <H2>Pick your engine.</H2>
+                <Title>Pick your engine.</Title>
                 <Sub>
-                  Start on the keyless model with no setup, then connect a stronger one whenever you want. TermCoder
-                  never downgrades your choice.
+                  A fresh install defaults to{" "}
+                  <span className="font-mono text-[14px] text-foreground">anthropic/claude-sonnet-5</span>, which needs
+                  your key. Switch to <span className="font-mono text-[14px] text-foreground">termcoder/auto</span> and
+                  it routes each turn to the strongest provider you have configured — falling back to a free, keyless
+                  one when you have no key at all. TermCoder never downgrades a model you picked yourself.
                 </Sub>
-                <div className="mt-7">
+                <ListHeading>Available models</ListHeading>
+                <div className="mt-8">
                   {MODELS.map(([m, d, badge]) => (
                     <Row
                       key={m}
@@ -305,14 +319,15 @@ export default function Dashboard() {
                               aria-label={favorites?.includes(m) ? `Unfavorite ${m}` : `Favorite ${m}`}
                               aria-pressed={!!favorites?.includes(m)}
                               className={cn(
-                                "font-mono text-[14px] leading-none transition-colors",
-                                favorites?.includes(m) ? "text-primary" : "text-muted-foreground/30 hover:text-muted-foreground",
+                                "rounded font-mono text-[14px] leading-none transition-colors",
+                                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                                favorites?.includes(m) ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                               )}
                             >
                               {favorites?.includes(m) ? "★" : "☆"}
                             </button>
                           )}
-                          <Badge tone={badge === "ready" ? "ok" : badge === "local" ? "local" : undefined}>{badge}</Badge>
+                          <Badge tone={badge === "ready" ? "ok" : undefined}>{badge}</Badge>
                         </div>
                       }
                     />
@@ -323,20 +338,24 @@ export default function Dashboard() {
 
             {tab === "sessions" && (
               <div>
-                <Eyebrow sample>sessions</Eyebrow>
-                <H2>Your work, synced.</H2>
+                <Title sample>Your work, synced.</Title>
                 <Sub>
-                  Session sync is on the way — once it lands, the sessions you sync via GitHub will show up here so you
-                  can resume on any machine. Below is a sample of how it looks.
+                  Syncing sessions across machines already works in the app — it is one of the things termcoder Pro
+                  covers. Listing them on this page is still to come, so the rows below are a sample of how it will
+                  look.
                 </Sub>
-                <div className="mt-7">
+                <ListHeading>Recent sessions</ListHeading>
+                <div className="mt-8">
                   {SESSIONS.map(([n, d]) => (
                     <Row
                       key={n}
                       c1={n}
                       c2={d}
                       right={
-                        <a href="download.html" className="shrink-0 font-mono text-[11.5px] text-primary">
+                        <a
+                          href="download.html"
+                          className="shrink-0 font-mono text-[11.5px] text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground"
+                        >
                           Open
                         </a>
                       }
@@ -348,16 +367,16 @@ export default function Dashboard() {
 
             {tab === "recipes" && (
               <div>
-                <Eyebrow sample>recipes</Eyebrow>
-                <H2>Saved workflows.</H2>
+                <Title sample>Saved workflows.</Title>
                 <Sub>
                   Named, shareable multi-step tasks — dev automations that run in order, or study lessons taught one
                   step at a time. You create and run these in the app today; syncing them here is on the way. Below is a
                   sample.
                 </Sub>
-                <div className="mt-7">
+                <ListHeading>Saved recipes</ListHeading>
+                <div className="mt-8">
                   {RECIPES.map(([n, d, tag]) => (
-                    <Row key={n} c1={n} c2={d} right={<Badge tone="tag">{tag}</Badge>} />
+                    <Row key={n} c1={n} c2={d} right={<Badge>{tag}</Badge>} />
                   ))}
                 </div>
               </div>
@@ -367,18 +386,18 @@ export default function Dashboard() {
 
             {tab === "study" && (
               <div>
-                <Eyebrow>study</Eyebrow>
-                <H2>Decks &amp; streak.</H2>
+                <Title>Decks &amp; streak.</Title>
                 <Sub>
                   TermExplorer turns the same engine into a tutor — spaced-repetition flashcards that resurface at the
                   right time. Your decks and streak sync here.
                 </Sub>
-                <div className="mt-7 grid gap-3 sm:grid-cols-3">
+                <div className="mt-8 grid gap-3 sm:grid-cols-3">
                   <Stat k="Current streak" v={dash(streak, "day")} />
                   <Stat k="Due today" v={dueCount === null ? "—" : `${dueCount} cards`} />
                   <Stat k="Decks" v={decks === null ? "—" : String(decks.length)} />
                 </div>
-                <div className="mt-7">
+                <ListHeading visible>Your decks</ListHeading>
+                <div className="mt-2">
                   <DeckList decks={decks} signedIn={signedIn} />
                 </div>
               </div>
