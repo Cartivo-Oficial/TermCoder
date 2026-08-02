@@ -1,4 +1,5 @@
 import { Clause, LegalPage, SELLER, CONTACT } from "@/components/site/legal";
+import { InlineLink } from "@/components/site/arrow-link";
 
 export default function Terms() {
   return (
@@ -10,7 +11,7 @@ export default function Terms() {
       <Clause heading="Who you are dealing with">
         <p>
           TermCoder is published by {SELLER} ("we"). Questions about anything here go to{" "}
-          <a href={`mailto:${CONTACT}`} className="text-primary underline underline-offset-2">{CONTACT}</a>.
+          <InlineLink href={`mailto:${CONTACT}`}>{CONTACT}</InlineLink>.
         </p>
         <p>
           Payments are processed by Paddle.com Market Ltd, which acts as the merchant of record for every purchase.
@@ -84,10 +85,8 @@ export default function Terms() {
         </p>
         <p>
           You can stop using the software at any time. See our{" "}
-          <a href="refunds.html" className="text-primary underline underline-offset-2">refund policy</a> if you want your
-          money back, and our{" "}
-          <a href="privacy.html" className="text-primary underline underline-offset-2">privacy policy</a> for what
-          happens to your data.
+          <InlineLink href="refunds.html">refund policy</InlineLink> if you want your money back, and our{" "}
+          <InlineLink href="privacy.html">privacy policy</InlineLink> for what happens to your data.
         </p>
       </Clause>
     </LegalPage>

@@ -1,4 +1,5 @@
 import { Clause, LegalPage, CONTACT } from "@/components/site/legal";
+import { InlineLink } from "@/components/site/arrow-link";
 
 export default function Refunds() {
   return (
@@ -21,8 +22,8 @@ export default function Refunds() {
       <Clause heading="How to ask">
         <p>
           Email{" "}
-          <a href={`mailto:${CONTACT}`} className="text-primary underline underline-offset-2">{CONTACT}</a> from the
-          address you bought with, or use the receipt Paddle sent you. Say that you would like a refund; that is enough.
+          <InlineLink href={`mailto:${CONTACT}`}>{CONTACT}</InlineLink> from the address you bought with, or use the
+          receipt Paddle sent you. Say that you would like a refund; that is enough.
         </p>
         <p>
           We aim to reply within a few days. Once approved, Paddle — the merchant of record for the purchase — returns

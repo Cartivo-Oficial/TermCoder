@@ -1,4 +1,5 @@
 import { Clause, LegalPage, SELLER, CONTACT } from "@/components/site/legal";
+import { InlineLink } from "@/components/site/arrow-link";
 
 export default function Privacy() {
   return (
@@ -66,7 +67,7 @@ export default function Privacy() {
           Because we hold no user database, there is little for us to delete: signing out removes your session, and
           deleting your sync gist removes your synced data. For anything held by Paddle as merchant of record, or to ask
           a question about this policy, write to{" "}
-          <a href={`mailto:${CONTACT}`} className="text-primary underline underline-offset-2">{CONTACT}</a>.
+          <InlineLink href={`mailto:${CONTACT}`}>{CONTACT}</InlineLink>.
         </p>
         <p>This site is published by {SELLER}.</p>
       </Clause>
