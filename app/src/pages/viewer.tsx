@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Nav } from "@/components/site/nav";
 import { Footer } from "@/components/site/footer";
-import { Dither } from "@/components/dither";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -98,53 +97,58 @@ export default function Viewer() {
     <div className="flex min-h-full flex-col">
       <Nav />
 
-      <section className="relative overflow-hidden border-b border-border">
-        <Dither className="pointer-events-none absolute inset-0 h-full w-full opacity-60" side="left" tone="seam" band={0.22} />
-        <div className="relative mx-auto max-w-4xl px-6 py-16">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
-            <span className="text-primary">❯</span> shared session
-          </p>
-          <h1 className="mt-4 max-w-[18ch] font-display text-4xl font-light leading-[1.05] tracking-[-0.035em] text-foreground sm:text-5xl">
+      {/* The chrome — what you type into — sits on card. The transcript below
+          sits on the page background, so the paper is the only bright thing. */}
+      <section className="border-b border-border bg-card">
+        <div className="mx-auto max-w-4xl px-6 py-16">
+          <p className="text-[13px] font-medium uppercase tracking-[0.14em] text-muted-foreground">shared session</p>
+          <h1 className="mt-4 max-w-[20ch] text-[clamp(31px,4.4vw,46px)] font-bold leading-[1.08] tracking-[-0.024em] text-foreground">
             {title}
           </h1>
-          <p className="mt-4 max-w-xl text-[15.5px] leading-relaxed text-muted-foreground">{sub}</p>
+          <p className="mt-5 max-w-[62ch] text-[16px] leading-relaxed text-muted-foreground">{sub}</p>
 
+          <h2 className="sr-only">Open a session</h2>
           <div className="mt-7 flex max-w-xl flex-wrap gap-2.5">
             <input
               value={refValue}
               spellCheck={false}
+              aria-label="Gist link or id"
               placeholder="Paste a gist link or id…"
               onChange={(e) => setRefValue(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") open(refValue);
               }}
-              className="h-11 min-w-0 flex-1 rounded-md border border-border bg-[#0d0c0e] px-3.5 font-mono text-[13px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary/50"
+              className="h-11 min-w-0 flex-1 rounded-lg border border-input bg-background px-3.5 font-mono text-[13px] text-foreground transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             />
-            <button onClick={() => open(refValue)} className={cn(buttonVariants(), "h-11 rounded-md px-6 font-mono text-[14px]")}>
+            <button onClick={() => open(refValue)} className={cn(buttonVariants(), "h-11 rounded-lg px-6 text-[14px]")}>
               Open
             </button>
           </div>
 
-          <p className="mt-3 font-mono text-[11.5px] leading-relaxed text-muted-foreground/60">
-            In termcoder, run <span className="text-foreground">/publish</span> (or Share → Gist) to get a link. Secret
-            gists open with the link — nothing is public.
+          <p className="mt-4 max-w-[62ch] text-[13.5px] leading-relaxed text-muted-foreground">
+            In termcoder, run <span className="font-mono text-[13px] text-foreground">/publish</span> (or Share →
+            Gist) to get a link. Secret gists open with the link — nothing is public.
           </p>
         </div>
       </section>
 
-      <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-10">
-        {status && (
-          <p className={cn("font-mono text-[13px]", statusErr ? "text-[#ff6b6b]" : "text-muted-foreground")}>{status}</p>
-        )}
-        {meta && <p className="font-mono text-[11.5px] text-muted-foreground/60">{meta}</p>}
+      <main className="mx-auto w-full max-w-4xl flex-1 bg-background px-6 py-10">
+        <p aria-live="polite" className={cn("font-mono text-[13px]", statusErr ? "text-bad" : "text-muted-foreground")}>
+          {status}
+        </p>
+        {meta && <p className="font-mono text-[11.5px] text-muted-foreground">{meta}</p>}
         {srcDoc !== undefined && (
-          <div className="mt-4 overflow-hidden rounded-md border border-border bg-white">
+          /* The transcript is a bare document — share.ts gives it no colours of
+             its own — so it is pinned to a light colour-scheme and printed on
+             white paper. Theming it would leave black text on a dark card. */
+          <div className="mt-4 overflow-hidden rounded-xl border border-border bg-white">
             <iframe
               ref={frameRef}
               sandbox="allow-same-origin"
               title="Session transcript"
               srcDoc={srcDoc}
               onLoad={sizeFrame}
+              style={{ colorScheme: "light" }}
               className="block w-full"
             />
           </div>
