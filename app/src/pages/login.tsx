@@ -1,6 +1,8 @@
 import { Nav } from "@/components/site/nav";
 import { Footer } from "@/components/site/footer";
-import { Dither } from "@/components/dither";
+import { buttonVariants } from "@/components/ui/button";
+import { InlineLink } from "@/components/site/arrow-link";
+import { cn } from "@/lib/utils";
 
 
 function GitHubMark() {
@@ -14,6 +16,8 @@ function GitHubMark() {
   );
 }
 
+// The one place a third-party brand keeps its own colours: Google's sign-in
+// mark is theirs, not ours, so it is not a token to spend.
 function GoogleMark() {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
@@ -25,27 +29,28 @@ function GoogleMark() {
   );
 }
 
-const BTN =
-  "auth-btn flex h-12 items-center justify-center gap-3 rounded-md border border-border bg-card px-5 font-mono text-[13.5px] text-foreground transition-colors hover:border-white/25 hover:bg-white/[0.04]";
+// `auth-btn` is not decoration: auth.js binds the OAuth handoff to
+// `.auth-btn[data-provider]` and falls through to the href when a provider is
+// not configured. The class and the data attribute stay exactly as they are.
+const BTN = cn(
+  buttonVariants({ variant: "outline" }),
+  "auth-btn h-12 w-full justify-center gap-3 rounded-lg px-5 text-[14px] font-normal",
+);
 
 export default function Login() {
   return (
     <div className="flex min-h-full flex-col">
       <Nav />
 
-      <main className="relative flex flex-1 items-center justify-center overflow-hidden px-6 py-20">
-        <Dither className="pointer-events-none absolute inset-0 h-full w-full opacity-60" side="both" tone="seam" band={0.28} />
-
-        <div className="relative w-full max-w-[420px] rounded-lg border border-border bg-[#0d0c0e]/90 p-8 backdrop-blur-sm">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground/70">
-            <span className="text-primary">❯</span> sign in
-          </p>
-          <h1 className="mt-4 font-display text-3xl font-light tracking-[-0.03em] text-foreground">Your dashboard.</h1>
-          <p className="mt-3 text-[14.5px] leading-relaxed text-muted-foreground">
+      <main className="flex flex-1 items-center justify-center px-6 py-20">
+        <div className="w-full max-w-[400px] rounded-xl border border-border bg-card p-8">
+          <h1 className="text-[26px] font-semibold tracking-[-0.022em] text-foreground">Your dashboard.</h1>
+          <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">
             Two ways in — no passwords, no forms. Sign in only if you want your sessions, decks and recipes in one
             place across machines.
           </p>
 
+          <h2 className="sr-only">Choose a provider</h2>
           <div className="mt-7 grid gap-2.5">
             <a className={BTN} href="dashboard.html" data-provider="github">
               <GitHubMark />
@@ -57,13 +62,12 @@ export default function Login() {
             </a>
           </div>
 
-          <p className="mt-6 border-t border-border pt-5 font-mono text-[11.5px] leading-relaxed text-muted-foreground/60">
-            Sign-in is optional. The CLI and the app run with no account and no API key — an account only syncs your
-            own data.{" "}
-            <a href="download.html" className="text-primary underline underline-offset-2">
-              Get the app
-            </a>
-            .
+          <p className="mt-6 border-t border-border pt-5 text-[13px] leading-relaxed text-muted-foreground">
+            Sign-in is optional. The CLI and the app run with no account at all — an account only syncs your own data.
+            A fresh install points at <span className="font-mono text-[12.5px] text-foreground">anthropic/claude-sonnet-5</span>,
+            which needs your key; pick <span className="font-mono text-[12.5px] text-foreground">termcoder/auto</span>{" "}
+            to run without one.{" "}
+            <InlineLink href="download.html">Get the app</InlineLink>.
           </p>
         </div>
       </main>
