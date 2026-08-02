@@ -35,8 +35,8 @@ const SECTIONS: { id: string; title: string }[] = [
 ];
 
 // Every row is TUI_COMMANDS in packages/tui/src/commands.ts, in its own order,
-// signatures included. All 46 of them — the previous pass listed 32 and called
-// it "the full set".
+// signatures included. All 45 of them — an earlier pass listed 32 and called it
+// "the full set", and the pass after that said 46 while printing 45.
 const COMMANDS: [string, string][] = [
   ["/help", "Show all commands."],
   ["/setup", "Set up a model, free options included."],
@@ -56,7 +56,7 @@ const COMMANDS: [string, string][] = [
   ["/commands", "List custom project commands."],
   ["/skills", "List available skills."],
   ["/theme [name]", "Show or set the colour theme; the choice is saved."],
-  ["/tools", "List the tools the current agent may use."],
+  ["/tools", "List the loaded tools, marking which ones ask permission."],
   ["/auto", "Toggle auto-approve — run tools without asking."],
   ["/retry", "Re-run your last message."],
   ["/background <goal>", "Work autonomously until the project's check passes."],
@@ -85,10 +85,11 @@ const COMMANDS: [string, string][] = [
   ["/exit", "Quit termcoder."],
 ];
 
-// Straight from useInput in app.tsx, MultilineInput.tsx and Composer.tsx.
+// Straight from the two useInput blocks: app.tsx (global) and MultilineInput.tsx
+// (the composer). Composer.tsx only prints the hints; it binds nothing.
 const SHORTCUTS: [string, string][] = [
-  ["shift+tab", "Toggle Build and Plan mode."],
-  ["ctrl+p", "Open the command palette."],
+  ["shift+tab", "Cycle the primary agents — Build and Plan unless you add more."],
+  ["ctrl+p", "Start a command: it types / for you and opens the menu."],
   ["/", "Open the command menu."],
   ["@", "Open the file picker."],
   ["$", "Hand the rest of the line to a sub-agent."],
@@ -172,10 +173,11 @@ export default function Docs() {
             asking permission before anything that changes your machine.
           </p>
           <p>
-            One npm package installs two equivalent commands, <code>term</code> and <code>termcoder</code>, and it
-            opens on a <strong>free, keyless model</strong> — nothing to sign up for or configure. Connect your own
-            key to any of twelve providers when you want more, or point it at a local model through Ollama. A second
-            persona, <code>termexplorer</code>, turns the same tool into a study tutor.
+            One npm package installs two equivalent commands, <code>term</code> and <code>termcoder</code>. A{" "}
+            <strong>free, keyless model</strong> is one command away — pick <code>termcoder/auto</code> or{" "}
+            <code>termcoderfree/auto</code> in <code>/model</code> and you never need an account. Connect your own
+            key to any of the ten keyed providers when you want more, or point it at a local model through Ollama. A
+            second persona, <code>termexplorer</code>, turns the same tool into a study tutor.
           </p>
 
           <h2 id="install" className="scroll-mt-24">
@@ -205,7 +207,7 @@ export default function Docs() {
           </h2>
           <p>Open a terminal in a project folder and run:</p>
           <pre>term</pre>
-          <p>Two things happen the first time:</p>
+          <p>Two things to get through the first time:</p>
           <ol>
             <li>
               <strong>Trust prompt.</strong> TermCoder asks whether you trust the current folder before it reads or
@@ -213,9 +215,12 @@ export default function Docs() {
               folder.
             </li>
             <li>
-              <strong>Nothing to set up.</strong> It starts on the free, keyless model — just type. Want something
-              faster? <code>/upgrade</code> walks you through a free Gemini key in two steps, <code>/setup</code> is
-              the full guide, and <code>/model</code> picks a local Ollama model.
+              <strong>Pick a model.</strong> The stock config points at <code>anthropic/claude-sonnet-5</code>, so on
+              a machine with no key the panel shows{" "}
+              <code>⚠ No model set — type /setup to get started (free options)</code>. The zero-setup answer is{" "}
+              <code>/model</code> → <code>termcoder/auto</code>, which runs on the free, keyless tier until you
+              connect something. <code>/upgrade</code> walks you through a free Gemini key in two steps,{" "}
+              <code>/setup</code> is the full guide, and <code>/model</code> also picks a local Ollama model.
             </li>
           </ol>
           <p>Type your request at the prompt and press Enter.</p>
@@ -227,8 +232,8 @@ export default function Docs() {
           <pre>
             <Cm># in your project folder</Cm>
             {"\nterm\n\n"}
-            <Cm># connect a model — optional, it already works without this</Cm>
-            {"\n❯ /setup\n\n"}
+            <Cm># pick a model — termcoder/auto needs no key at all</Cm>
+            {"\n❯ /model\n\n"}
             <Cm># ask for a change: it reads, edits, and can run your tests</Cm>
             {"\n❯ add input validation to the signup form and run the tests\n\n"}
             <Cm># steer it mid-flight</Cm>
@@ -238,8 +243,8 @@ export default function Docs() {
             <Cm># toggle Plan and Build mode</Cm>
           </pre>
           <p>
-            TermCoder shows each tool call as it happens, collapses long output, and prints a diff for every edit
-            before applying it.
+            TermCoder shows each tool call as it happens, collapses long output, and puts the diff in the permission
+            prompt — so you read the change before it lands, not after.
           </p>
 
           <h2 id="how-it-works" className="scroll-mt-24">
@@ -254,9 +259,10 @@ export default function Docs() {
             categories — <code>bash</code>, <code>write</code>, <code>edit</code>, <code>mcp</code> and{" "}
             <code>network</code> — and every one of them defaults to asking. Only six tools are gated by them:{" "}
             <code>bash</code>, <code>edit</code>, <code>write</code>, <code>webfetch</code>, <code>websearch</code>{" "}
-            and <code>run_code</code>. Reading and searching run freely. You can allow a request once, allow it for
-            the session, or deny it; <code>/auto</code> approves everything for the current session when you trust
-            the task.
+            and <code>run_code</code>. Reading and searching run freely. At the prompt, <code>a</code> allows this
+            request, <code>d</code> denies it, and <code>A</code> allows that whole category for the rest of the
+            session. <code>/auto</code> does the same for every category at once — except <code>network</code>, which
+            keeps asking even with auto-approve on.
           </p>
           <p>
             Long tool output is collapsed in the transcript and trimmed from the model&apos;s context as the session
@@ -267,7 +273,7 @@ export default function Docs() {
             Command reference
           </h2>
           <p>
-            Type <code>/</code> at the prompt to open the command menu. All forty-six of them:
+            Type <code>/</code> at the prompt to open the command menu. All forty-five of them:
           </p>
           <DocTable head={["Command", "What it does"]} rows={mono(COMMANDS)} />
 
@@ -275,8 +281,8 @@ export default function Docs() {
             Build and Plan modes
           </h2>
           <p>
-            TermCoder has two modes. Toggle them with <code>shift+tab</code> — the current one shows at the bottom of
-            the screen.
+            TermCoder ships two modes. <code>shift+tab</code> steps through them — the current one shows at the
+            bottom of the screen.
           </p>
           <ul>
             <li>
@@ -284,10 +290,15 @@ export default function Docs() {
               permission.
             </li>
             <li>
-              <strong>Plan</strong> — read-only. Every mutating permission is denied outright, so the agent inspects
-              the code and proposes an approach without touching a file. Review the plan, then switch to Build.
+              <strong>Plan</strong> — read-only. All five permission categories are set to <code>deny</code>, so no
+              edit, no write, no shell and no network: the agent inspects the code and proposes an approach without
+              touching a file. Review the plan, then switch to Build.
             </li>
           </ul>
+          <p>
+            Modes are just agents whose <code>mode</code> is not <code>subagent</code>, so a custom agent joins the{" "}
+            <code>shift+tab</code> rotation unless you mark it <code>subagent</code>.
+          </p>
 
           <h2 id="files-and-sub-agents" className="scroll-mt-24">
             Files and sub-agents
@@ -302,7 +313,7 @@ export default function Docs() {
               ],
               [
                 <code key="dollar">$</code>,
-                "Hands the rest of the line to the general sub-agent, which runs it as its own session and reports a summary back.",
+                "Hands the rest of the line to the general sub-agent. It runs in a session of its own — the work streams into your transcript, but none of it lands in the main session's context.",
               ],
             ]}
           />
@@ -337,8 +348,10 @@ export default function Docs() {
           </p>
           <h3>The keyless tier</h3>
           <p>
-            The free model is community-hosted, small and rate-limited when busy. When a request fails, TermCoder
-            retries it and — if you have connected a key — falls back to that, so a hiccup does not kill your turn.{" "}
+            <code>termcoderfree/auto</code> needs no key and no account; the app&apos;s own words for it are
+            &ldquo;free but small, slow, and rate-limited&rdquo;. When a request fails, TermCoder retries it — three
+            times if you have no key at all, once if you do, because it can then fall back to a fast model on the
+            first key it finds (Google, then Anthropic, then OpenAI). A hiccup does not kill your turn.{" "}
             <code>/upgrade</code> lists every way to move up, starting with a free Gemini key.
           </p>
 
@@ -449,8 +462,9 @@ export default function Docs() {
             <Cm># reveal each card, then grade it 0–5</Cm>
           </pre>
           <p>
-            <code>/review</code> takes an optional deck name; with none it picks the first deck that has cards due.
-            In the desktop app the same decks live under the Study button.
+            <code>/review</code> takes an optional deck name; with none it picks the first deck that has cards due,
+            falling back to your first deck. In the desktop app the same decks live under the Study button in the
+            left rail.
           </p>
 
           <h2 id="autonomous-mode" className="scroll-mt-24">
@@ -472,10 +486,11 @@ export default function Docs() {
             the composer and send your goal.
           </p>
           <blockquote>
-            <strong>One turn is checkpointed, not the whole run.</strong> Before each turn TermCoder records the
-            files that turn is about to touch, and the next turn overwrites that record — so only the most recent
-            turn can be undone. The desktop app&apos;s undo button restores it, and reverting consumes the
-            checkpoint. The CLI has no revert command; for anything longer than one turn, use git.
+            <strong>One turn is checkpointed, not the whole run.</strong> As a turn edits files, TermCoder saves each
+            file&apos;s contents from just before the change; at the end of the turn that snapshot is written to{" "}
+            <code>latest.json</code>, overwriting the previous turn&apos;s. So there is exactly one undo and nothing
+            behind it. The desktop app&apos;s undo button restores it and then deletes it, which means you cannot
+            undo twice. The CLI has no revert command at all; for anything longer than one turn, use git.
           </blockquote>
 
           <h2 id="sync-share-and-packs" className="scroll-mt-24">
@@ -545,14 +560,21 @@ export default function Docs() {
           </h2>
           <p>
             The same engine runs three ways: the <code>term</code> CLI, the desktop app, and a browser. The server
-            package ships a <code>termcoder-server</code> binary that serves the web interface and the HTTP and
-            WebSocket API:
+            package ships a <code>termcoder-server</code> binary that serves the HTTP and WebSocket API, and the web
+            interface alongside it when the web bundle has been built:
           </p>
           <pre>
-            <Cm># serve the web app from your machine</Cm>
+            <Cm># serve the API, and the web app if it is built</Cm>
             {"\ntermcoder-server\n"}
             <Cm># → http://localhost:4096   (override with PORT)</Cm>
           </pre>
+          <p>
+            On startup it tells you which one you got: either a line pointing at the web app, or the route list —{" "}
+            <code>POST /sessions</code>, <code>GET /sessions</code>, <code>GET /sessions/:id</code>,{" "}
+            <code>WS /sessions/:id/stream</code> — with a note to build the web app with{" "}
+            <code>pnpm --filter @termcoder/desktop build:web</code>. Set <code>TERMCODER_WEB_DIR</code> to point it
+            at a bundle somewhere else.
+          </p>
           <blockquote>
             <strong>It binds to 127.0.0.1 on purpose.</strong> The server has no authentication of any kind. Setting{" "}
             <code>HOST</code> to expose it on your network hands session control to anyone who can reach the port,
@@ -568,8 +590,10 @@ export default function Docs() {
             Configuration
           </h2>
           <p>
-            Project settings live in <code>.termcoder/</code> in your repo, and are found by walking up from the
-            working directory. Personal settings and secrets live in your user config directory.
+            Project settings live in <code>.termcoder/</code> in your repo. <code>.termcoder/config.json</code> is
+            found by walking up from the working directory, so it works from a subfolder; the folders below it are
+            read from the working directory itself. Personal settings and secrets live in your user config
+            directory.
           </p>
           <DocTable
             head={["Location", "Holds"]}
@@ -671,8 +695,10 @@ export default function Docs() {
           </p>
           <h3>It says a model needs a key</h3>
           <p>
-            Run <code>/setup</code>, or set the provider&apos;s key with <code>/key</code>. To run without any key,
-            pick a local Ollama model — see <InlineLink href="#running-locally">Running locally</InlineLink>.
+            The stock config asks for <code>anthropic/claude-sonnet-5</code>, so this is what a fresh install says
+            until you choose. Run <code>/setup</code>, or set the provider&apos;s key with <code>/key</code>. To run
+            without any key, open <code>/model</code> and pick <code>termcoder/auto</code>, or a local Ollama model —
+            see <InlineLink href="#running-locally">Running locally</InlineLink>.
           </p>
           <h3>An auth or quota error mid-task</h3>
           <p>
