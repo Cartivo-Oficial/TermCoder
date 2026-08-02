@@ -31,7 +31,7 @@ const PROVIDERS: [string, string, string, string][] = [
   ["Together", "together", "open models", "Open weights, hosted, without you renting a GPU."],
   ["Cerebras", "cerebras", "very fast", "Open models served on custom inference silicon, not GPUs."],
   ["Ollama", "ollama", "local · private", "Whatever you have pulled. Nothing leaves the machine."],
-  ["termcoderfree", "termcoderfree", "free · no key", "The default it opens on. No card, no account, no setup."],
+  ["termcoderfree", "termcoderfree", "free · no key", "Pick termcoder/auto and you are on it. No card, no account, no key."],
 ];
 
 const TOOLS: [string, string][] = [
@@ -79,7 +79,7 @@ const SECURITY: [string, string, string][] = [
   ["disk", "Local first", "Your config, your memory and your sessions are plain files on disk. Nothing is uploaded to be read back later, and you can delete any of it with rm."],
   ["eyeOff", "No telemetry", "No analytics, no crash pings, no usage counters. Nothing about what you build is collected, ever."],
   ["route", "Direct to your provider", "Prompts go from your machine to the model you chose and nowhere else. There is no TermCoder server in the middle to trust."],
-  ["noAccount", "No account", "Nothing to sign up for. It opens on a free model that needs no key, and connecting your own key is a line in a file you own."],
+  ["noAccount", "No account", "Nothing to sign up for. Pick termcoder/auto and it runs on a free model that needs no key; connecting your own key is a line in a file you own."],
   ["shield", "Five permission gates", "Bash, writes, edits, MCP calls and network access each default to asking first. Reading is cheap; running a command or writing a file asks first."],
 ];
 
@@ -92,7 +92,7 @@ const PROOF: [string, string][] = [
 
 const FAQ_ITEMS = [
   { q: "Do I need an API key?",
-    a: "No. It opens on a free, community-hosted model with no sign-up and no card. It is rate-limited when busy, and prompts go to a third party we do not run — point it at a local Ollama to keep everything on your machine." },
+    a: "Not to try it. Pick termcoder/auto in /model and it runs on a free, community-hosted model with no sign-up and no card. It is rate-limited when busy, and prompts go to a third party we do not run — point it at a local Ollama to keep everything on your machine." },
   { q: "Is it really free?",
     a: "The agent and the tutor are MIT licensed and free forever, and joining any room or class is free. Only hosting a room is paid." },
   { q: "Does it work offline?",
@@ -126,8 +126,8 @@ export default function Home() {
           <Lead>
             One is a <span className="text-foreground">builder</span> — it reads your repo, edits files, runs your
             tests and loops until they pass. The other is a <span className="text-foreground">tutor</span> — it
-            explains, drills you with flashcards and tracks what you actually learned. Same engine, same install,
-            no API key.
+            explains, drills you with flashcards and tracks what you actually learned. Same engine, same install, and a
+            free model to start on.
           </Lead>
           <div className="mt-9 flex flex-wrap items-center gap-3">
             <a href="download.html" className={cn(buttonVariants(), BTN)}>Get the app</a>
@@ -161,7 +161,7 @@ export default function Home() {
       {/* ── 03 · providers ───────────────────────────────────────────── */}
       <Section>
         <Eyebrow>Bring your own model — or none at all</Eyebrow>
-        <Heading>It opens on a free model. Twelve more are one command away.</Heading>
+        <Heading>A free model to start on. Twelve more are one command away.</Heading>
         <Lead>
           No card, no sign-up. Connect a key when you want one, or sign in with a Claude or ChatGPT subscription
           instead of paying per token — both experimental.

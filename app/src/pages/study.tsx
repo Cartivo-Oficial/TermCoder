@@ -299,7 +299,7 @@ export default function Study() {
           <Heading>One install. Both minds.</Heading>
         </div>
         <p className="mx-auto mt-5 max-w-[46ch] text-[17px] leading-relaxed text-muted-foreground">
-          The tutor is MIT licensed and opens on a free model — no card, no key, no account.
+          The tutor is MIT licensed and runs on a free model — no card, no key, no account.
         </p>
         <div className="mt-9 flex flex-wrap justify-center gap-3">
           <a href="download.html" className={cn(buttonVariants(), BTN)}>Get the app</a>

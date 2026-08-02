@@ -39,7 +39,7 @@ export default function Download() {
         <Heading level={1}>The app, on your machine.</Heading>
         <Lead>
           Chat, an editor and a real terminal in one window. Electron bundles its own Node — there is nothing to
-          install first, no account, and no API key.
+          install first, no account, and no API key needed.
         </Lead>
         <PrimaryDownload />
       </Section>

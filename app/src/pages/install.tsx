@@ -22,7 +22,7 @@ const STEPS: [string, string, string | null, string][] = [
     "Ask for the change",
     "Plain language. It reads the repo, plans, edits with minimal diffs, runs your tests, and shows the diff before applying anything that touches your machine.",
     "❯ add a --version flag and run the tests",
-    "Nothing to configure — it opens on a free, keyless model.",
+    "Pick termcoder/auto in /model and you are on a free, keyless one.",
   ],
   [
     "Bring a better model (optional)",
@@ -59,7 +59,7 @@ export default function Install() {
       <Section bordered={false} className="pb-2">
         <Eyebrow>Install</Eyebrow>
         <Heading level={1}>One command, every platform.</Heading>
-        <Lead>No account, no API key, no config file. Install it and ask it something — that is the whole setup.</Lead>
+        <Lead>No account, no config file, and no API key needed. Install it, pick termcoder/auto, and ask it something.</Lead>
         <div className="mt-8 inline-flex max-w-full flex-wrap items-center gap-3 rounded-xl border border-border bg-muted px-4 py-3 font-mono text-[14px]">
           <code className="text-foreground">{INSTALL}</code>
           <CopyButton text={INSTALL} />
