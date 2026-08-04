@@ -27,6 +27,30 @@
   --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
   --radius: 10px;
   --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* ── finish vocabulary ─────────────────────────────────────────────
+     The theme system above owns colour. This owns everything else:
+     rhythm, type, depth and focus. Values here are the only ones the
+     guard permits — see styles.guard.test.ts. */
+
+  --s-1: 2px;  --s-2: 4px;  --s-3: 6px;  --s-4: 8px;  --s-5: 12px;
+  --s-6: 16px; --s-7: 24px; --s-8: 32px; --s-9: 48px;
+
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --fs-1: 11px; --fs-2: 12px; --fs-3: 13px; --fs-4: 15px;
+  --fs-5: 18px; --fs-6: 24px; --fs-7: 32px;
+  --fw-regular: 400; --fw-medium: 500; --fw-semibold: 600;
+  --lh-tight: 1.25; --lh-body: 1.55;
+
+  /* Shadows compose from a themeable colour rather than hardcoding black,
+     so a light theme can soften or retint them. */
+  --shadow-rgb: 0 0 0;
+  --sh-flat: none;
+  --sh-raised: 0 1px 2px rgb(var(--shadow-rgb) / 0.16);
+  --sh-float: 0 8px 24px -8px rgb(var(--shadow-rgb) / 0.32);
+  --sh-modal: 0 24px 64px -16px rgb(var(--shadow-rgb) / 0.48);
+
+  --ring: 2px solid var(--accent);
 }
 
 * { box-sizing: border-box; }
@@ -937,6 +961,9 @@ button.chip { cursor: pointer; }
   --accent: #E8632C;
   --accent-hot: #F07B3F;
   --seam: color-mix(in srgb, #000 4%, transparent);
+
+  /* A pure-black shadow reads as dirt on a light surface. */
+  --shadow-rgb: 30 27 24;
 }
 
 .update-toast {
