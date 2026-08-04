@@ -152,8 +152,8 @@ export default function Home() {
             width={1034}
             height={740}
             priority
-            alt="The TermCoder desktop app on open: the session rail on the left, the Chat and Terminal tabs across the top, and a composer with the model picker at the bottom."
-            caption="The desktop app on open — the session rail, the Chat and Terminal tabs, and the composer with the model picker."
+            alt="The TermCoder desktop app on open — the session rail on the left, the Chat and Terminal tabs across the top, and the composer with the model picker at the bottom."
+            caption="The desktop app on open — the session rail, the Chat and Terminal tabs, and the composer."
           />
         </div>
       </section>
@@ -237,8 +237,8 @@ complex  → tier.strong   <span className="text-muted-foreground">gemini-pro ·
             width={1034}
             height={740}
             className="mt-0"
-            alt="The builder mid-turn: a plan in the chat pane, a minimal diff with added and removed lines, and the test command running underneath."
-            caption="A turn in full — the plan, the diff it proposes, and the test run that decides whether it goes again."
+            alt="The TermCoder desktop app on open — the session rail on the left, the Chat and Terminal tabs across the top, and the composer with the model picker at the bottom."
+            caption="The desktop app on open. A picture of this section is still to be taken."
           />
         </FeatureBlock>
 
@@ -286,8 +286,8 @@ complex  → tier.strong   <span className="text-muted-foreground">gemini-pro ·
             width={1034}
             height={740}
             className="mt-0"
-            alt="The Terminal tab of the desktop app running a build command next to the Chat tab, both inside the same window."
-            caption="The Terminal tab — a real shell one click from the conversation about it."
+            alt="The TermCoder desktop app on open — the session rail on the left, the Chat and Terminal tabs across the top, and the composer with the model picker at the bottom."
+            caption="The desktop app on open. A picture of this section is still to be taken."
           />
         </FeatureBlock>
       </Section>
@@ -305,8 +305,8 @@ complex  → tier.strong   <span className="text-muted-foreground">gemini-pro ·
             width={1034}
             height={740}
             className="mt-0"
-            alt="The memory pane listing the facts the agent has kept about the project, beside a symbol lookup resolving a function to its file and line."
-            caption="What it kept about this project, and how it gets from a symbol name to a line number."
+            alt="The TermCoder desktop app on open — the session rail on the left, the Chat and Terminal tabs across the top, and the composer with the model picker at the bottom."
+            caption="The desktop app on open. A picture of this section is still to be taken."
           />
         </FeatureBlock>
 
@@ -380,8 +380,8 @@ complex  → tier.strong   <span className="text-muted-foreground">gemini-pro ·
           src={appShot}
           width={1034}
           height={740}
-          alt="The study side of the app: a flashcard deck mid-review with a grading row, next to the class panel listing assignments."
-          caption="The tutor and the classroom — the half of the product that is not about shipping."
+          alt="The TermCoder desktop app on open — the session rail on the left, the Chat and Terminal tabs across the top, and the composer with the model picker at the bottom."
+          caption="The desktop app on open. A picture of this section is still to be taken."
         />
         <CardGrid cols={4}>
           {SECONDARY.map(([icon, title, body]) => (

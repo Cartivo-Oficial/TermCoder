@@ -107,8 +107,8 @@ export default function Features() {
           width={1034}
           height={740}
           priority
-          alt="The TermCoder desktop app: the session rail on the left, the Chat and Terminal tabs across the top, and the composer with the model picker at the bottom."
-          caption="The same engine behind the CLI, in the desktop app — session rail, Chat and Terminal tabs, and the composer with the model picker."
+          alt="The TermCoder desktop app on open — the session rail on the left, the Chat and Terminal tabs across the top, and the composer with the model picker at the bottom."
+          caption="The desktop app on open — the session rail, the Chat and Terminal tabs, and the composer."
         />
       </Section>
 
@@ -117,8 +117,8 @@ export default function Features() {
         <FeatureBlock
           level={2}
           eyebrow="No key"
-          title="It runs before you configure anything."
-          body="TermCoder opens on a keyless, community-hosted model. It is rate-limited when busy and your prompts go to a third party we do not run — so it is an on-ramp, not the destination. Point it at Ollama for privacy, or connect a provider for quality. Both take one command."
+          title="A free model, one pick away."
+          body="Pick termcoder/auto in /model and you are on a keyless, community-hosted model. It is rate-limited when busy and your prompts go to a third party we do not run — so it is an on-ramp, not the destination. Point it at Ollama for privacy, or connect a provider for quality. Both take one command."
         >
           <div className={PANEL}>
             <div className="text-muted-foreground">To start you need none of this</div>

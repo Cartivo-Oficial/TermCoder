@@ -95,8 +95,8 @@ export default function Study() {
           width={1034}
           height={740}
           priority
-          alt="The TermCoder desktop app: the session rail on the left, the Chat and Terminal tabs across the top, and the composer with the model picker at the bottom."
-          caption="The window the builder works in. Choosing Study closes the session rail and the agent chips and leaves the conversation."
+          alt="The TermCoder desktop app on open — the session rail on the left, the Chat and Terminal tabs across the top, and the composer with the model picker at the bottom."
+          caption="The desktop app on open — the session rail, the Chat and Terminal tabs, and the composer."
         />
       </Section>
 

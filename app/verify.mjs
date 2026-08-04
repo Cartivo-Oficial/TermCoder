@@ -64,7 +64,11 @@ for (const page of pages) {
 // Files still carrying the old dark/orange identity. Each redesign phase
 // deletes entries here; the guard fails while any listed file has been
 // migrated in appearance but not in fact.
-// Empty, and it stays empty: every source file is now scanned, permanently.
+// Empty, and it stays empty: every .ts/.tsx/.css file under src/ is scanned.
+// Known blind spots, deliberate rather than forgotten: index.html, .mjs/.js,
+// inline style={{}} objects, and arbitrary shadow-[] values (screenshot.tsx
+// legitimately ships a neutral black one). Widen this before trusting it
+// with a class of value it does not currently see.
 const NOT_YET_MIGRATED = [];
 
 // Regexes, not substrings: "text-primary" is a prefix of the perfectly
@@ -76,6 +80,11 @@ const BANNED = [
   /bg-\[#/, /text-\[#/, /border-\[#/, /ring-\[#/,
   /bg-white\//, /text-white\//, /border-white\//, /ring-white\//,
   /bg-black\//, /text-black\//, /border-black\//, /ring-black\//,
+  // Tailwind's own palette is how the retired orange and teal would walk back
+  // in without ever naming a hex. The site's colour comes from tokens only.
+  /(?:bg|text|border|ring|from|via|to|decoration|fill|stroke|shadow|outline|divide|accent|caret)-(?:red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|slate|gray|grey|zinc|neutral|stone)-\d{2,3}/,
+  // Non-hex colour notations that the bracket rules above would miss.
+  /(?:bg|text|border|ring|from|via|to|decoration|fill|stroke)-\[(?:rgb|rgba|hsl|hsla|oklch|oklab|lab|lch|color)\(/,
   // Faded body text fails WCAG AA. muted-foreground is already the quiet
   // colour; dropping it to 60% opacity on 11px text lands around 2.4:1.
   /text-muted-foreground\/[0-9]/,

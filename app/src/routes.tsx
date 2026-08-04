@@ -27,14 +27,14 @@ export const ROUTES: RouteDef[] = [
     path: "/index.html",
     title: "TermCoder — one terminal, two minds",
     description:
-      "An open-source AI coding agent that lives in your terminal — and a tutor that teaches you. Runs with no API key. One engine, two minds.",
+      "An open-source AI coding agent that lives in your terminal — and a tutor that teaches you. A free model to start on, no API key needed. One engine, two minds.",
     Component: Home,
   },
   {
     path: "/features.html",
     title: "TermCoder — features",
     description:
-      "Everything the TermCoder builder does: no API key, twelve providers, sub-agents with real permissions, checkpoints, sync and packs, MCP and language servers.",
+      "Everything the TermCoder builder does: a free model to start on, twelve providers, sub-agents with real permissions, checkpoints, sync and packs, MCP and language servers.",
     Component: Features,
   },
   {
@@ -48,7 +48,7 @@ export const ROUTES: RouteDef[] = [
     path: "/install.html",
     title: "TermCoder — install",
     description:
-      "Install TermCoder with one npm command on Windows, macOS or Linux. No account, no API key, no config file — it opens on a free model.",
+      "Install TermCoder with one npm command on Windows, macOS or Linux. No account, no config file, and no API key needed — pick termcoder/auto and it runs free.",
     Component: Install,
   },
   {
@@ -77,7 +77,7 @@ export const ROUTES: RouteDef[] = [
     path: "/login.html",
     title: "TermCoder — sign in",
     description:
-      "Sign in to your TermCoder dashboard with GitHub or Google. Optional — TermCoder runs with no account and no API key.",
+      "Sign in to your TermCoder dashboard with GitHub or Google. Optional — TermCoder runs with no account, and needs no API key.",
     Component: Login,
     scripts: ["config.js?v=4", "auth.js?v=7"],
   },
