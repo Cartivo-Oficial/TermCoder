@@ -168,8 +168,13 @@ describe("styles.css stays on the scale", () => {
     const bad: string[] = [];
     for (const { n, text, selector } of lines()) {
       if (unswept(selector) || exempt(text)) continue;
+      // `none` is NOT allowed. All 35 outline declarations in this file are
+      // currently `outline: none`, so an allowance for it would let the guard
+      // pass forever on an app with no visible focus anywhere. Suppressing the
+      // default ring is legitimate only when the element defines its own
+      // :focus-visible ring from --ring; anything else needs a written reason.
       const decl = /^\s*outline\s*:([^;]+);/.exec(text);
-      if (decl && !decl[1]!.includes("var(--ring)") && !decl[1]!.includes("none")) bad.push(`${n}: ${selector}`);
+      if (decl && !decl[1]!.includes("var(--ring)")) bad.push(`${n}: ${selector} — ${decl[1]!.trim()}`);
     }
     expect(bad).toEqual([]);
   });
@@ -441,14 +446,15 @@ git commit -m "feat(desktop): Btn, Row, Panel and Chip on the new scales"
 Tasks 4 through 10 share one shape. For each:
 
 1. Read the surface's CSS rules and its `.tsx`.
-2. Collapse every `padding`, `margin`, `gap` onto `--s-*`; every `font-size` onto `--fs-*`; every `box-shadow` onto `--sh-*`; every focus `outline` onto `var(--ring)`. Judge each value by the job it does — `5px` is `--s-2` in a tight inline gap and `--s-3` in a list row. This is not find-and-replace.
+2. Collapse every `padding`, `margin`, `gap` onto `--s-*`; every `font-size` onto `--fs-*`; every `box-shadow` onto `--sh-*`. Judge each value by the job it does — `5px` is `--s-2` in a tight inline gap and `--s-3` in a list row. This is not find-and-replace.
 3. Where a value genuinely cannot sit on the scale — optical alignment, a hairline, a sprite offset — leave it and annotate `/* off-scale: <reason> */` on the same line.
-4. Replace hand-rolled buttons, list lines, cards and chips with `Btn`, `Row`, `Panel`, `Chip` **where the markup matches**. Do not force a fit; a bespoke control stays bespoke and just moves onto the tokens.
-5. Move that surface's `:root[data-density="compact"]` overrides onto the scale too, in this same task.
-6. Delete this surface's entries from `UNSWEPT` in `styles.guard.test.ts`.
-7. Run `pnpm --filter @termcoder/desktop typecheck`, `npx vitest run packages/desktop/src/renderer/styles.guard.test.ts`, and `pnpm test`.
-8. **Look at it.** Launch with `env -u ELECTRON_RUN_AS_NODE pnpm --filter @termcoder/desktop dev` — the variable must be stripped or no window opens on this machine. Check the surface in one dark theme and one light theme. Spacing changes that look right in dark and wrong in light are the specific failure this step exists to catch.
-9. Commit.
+4. **Restore focus.** Every `outline: none` in this surface is a keyboard user who cannot see where they are — there are 35 across the file and not one visible ring. Replace each with a real `:focus-visible { outline: var(--ring); outline-offset: … }` on the element that was silenced. If an element genuinely must not show a ring, say why with the exemption comment; "it looked noisy" is not a reason.
+5. Replace hand-rolled buttons, list lines, cards and chips with `Btn`, `Row`, `Panel`, `Chip` **where the markup matches**. Do not force a fit; a bespoke control stays bespoke and just moves onto the tokens.
+6. Move that surface's `:root[data-density="compact"]` overrides onto the scale too, in this same task.
+7. Delete this surface's entries from `UNSWEPT` in `styles.guard.test.ts`.
+8. Run `pnpm --filter @termcoder/desktop typecheck`, `npx vitest run packages/desktop/src/renderer/styles.guard.test.ts`, and `pnpm test`.
+9. **Look at it.** Launch with `env -u ELECTRON_RUN_AS_NODE pnpm --filter @termcoder/desktop dev` — the variable must be stripped or no window opens on this machine. Check the surface in one dark theme and one light theme. Spacing changes that look right in dark and wrong in light are the specific failure this step exists to catch.
+10. Commit.
 
 The guard must not name the swept surface afterwards. It will still name the ones below it — that is the point.
 
@@ -456,7 +462,7 @@ The guard must not name the swept surface afterwards. It will still name the one
 
 **Files:** `Hero.tsx`, `Welcome.tsx`, `styles.css` (`.hero`, `.welcome`), `styles.guard.test.ts`
 
-- [ ] **Step 1** Apply the nine steps above to the `.hero` and `.welcome` rules and their components.
+- [ ] **Step 1** Apply the ten steps above to the `.hero` and `.welcome` rules and their components.
 - [ ] **Step 2** Remove `".hero"` and `".welcome"` from `UNSWEPT`.
 - [ ] **Step 3** `pnpm --filter @termcoder/desktop typecheck && npx vitest run packages/desktop/src/renderer/styles.guard.test.ts && pnpm test`
 - [ ] **Step 4** Visual check, dark theme and light theme.
@@ -468,7 +474,7 @@ The guard must not name the swept surface afterwards. It will still name the one
 
 This is the densest surface and the one a user looks at longest. `:root[data-density="compact"]` overrides `.transcript-inner`, `.bubble.user` and `.composer` at styles.css:72-76 — those move onto the scale here.
 
-- [ ] **Step 1** Apply the nine steps.
+- [ ] **Step 1** Apply the ten steps.
 - [ ] **Step 2** Remove `".composer"`, `".transcript"`, `".bubble"`, `".markdown"`, `".tool"` from `UNSWEPT`.
 - [ ] **Step 3** `pnpm --filter @termcoder/desktop typecheck && npx vitest run packages/desktop/src/renderer/styles.guard.test.ts && pnpm test`
 - [ ] **Step 4** Visual check in both themes, **and** in compact density — this is the task most likely to break it.
@@ -480,7 +486,7 @@ This is the densest surface and the one a user looks at longest. `:root[data-den
 
 `.srow` is the clearest `Row` candidate in the app; `.session-card` is a `Panel`. Both carry density overrides at styles.css:74-75.
 
-- [ ] **Step 1** Apply the nine steps.
+- [ ] **Step 1** Apply the ten steps.
 - [ ] **Step 2** Remove `".rail"`, `".session"`, `".srow"`, `".switcher"` from `UNSWEPT`.
 - [ ] **Step 3** `pnpm --filter @termcoder/desktop typecheck && npx vitest run packages/desktop/src/renderer/styles.guard.test.ts && pnpm test`
 - [ ] **Step 4** Visual check, both themes.
@@ -492,7 +498,7 @@ This is the densest surface and the one a user looks at longest. `:root[data-den
 
 Careful here: xterm.js renders its own DOM and some values are dictated by the terminal's cell metrics, not by our design. Those are the legitimate `/* off-scale: xterm cell metric */` cases — do not force a cell dimension onto the spacing scale.
 
-- [ ] **Step 1** Apply the nine steps.
+- [ ] **Step 1** Apply the ten steps.
 - [ ] **Step 2** Remove `".xterm"`, `".term"`, `".deck"` from `UNSWEPT`.
 - [ ] **Step 3** `pnpm --filter @termcoder/desktop typecheck && npx vitest run packages/desktop/src/renderer/styles.guard.test.ts && pnpm test`
 - [ ] **Step 4** Visual check, both themes. Type a long line and confirm no reflow regression.
@@ -504,7 +510,7 @@ Careful here: xterm.js renders its own DOM and some values are dictated by the t
 
 The largest single component in the sweep. It is mostly rows and panels, so `Row` and `Panel` should carry a lot of it.
 
-- [ ] **Step 1** Apply the nine steps.
+- [ ] **Step 1** Apply the ten steps.
 - [ ] **Step 2** Remove `".settings"` and `".set-"` from `UNSWEPT`.
 - [ ] **Step 3** `pnpm --filter @termcoder/desktop typecheck && npx vitest run packages/desktop/src/renderer/styles.guard.test.ts && pnpm test`
 - [ ] **Step 4** Visual check, both themes. Open every settings section — this file has the most branches.
@@ -514,7 +520,7 @@ The largest single component in the sweep. It is mostly rows and panels, so `Row
 
 **Files:** `SidePanel.tsx`, `RecipesPanel.tsx`, `ClassroomPanel.tsx`, `ModelBrowser.tsx`, `Study.tsx`, `styles.css` (`.side`, `.recipe`, `.classroom`, `.model-`, `.study`), `styles.guard.test.ts`
 
-- [ ] **Step 1** Apply the nine steps.
+- [ ] **Step 1** Apply the ten steps.
 - [ ] **Step 2** Remove `".side"`, `".recipe"`, `".classroom"`, `".model-"`, `".study"` from `UNSWEPT`.
 - [ ] **Step 3** `pnpm --filter @termcoder/desktop typecheck && npx vitest run packages/desktop/src/renderer/styles.guard.test.ts && pnpm test`
 - [ ] **Step 4** Visual check, both themes.
@@ -528,7 +534,7 @@ The largest single component in the sweep. It is mostly rows and panels, so `Row
 
 The command palette and file preview are the app's two floating surfaces: they take `--sh-float` and `--sh-modal` respectively.
 
-- [ ] **Step 1** Apply the nine steps, with the IDELayout restriction above.
+- [ ] **Step 1** Apply the ten steps, with the IDELayout restriction above.
 - [ ] **Step 2** Remove `".palette"`, `".preview"`, `".ide-"`, `".scm-"`, `".editor-"`, `".test-"` from `UNSWEPT`.
 - [ ] **Step 3** `pnpm --filter @termcoder/desktop typecheck && npx vitest run packages/desktop/src/renderer/styles.guard.test.ts && pnpm test`
 - [ ] **Step 4** Visual check, both themes. Open the palette over a busy screen and confirm the float shadow reads on light.
