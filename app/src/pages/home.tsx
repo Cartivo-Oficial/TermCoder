@@ -161,7 +161,7 @@ export default function Home() {
       {/* ── 03 · providers ───────────────────────────────────────────── */}
       <Section>
         <Eyebrow>Bring your own model — or none at all</Eyebrow>
-        <Heading>A free model to start on. Twelve more are one command away.</Heading>
+        <Heading>A free model to start on. Eleven more are one command away.</Heading>
         <Lead>
           No card, no sign-up. Connect a key when you want one, or sign in with a Claude or ChatGPT subscription
           instead of paying per token — both experimental.

@@ -1,7 +1,7 @@
 import { Mark } from "@/components/mark";
 
 const COLUMNS = [
-  ["Build", [["Features", "index.html#build"], ["Install", "install.html"], ["Download", "download.html"], ["Docs", "docs.html"]]],
+  ["Build", [["Features", "features.html"], ["Install", "install.html"], ["Download", "download.html"], ["Docs", "docs.html"]]],
   ["Study", [["TermExplorer", "study.html"], ["Flashcards", "study.html"], ["Classrooms", "study.html"], ["Live rooms", "study.html"]]],
   ["Project", [["GitHub", "https://github.com/Cartivo-Oficial/TermCoder"], ["Changelog", "changelog.html"], ["Pricing", "pricing.html"], ["npm", "https://www.npmjs.com/package/@termcoder/tui"]]],
   ["Legal", [["Terms of service", "terms.html"], ["Privacy policy", "privacy.html"], ["Refund policy", "refunds.html"]]],
