@@ -50,7 +50,14 @@
   --sh-float: 0 8px 24px -8px rgb(var(--shadow-rgb) / 0.32);
   --sh-modal: 0 24px 64px -16px rgb(var(--shadow-rgb) / 0.48);
 
-  --ring: 2px solid var(--accent);
+  /* The ring must NOT inherit --accent. App.tsx sets that inline per colour
+     theme, and some accents are near-white — the Clean theme's #E9E6E1 gave a
+     ring of ~1.1:1 on a light background, i.e. no ring at all. --text is
+     contrasty against --bg in every theme by construction, so a ring built
+     from it is always visible. A theme that wants a coloured ring sets
+     --ring-color deliberately. */
+  --ring-color: var(--text);
+  --ring: 2px solid var(--ring-color);
 }
 
 * { box-sizing: border-box; }
@@ -7398,7 +7405,7 @@ button.chip { cursor: pointer; }
 .u-btn-quiet:hover { background: var(--elev2); }
 .u-btn-solid { background: var(--accent); border-color: var(--accent); color: var(--bg); }
 .u-btn-danger { color: var(--bad); }
-.u-btn:focus-visible { outline: var(--ring); outline-offset: 2px; }
+.u-btn:focus-visible { outline: var(--ring); outline-offset: var(--s-1); }
 .u-btn:disabled { opacity: 0.5; cursor: default; }
 
 .u-row {
@@ -7409,7 +7416,7 @@ button.chip { cursor: pointer; }
 }
 .u-row:hover { background: var(--elev); }
 .u-row.is-active { background: var(--elev2); }
-.u-row:focus-visible { outline: var(--ring); outline-offset: -2px; }
+.u-row:focus-visible { outline: var(--ring); outline-offset: calc(var(--s-1) * -1); }
 
 .u-panel {
   border: 1px solid var(--border); border-radius: var(--r-md);
@@ -7433,4 +7440,4 @@ button.chip { cursor: pointer; }
 }
 .u-chip:hover { color: var(--text); }
 .u-chip.is-on { color: var(--accent); border-color: var(--accent); }
-.u-chip:focus-visible { outline: var(--ring); outline-offset: 2px; }
+.u-chip:focus-visible { outline: var(--ring); outline-offset: var(--s-1); }
