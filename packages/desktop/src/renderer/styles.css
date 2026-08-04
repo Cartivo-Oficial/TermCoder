@@ -7318,3 +7318,53 @@ button.chip { cursor: pointer; }
 .review-always { border-color: color-mix(in srgb, var(--accent) 30%, transparent) !important; }
 .cm-review-add { background: color-mix(in srgb, #3fb950 16%, transparent); }
 .cm-review-remove { background: color-mix(in srgb, #f85149 16%, transparent); }
+
+/* ── primitives ───────────────────────────────────────────────────── */
+.u-btn {
+  display: inline-flex; align-items: center; gap: var(--s-3);
+  border: 1px solid var(--border); border-radius: var(--r-md);
+  background: var(--elev); color: var(--text);
+  font-family: var(--sans); font-size: var(--fs-3); font-weight: var(--fw-medium);
+  cursor: pointer; transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+}
+.u-btn-sm { padding: var(--s-2) var(--s-4); }
+.u-btn-md { padding: var(--s-3) var(--s-5); }
+.u-btn-quiet:hover { background: var(--elev2); }
+.u-btn-solid { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.u-btn-danger { color: var(--bad); }
+.u-btn:focus-visible { outline: var(--ring); outline-offset: 2px; }
+.u-btn:disabled { opacity: 0.5; cursor: default; }
+
+.u-row {
+  display: flex; align-items: center; gap: var(--s-4);
+  padding: var(--s-3) var(--s-5); border-radius: var(--r-sm);
+  font-family: var(--sans); font-size: var(--fs-3); line-height: var(--lh-body);
+  color: var(--text);
+}
+.u-row:hover { background: var(--elev); }
+.u-row.is-active { background: var(--elev2); }
+.u-row:focus-visible { outline: var(--ring); outline-offset: -2px; }
+
+.u-panel {
+  border: 1px solid var(--border); border-radius: var(--r-md);
+  background: var(--panel); overflow: hidden;
+}
+.u-panel-flat { box-shadow: var(--sh-flat); }
+.u-panel-raised { background: var(--elev); box-shadow: var(--sh-raised); }
+.u-panel-head {
+  padding: var(--s-4) var(--s-5); border-bottom: 1px solid var(--border);
+  font-family: var(--sans); font-size: var(--fs-2); font-weight: var(--fw-semibold);
+  color: var(--muted);
+}
+.u-panel-body { padding: var(--s-5); }
+
+.u-chip {
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  padding: var(--s-2) var(--s-4); border: 1px solid var(--border);
+  border-radius: var(--r-lg); background: transparent; color: var(--muted);
+  font-family: var(--sans); font-size: var(--fs-1); cursor: pointer;
+  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+}
+.u-chip:hover { color: var(--text); }
+.u-chip.is-on { color: var(--accent); border-color: var(--accent); }
+.u-chip:focus-visible { outline: var(--ring); outline-offset: 2px; }
