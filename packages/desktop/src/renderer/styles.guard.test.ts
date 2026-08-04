@@ -87,8 +87,13 @@ describe("styles.css stays on the scale", () => {
     const bad: string[] = [];
     for (const { n, text, selector } of lines()) {
       if (unswept(selector) || exempt(text)) continue;
+      // `none` is NOT allowed. Every outline declaration in this file is
+      // currently `outline: none`, so blessing it would let the guard pass
+      // forever on an app with no visible focus anywhere. Killing the default
+      // ring is legitimate only when the element defines its own :focus-visible
+      // ring from --ring; anything else needs a written reason.
       const decl = /^\s*outline\s*:([^;]+);/.exec(text);
-      if (decl && !decl[1]!.includes("var(--ring)") && !decl[1]!.includes("none")) bad.push(`${n}: ${selector}`);
+      if (decl && !decl[1]!.includes("var(--ring)")) bad.push(`${n}: ${selector} — ${decl[1]!.trim()}`);
     }
     expect(bad).toEqual([]);
   });
