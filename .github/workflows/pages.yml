@@ -1,13 +1,15 @@
 name: Deploy website to GitHub Pages
 
-# Publishes the static site in website/ to GitHub Pages on every push to main
-# that touches it. One-time setup: repo Settings → Pages → Source = "GitHub Actions".
+# Publishes the static site in app/ to GitHub Pages on every push to main that
+# touches it. One-time setup: repo Settings → Pages → Source = "GitHub Actions".
+#
+# The trigger used to list site/ as well, which meant editing a folder this
+# workflow does not build still fired a production deploy.
 
 on:
   push:
     branches: [main]
     paths:
-      - "site/**"
       - "app/**"
       - "CHANGELOG.md"
       - ".github/workflows/pages.yml"

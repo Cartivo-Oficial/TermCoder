@@ -3,7 +3,6 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 
-@font-face { font-family: "Departure Mono"; src: url("./fonts/departure-mono.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 
 @custom-variant dark (&:is(.dark *));
 
@@ -12,7 +11,6 @@
     --font-heading: var(--font-display);
     --font-sans: 'Geist Variable', system-ui, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    --font-wordmark: 'Departure Mono', ui-monospace, monospace;
     --color-ring: var(--ring);
     --color-input: var(--input);
     --color-border: var(--border);

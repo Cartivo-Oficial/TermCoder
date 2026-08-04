@@ -64,9 +64,8 @@ for (const page of pages) {
 // Files still carrying the old dark/orange identity. Each redesign phase
 // deletes entries here; the guard fails while any listed file has been
 // migrated in appearance but not in fact.
-const NOT_YET_MIGRATED = [
-  "components/dither.tsx",
-];
+// Empty, and it stays empty: every source file is now scanned, permanently.
+const NOT_YET_MIGRATED = [];
 
 // Regexes, not substrings: "text-primary" is a prefix of the perfectly
 // legitimate "text-primary-foreground", and a plain includes() would ban
