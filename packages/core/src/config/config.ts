@@ -69,7 +69,11 @@ export const FormatterSchema = z.object({
 export type FormatterConfig = z.infer<typeof FormatterSchema>;
 
 export const ConfigSchema = z.object({
-  model: z.string().default("anthropic/claude-sonnet-5"),
+  // The router, not a concrete model. pickAutoModel falls through to the
+  // keyless provider when nothing is configured, so a fresh install runs with
+  // no key — which is what the product promises. A concrete default silently
+  // broke that: it needed a key nobody had yet.
+  model: z.string().default("termcoder/auto"),
   reasoning: z.boolean().default(true),
   theme: z.string().default("default"),
   keybinds: z.record(z.string(), z.string()).default({}),
