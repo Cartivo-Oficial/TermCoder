@@ -261,46 +261,92 @@ svg { display: block; }
 @keyframes wc-in { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
 .welcome-overlay {
   position: fixed; inset: 0; z-index: 50;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--s-4);
   overflow: auto;
   background:
     radial-gradient(1000px 600px at 50% 115%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 60%),
     radial-gradient(140% 140% at 50% 40%, var(--bg) 55%, color-mix(in srgb, var(--bg) 75%, #000) 100%);
 }
-.welcome-inner { width: min(680px, 92vw); max-height: 92vh; text-align: center; animation: wc-in 0.28s var(--ease) both; position: relative; overflow: auto; padding: 24px 0; }
+.welcome-inner {
+  width: min(680px, 92vw); max-height: 92vh; text-align: center;
+  animation: wc-in 0.28s var(--ease) both; position: relative; overflow: auto;
+  padding: var(--s-7) 0;
+}
 .brand-mark {
   display: block;
   background: currentColor;
   -webkit-mask: url("./assets/mark.png") center / contain no-repeat;
   mask: url("./assets/mark.png") center / contain no-repeat;
 }
-.welcome-mark { width: 76px; height: 76px; margin: 0 auto 20px; color: var(--accent); filter: drop-shadow(0 0 26px var(--accent-glow)); }
-.welcome-logo { font-size: 40px; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 4px; }
+.welcome-mark {
+  width: 76px; height: 76px; color: var(--accent);
+  /* The mark and the wordmark are one lockup, so they sit tight; the 32px
+     under the sub-line does the section separation. */
+  margin: 0 auto var(--s-6);
+  filter: drop-shadow(0 0 26px var(--accent-glow));
+}
+.welcome-logo {
+  font-size: var(--fs-7);
+  font-weight: 800; /* off-scale: display wordmark; the 400/500/600 scale is for UI text, not a logotype */
+  letter-spacing: -1.5px;
+  margin-bottom: var(--s-2);
+}
 .welcome-logo .wl-term { background: linear-gradient(90deg, var(--text), var(--muted)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .welcome-logo .wl-coder { color: var(--text); }
-.welcome-sub { color: var(--muted); margin-bottom: 30px; font-size: 15.5px; }
-.welcome-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.welcome-sub {
+  color: var(--muted);
+  margin-bottom: var(--s-8);
+  font-size: var(--fs-4);
+}
+.welcome-choices { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); }
 .welcome-choice {
-  position: relative; display: flex; flex-direction: column; align-items: center; gap: 9px;
-  padding: 30px 22px 24px; border-radius: var(--r-lg); cursor: pointer; color: var(--text); overflow: hidden;
+  position: relative; display: flex; flex-direction: column; align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-8) var(--s-7) var(--s-7);
+  border-radius: var(--r-lg); cursor: pointer; color: var(--text); overflow: hidden;
   transition: border-color .16s, transform .14s, box-shadow .16s, background .16s;
 }
 .welcome-choice::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; opacity: .0; transition: opacity .16s; }
 .welcome-choice.code::before { background: linear-gradient(90deg, #58a6ff, #7aa2f7); }
 .welcome-choice.study::before { background: linear-gradient(90deg, var(--text), var(--muted)); }
 .welcome-choice:hover { transform: translateY(-3px); }
-.welcome-choice:hover::before { opacity: 1; }
-.welcome-choice.code:hover { border-color: #58a6ff; background: color-mix(in srgb, #58a6ff 10%, transparent); box-shadow: 0 12px 30px color-mix(in srgb, #58a6ff 18%, transparent); }
-.welcome-choice.study:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 11%, transparent); box-shadow: 0 12px 30px color-mix(in srgb, var(--accent) 20%, transparent); }
-.wc-icon { display: grid; place-items: center; width: 62px; height: 62px; border-radius: 16px; font-size: 30px; background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid var(--border); }
-.wc-title { font-family: var(--mono); font-size: 18px; font-weight: 700; }
-.wc-desc { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
-.wc-go { margin-top: 4px; font-size: 12px; font-weight: 600; opacity: 0; transform: translateY(4px); transition: opacity .16s, transform .16s; }
+.welcome-choice:hover::before,
+.welcome-choice:focus-visible::before { opacity: 1; }
+.welcome-choice:focus-visible { outline: var(--ring); outline-offset: var(--s-1); }
+.welcome-choice.code:hover {
+  border-color: #58a6ff; background: color-mix(in srgb, #58a6ff 10%, transparent);
+  box-shadow: 0 12px 30px color-mix(in srgb, #58a6ff 18%, transparent); /* off-scale: tinted lift keyed to the card's own hue; the neutral --sh-* tokens would drop that colour */
+}
+.welcome-choice.study:hover {
+  border-color: var(--accent); background: color-mix(in srgb, var(--accent) 11%, transparent);
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--accent) 20%, transparent); /* off-scale: tinted lift keyed to the accent; the neutral --sh-* tokens would drop that colour */
+}
+.wc-icon {
+  display: grid; place-items: center; width: 62px; height: 62px; border-radius: 16px;
+  font-size: var(--fs-7);
+  background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid var(--border);
+}
+.wc-title { font-family: var(--mono); font-size: var(--fs-5); font-weight: var(--fw-semibold); }
+.wc-desc { font-size: var(--fs-3); color: var(--muted); line-height: var(--lh-body); }
+.wc-go {
+  margin-top: var(--s-2);
+  font-size: var(--fs-2); font-weight: var(--fw-semibold);
+  opacity: 0; transform: translateY(4px); transition: opacity .16s, transform .16s;
+}
 .welcome-choice.code .wc-go { color: #58a6ff; }
 .welcome-choice.study .wc-go { color: var(--text); }
-.welcome-choice:hover .wc-go { opacity: 1; transform: none; }
-.wc-badge { position: absolute; top: 12px; right: 12px; font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: .2px; color: #ff8a4d; background: color-mix(in srgb, var(--accent) 15%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); padding: 2px 7px; border-radius: 999px; }
-.welcome-foot { margin-top: 26px; color: var(--muted); font-size: 12px; }
+.welcome-choice:hover .wc-go,
+.welcome-choice:focus-visible .wc-go { opacity: 1; transform: none; }
+.wc-badge {
+  position: absolute; top: var(--s-5); right: var(--s-5);
+  font-family: var(--mono); font-size: var(--fs-1); font-weight: var(--fw-semibold); letter-spacing: .2px;
+  color: #ff8a4d; background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  padding: var(--s-1) var(--s-4);
+  border-radius: 999px;
+}
+.welcome-foot { margin-top: var(--s-7); color: var(--muted); font-size: var(--fs-2); }
 
 .ctx-meter { display: inline-flex; align-items: center; gap: 6px; cursor: default; }
 .ctx-badge { padding: 1px 6px; border-radius: 5px; border: 1px solid var(--border); color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -998,34 +1044,54 @@ button.chip { cursor: pointer; }
 }
 .update-later:hover { color: var(--text); }
 
-.hero { position: relative; padding: 26px 12px 6px; overflow: hidden; }
+.hero {
+  position: relative;
+  padding: var(--s-7) var(--s-5) var(--s-3);
+  overflow: hidden;
+}
 .stars { position: absolute; inset: 0; pointer-events: none; }
 .stars b {
   position: absolute;
   color: var(--elev2);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--fs-2);
   animation: tw 3.2s ease-in-out infinite;
 }
 @keyframes tw { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.85; } }
 @media (prefers-reduced-motion: reduce) { .stars b { animation: none; } }
-.hero-art { display: flex; justify-content: center; gap: 11px; position: relative; }
-.hero-art pre { margin: 0; font-family: var(--mono); font-size: 10px; line-height: 1.05; }
+.hero-art { display: flex; justify-content: center; gap: var(--s-5); position: relative; }
+.hero-art pre {
+  margin: 0; font-family: var(--mono);
+  font-size: 10px; /* off-scale: the wordmark is a picture drawn on a character grid, not set text — the glyph cell, with the 1.05 leading, is what makes the block letters join up */
+  line-height: 1.05;
+}
 .hero-t {
   background: linear-gradient(180deg, var(--accent-hot), var(--accent));
   -webkit-background-clip: text; background-clip: text; color: transparent;
   filter: drop-shadow(0 0 18px var(--accent-glow));
 }
 .hero-c { color: var(--text); }
-.hero-tag { text-align: center; font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 14px; }
-.hero-suggest { display: flex; gap: 8px; justify-content: center; margin-top: 22px; flex-wrap: wrap; }
+.hero-tag {
+  text-align: center; font-family: var(--mono); font-size: var(--fs-2); color: var(--muted);
+  margin-top: var(--s-6);
+}
+.hero-suggest {
+  display: flex; justify-content: center; flex-wrap: wrap;
+  gap: var(--s-4);
+  margin-top: var(--s-7);
+}
 .suggest-chip {
   background: var(--surface); backdrop-filter: blur(10px);
   border: 1px solid var(--border); border-radius: 999px;
-  color: var(--muted); padding: 7px 14px; font-size: 12.5px;
+  color: var(--muted); font-size: var(--fs-2);
+  padding: var(--s-4) var(--s-6);
   transition: color var(--t-fast), border-color var(--t-fast), box-shadow var(--t-med);
 }
-.suggest-chip:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); box-shadow: 0 0 18px var(--accent-glow); }
+.suggest-chip:hover {
+  color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  box-shadow: 0 0 18px var(--accent-glow); /* off-scale: an accent glow, not elevation — the four --sh-* tokens are neutral drop shadows and would change this colour */
+}
+.hero-suggest .suggest-chip:focus-visible { outline: var(--ring); outline-offset: var(--s-1); }
 
 .session-tabs { display: flex; align-items: center; gap: 4px; padding: 0; overflow-x: auto; min-width: 0; -webkit-app-region: no-drag; }
 .session-tabs::-webkit-scrollbar { display: none; }

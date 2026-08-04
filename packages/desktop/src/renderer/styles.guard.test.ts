@@ -6,7 +6,6 @@ import { describe, expect, it } from "vitest";
 // own entries; the final task empties the array and the guard then covers the
 // whole file permanently.
 const UNSWEPT: string[] = [
-  ".hero", ".welcome",
   ".composer", ".transcript", ".bubble", ".markdown", ".tool",
   ".rail", ".session", ".srow", ".switcher",
   ".xterm", ".term", ".deck",
