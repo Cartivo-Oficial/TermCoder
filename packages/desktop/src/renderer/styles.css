@@ -100,11 +100,11 @@ svg { display: block; }
   .glass { background: var(--surface-solid); }
 }
 
-:root[data-density="compact"] .transcript-inner { gap: 10px; }
-:root[data-density="compact"] .bubble.user { padding: 7px 11px; }
+:root[data-density="compact"] .transcript-inner { gap: var(--s-4); }
+:root[data-density="compact"] .bubble.user { padding: var(--s-3) var(--s-5); }
 :root[data-density="compact"] .session-card,
 :root[data-density="compact"] .srow { padding-top: 6px; padding-bottom: 6px; }
-:root[data-density="compact"] .composer { padding: 6px 10px; }
+:root[data-density="compact"] .composer { padding: var(--s-3) var(--s-4); }
 :root[data-motion="off"] *,
 :root[data-motion="off"] *::before,
 :root[data-motion="off"] *::after {
@@ -367,35 +367,53 @@ svg { display: block; }
 .dot.err { background: var(--bad); }
 @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
 
-.transcript { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 10px 24px 12px; }
+.transcript { flex: 1; overflow-y: auto; overflow-x: hidden; padding: var(--s-5) var(--s-7); }
 .transcript-inner {
   max-width: 760px; margin: 0 auto; min-height: 100%;
-  display: flex; flex-direction: column; gap: 18px;
+  display: flex; flex-direction: column;
+  gap: var(--s-6);
 }
-.empty { color: var(--muted); margin: auto; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
-.free-hint { background: var(--elev); border: 1px solid var(--border); color: var(--text); border-radius: 999px; padding: 7px 14px; font-size: 12.5px; }
+.empty {
+  color: var(--muted); margin: auto; display: flex; flex-direction: column; align-items: center;
+  gap: var(--s-5);
+  text-align: center;
+}
+.free-hint {
+  background: var(--elev); border: 1px solid var(--border); color: var(--text); border-radius: 999px;
+  padding: var(--s-3) var(--s-5); font-size: var(--fs-2);
+}
 .free-hint:hover { background: var(--elev2); border-color: var(--accent); }
 
-.msg { display: flex; flex-direction: column; gap: 4px; min-width: 0; max-width: 100%; }
+.msg {
+  display: flex; flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0; max-width: 100%;
+}
 .bubble { white-space: pre-wrap; word-break: break-word; min-width: 0; max-width: 100%; }
 .bubble.user {
   background: var(--surface); backdrop-filter: blur(10px);
-  border: 1px solid var(--border); box-shadow: inset 0 1px 0 var(--seam);
-  border-radius: var(--r-md); padding: 10px 14px; align-self: flex-end; max-width: 82%;
+  border: 1px solid var(--border);
+  box-shadow: inset 0 1px 0 var(--seam); /* off-scale: a top highlight seam, not an elevation shadow the --sh-* tokens express */
+  border-radius: var(--r-md); padding: var(--s-5) var(--s-6); align-self: flex-end; max-width: 82%;
 }
 .bubble.assistant { border-left: none; padding-left: 0; }
 .msg-meta {
-  display: flex; align-items: center; gap: 8px;
-  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--faint); margin-bottom: 2px;
+  display: flex; align-items: center;
+  gap: var(--s-4);
+  font-family: var(--mono); font-size: var(--fs-1); letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--faint);
+  margin-bottom: var(--s-1);
 }
-.msg-spine { width: 12px; height: 2px; border-radius: 2px; background: var(--accent); }
+.msg-spine { width: 12px; height: 2px; border-radius: 2px; background: var(--accent); } /* off-scale: a 12x2px accent tick beside the sender label, sized to the text it sits next to, not the spacing grid */
 .markdown { min-width: 0; max-width: 100%; }
 .markdown pre { max-width: 100%; overflow-x: auto; }
 .markdown table { display: block; max-width: 100%; overflow-x: auto; }
 .bubble.error { color: var(--bad); }
 .bubble.muted { color: var(--muted); }
-.notice { align-self: center; color: var(--muted); font-size: 12px; padding: 2px 10px; border: 1px solid var(--border); border-radius: 999px; }
+.notice {
+  align-self: center; color: var(--muted); font-size: var(--fs-2);
+  padding: var(--s-1) var(--s-4); border: 1px solid var(--border); border-radius: 999px;
+}
 
 .assistant-wrap { position: relative; }
 .msg-copy {
@@ -407,6 +425,10 @@ svg { display: block; }
 }
 .assistant-wrap:hover .msg-copy { opacity: 1; }
 .msg-copy:hover { color: var(--text); }
+/* Hidden until hover by default (opacity: 0 above) — a keyboard user tabbing
+   in never triggers :hover, so focus must force it visible too, not just draw
+   a ring around an invisible button. */
+.msg-copy:focus-visible { opacity: 1; outline: var(--ring); outline-offset: var(--s-1); }
 .md-fallback { white-space: pre-wrap; word-break: break-word; font: inherit; margin: 0; }
 
 .crash { height: 100%; display: flex; align-items: center; justify-content: center; padding: 24px; background: var(--bg); }
@@ -417,66 +439,89 @@ svg { display: block; }
 .crash-actions button { background: var(--elev); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 8px 16px; }
 .crash-actions .allow { background: var(--text); color: var(--bg); border: none; }
 
+/* Prose spacing below is in em, not px: heading/paragraph rhythm that scales
+   with each element's own font-size is the point, and the guard only reads
+   px — these are intentionally off the fixed --s-* grid. */
 .markdown :is(h1, h2, h3) { color: var(--text); margin: 0.5em 0 0.25em; font-weight: 650; }
 .markdown p { margin: 0.4em 0; }
 .markdown ul, .markdown ol { margin: 0.35em 0; padding-left: 1.4em; }
-.markdown code { background: var(--elev2); padding: 1px 5px; border-radius: 5px; font-size: 0.9em; }
-.markdown pre { background: #08080a; border: 1px solid var(--border); border-radius: 9px; padding: 12px; overflow-x: auto; }
+.markdown code { background: var(--elev2); padding: var(--s-1) var(--s-3); border-radius: 5px; font-size: 0.9em; }
+.markdown pre { background: #08080a; border: 1px solid var(--border); border-radius: 9px; padding: var(--s-5); overflow-x: auto; }
 .markdown pre code { background: none; padding: 0; }
 .markdown a { color: var(--text); text-decoration: underline; }
 .markdown table { border-collapse: collapse; }
-.markdown th, .markdown td { border: 1px solid var(--border); padding: 4px 8px; }
+.markdown th, .markdown td { border: 1px solid var(--border); padding: var(--s-2) var(--s-4); }
 
 .tool-card {
   border: 1px solid var(--border); border-radius: var(--r-sm);
   background: color-mix(in srgb, var(--panel) 60%, transparent); overflow: hidden;
 }
 .tool-card-head {
-  display: flex; align-items: baseline; gap: 8px; width: 100%; text-align: left;
+  display: flex; align-items: baseline; width: 100%; text-align: left;
+  gap: var(--s-4);
   background: transparent; border: none; color: var(--text);
-  padding: 7px 10px; font-family: var(--mono); font-size: 12.5px;
+  padding: var(--s-3) var(--s-5); font-family: var(--mono); font-size: var(--fs-3);
 }
+.tool-card-head:focus-visible { outline: var(--ring); outline-offset: calc(var(--s-1) * -1); }
 .tool-card-head:disabled { cursor: default; }
 .tool-card-head:not(:disabled):hover { background: var(--elev); }
 .tool-title { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-.tool-caret { color: var(--faint); font-size: 10px; }
+.tool-caret { color: var(--faint); font-size: var(--fs-1); }
 .tool-card .detail, .tool-card .diff { border-radius: 0; margin: 0; border-top: 1px solid var(--border); }
 .toolname { color: var(--text); font-weight: 600; }
 .status.done { color: var(--ok); }
 .status.error { color: var(--bad); }
 .status.running { color: var(--muted); }
-.detail { color: var(--muted); background: var(--elev); border-radius: 7px; padding: 8px 10px; font-size: 12px; white-space: pre-wrap; overflow-x: auto; }
-.diff { background: var(--elev); border-radius: 7px; padding: 8px 10px; font-size: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow-x: auto; margin: 0; }
+.detail {
+  color: var(--muted); background: var(--elev); border-radius: 7px;
+  padding: var(--s-4) var(--s-5); font-size: var(--fs-2);
+  white-space: pre-wrap; overflow-x: auto;
+}
+.diff {
+  background: var(--elev); border-radius: 7px;
+  padding: var(--s-4) var(--s-5); font-size: var(--fs-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow-x: auto; margin: 0;
+}
 .diff .add { color: var(--ok); }
 .diff .del { color: var(--bad); }
 .diff .ctx { color: var(--muted); }
 
-.dock { padding: 8px 24px 20px; }
+.dock { padding: var(--s-4) var(--s-7) var(--s-6); }
 .dock-inner { max-width: 760px; margin: 0 auto; position: relative; }
 
 .mention-pop {
   position: absolute; left: 0; right: 0; bottom: 100%;
-  margin-bottom: 6px; max-height: 220px; overflow-y: auto;
+  margin-bottom: var(--s-3); max-height: 220px; overflow-y: auto;
   background: var(--elev); border: 1px solid var(--border); border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index: 15; padding: 4px;
+  box-shadow: var(--sh-float); z-index: 15;
+  padding: var(--s-2);
 }
 .mention-item {
-  padding: 6px 10px; border-radius: 7px; cursor: pointer;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; color: var(--muted);
+  padding: var(--s-3) var(--s-4); border-radius: 7px; cursor: pointer;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--fs-3); color: var(--muted);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.mention-item.active { background: var(--elev2); color: var(--text); box-shadow: inset 2px 0 0 var(--accent); }
-.cmd-item { display: flex; align-items: baseline; gap: 10px; font-family: inherit; }
-.cmd-name { color: var(--text); font-weight: 600; font-family: ui-monospace, monospace; font-size: 12.5px; }
-.cmd-desc { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
-.cmd-preview {
-  position: absolute; left: 0; right: 0; bottom: 100%; margin-bottom: 6px;
-  max-height: 40vh; overflow: auto; z-index: 15;
-  background: var(--elev); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+.mention-item.active { background: var(--elev2); color: var(--text); box-shadow: inset 2px 0 0 var(--accent); } /* off-scale: a 2px selection rail matched to the accent colour, not an elevation shadow */
+.cmd-item {
+  display: flex; align-items: baseline;
+  gap: var(--s-5);
+  font-family: inherit;
 }
-.cmd-preview-head { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--faint); margin-bottom: 4px; }
-.cmd-preview pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-size: 12.5px; color: var(--text); }
+.cmd-name { color: var(--text); font-weight: 600; font-family: ui-monospace, monospace; font-size: var(--fs-3); }
+.cmd-desc { color: var(--muted); font-size: var(--fs-2); overflow: hidden; text-overflow: ellipsis; }
+.cmd-preview {
+  position: absolute; left: 0; right: 0; bottom: 100%;
+  margin-bottom: var(--s-3);
+  max-height: 40vh; overflow: auto; z-index: 15;
+  background: var(--elev); border: 1px solid var(--border); border-radius: 10px;
+  padding: var(--s-4) var(--s-5);
+  box-shadow: var(--sh-float);
+}
+.cmd-preview-head {
+  font-size: var(--fs-1); text-transform: uppercase; letter-spacing: 0.05em; color: var(--faint);
+  margin-bottom: var(--s-2);
+}
+.cmd-preview pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-size: var(--fs-3); color: var(--text); }
 
 .palette { position: absolute; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(6px); display: flex; justify-content: center; align-items: flex-start; padding-top: 12vh; z-index: 30; }
 .palette-card { width: min(640px, 90%); background: var(--floating); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: 0 24px 80px rgba(0,0,0,0.5), inset 0 1px 0 var(--seam); overflow: hidden; }
@@ -507,16 +552,17 @@ svg { display: block; }
 .mb-badges { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
 .mb-badges .check { color: var(--ok); }
 .composer {
-  display: flex; flex-direction: column; gap: 2px;
+  display: flex; flex-direction: column;
+  gap: var(--s-1);
   background: var(--floating);
   border: 1px solid var(--border); border-radius: var(--r-lg);
-  padding: 10px 14px 10px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 var(--seam);
+  padding: var(--s-5) var(--s-6) var(--s-5);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 var(--seam); /* off-scale: a floating lift plus an inset seam highlight — the four flat --sh-* tokens can't express both in one declaration */
   transition: border-color var(--t-med), box-shadow var(--t-med);
 }
 .composer:focus-within {
   border-color: color-mix(in srgb, var(--text) 16%, var(--border));
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 var(--seam);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 var(--seam); /* off-scale: same lift as the resting state; only the border changes */
 }
 .composer.busy { animation: composerGlow 2.4s ease-in-out infinite; }
 @keyframes composerGlow {
@@ -525,8 +571,9 @@ svg { display: block; }
 }
 
 .composer-status {
-  display: flex; align-items: center; gap: 10px; min-height: 18px;
-  font-family: var(--mono); font-size: 11px; color: var(--muted);
+  display: flex; align-items: center; min-height: 18px;
+  gap: var(--s-4);
+  font-family: var(--mono); font-size: var(--fs-1); color: var(--muted);
 }
 .cs-item { font-variant-numeric: tabular-nums; }
 .cs-item.warm { color: var(--warn); }
@@ -534,9 +581,16 @@ svg { display: block; }
 .cs-working { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--text); }
 .cs-tok { margin-left: auto; color: var(--muted); }
 
-.composer-pills { display: flex; align-items: center; gap: 7px; padding: 2px 2px 6px; }
-.cpill { display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 9px; border: none; border-radius: 8px; background: transparent; box-shadow: inset 0 0 0 1px var(--border); color: var(--text); font-size: 12.5px; font-weight: 500; cursor: pointer; transition: background 0.12s; }
+.composer-pills { display: flex; align-items: center; gap: var(--s-4); padding: var(--s-1) var(--s-1) var(--s-3); }
+.cpill {
+  display: inline-flex; align-items: center;
+  gap: var(--s-3); height: 28px; padding: 0 var(--s-4); border: none; border-radius: 8px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--border); /* off-scale: a 1px inset border standing in for `border` so it doesn't add to layout width, not an elevation shadow */
+  color: var(--text); font-size: var(--fs-3); font-weight: 500; cursor: pointer; transition: background 0.12s;
+}
 .cpill:hover { background: var(--elev); }
+.cpill:focus-visible { outline: var(--ring); outline-offset: var(--s-1); }
 .cpill.static { cursor: default; }
 .cpill.static:hover { background: transparent; }
 .cpill svg { color: var(--faint); flex-shrink: 0; }
@@ -544,13 +598,20 @@ svg { display: block; }
 
 .composer textarea {
   resize: none; min-height: 44px; max-height: 200px; width: 100%;
-  background: transparent; color: var(--text); border: none; outline: none; font: inherit; padding: 6px 2px;
+  background: transparent; color: var(--text); border: none; font: inherit;
+  padding: var(--s-3) var(--s-1);
 }
+/* The bare outline is silenced because .composer:focus-within already draws
+   a border + shadow change on the whole pill — but that alone doesn't meet
+   the bar, so the textarea gets its own ring too, offset inward so it reads
+   as "this field" rather than spilling past the composer's rounded corner. */
+.composer textarea:focus-visible { outline: var(--ring); outline-offset: calc(var(--s-1) * -1); }
 .composer textarea::placeholder { color: var(--muted); }
-.composer-actions { display: flex; align-items: center; gap: 6px; }
+.composer-actions { display: flex; align-items: center; gap: var(--s-3); }
 .ca-spacer { flex: 1; }
 .attach { background: transparent; border: none; color: var(--muted); width: 32px; height: 32px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; }
 .attach:hover { background: var(--elev2); color: var(--text); }
+.attach:focus-visible { outline: var(--ring); outline-offset: var(--s-1); }
 .attach.mic.recording { color: var(--bad); animation: micPulse 1.2s ease-in-out infinite; }
 .attach.mic.transcribing { color: var(--accent); animation: micPulse 0.9s ease-in-out infinite; }
 @keyframes micPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
@@ -561,17 +622,19 @@ svg { display: block; }
   transition: transform 0.14s var(--ease), background 0.14s, opacity 0.14s;
 }
 .send:hover { background: var(--text); opacity: 0.88; }
+.send:focus-visible { outline: var(--ring); outline-offset: var(--s-1); }
 .send:active:not(:disabled) { transform: scale(0.94); }
 .send:disabled { background: var(--elev2); color: var(--faint); cursor: default; }
 .send.stop { background: var(--bad); color: #fff; }
 .send.stop:hover { filter: brightness(1.08); }
 
-.img-strip { display: flex; gap: 8px; padding: 0 4px 8px; flex-wrap: wrap; }
+.img-strip { display: flex; gap: var(--s-4); padding: 0 var(--s-2) var(--s-4); flex-wrap: wrap; }
 .img-thumb { position: relative; width: 56px; height: 56px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
 .img-thumb img { width: 100%; height: 100%; object-fit: cover; }
 .img-remove { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; background: rgba(0,0,0,0.6); border: none; color: #fff; display: flex; align-items: center; justify-content: center; padding: 0; }
+.img-remove:focus-visible { outline: var(--ring); outline-offset: var(--s-1); }
 .img-remove svg { width: 11px; height: 11px; }
-.msg-images { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.msg-images { display: flex; gap: var(--s-3); flex-wrap: wrap; margin-bottom: var(--s-3); }
 .msg-images img { max-width: 220px; max-height: 220px; border-radius: 8px; border: 1px solid var(--border); display: block; }
 
 .chip {
@@ -663,10 +726,17 @@ svg { display: block; }
 .viewer-body.diff .hunk { color: #58a6ff; }
 .viewer-body.diff .ctx { color: var(--muted); }
 
-.diff-file-header { font-family: ui-monospace, monospace; font-size: 12px; font-weight: 600; color: var(--text); padding: 8px 4px 4px; }
-.diff-hunk { margin-bottom: 4px; }
-.diff-hunk-head { color: #58a6ff; padding: 2px 0 2px 26px; }
-.diff-line { position: relative; display: flex; align-items: flex-start; padding-left: 26px; white-space: pre-wrap; word-break: break-word; }
+.diff-file-header {
+  font-family: ui-monospace, monospace; font-size: var(--fs-2); font-weight: 600; color: var(--text);
+  padding: var(--s-4) var(--s-2) var(--s-2);
+}
+.diff-hunk { margin-bottom: var(--s-2); }
+.diff-hunk-head { color: #58a6ff; padding: var(--s-1) 0 var(--s-1) 26px; } /* off-scale: the 26px left offset aligns the header with .diff-gutter's absolutely positioned 18px button, not a spacing choice */
+.diff-line {
+  position: relative; display: flex; align-items: flex-start;
+  padding-left: 26px; /* off-scale: reserves room for .diff-gutter, an 18px button pinned to left:0 */
+  white-space: pre-wrap; word-break: break-word;
+}
 .diff-line.add { color: var(--ok); }
 .diff-line.del { color: var(--bad); }
 .diff-line.ctx { color: var(--muted); }
@@ -680,7 +750,7 @@ svg { display: block; }
   border-radius: 4px;
   background: var(--elev2);
   color: var(--faint);
-  font-size: 11px;
+  font-size: var(--fs-1);
   line-height: 18px;
   text-align: center;
   cursor: pointer;
@@ -688,12 +758,26 @@ svg { display: block; }
 }
 .diff-line:hover .diff-gutter { opacity: 1; }
 .diff-gutter:hover { color: var(--text); background: var(--accent); }
-.diff-comment { margin: 2px 0 4px 26px; padding: 6px 8px; border-radius: 7px; background: var(--elev); border: 1px solid var(--border); display: flex; align-items: flex-start; gap: 8px; font-family: var(--mono); }
+/* Hidden until hover (opacity: 0 above) — same reasoning as .msg-copy: a
+   keyboard user tabbing to this button never triggers :hover. */
+.diff-gutter:focus-visible { opacity: 1; outline: var(--ring); outline-offset: var(--s-1); }
+.diff-comment {
+  margin: var(--s-1) 0 var(--s-2) 26px; /* off-scale: 26px left offset matches .diff-gutter's column, not a spacing choice */
+  padding: var(--s-3) var(--s-4); border-radius: 7px; background: var(--elev); border: 1px solid var(--border);
+  display: flex; align-items: flex-start;
+  gap: var(--s-4);
+  font-family: var(--mono);
+}
 .diff-comment-text { flex: 1; color: var(--text); white-space: pre-wrap; word-break: break-word; }
 .diff-comment-x { background: none; border: none; color: var(--faint); cursor: pointer; }
 .diff-comment-x:hover { color: var(--text); }
-.diff-composer { display: flex; gap: 6px; margin: 2px 0 6px 26px; }
-.diff-composer .settings-input { flex: 1; font-size: 12px; }
+.diff-comment-x:focus-visible { outline: var(--ring); outline-offset: var(--s-1); }
+.diff-composer {
+  display: flex;
+  gap: var(--s-3);
+  margin: var(--s-1) 0 var(--s-3) 26px; /* off-scale: 26px left offset matches .diff-gutter's column, not a spacing choice */
+}
+.diff-composer .settings-input { flex: 1; font-size: var(--fs-2); }
 .hunk-nav { display: flex; align-items: center; gap: 4px; }
 .hunk-count { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
 .diff-base-badge { margin-left: 8px; font-size: 10.5px; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 1px 7px; }
@@ -1157,7 +1241,7 @@ button.chip { cursor: pointer; }
 .agent-node { position: absolute; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; text-align: left; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--elev); cursor: pointer; transition: border-color .12s ease, box-shadow .12s ease; }
 .agent-node:hover { border-color: var(--accent); }
 .agent-node.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-.agent-node.thinking, .agent-node.tool { border-color: var(--accent); box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 35%, transparent); }
+.agent-node.thinking, .agent-node.tool { border-color: var(--accent); box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 35%, transparent); } /* off-scale: an accent glow on the agent-canvas node (unrelated to ToolCard — the ".tool" state class here just happens to match the prefix), not elevation the --sh-* tokens can express */
 .agent-node.error { border-color: #e5484d; }
 .agent-node-name { font-size: 13px; font-weight: 600; color: var(--text); }
 .agent-node-status { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--faint); }
