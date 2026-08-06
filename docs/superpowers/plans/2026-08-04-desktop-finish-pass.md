@@ -506,12 +506,14 @@ Careful here: xterm.js renders its own DOM and some values are dictated by the t
 
 ### Task 8: Settings
 
-**Files:** `Settings.tsx` (1,659 lines), `styles.css` (`.settings`, `.set-`), `styles.guard.test.ts`
+**Files:** `Settings.tsx` (1,659 lines), `styles.css` (`.settings`, `.set-`, `.srow`), `styles.guard.test.ts`
 
 The largest single component in the sweep. It is mostly rows and panels, so `Row` and `Panel` should carry a lot of it.
 
+`.srow` belongs here, not to Task 6 — the plan originally listed it under the rail, but it appears only in `Settings.tsx`, `SidePanel.tsx` and `Study.tsx`. Task 6 verified this and left it in `UNSWEPT`. It is the row that defines the settings list, so it is swept here; Task 9 only consumes it. **`.srow` is the real `Row` candidate the plan was pointing at** — check its markup against `Row` before assuming it must stay bespoke.
+
 - [ ] **Step 1** Apply the ten steps.
-- [ ] **Step 2** Remove `".settings"` and `".set-"` from `UNSWEPT`.
+- [ ] **Step 2** Remove `".settings"`, `".set-"` and `".srow"` from `UNSWEPT`.
 - [ ] **Step 3** `pnpm --filter @termcoder/desktop typecheck && npx vitest run packages/desktop/src/renderer/styles.guard.test.ts && pnpm test`
 - [ ] **Step 4** Visual check, both themes. Open every settings section — this file has the most branches.
 - [ ] **Step 5** `git add -A packages/desktop && git commit -m "feat(desktop): settings on the scale"`
@@ -519,6 +521,8 @@ The largest single component in the sweep. It is mostly rows and panels, so `Row
 ### Task 9: Side panels
 
 **Files:** `SidePanel.tsx`, `RecipesPanel.tsx`, `ClassroomPanel.tsx`, `ModelBrowser.tsx`, `Study.tsx`, `styles.css` (`.side`, `.recipe`, `.classroom`, `.model-`, `.study`), `styles.guard.test.ts`
+
+`SidePanel.tsx` and `Study.tsx` also render `.srow`, but Task 8 owns and sweeps that rule. Do not re-sweep it here — only check that these two still look right against whatever Task 8 made of it.
 
 - [ ] **Step 1** Apply the ten steps.
 - [ ] **Step 2** Remove `".side"`, `".recipe"`, `".classroom"`, `".model-"`, `".study"` from `UNSWEPT`.
