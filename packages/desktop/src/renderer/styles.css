@@ -1212,6 +1212,9 @@ button.chip { cursor: pointer; }
 .term-tab-close:hover { color: var(--accent); }
 .term-tab-add { font-family: var(--mono); font-size: var(--fs-3); line-height: 1; color: var(--muted); background: var(--elev); border: 1px solid var(--border); border-radius: 7px; padding: var(--s-2) var(--s-4); cursor: pointer; flex-shrink: 0; }
 .term-tab-add:hover { color: var(--text); border-color: var(--accent); }
+.term-tab-label:focus-visible,
+.term-tab-close:focus-visible,
+.term-tab-add:focus-visible { outline: var(--ring); outline-offset: calc(var(--s-1) * -1); }
 .term-deck-body { position: relative; flex: 1; min-height: 0; }
 .term-pane { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
 .term-pane.hidden { display: none; }
@@ -1231,6 +1234,7 @@ button.chip { cursor: pointer; }
 .term-chip { font-family: var(--mono); font-size: var(--fs-1); color: var(--muted); background: var(--elev); border: 1px solid var(--border); border-radius: 7px; padding: var(--s-2) var(--s-4); cursor: pointer; }
 .term-chip:hover { color: var(--text); border-color: var(--accent); }
 .term-chip.restart { color: var(--accent); border-color: var(--accent); }
+.term-chip:focus-visible { outline: var(--ring); outline-offset: var(--s-1); }
 .term-spacer { flex: 1; }
 .term-host { flex: 1; min-height: 0; padding: var(--s-3) var(--s-2) var(--s-2) 10px; } /* off-scale: xterm cell metric — left inset feeds FitAddon's column measurement, must not shift */
 .term-host .xterm { height: 100%; }
@@ -2451,6 +2455,7 @@ button.chip { cursor: pointer; }
 }
 .xterm-inst-tab:hover { color: #aaa; background: #111; }
 .xterm-inst-tab.active { color: #ddd; background: #000; border-bottom: 1.5px solid var(--accent); }
+.xterm-inst-tab:focus-visible { outline: var(--ring); outline-offset: calc(var(--s-1) * -1); }
 .xterm-inst-tab svg { opacity: 0.7; }
 .xterm-dock .term-pane { flex: 1; min-height: 0; }
 .xterm-dock .term-pane.hidden { display: none; }
