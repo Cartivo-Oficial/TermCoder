@@ -1203,39 +1203,39 @@ button.chip { cursor: pointer; }
 .stab-new:hover { color: var(--text); background: var(--elev); }
 .term-deck { position: absolute; inset: 34px 0 0 0; display: flex; flex-direction: column; background: var(--bg); z-index: 5; }
 .term-deck.hidden { display: none; }
-.term-tabs { display: flex; align-items: center; gap: 4px; padding: 5px 8px; border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto; }
+.term-tabs { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto; }
 .term-tab { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; background: var(--elev); flex-shrink: 0; }
 .term-tab.active { border-color: var(--accent); }
-.term-tab-label { font-family: var(--mono); font-size: 11px; color: var(--muted); background: transparent; border: none; padding: 4px 4px 4px 9px; cursor: pointer; white-space: nowrap; }
+.term-tab-label { font-family: var(--mono); font-size: var(--fs-1); color: var(--muted); background: transparent; border: none; padding: var(--s-2) var(--s-2) var(--s-2) var(--s-4); cursor: pointer; white-space: nowrap; }
 .term-tab.active .term-tab-label { color: var(--text); }
-.term-tab-close { font-size: 13px; line-height: 1; color: var(--faint); background: transparent; border: none; padding: 2px 7px; cursor: pointer; }
+.term-tab-close { font-size: var(--fs-3); line-height: 1; color: var(--faint); background: transparent; border: none; padding: var(--s-1) var(--s-3); cursor: pointer; }
 .term-tab-close:hover { color: var(--accent); }
-.term-tab-add { font-family: var(--mono); font-size: 14px; line-height: 1; color: var(--muted); background: var(--elev); border: 1px solid var(--border); border-radius: 7px; padding: 3px 10px; cursor: pointer; flex-shrink: 0; }
+.term-tab-add { font-family: var(--mono); font-size: var(--fs-3); line-height: 1; color: var(--muted); background: var(--elev); border: 1px solid var(--border); border-radius: 7px; padding: var(--s-2) var(--s-4); cursor: pointer; flex-shrink: 0; }
 .term-tab-add:hover { color: var(--text); border-color: var(--accent); }
 .term-deck-body { position: relative; flex: 1; min-height: 0; }
 .term-pane { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
 .term-pane.hidden { display: none; }
 .term-pane-cell { position: absolute; inset: 0; }
-.term-deck-body.grid { display: grid; gap: 6px; padding: 6px; }
+.term-deck-body.grid { display: grid; gap: var(--s-3); padding: var(--s-3); }
 .term-deck-body.grid .term-pane-cell { position: relative; inset: auto; min-width: 0; min-height: 0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
 .term-deck-body.grid .term-pane-cell.focused { border-color: var(--accent); }
 .term-deck-body.grid .term-pane { position: absolute; inset: 0; }
 .term-grid-gutter { position: absolute; z-index: 5; background: transparent; }
-.term-grid-gutter.col { top: 0; bottom: 0; width: 10px; margin-left: -5px; cursor: col-resize; }
-.term-grid-gutter.row { left: 0; right: 0; height: 10px; margin-top: -5px; cursor: row-resize; }
+.term-grid-gutter.col { top: 0; bottom: 0; width: 10px; margin-left: -5px; cursor: col-resize; } /* off-scale: half the gutter's own width, keeps the drag handle centered on the split line */
+.term-grid-gutter.row { left: 0; right: 0; height: 10px; margin-top: -5px; cursor: row-resize; } /* off-scale: half the gutter's own width, keeps the drag handle centered on the split line */
 .term-grid-gutter::after { content: ""; position: absolute; background: var(--border); opacity: 0; transition: opacity 0.12s; }
 .term-grid-gutter.col::after { top: 0; bottom: 0; left: 4px; width: 2px; }
 .term-grid-gutter.row::after { left: 0; right: 0; top: 4px; height: 2px; }
 .term-grid-gutter:hover::after, .term-grid-gutter:active::after { opacity: 1; background: var(--accent); }
-.term-bar { display: flex; align-items: center; gap: 6px; padding: 7px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.term-chip { font-family: var(--mono); font-size: 11px; color: var(--muted); background: var(--elev); border: 1px solid var(--border); border-radius: 7px; padding: 4px 9px; cursor: pointer; }
+.term-bar { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.term-chip { font-family: var(--mono); font-size: var(--fs-1); color: var(--muted); background: var(--elev); border: 1px solid var(--border); border-radius: 7px; padding: var(--s-2) var(--s-4); cursor: pointer; }
 .term-chip:hover { color: var(--text); border-color: var(--accent); }
 .term-chip.restart { color: var(--accent); border-color: var(--accent); }
 .term-spacer { flex: 1; }
-.term-host { flex: 1; min-height: 0; padding: 6px 4px 4px 10px; }
+.term-host { flex: 1; min-height: 0; padding: var(--s-3) var(--s-2) var(--s-2) 10px; } /* off-scale: xterm cell metric — left inset feeds FitAddon's column measurement, must not shift */
 .term-host .xterm { height: 100%; }
-.term-error { padding: 18px; color: var(--muted); font-size: 12.5px; display: flex; flex-direction: column; gap: 8px; }
-.term-error pre { font-family: var(--mono); font-size: 11px; color: var(--faint); white-space: pre-wrap; }
+.term-error { padding: var(--s-6); color: var(--muted); font-size: var(--fs-2); display: flex; flex-direction: column; gap: var(--s-4); }
+.term-error pre { font-family: var(--mono); font-size: var(--fs-1); color: var(--faint); white-space: pre-wrap; }
 .agent-canvas { position: absolute; inset: 0; display: flex; background: var(--bg); }
 .agent-canvas.hidden { display: none; }
 .agent-canvas-scroll { position: relative; flex: 1; overflow: auto; padding: 40px; }
@@ -2095,12 +2095,12 @@ button.chip { cursor: pointer; }
   align-items: center;
   gap: 6px;
   height: 26px;
-  padding: 0 6px 0 10px;
+  padding: 0 6px 0 10px; /* off-scale: belongs to IDELayout's legacy terminal-mock tab strip (not the xterm.js surface) — out of scope for this task */
   background: var(--elev);
   color: var(--muted);
   border: 1px solid var(--border);
   border-radius: 6px 6px 0 0;
-  font-size: 11.5px;
+  font-size: 11.5px; /* off-scale: belongs to IDELayout's legacy terminal-mock tab strip (not the xterm.js surface) — out of scope for this task */
   cursor: pointer;
   max-width: 160px;
 }
@@ -2126,7 +2126,7 @@ button.chip { cursor: pointer; }
   padding: 8px 12px;
   overflow: auto;
   font-family: var(--mono);
-  font-size: 12.5px;
+  font-size: 12.5px; /* off-scale: belongs to IDELayout's legacy terminal-mock output pane (not the xterm.js surface) — out of scope for this task */
   line-height: 1.6;
   color: #e6e6e6;
   background: #000;
@@ -2134,7 +2134,7 @@ button.chip { cursor: pointer; }
 .term-xterm .term-line { white-space: pre-wrap; word-break: break-all; }
 .term-xterm .term-prompt { color: var(--accent); font-weight: 600; }
 .term-input-row {
-  padding: 6px 12px 10px;
+  padding: 6px 12px 10px; /* off-scale: belongs to IDELayout's legacy terminal-mock input row (not the xterm.js surface) — out of scope for this task */
   background: #000;
   display: flex;
   align-items: center;
@@ -2148,10 +2148,10 @@ button.chip { cursor: pointer; }
   min-width: 0;
   background: transparent;
   border: none;
-  outline: none;
+  outline: none; /* off-scale: belongs to IDELayout's legacy terminal-mock command input (not the xterm.js surface) — out of scope for this task */
   color: #e6e6e6;
   font-family: var(--mono);
-  font-size: 12.5px;
+  font-size: 12.5px; /* off-scale: belongs to IDELayout's legacy terminal-mock command input (not the xterm.js surface) — out of scope for this task */
   line-height: 1.6;
 }
 /* drag handle horizontal (bottom dock resize) */
@@ -2443,28 +2443,27 @@ button.chip { cursor: pointer; }
   flex-shrink: 0; height: 28px; overflow-x: auto;
 }
 .xterm-inst-tab {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 0 12px; height: 100%;
-  font-size: 11px; color: #666; background: transparent; border: none; cursor: pointer;
+  display: inline-flex; align-items: center; gap: var(--s-3);
+  padding: 0 var(--s-5); height: 100%;
+  font-size: var(--fs-1); color: #666; background: transparent; border: none; cursor: pointer;
   white-space: nowrap; transition: color 100ms var(--ease);
   border-right: 1px solid #1a1a1a;
 }
 .xterm-inst-tab:hover { color: #aaa; background: #111; }
 .xterm-inst-tab.active { color: #ddd; background: #000; border-bottom: 1.5px solid var(--accent); }
 .xterm-inst-tab svg { opacity: 0.7; }
-/* make TerminalPane fill the dock */
 .xterm-dock .term-pane { flex: 1; min-height: 0; }
 .xterm-dock .term-pane.hidden { display: none; }
-.xterm-dock .term-bar { background: #0a0a0a; border-bottom: 1px solid #1a1a1a; padding: 3px 10px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; flex-shrink: 0; }
+.xterm-dock .term-bar { background: #0a0a0a; border-bottom: 1px solid #1a1a1a; padding: var(--s-2) var(--s-4); display: flex; gap: var(--s-3); flex-wrap: wrap; align-items: center; flex-shrink: 0; }
 .xterm-dock .term-chip {
-  height: 20px; padding: 0 8px; background: #1a1a1a; border: 1px solid #2a2a2a;
-  border-radius: 4px; font-size: 10.5px; color: #888; cursor: pointer;
+  height: 20px; padding: 0 var(--s-4); background: #1a1a1a; border: 1px solid #2a2a2a;
+  border-radius: 4px; font-size: var(--fs-1); color: #888; cursor: pointer;
 }
 .xterm-dock .term-chip:hover { background: #222; color: #ccc; }
 .xterm-dock .term-chip.restart { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 30%, #2a2a2a); }
 .xterm-dock .term-spacer { flex: 1; }
-.xterm-dock .term-host { flex: 1; min-height: 0; padding: 4px 0 0 4px; }
-.xterm-dock .term-error { color: var(--bad); padding: 16px; font-size: 12px; font-family: var(--mono); }
+.xterm-dock .term-host { flex: 1; min-height: 0; padding: var(--s-2) 0 0 var(--s-2); }
+.xterm-dock .term-error { color: var(--bad); padding: var(--s-6); font-size: var(--fs-2); font-family: var(--mono); }
 
 /* ======= QUICK OPEN MODAL (Ctrl+P) ======= */
 .quick-open-mask {
