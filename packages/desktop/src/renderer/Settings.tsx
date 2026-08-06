@@ -1478,11 +1478,11 @@ export function Settings(p: Props) {
                 style={{ maxWidth: 440, width: "90%", minHeight: 0 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px 0" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "var(--s-6) var(--s-7) 0" }}>
                   <h3 style={{ margin: 0 }}>Connect {pa?.label ?? connectFor}</h3>
                   <button className="settings-btn" onClick={() => setConnectFor(null)}>✕</button>
                 </div>
-                <div style={{ padding: "6px 20px 20px" }}>
+                <div style={{ padding: "var(--s-3) var(--s-7) var(--s-7)" }}>
                   <p className="hint" style={{ marginTop: 6 }}>Choose how to sign in to {pa?.label ?? connectFor}.</p>
                   {methods.map((m) => (
                     <div key={m.id} style={{ borderTop: "1px solid var(--border)", padding: "12px 0" }}>
