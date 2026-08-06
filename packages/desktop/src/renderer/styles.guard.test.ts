@@ -6,7 +6,16 @@ import { describe, expect, it } from "vitest";
 // own entries; the final task empties the array and the guard then covers the
 // whole file permanently.
 const UNSWEPT: string[] = [
-  ".side", ".recipe", ".classroom", ".model-", ".study",
+  // Task 9 swept .side-panel/.side-head/.side-scrim, all of .recipe-*, all of
+  // .model-browser + .mb-*, and all of .class-*/.study-inline. ".side" and
+  // ".model-" are NOT removed outright: IDELayout's own explorer header
+  // (.side-actions, .side-head-row, .side-head-title) and Settings' model
+  // picker (.model-item, .model-list) happen to share those substrings but
+  // belong to Task 10 / are unclaimed — they keep their own narrow entries so
+  // removing Task 9's guessed prefixes doesn't silently expose someone else's
+  // surface. ".classroom" matched no selector at all (ClassroomPanel renders
+  // .class-*, not .classroom) and is dropped with nothing to replace it.
+  ".side-actions", ".side-head-row", ".side-head-title", ".model-item", ".model-list",
   ".palette", ".preview", ".ide-", ".scm-", ".editor-", ".test-",
 ];
 
