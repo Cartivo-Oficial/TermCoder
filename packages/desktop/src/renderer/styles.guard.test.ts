@@ -18,18 +18,25 @@ const SHADOW_TOKENS = ["var(--sh-flat)", "var(--sh-raised)", "var(--sh-float)", 
 // not exist and the guard would throw before asserting anything.
 const css = readFileSync(fileURLToPath(new URL("./styles.css", import.meta.url)), "utf8");
 
-// Walk the file line by line, tracking which selector block we are inside, so a
-// violation can be attributed to a surface and skipped while that surface is
-// still on the allowlist.
-interface Line { n: number; text: string; selector: string }
+// Walk the file declaration by declaration, tracking which selector block we are
+// inside, so a violation can be attributed to a surface and skipped while that
+// surface is still on the allowlist.
+//
+// Per declaration, not per line: most rules in this file are written on a single
+// line, so anchoring the property patterns to the start of a line made the guard
+// blind to every declaration after the first. It read 128 violations while 267
+// more sat past the first semicolon of a one-line rule.
+interface Decl { n: number; text: string; selector: string; prop: string; value: string }
 
-function lines(): Line[] {
-  const out: Line[] = [];
+function decls(): Decl[] {
+  const out: Decl[] = [];
   let selector = "";
   css.split("\n").forEach((text, i) => {
     const open = text.indexOf("{");
     if (open > 0) selector = text.slice(0, open).trim();
-    out.push({ n: i + 1, text, selector });
+    for (const m of text.matchAll(/(?:^|[{;])\s*([a-z-]+)\s*:\s*([^;{}]*)/g)) {
+      out.push({ n: i + 1, text, selector, prop: m[1]!, value: m[2]! });
+    }
   });
   return out;
 }
@@ -40,13 +47,12 @@ const exempt = (text: string) => /\/\*\s*off-scale:\s*\S+/.test(text);
 describe("styles.css stays on the scale", () => {
   it("uses only spacing-scale values for padding, margin and gap", () => {
     const bad: string[] = [];
-    for (const { n, text, selector } of lines()) {
+    for (const { n, text, selector, prop, value } of decls()) {
       if (unswept(selector) || exempt(text)) continue;
-      const decl = /^\s*(padding|margin|gap|row-gap|column-gap)[a-z-]*\s*:([^;]+);/.exec(text);
-      if (!decl) continue;
-      for (const px of decl[2]!.matchAll(/(\d+)px/g)) {
+      if (!/^(padding|margin|gap|row-gap|column-gap)/.test(prop)) continue;
+      for (const px of value.matchAll(/(\d+)px/g)) {
         const v = Number(px[1]);
-        if (!SPACING.has(v)) bad.push(`${n}: ${selector} — ${v}px in ${decl[1]}`);
+        if (!SPACING.has(v)) bad.push(`${n}: ${selector} — ${v}px in ${prop}`);
       }
     }
     expect(bad).toEqual([]);
@@ -54,12 +60,13 @@ describe("styles.css stays on the scale", () => {
 
   it("uses only type-scale font sizes", () => {
     const bad: string[] = [];
-    for (const { n, text, selector } of lines()) {
+    for (const { n, text, selector, prop, value } of decls()) {
       if (unswept(selector) || exempt(text)) continue;
+      if (prop !== "font-size") continue;
       // Decimals and rem are caught too: `font-size: 12.5px` is exactly the kind
       // of value a scale exists to eliminate, and an integer-only pattern would
       // wave it through.
-      const decl = /^\s*font-size\s*:\s*([\d.]+)(px|rem)/.exec(text);
+      const decl = /^\s*([\d.]+)(px|rem)/.exec(value);
       if (!decl) continue;
       const px = decl[2] === "rem" ? Number(decl[1]) * 16 : Number(decl[1]);
       if (!FONT_SIZES.has(px)) bad.push(`${n}: ${selector} — ${decl[1]}${decl[2]}`);
@@ -69,26 +76,26 @@ describe("styles.css stays on the scale", () => {
 
   it("uses only the four shadow tokens", () => {
     const bad: string[] = [];
-    for (const { n, text, selector } of lines()) {
+    for (const { n, text, selector, prop, value } of decls()) {
       if (unswept(selector) || exempt(text)) continue;
       if (selector === ":root") continue; // the tokens are declared here
-      const decl = /^\s*box-shadow\s*:([^;]+);/.exec(text);
-      if (decl && !SHADOW_TOKENS.some((t) => decl[1]!.includes(t))) bad.push(`${n}: ${selector}`);
+      if (prop !== "box-shadow") continue;
+      if (!SHADOW_TOKENS.some((t) => value.includes(t))) bad.push(`${n}: ${selector}`);
     }
     expect(bad).toEqual([]);
   });
 
   it("routes every focus outline through --ring", () => {
     const bad: string[] = [];
-    for (const { n, text, selector } of lines()) {
+    for (const { n, text, selector, prop, value } of decls()) {
       if (unswept(selector) || exempt(text)) continue;
       // `none` is NOT allowed. Every outline declaration in this file is
       // currently `outline: none`, so blessing it would let the guard pass
       // forever on an app with no visible focus anywhere. Killing the default
       // ring is legitimate only when the element defines its own :focus-visible
       // ring from --ring; anything else needs a written reason.
-      const decl = /^\s*outline\s*:([^;]+);/.exec(text);
-      if (decl && !decl[1]!.includes("var(--ring)")) bad.push(`${n}: ${selector} — ${decl[1]!.trim()}`);
+      if (prop !== "outline") continue;
+      if (!value.includes("var(--ring)")) bad.push(`${n}: ${selector} — ${value.trim()}`);
     }
     expect(bad).toEqual([]);
   });
