@@ -490,9 +490,6 @@ function tabFor(e: SessionEventLike): WorkTab | null {
 }
 
 export function reduceWork(s: WorkState, e: SessionEventLike): WorkState {
-  // A turn boundary expires both the pin and the dismissal. Carrying either
-  // across turns means the panel silently stops working for the rest of the
-  // session and the user has no way to know why.
   if (e.type === "done" || e.type === "error") {
     return s.pinned || s.dismissed ? { ...s, pinned: false, dismissed: false } : s;
   }
@@ -512,6 +509,8 @@ export function closeWork(s: WorkState): WorkState {
   return { ...s, open: false, pinned: false, dismissed: true };
 }
 ```
+
+Why a turn boundary expires both the pin and the dismissal, since the source carries no comments: carrying either across turns means the panel silently stops working for the rest of the session, and the user has no way to learn why. Pinning says "I am reading this" and closing says "not now" — both are statements about the moment, not about the session.
 
 - [ ] **Step 4: Run the tests**
 
