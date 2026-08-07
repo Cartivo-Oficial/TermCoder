@@ -1,0 +1,150 @@
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
+
+// Reads @lobehub/icons-static-svg's SVGs and emits one TypeScript file of path
+// data. Run by hand — see the header of the file it writes. The package is
+// never installed; see docs/superpowers/plans/2026-08-07-provider-marks.md.
+const SRC = process.argv[2];
+const OUT = process.argv[3];
+
+const PACKAGE_NAME = "@lobehub/icons-static-svg";
+
+// The version travels with the vendored art, so it is read from the fetched
+// package rather than hard-coded here — a literal would keep asserting the
+// version this file was first generated from even after a refresh against a
+// different tarball, silently.
+const pkgPath = join(SRC, "..", "package.json");
+if (!existsSync(pkgPath)) {
+  throw new Error(
+    `vendor-provider-marks: expected a package.json at ${pkgPath} (SRC/../package.json, ` +
+      `SRC=${SRC}) to read the vendored version from; none found. Pass the package's ` +
+      `"icons" directory as SRC so its sibling package.json can be located.`,
+  );
+}
+let VERSION;
+try {
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
+  if (!pkg.version) throw new Error("package.json has no \"version\" field");
+  VERSION = pkg.version;
+} catch (err) {
+  throw new Error(`vendor-provider-marks: could not read a version from ${pkgPath}: ${err.message}`);
+}
+
+// [our slug, their file]. The -color files are the six marks that are genuinely
+// multi-colour; the rest are monochrome by their owners' design and ship as
+// currentColor, with no -color variant in the set at all.
+const MARKS = [
+  ["anthropic", "anthropic"],
+  ["openai", "openai"],
+  ["google", "google-color"],
+  ["groq", "groq"],
+  ["mistral", "mistral-color"],
+  ["deepseek", "deepseek-color"],
+  ["xai", "xai"],
+  ["openrouter", "openrouter-color"],
+  ["together", "together-color"],
+  ["cerebras", "cerebras-color"],
+  ["ollama", "ollama"],
+];
+
+const attr = (s, name) => {
+  const m = new RegExp(`${name}="([^"]*)"`).exec(s);
+  return m ? m[1] : undefined;
+};
+
+// Geometry and transforms this generator does not understand. It is faithful
+// only to <path> with fill/fill-rule/clip-rule; anything below would be
+// silently dropped from the output while the source SVG still drew it, so we
+// refuse to generate rather than emit art that is quietly wrong.
+const UNSUPPORTED_ELEMENTS = ["circle", "ellipse", "rect", "polygon", "polyline", "line", "g", "mask", "clipPath", "use"];
+const UNSUPPORTED_ATTRS = ["transform", "opacity", "fill-opacity"];
+
+const out = [];
+for (const [slug, file] of MARKS) {
+  const svg = readFileSync(join(SRC, `${file}.svg`), "utf8");
+
+  for (const el of UNSUPPORTED_ELEMENTS) {
+    if (new RegExp(`<${el}[\\s/>]`).test(svg)) {
+      throw new Error(
+        `${file}.svg: contains a <${el}> element. This generator only understands <path>; ` +
+          `refusing to generate rather than silently drop that geometry.`,
+      );
+    }
+  }
+  for (const a of UNSUPPORTED_ATTRS) {
+    if (new RegExp(`[\\s"']${a}="`).test(svg)) {
+      throw new Error(
+        `${file}.svg: contains a "${a}" attribute. This generator only understands ` +
+          `d/fill/fill-rule/clip-rule on <path>; refusing to generate rather than silently drop it.`,
+      );
+    }
+  }
+
+  // fill-rule and clip-rule sit on the root <svg> in several of these and must
+  // be carried down, or evenodd shapes fill solid.
+  const root = svg.slice(0, svg.indexOf(">") + 1);
+  const rootFillRule = attr(root, "fill-rule");
+  const rootClipRule = attr(root, "clip-rule");
+
+  // provider-mark.tsx hard-codes viewBox="0 0 24 24" for every mark. A source
+  // drawn on a different grid would be silently mis-scaled at render time, so
+  // assert it here where the mismatch is loud and points at the right file.
+  const viewBox = attr(root, "viewBox");
+  if (viewBox !== "0 0 24 24") {
+    throw new Error(`${file}.svg: viewBox is ${JSON.stringify(viewBox)}, expected "0 0 24 24"`);
+  }
+
+  const paths = [...svg.matchAll(/<path\b([^>]*)\/?>/g)].map((m) => m[1]);
+  if (!paths.length) throw new Error(`${file}: no paths`);
+  const rec = paths.map((p) => {
+    const d = attr(p, "d");
+    if (!d) throw new Error(`${file}: path without d`);
+    const fill = attr(p, "fill");
+    const fillRule = attr(p, "fill-rule") ?? rootFillRule;
+    const clipRule = attr(p, "clip-rule") ?? rootClipRule;
+    const parts = [`d: ${JSON.stringify(d)}`];
+    if (fill && fill !== "currentColor") parts.push(`fill: ${JSON.stringify(fill)}`);
+    if (fillRule) parts.push(`fillRule: ${JSON.stringify(fillRule)}`);
+    if (clipRule) parts.push(`clipRule: ${JSON.stringify(clipRule)}`);
+    return `    { ${parts.join(", ")} },`;
+  });
+  out.push(`  ${slug}: [\n${rec.join("\n")}\n  ],`);
+}
+
+writeFileSync(
+  OUT,
+  `/*!
+ * ${PACKAGE_NAME} v${VERSION} (MIT)
+ * Copyright (c) 2023 LobeHub
+ * https://github.com/lobehub/lobe-icons
+ * Full notice: THIRD-PARTY-NOTICES.md at the repository root.
+ */
+
+// Generated by app/vendor-provider-marks.mjs. Do not hand-edit.
+//
+// Path data vendored from ${PACKAGE_NAME} v${VERSION} (MIT). The notice
+// that licence requires lives in THIRD-PARTY-NOTICES.md at the repository root.
+//
+// Vendored rather than installed for the same reason brand-icon.tsx names its
+// imports one by one: an icon package ships a whole catalogue, and none of it
+// belongs in this bundle.
+//
+// A path with no \`fill\` inherits the mark's colour from the caller. That is how
+// the five brands that are monochrome by their owners' own design — anthropic,
+// openai, groq, xai, ollama — render, and why there is no branch here between
+// "coloured" and "monochrome".
+
+export interface MarkPath {
+  d: string;
+  fill?: string;
+  fillRule?: string;
+  clipRule?: string;
+}
+
+export const PROVIDER_MARKS: Record<string, MarkPath[]> = {
+${out.join("\n")}
+};
+`,
+  "utf8",
+);
+console.log(`wrote ${OUT}`);

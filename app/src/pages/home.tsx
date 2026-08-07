@@ -10,29 +10,11 @@ import { CardGrid } from "@/components/site/card-grid";
 import { Screenshot } from "@/components/site/screenshot";
 import { FeatureBlock } from "@/components/site/feature-block";
 import { FAQ } from "@/components/site/faq";
-import { BrandIcon } from "@/components/site/brand-icon";
 import { Glyph, IconTile } from "@/components/site/glyph";
+import { ProviderMark } from "@/components/site/provider-mark";
 import { Invite } from "@/components/site/invite";
 import { InlineLink } from "@/components/site/arrow-link";
-
-// [name, simple-icons slug, mono label, one line]. Five of these — OpenAI,
-// Groq, xAI, Together, Cerebras — have no entry in simple-icons, so the slug
-// resolves to nothing and the row falls back to a monogram rather than to an
-// invented mark.
-const PROVIDERS: [string, string, string, string][] = [
-  ["Anthropic", "anthropic", "sonnet · haiku", "Claude through your own key, on the tier you pay for."],
-  ["OpenAI", "openai", "gpt-4o · 4o-mini", "The models most tooling assumes, straight from your account."],
-  ["Google", "google", "gemini-2.5 pro · flash", "Pro for the hard turns, Flash for everything else."],
-  ["Groq", "groq", "llama · fast", "Open models answered quickly enough to feel local."],
-  ["Mistral", "mistral", "large · codestral", "Codestral is built for the completion half of the job."],
-  ["DeepSeek", "deepseek", "chat · coder", "A budget-priced reasoning and coding pair, hosted for you."],
-  ["xAI", "xai", "grok", "Grok, if that is the key you already hold."],
-  ["OpenRouter", "openrouter", "anything", "One key in front of nearly every model on the market."],
-  ["Together", "together", "open models", "Open weights, hosted, without you renting a GPU."],
-  ["Cerebras", "cerebras", "very fast", "Open models served on custom inference silicon, not GPUs."],
-  ["Ollama", "ollama", "local · private", "Whatever you have pulled. Nothing leaves the machine."],
-  ["termcoderfree", "termcoderfree", "free · no key", "Pick termcoder/auto and you are on it. No card, no account, no key."],
-];
+import { PROVIDERS } from "@/components/site/providers";
 
 const TOOLS: [string, string][] = [
   ["read", "open a file"], ["edit", "change a file"], ["write", "create a file"], ["bash", "run a command"],
@@ -181,7 +163,7 @@ export default function Home() {
               >
                 <div className="flex items-center gap-3">
                   <IconTile className="h-8 w-8 rounded-lg">
-                    <BrandIcon
+                    <ProviderMark
                       slug={slug}
                       size={15}
                       fallback={

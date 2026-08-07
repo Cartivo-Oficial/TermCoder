@@ -43,7 +43,11 @@ Each answers "what does it do" in one sentence, and neither can break the other.
 
 ## Dark theme
 
-OpenAI, xAI and Anthropic are near-black marks. On the site's light card they read correctly. The site has no dark theme today, and this project does not add one — but routing the monochrome marks through one custom property rather than a literal hex means that the day a dark theme arrives, it is a single declaration and not a hunt through path data.
+OpenAI, xAI and Anthropic are near-black marks, so the theme matters to them more than to the six coloured ones.
+
+**Correction, made after the work was verified in the browser: the site already has a dark theme.** This section originally claimed it did not — a wrong inference from grepping for `dark:` utility classes, when the theme is applied as `html.dark` and switches the whole palette. The design survives the correction unchanged, and in fact this is what makes it right: because the monochrome marks inherit their colour rather than carrying a hex, they flip on their own. Measured in the running site — dark: mark `rgb(242,239,235)` on tile `rgb(23,22,21)`; light: mark `rgb(26,26,25)` on tile `rgb(242,240,237)`. Legible both ways, with no per-theme rule written anywhere.
+
+`--provider-mark` still earns its place: it is the one hook for overriding a mark's colour without touching path data.
 
 ## How it is verified
 
