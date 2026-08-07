@@ -48,6 +48,8 @@ A new session opens as it does today: chat, centred, calm. The panel is absent, 
 
 **It does not close on its own once it has opened.** A command finishing is not a reason to take its output away — the moment you most want to read a diff is right after it lands. Within a session the panel opens once and stays, following or pinned; the user can close it by hand, and a new session starts without it. "Absent until there is work" is about the calm opening screen, not about a panel that flickers in and out as tools come and go.
 
+**One thing the panel needs that does not exist yet.** Found while planning: `tool-call` events (`packages/core/src/session/session.ts:30`) carry `id`, `name`, `args`, `title` and `detail` — but no patch. Today a diff reaches the renderer only through a permission request (`PermissionRequest.patch`), so an auto-approved edit produces no diff at all and the panel's diff tab would sit empty exactly when the agent is trusted enough to work fast. The data already exists: `describe()` on the write and edit tools returns a patch, and `session.ts` already forwards it into the permission request. This project adds `patch?: PatchHunk[]` to the `tool-call` event and forwards the same value. That is a core change, deliberately kept to one optional field on one event; the review surface benefits from it too.
+
 The decision of which tab to show is a pure function of the same event stream the canvas already consumes (`SessionEventLike` in `canvas/runGraph.ts`: `tool-call`, `tool-result`, `subagent-start`, `subagent-end`, `done`) plus the pin state. It holds no React state of its own and touches no DOM, which is what makes it testable in an environment with no display.
 
 ## What the panel replaces, and what survives
