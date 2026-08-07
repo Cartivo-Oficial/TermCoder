@@ -554,7 +554,7 @@ The command palette and file preview are the app's two floating surfaces: they t
 
 ### Task 11: Empty the allowlist
 
-> **NOT DONE.** The allowlist was not emptied; it was turned into the register of what is left (commit `be31fd6`). Emptying it would have meant sweeping 254 more selectors in one diff, which nobody could review. See "Where this stopped".
+> **NOT DONE.** The allowlist was not emptied; it was turned into the register of what is left (commit `3af45c7`). Emptying it would have meant sweeping 254 more selectors in one diff, which nobody could review. See "Where this stopped".
 
 **Files:** Modify `packages/desktop/src/renderer/styles.guard.test.ts`
 
@@ -643,7 +643,7 @@ debugger 11, quick open 10, then a long tail.
    to the start of a line, so in a rule written on one line only the first
    declaration was checked — and nearly every rule in this file is written on
    one line. It reported 152 violations while 267 more hid past the first
-   semicolon. Fixed in `01734a3`. The sweeps themselves held up: under the
+   semicolon. Fixed in `638f410`. The sweeps themselves held up: under the
    corrected guard, exactly one value in Tasks 4-8's surfaces was off-scale.
 
 2. **The prefix lists did not describe the surfaces.** `.srow` was listed under
