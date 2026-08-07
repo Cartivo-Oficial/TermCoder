@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PROVIDER_MARKS } from "./provider-marks";
+import { PROVIDERS } from "./providers";
 
 const EXPECTED = [
   "anthropic", "openai", "google", "groq", "mistral", "deepseek",
@@ -34,5 +35,20 @@ describe("the vendored provider art", () => {
     ]);
     expect(PROVIDER_MARKS.deepseek![0]!.fill).toBe("#4D6BFE");
     expect(PROVIDER_MARKS.openrouter![0]!.fill).toBe("#C8FF00");
+  });
+});
+
+describe("the provider grid", () => {
+  it("has a mark for every provider it lists", () => {
+    // termcoderfree is ours, not a third party: the page draws its own Mark.
+    const missing = PROVIDERS
+      .map(([, slug]) => slug)
+      .filter((slug) => slug !== "termcoderfree")
+      .filter((slug) => !PROVIDER_MARKS[slug]);
+    expect(missing).toEqual([]);
+  });
+
+  it("still lists twelve rows", () => {
+    expect(PROVIDERS).toHaveLength(12);
   });
 });
