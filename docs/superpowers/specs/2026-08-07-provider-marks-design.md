@@ -26,7 +26,9 @@ MIT requires the copyright notice to travel with the copied work. The repository
 
 Six providers have genuine multi-colour marks and use their colour art as published: **Google, Mistral, DeepSeek, OpenRouter, Together, Cerebras**.
 
-Five are monochrome by their owners' own design — `@lobehub/icons-static-svg` ships them as `currentColor` with no colour variant at all: **Anthropic, OpenAI, Groq, xAI, Ollama**. For these, "coloured" cannot mean inventing a hex. They render through a single CSS custom property that defaults to the site's foreground colour. A brand that is a black mark renders as a black mark, which is the brand.
+Five are monochrome by their owners' own design — `@lobehub/icons-static-svg` ships them as `currentColor` with no colour variant at all: **Anthropic, OpenAI, Groq, xAI, Ollama**. For these, "coloured" cannot mean inventing a hex. All five render through **one** shared CSS custom property, which defaults to the site's foreground colour — not one property per brand. A brand that is a black mark renders as a black mark, which is the brand.
+
+**The technical wrinkle this creates.** `BrandIcon` today takes a single `d` string and draws one `<path fill="currentColor">`. Colour art is not one path: it is several, each carrying its own `fill`. So `ProviderMark` stores each mark as a small record — a list of paths, each with an optional fill, plus whatever `fill-rule` or `clip-rule` the original art needs — and a mark with no fills on its paths inherits the shared property. One shape covers both kinds of mark; there is no branch between "coloured" and "monochrome" at render time.
 
 The twelfth row, `termcoderfree`, keeps our own `Mark`. It is not a third-party provider.
 
