@@ -524,6 +524,8 @@ The largest single component in the sweep. It is mostly rows and panels, so `Row
 
 `SidePanel.tsx` and `Study.tsx` also render `.srow`, but Task 8 owns and sweeps that rule. Do not re-sweep it here — only check that these two still look right against whatever Task 8 made of it.
 
+**The five prefixes above do not describe this surface.** They were guessed before the components were read. `ClassroomPanel.tsx` renders `class-*`, not `.classroom`; `ModelBrowser.tsx` renders `mb-*`, not `.model-`. Together the five components render 86 distinct classes, and the declared prefixes cover 14 off-scale values while another 56 sit in classes nobody's task claims (`.mb-*`, `.class-*`, `.room-*`, `.tree-*`, `.recipe-form-*`, `.agents-panel`, `.view-all`, `.btn-2`, …). Sweep by **what these five components actually render**, not by the prefix list. A class shared with a surface outside these five belongs to its owner or to Task 11 — leave it and name it in the report.
+
 - [ ] **Step 1** Apply the ten steps.
 - [ ] **Step 2** Remove `".side"`, `".recipe"`, `".classroom"`, `".model-"`, `".study"` from `UNSWEPT`.
 - [ ] **Step 3** `pnpm --filter @termcoder/desktop typecheck && npx vitest run packages/desktop/src/renderer/styles.guard.test.ts && pnpm test`
@@ -531,6 +533,8 @@ The largest single component in the sweep. It is mostly rows and panels, so `Row
 - [ ] **Step 5** `git add -A packages/desktop && git commit -m "feat(desktop): side panels on the scale"`
 
 ### Task 10: Dialogs, palette, and IDELayout tokens
+
+> **NOT DONE — and not runnable as written.** After Task 9 the guard reported 370 violations and **zero** of them matched this task's six prefixes, so Task 10 would sweep nothing measurable. The prefixes were guessed before the components were read, the same defect Tasks 6 and 9 hit. See "Where this stopped" at the end of this plan.
 
 **Files:** `CommandPalette.tsx`, `FilePreview.tsx`, `IDELayout.tsx`, `styles.css` (`.palette`, `.preview`, `.ide-`, `.scm-`, `.editor-`, `.test-`), `styles.guard.test.ts`
 
@@ -549,6 +553,8 @@ The command palette and file preview are the app's two floating surfaces: they t
 ## Phase 3 — Close it
 
 ### Task 11: Empty the allowlist
+
+> **NOT DONE.** The allowlist was not emptied; it was turned into the register of what is left (commit `be31fd6`). Emptying it would have meant sweeping 254 more selectors in one diff, which nobody could review. See "Where this stopped".
 
 **Files:** Modify `packages/desktop/src/renderer/styles.guard.test.ts`
 
@@ -611,3 +617,55 @@ git commit -m "feat(desktop): close the style guard over the whole stylesheet"
 - Any colour change, any new theme, any change to `data-density` or `data-motion` semantics.
 - `Field`, `Toolbar` or `Dialog` primitives. Project 2 will show whether they earn their place.
 - Copying any code from Synara. This project takes the standard, not the source; a later project that lifts a module of theirs must carry the T3 Tools copyright notice with it.
+
+---
+
+## Where this stopped
+
+Tasks 1 through 9 shipped. Tasks 10 and 11 did not, and the reason is worth
+keeping: the plan's selector prefixes were guessed before the components were
+read, and by Task 10 that guess had run out.
+
+**What is on the scale:** Home, the composer and chat transcript, the rail and
+sessions list, the terminal chrome, Settings, and the side panels — the six
+surfaces a user actually looks at.
+
+**What is not:** 254 selectors, now listed exactly in `UNSWEPT` in
+`styles.guard.test.ts`. That array is no longer a sweep-in-progress list; it is
+the register of the debt. Delete a family from it, sweep that family, and the
+guard names the first value you miss. By size: room 27, agent canvas 24,
+search 20, file tree 17, git 15, inline editor 14, chip 13, task runner 11,
+debugger 11, quick open 10, then a long tail.
+
+**Three findings that outlived the plan:**
+
+1. **The guard was blind for its first eight tasks.** Every pattern was anchored
+   to the start of a line, so in a rule written on one line only the first
+   declaration was checked — and nearly every rule in this file is written on
+   one line. It reported 152 violations while 267 more hid past the first
+   semicolon. Fixed in `01734a3`. The sweeps themselves held up: under the
+   corrected guard, exactly one value in Tasks 4-8's surfaces was off-scale.
+
+2. **The prefix lists did not describe the surfaces.** `.srow` was listed under
+   the rail and lives in Settings. `.classroom` matched no selector in the file
+   at all — `ClassroomPanel` renders `class-*`. `.model-` reaches Settings' model
+   picker, not `ModelBrowser`. Task 10's six prefixes matched nothing left.
+   A future sweep should start from what a component renders, not from a name.
+
+3. **The four primitives are dead code.** `Btn`, `Row`, `Panel` and `Chip` were
+   built in Task 3 with complete CSS and focus rings. Six sweep tasks in a row
+   examined their controls and refused them, each with a concrete reason, and no
+   file in the renderer imports from `./ui`. The blocker is small and specific:
+   `Row` and `Panel` render a `<div>` and so cannot replace a `<button>`, and
+   `Btn` has no tone matching `.settings-btn.primary`'s `var(--text)` fill.
+   Task 8 found that `.settings-nav button` is declaration-for-declaration
+   identical to `.u-row` after its sweep. An `as` prop and one tone would make
+   that conversion mechanical, and would decide whether the primitives earn
+   their place or should be deleted. **This was left undone deliberately** —
+   converting the app's settings navigation with no way to look at the result
+   is the wrong risk to take at closing time.
+
+**Nothing here was seen running.** Electron has no display in the environment
+these tasks ran in; it starts and dies without a window. Every "visual check"
+step in Phase 2 was reasoned, not seen. Light theme and compact density are
+where a regression would be hiding.
