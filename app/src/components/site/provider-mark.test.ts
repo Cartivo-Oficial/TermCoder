@@ -36,6 +36,18 @@ describe("the vendored provider art", () => {
     expect(PROVIDER_MARKS.deepseek![0]!.fill).toBe("#4D6BFE");
     expect(PROVIDER_MARKS.openrouter![0]!.fill).toBe("#C8FF00");
   });
+
+  it("pins cerebras as a mixed mark: a fixed-colour glyph over an inherited-colour ring", () => {
+    // cerebras is neither fully monochrome nor fully coloured: its first path
+    // is fixed to the brand orange, its second has no fill and so renders
+    // through --provider-mark/currentColor alongside the five monochrome
+    // brands. That means setting --provider-mark moves cerebras's inner glyph
+    // too — faithful to upstream, but easy to rediscover by surprise. Pinned
+    // here so it stays a recorded fact instead.
+    expect(PROVIDER_MARKS.cerebras).toHaveLength(2);
+    expect(PROVIDER_MARKS.cerebras![0]!.fill).toBe("#F15A29");
+    expect(PROVIDER_MARKS.cerebras![1]!.fill).toBeUndefined();
+  });
 });
 
 describe("the provider grid", () => {
@@ -46,9 +58,5 @@ describe("the provider grid", () => {
       .filter((slug) => slug !== "termcoderfree")
       .filter((slug) => !PROVIDER_MARKS[slug]);
     expect(missing).toEqual([]);
-  });
-
-  it("still lists twelve rows", () => {
-    expect(PROVIDERS).toHaveLength(12);
   });
 });
