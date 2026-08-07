@@ -71,9 +71,7 @@ Today a patch reaches the renderer only inside a permission request, so an auto-
 
 - [ ] **Step 1: Write the failing test**
 
-Add to `packages/core/src/session/session.test.ts`:
-
-Add it beside `"runs an allowed tool call and feeds the result back"` (session.test.ts:661), whose harness it copies exactly:
+In `packages/core/src/session/session.test.ts`, add it beside `"runs an allowed tool call and feeds the result back"` (line 661), whose harness it copies exactly:
 
 ```ts
   it("puts the patch on the tool-call event, not only on the permission request", async () => {
