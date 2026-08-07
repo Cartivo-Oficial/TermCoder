@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { loadConfig, saveConfig } from "./config";
+import { isVirtualModel, pickAutoModel, KEYLESS_PROVIDERS } from "../provider/provider";
 
 describe("loadConfig", () => {
   let dir: string;
@@ -23,9 +24,20 @@ describe("loadConfig", () => {
 
   it("returns schema defaults when nothing is configured", () => {
     const config = loadConfig({ cwd, configDir, env: {} });
-    expect(config.model).toBe("anthropic/claude-sonnet-5");
+    expect(config.model).toBe("termcoder/auto");
     expect(config.theme).toBe("default");
     expect(config.permission.bash).toBe("ask");
+  });
+
+  // The product's headline promise: install it, run it, no key. That only holds
+  // if the default model is the router, because the router is the only thing
+  // that falls through to the keyless provider. A concrete model as the default
+  // means a fresh install with no key has nothing to call.
+  it("defaults to a model that needs no API key", () => {
+    const config = loadConfig({ cwd, configDir, env: {} });
+    expect(isVirtualModel(config.model)).toBe(true);
+    const routed = pickAutoModel(config, {});
+    expect(KEYLESS_PROVIDERS.has(routed.split("/")[0]!)).toBe(true);
   });
 
   it("layers project over global over defaults", () => {
