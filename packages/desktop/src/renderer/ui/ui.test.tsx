@@ -21,6 +21,12 @@ describe("Row", () => {
 });
 
 describe("Panel", () => {
+  it("is a div by default", () => {
+    const html = renderToStaticMarkup(<Panel>x</Panel>);
+    expect(html).toContain("<div");
+    expect(html).not.toContain("<button");
+  });
+
   it("marks the selected state", () => {
     expect(renderToStaticMarkup(<Panel selected>x</Panel>)).toContain("is-selected");
   });
