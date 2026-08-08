@@ -2,6 +2,33 @@
 
 New releases and improvements to TermCoder.
 
+## 0.12.0
+2026-08-08
+
+### The workspace
+- **The screen no longer sits empty while the agent works.** Chat, terminal and canvas used to be three views you switched between, so watching the agent meant leaving the conversation. Chat is now the session, and a work panel opens beside it the moment there is something to show — the diff when a file changes, the terminal when a command runs, the canvas when a sub-agent starts. It follows the newest activity until you pick a tab, and then it stays where you put it until the turn ends.
+- **The panel does not close itself.** A command finishing is not a reason to take its output away.
+- The view switcher is gone. Its keyboard shortcut still opens the terminal, and now closes it again.
+
+### Reviewing what the agent changes
+- **Agent edits are reviewed in the editor, on the lines they touch**, instead of in a modal that covered them. The diff is positional now — the app knows which line a change lands on, not just that a file changed.
+- A change that is approved without asking still produces a diff you can read. Until now the patch only existed when the agent stopped to ask permission.
+
+### The app's look, and its keyboard
+- **The app had no visible focus ring anywhere.** Thirty-five rules removed the browser's default and none put one back, so navigating by keyboard meant guessing where you were. Every surface you use constantly now shows focus — including a handful of buttons that were invisible until you moved the mouse over them, which a keyboard could never reveal.
+- Home, the chat and composer, the sessions list and rail, the terminal chrome, Settings and the side panels were rebuilt on one spacing, type and elevation scale. Nothing moved much; things line up.
+- Four shared building blocks — button, row, panel, chip — now carry the controls across Settings, the sessions list and the terminal, so a new screen inherits the finish instead of reinventing it.
+
+### Fixed
+- **A fresh install runs without an API key.** It now defaults to the free router instead of stopping at a provider you had not configured.
+- The terminal's tab strip answers the keyboard.
+- The focus ring no longer takes a colour from your theme that could leave it invisible.
+
+### Website
+- Rebuilt: pricing, download, install, docs, changelog, the dashboard and the legal pages, on one kit.
+- **Every provider shows its real logo.** Five of the twelve showed a letter in a box, because the icon set the site used had dropped those marks at their owners' request.
+- Body text stopped falling below the AA contrast minimum, and a test now fails if it does again.
+
 ## 0.11.5
 2026-07-28
 
