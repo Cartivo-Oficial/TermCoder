@@ -18,6 +18,7 @@ import type { ToolContext } from "../tools/types";
 import type { ToolRegistry } from "../tools";
 import { loadProjectContext } from "../util/context";
 import { capText, pruneMessagesForModel } from "../util/tokens";
+import type { PatchHunk } from "../util/diff";
 import { discoverSkills, skillsMenu } from "../skill/skills";
 import { discoverMemories, recallMemories } from "../memory/memory";
 import { ensureFreshClaudeConfig } from "../auth/oauth";
@@ -27,7 +28,7 @@ export type SessionEventKind =
   | { type: "text-delta"; text: string }
   | { type: "reasoning-delta"; text: string }
   | { type: "reasoning-end" }
-  | { type: "tool-call"; id: string; name: string; args: unknown; title?: string; detail?: string }
+  | { type: "tool-call"; id: string; name: string; args: unknown; title?: string; detail?: string; patch?: PatchHunk[] }
   | { type: "tool-result"; id: string; name: string; output: string; isError: boolean }
   | { type: "usage"; inputTokens: number; outputTokens: number }
   | { type: "subagent-start"; sessionId: string; agent: string; prompt: string; parentToolCallId?: string }
@@ -595,6 +596,7 @@ export class Session {
       args: call.input,
       title: described?.title,
       detail: described?.detail,
+      patch: described?.patch,
     };
 
     let output: string;

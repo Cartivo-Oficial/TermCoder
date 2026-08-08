@@ -686,6 +686,31 @@ describe("Session agent loop", () => {
     expect(readFileSync(join(dir, "hello.txt"), "utf8")).toBe("hi");
   });
 
+  it("puts the patch on the tool-call event, not only on the permission request", async () => {
+    config.permission.write = "allow";
+    const runner = scriptedRunner([
+      {
+        chunks: [{ type: "text-delta", text: "Writing." }],
+        finishReason: "tool-calls",
+        toolCalls: [
+          { toolCallId: "t1", toolName: "write", input: { path: "patched.txt", content: "hi\n" } },
+        ],
+        responseMessages: [{ role: "assistant", content: "Writing." }],
+      },
+      {
+        chunks: [{ type: "text-delta", text: "Done." }],
+        finishReason: "stop",
+        responseMessages: [{ role: "assistant", content: "Done." }],
+      },
+    ]);
+    const session = makeSession(runner);
+    const events = await collect(session, "create patched.txt");
+
+    const call = events.find((e) => e.type === "tool-call");
+    expect(call).toMatchObject({ name: "write" });
+    expect((call as { patch?: unknown }).patch).toBeDefined();
+  });
+
   it("reports a denied tool call without running it", async () => {
     config.permission.write = "deny";
     const runner = scriptedRunner([
