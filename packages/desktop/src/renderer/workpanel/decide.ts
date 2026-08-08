@@ -37,6 +37,11 @@ export function pinWork(s: WorkState, tab: WorkTab): WorkState {
   return { open: true, tab, pinned: true, dismissed: false };
 }
 
+export function toggleWork(s: WorkState, tab: WorkTab): WorkState {
+  if (s.open && s.tab === tab) return closeWork(s);
+  return pinWork(s, tab);
+}
+
 export function closeWork(s: WorkState): WorkState {
   return { ...s, open: false, pinned: false, dismissed: true };
 }

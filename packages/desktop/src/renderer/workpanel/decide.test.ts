@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { closedWork, closeWork, pinWork, reduceWork } from "./decide";
+import { closedWork, closeWork, pinWork, reduceWork, toggleWork } from "./decide";
 
 const edit = { type: "tool-call", id: "1", name: "edit", patch: [] } as const;
 const bash = { type: "tool-call", id: "2", name: "bash" } as const;
@@ -65,5 +65,19 @@ describe("the work panel's decision", () => {
   it("ignores a tool call that carries no patch and is not a command", () => {
     const s = reduceWork(closedWork, { type: "tool-call", id: "3", name: "read" });
     expect(s.open).toBe(false);
+  });
+
+  it("toggles the tab a keybind names, so the same key closes what it opened", () => {
+    const opened = toggleWork(closedWork, "terminal");
+    expect(opened.open).toBe(true);
+    expect(opened.tab).toBe("terminal");
+    expect(toggleWork(opened, "terminal").open).toBe(false);
+  });
+
+  it("switches rather than closing when the toggle names a different tab", () => {
+    const onTerminal = toggleWork(closedWork, "terminal");
+    const onCanvas = toggleWork(onTerminal, "canvas");
+    expect(onCanvas.open).toBe(true);
+    expect(onCanvas.tab).toBe("canvas");
   });
 });

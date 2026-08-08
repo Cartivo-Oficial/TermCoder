@@ -1330,6 +1330,7 @@ button.chip { cursor: pointer; }
 .work-close:focus-visible { outline: var(--ring); outline-offset: var(--s-1); }
 .work-body { position: relative; flex: 1; min-height: 0; overflow: auto; }
 .work-body[hidden] { display: none; }
+.work-body .review-strip { position: static; transform: none; width: auto; max-width: none; margin: var(--s-5); box-shadow: var(--sh-flat); }
 .work .term-deck { inset: 0; }
 
 /* ======= View mode switch button (Trae-style pill) ======= */

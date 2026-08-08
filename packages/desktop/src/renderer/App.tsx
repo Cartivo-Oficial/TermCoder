@@ -18,7 +18,7 @@ import { RoomView } from "./room/RoomView";
 import { useRoom } from "./room/useRoom";
 import { RecipesPanel } from "./RecipesPanel";
 import { WorkPanel } from "./workpanel/WorkPanel";
-import { closedWork, closeWork, pinWork, reduceWork } from "./workpanel/decide";
+import { closedWork, closeWork, pinWork, reduceWork, toggleWork } from "./workpanel/decide";
 import { ClassroomPanel } from "./ClassroomPanel";
 import { ModelBrowser } from "./ModelBrowser";
 import { Rail } from "./Rail";
@@ -754,7 +754,7 @@ export function App() {
       } else if (matchCombo(e, bind("toggleTerminal"))) {
         e.preventDefault();
         setTermMounted(true);
-        setWork((w) => pinWork(w, "terminal"));
+        setWork((w) => toggleWork(w, "terminal"));
       } else if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "t") {
         e.preventDefault();
         reopenClosedTab();
