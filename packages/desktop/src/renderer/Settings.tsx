@@ -4,6 +4,7 @@ import { LANGS, useI18n } from "./i18n";
 import { COLOR_THEMES } from "./themes";
 import { EDITOR_THEMES } from "./editorThemes";
 import { KEYBIND_ACTIONS, comboFor, comboFromEvent, formatCombo } from "./keybinds";
+import { Btn, Row as UiRow } from "./ui";
 
 type PermMode = "ask" | "allow" | "deny";
 interface McpEntry {
@@ -211,8 +212,7 @@ function MemoryAdd({
         value={body}
         onChange={(e) => setBody(e.target.value)}
       />
-      <button
-        className="settings-btn"
+      <Btn
         disabled={!name.trim() || !body.trim()}
         onClick={() => {
           onAdd(scope, name.trim(), description.trim(), body.trim());
@@ -222,7 +222,7 @@ function MemoryAdd({
         }}
       >
         {t("settings.memory.create")}
-      </button>
+      </Btn>
     </div>
   );
 }
@@ -672,16 +672,16 @@ export function Settings(p: Props) {
             <div key={g.groupKey}>
               <div className="sn-group">{t(g.groupKey)}</div>
               {g.items.map(([id, labelKey]) => (
-                <button key={id} className={p.tab === id ? "active" : ""} onClick={() => p.setTab(id)}>
+                <UiRow key={id} as="button" active={p.tab === id} onClick={() => p.setTab(id)}>
                   {t(labelKey)}
-                </button>
+                </UiRow>
               ))}
             </div>
           ))}
           <div className="sn-spacer" />
-          <button className={p.tab === "about" ? "active" : ""} onClick={() => p.setTab("about")}>
+          <UiRow as="button" active={p.tab === "about"} onClick={() => p.setTab("about")}>
             {t("settings.about")}
-          </button>
+          </UiRow>
         </nav>
 
         <div className="settings-main">
@@ -725,9 +725,9 @@ export function Settings(p: Props) {
                     ) : null}
                     <p className="hint">{t("pro.thanks")}</p>
                     <div className="pro-actions">
-                      <button className="settings-btn" disabled={syncing} onClick={() => void syncSessions()}>
+                      <Btn disabled={syncing} onClick={() => void syncSessions()}>
                         {syncing ? t("pro.syncing") : t("pro.syncSessions")}
-                      </button>
+                      </Btn>
                     </div>
                     {syncResult ? <p className="hint">{syncResult}</p> : null}
                   </div>
@@ -748,9 +748,9 @@ export function Settings(p: Props) {
                       <p className="pro-err">{t("pro.invalidKey")}</p>
                     ) : null}
                     <div className="pro-actions">
-                      <button className="settings-btn primary" disabled={activating || !licenseKey.trim()} onClick={() => void activateLicense()}>
+                      <Btn tone="strong" disabled={activating || !licenseKey.trim()} onClick={() => void activateLicense()}>
                         {activating ? t("pro.activating") : t("pro.activateBtn")}
-                      </button>
+                      </Btn>
                       <a className="settings-btn" href="https://cartivo-oficial.github.io/TermCoder/pricing.html" target="_blank" rel="noopener">
                         {t("pro.getPro")}
                       </a>
@@ -856,13 +856,13 @@ export function Settings(p: Props) {
                           {recording === action.id ? t("keybind.recording") : formatCombo(combo)}
                         </button>
                         {!isDefault && (
-                          <button
-                            className="settings-btn ghost"
+                          <Btn
+                            className="ghost"
                             title={t("keybind.reset")}
                             onClick={() => setKeybind(action.id, action.default)}
                           >
                             ↺
-                          </button>
+                          </Btn>
                         )}
                       </div>
                     </Row>
@@ -927,7 +927,7 @@ export function Settings(p: Props) {
                   </div>
                 </Row>
                 <Row title={t("settings.retention.run")} desc={sessionCount === null ? "—" : t("settings.sessionCount", { n: sessionCount })}>
-                  <button className="settings-btn" onClick={() => void clearOldSessions()}>{t("settings.retention.btn")}</button>
+                  <Btn onClick={() => void clearOldSessions()}>{t("settings.retention.btn")}</Btn>
                 </Row>
                 <Row title={t("settings.autoTitles")} desc={t("settings.autoTitles.desc")}>
                   <span className="badge ok">{t("badge.on")}</span>
@@ -941,8 +941,7 @@ export function Settings(p: Props) {
                       value={githubDraft}
                       onChange={(e) => setGithubDraft(e.target.value)}
                     />
-                    <button
-                      className="settings-btn"
+                    <Btn
                       disabled={!githubDraft.trim() || savingGithub}
                       onClick={async () => {
                         setSavingGithub(true);
@@ -953,10 +952,10 @@ export function Settings(p: Props) {
                       }}
                     >
                       {savingGithub ? t("settings.saving") : t("settings.save")}
-                    </button>
-                    <button className="settings-btn" onClick={() => void testGitHub()}>
+                    </Btn>
+                    <Btn onClick={() => void testGitHub()}>
                       Test connection
-                    </button>
+                    </Btn>
                   </div>
                 </Row>
                 {ghStatus && (
@@ -973,17 +972,16 @@ export function Settings(p: Props) {
                         value={packRef}
                         onChange={(e) => setPackRef(e.target.value)}
                       />
-                      <button
-                        className="settings-btn"
+                      <Btn
                         disabled={!packRef.trim()}
                         onClick={() => void packAction({ action: "install", ref: packRef.trim() })}
                       >
                         Install
-                      </button>
+                      </Btn>
                     </div>
-                    <button className="settings-btn" onClick={() => void packAction({ action: "publish", name: "my-termcoder-pack" })}>
+                    <Btn onClick={() => void packAction({ action: "publish", name: "my-termcoder-pack" })}>
                       Publish this project as a pack
-                    </button>
+                    </Btn>
                     {packMsg && <span className="hint">{packMsg}</span>}
                   </div>
                 </Row>
@@ -1061,7 +1059,7 @@ export function Settings(p: Props) {
                   <Switch on={p.expandTools} onChange={p.setExpandTools} />
                 </Row>
                 <Row title={t("settings.workspace")} desc={p.cwd ?? "—"}>
-                  <button className="settings-btn" onClick={p.chooseFolder}>{t("settings.change")}</button>
+                  <Btn onClick={p.chooseFolder}>{t("settings.change")}</Btn>
                 </Row>
               </>
             )}
@@ -1111,9 +1109,9 @@ export function Settings(p: Props) {
                               onChange={(e) => setConnectorValues((v) => ({ ...v, [i.key]: e.target.value }))}
                             />
                           ))}
-                          <button className="settings-btn" onClick={() => void addConnector(c)}>
+                          <Btn onClick={() => void addConnector(c)}>
                             {t("settings.add")}
-                          </button>
+                          </Btn>
                         </div>
                       ) : null}
                     </div>
@@ -1146,9 +1144,9 @@ export function Settings(p: Props) {
                       onChange={(e) => setMcpUrl(e.target.value)}
                     />
                   )}
-                  <button className="settings-btn" disabled={!mcpName.trim()} onClick={() => void addMcp()}>
+                  <Btn disabled={!mcpName.trim()} onClick={() => void addMcp()}>
                     {t("settings.add")}
-                  </button>
+                  </Btn>
                 </div>
                 <p className="hint">{t("settings.mcpRestart")}</p>
               </>
@@ -1205,11 +1203,10 @@ export function Settings(p: Props) {
                         ) : null}
                       </div>
                       <div className="seg-inline">
-                        <button className="settings-btn ghost" disabled={probe?.busy} onClick={() => void testProvider(pa.provider)}>
+                        <Btn className="ghost" disabled={probe?.busy} onClick={() => void testProvider(pa.provider)}>
                           {probe?.busy ? t("providers.testing") : t("providers.test")}
-                        </button>
-                        <button
-                          className="settings-btn"
+                        </Btn>
+                        <Btn
                           onClick={() => {
                             setClaudeUrl(null);
                             setClaudeCode("");
@@ -1218,7 +1215,7 @@ export function Settings(p: Props) {
                           }}
                         >
                           {pa.configured ? "Manage" : "Connect"}
-                        </button>
+                        </Btn>
                       </div>
                     </div>
                   );
@@ -1306,9 +1303,9 @@ export function Settings(p: Props) {
                       onChange={(e) => setNewAgent((s) => ({ ...s, editPaths: e.target.value }))}
                     />
                   )}
-                  <button className="settings-btn" disabled={!newAgent.name.trim()} onClick={() => void createAgent()}>
+                  <Btn disabled={!newAgent.name.trim()} onClick={() => void createAgent()}>
                     {t("settings.agents.create")}
-                  </button>
+                  </Btn>
                 </div>
               </>
             )}
@@ -1349,13 +1346,12 @@ export function Settings(p: Props) {
                     value={newSkill.body}
                     onChange={(e) => setNewSkill((s) => ({ ...s, body: e.target.value }))}
                   />
-                  <button
-                    className="settings-btn"
+                  <Btn
                     disabled={!newSkill.name.trim() || !newSkill.body.trim()}
                     onClick={() => void createSkill()}
                   >
                     {t("settings.skills.create")}
-                  </button>
+                  </Btn>
                 </div>
               </>
             )}
@@ -1454,7 +1450,7 @@ export function Settings(p: Props) {
                   <span className="muted">v0.1.0</span>
                 </Row>
                 <Row title={t("settings.workspace")} desc={p.cwd ?? "—"}>
-                  <button className="settings-btn" onClick={p.chooseFolder}>{t("settings.change")}</button>
+                  <Btn onClick={p.chooseFolder}>{t("settings.change")}</Btn>
                 </Row>
                 <Row title={t("settings.server")} desc={`localhost:${p.port}`}>
                   <span className="badge ok">{t("settings.connected")}</span>
@@ -1480,7 +1476,7 @@ export function Settings(p: Props) {
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "var(--s-6) var(--s-7) 0" }}>
                   <h3 style={{ margin: 0 }}>Connect {pa?.label ?? connectFor}</h3>
-                  <button className="settings-btn" onClick={() => setConnectFor(null)}>✕</button>
+                  <Btn onClick={() => setConnectFor(null)}>✕</Btn>
                 </div>
                 <div style={{ padding: "var(--s-3) var(--s-7) var(--s-7)" }}>
                   <p className="hint" style={{ marginTop: 6 }}>Choose how to sign in to {pa?.label ?? connectFor}.</p>
@@ -1500,8 +1496,7 @@ export function Settings(p: Props) {
                         <div className="provider-key" style={{ marginTop: 8, flexDirection: "column", alignItems: "stretch", gap: 8 }}>
                           {m.hint && <p className="hint" style={{ margin: 0 }}>{m.hint}</p>}
                           {!chatgptCode ? (
-                            <button
-                              className="settings-btn"
+                            <Btn
                               disabled={chatgptBusy}
                               onClick={async () => {
                                 setChatgptBusy(true);
@@ -1523,7 +1518,7 @@ export function Settings(p: Props) {
                               }}
                             >
                               {chatgptBusy ? t("settings.saving") : "Open sign-in"}
-                            </button>
+                            </Btn>
                           ) : null}
                           {!chatgptCode && chatgptStatus && chatgptStatus !== "pending" && chatgptStatus !== "connected" ? (
                             <div className="srow-desc" style={{ color: "var(--bad)" }}>{chatgptStatus}</div>
@@ -1547,8 +1542,7 @@ export function Settings(p: Props) {
                         <div className="provider-key" style={{ marginTop: 8, flexDirection: "column", alignItems: "stretch", gap: 8 }}>
                           {m.hint && <p className="hint" style={{ margin: 0 }}>{m.hint}</p>}
                           {!claudeUrl ? (
-                            <button
-                              className="settings-btn"
+                            <Btn
                               disabled={claudeBusy}
                               onClick={async () => {
                                 setClaudeBusy(true);
@@ -1566,7 +1560,7 @@ export function Settings(p: Props) {
                               }}
                             >
                               {claudeBusy ? t("settings.saving") : "Open sign-in"}
-                            </button>
+                            </Btn>
                           ) : (
                             <>
                               <a href={claudeUrl} target="_blank" rel="noreferrer noopener">
@@ -1580,8 +1574,7 @@ export function Settings(p: Props) {
                                   value={claudeCode}
                                   onChange={(e) => setClaudeCode(e.target.value)}
                                 />
-                                <button
-                                  className="settings-btn"
+                                <Btn
                                   disabled={!claudeCode.trim() || claudeBusy}
                                   onClick={async () => {
                                     setClaudeBusy(true);
@@ -1607,7 +1600,7 @@ export function Settings(p: Props) {
                                   }}
                                 >
                                   {claudeBusy ? t("settings.saving") : "Connect"}
-                                </button>
+                                </Btn>
                               </div>
                               {claudeResult === "ok" ? (
                                 <div className="srow-desc" style={{ color: "var(--ok)" }}>✓ Connected</div>
@@ -1627,8 +1620,7 @@ export function Settings(p: Props) {
                             value={draft}
                             onChange={(e) => setKeyDrafts((d) => ({ ...d, [connectFor]: e.target.value }))}
                           />
-                          <button
-                            className="settings-btn"
+                          <Btn
                             disabled={!draft.trim() || savingKey === connectFor}
                             onClick={async () => {
                               setSavingKey(connectFor);
@@ -1642,7 +1634,7 @@ export function Settings(p: Props) {
                             }}
                           >
                             {savingKey === connectFor ? t("settings.saving") : t("settings.save")}
-                          </button>
+                          </Btn>
                         </div>
                       ) : m.hint ? (
                         <p className="hint" style={{ margin: "4px 0 0" }}>{m.hint}</p>

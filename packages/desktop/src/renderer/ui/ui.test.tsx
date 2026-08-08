@@ -43,6 +43,44 @@ describe("Btn", () => {
   });
 });
 
+describe("Settings converted controls", () => {
+  it("settings-nav tab is a real button that keeps its active state and click handler", () => {
+    const html = renderToStaticMarkup(
+      <Row as="button" active onClick={() => {}}>
+        General
+      </Row>,
+    );
+    expect(html).toContain("<button");
+    expect(html).toContain("is-active");
+  });
+
+  it("a converted settings-btn keeps disabled through the click gate", () => {
+    const html = renderToStaticMarkup(
+      <Btn disabled onClick={() => {}}>
+        Save
+      </Btn>,
+    );
+    expect(html).toContain("<button");
+    expect(html).toContain("disabled");
+  });
+
+  it("the primary settings-btn keeps its strong tone", () => {
+    const html = renderToStaticMarkup(<Btn tone="strong">Activate</Btn>);
+    expect(html).toContain("u-btn-strong");
+  });
+
+  it("a ghost settings-btn (Test connection, keybind reset) keeps its title and the ghost class", () => {
+    const html = renderToStaticMarkup(
+      <Btn className="ghost" title="Reset to default">
+        {"↺"}
+      </Btn>,
+    );
+    expect(html).toContain("<button");
+    expect(html).toContain("ghost");
+    expect(html).toContain('title="Reset to default"');
+  });
+});
+
 describe("Chip", () => {
   it("is a button that announces its pressed state when interactive", () => {
     const html = renderToStaticMarkup(<Chip interactive on onClick={() => {}}>x</Chip>);

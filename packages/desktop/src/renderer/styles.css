@@ -993,7 +993,7 @@ svg { display: block; }
 .settings-btn:hover { background: var(--elev2); }
 .settings-btn:focus-visible { outline: var(--ring); outline-offset: var(--s-1); }
 .settings-btn:disabled { color: var(--faint); cursor: default; background: var(--elev); }
-.srow-ctl .settings-btn, .provider-key .settings-btn { margin-top: 0; }
+.provider-key .settings-btn { margin-top: 0; }
 .shortcuts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; color: var(--muted); }
 .shortcuts.fixed { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
 .shortcuts kbd { display: inline-block; min-width: 48px; text-align: center; background: var(--elev); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; margin-right: 8px; color: var(--text); font-size: 11px; font-family: ui-monospace, monospace; }
@@ -1002,16 +1002,14 @@ svg { display: block; }
 .kbd-btn:hover { border-color: var(--accent); }
 .kbd-btn.recording { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); animation: kbd-pulse 1.1s ease-in-out infinite; }
 @keyframes kbd-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
-.settings-btn.ghost { background: transparent; border: 1px solid var(--border); padding: var(--s-2) var(--s-4); min-width: 0; }
 
 .settings-card.big { width: min(940px, 94%); height: 84vh; flex-direction: row; border-radius: var(--r-lg); }
 .settings-nav { width: 202px; flex-shrink: 0; border-right: 1px solid var(--border); padding: var(--s-5) var(--s-4); display: flex; flex-direction: column; gap: var(--s-1); overflow-y: auto; background: var(--panel); }
 .sn-group { font-size: 10px; text-transform: uppercase; letter-spacing: 0.13em; color: var(--faint); font-weight: 600; padding: 14px 11px 6px; }
 .settings-nav > div:first-child .sn-group { padding-top: var(--s-1); }
-.settings-nav button { display: flex; align-items: center; gap: var(--s-4); text-align: left; background: transparent; border: none; color: var(--muted); border-radius: var(--r-sm); padding: var(--s-3) var(--s-5); font-family: inherit; font-size: var(--fs-3); cursor: pointer; transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease); }
-.settings-nav button:hover { background: var(--elev); color: var(--text); }
-.settings-nav button:focus-visible { outline: var(--ring); outline-offset: calc(var(--s-1) * -1); }
-.settings-nav button.active { background: var(--elev); color: var(--text); box-shadow: none; font-weight: var(--fw-medium); }
+.settings-nav .u-row { color: var(--muted); transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease); }
+.settings-nav .u-row:hover { color: var(--text); }
+.settings-nav .u-row.is-active { background: var(--elev); color: var(--text); font-weight: var(--fw-medium); }
 .sn-spacer { flex: 1; }
 .settings-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .srow { display: flex; align-items: center; gap: var(--s-7); padding: var(--s-5) 0; }
@@ -1095,7 +1093,7 @@ svg { display: block; }
 .agent-form .settings-input { min-width: 0; width: 100%; }
 .agent-prompt { min-height: 90px; resize: vertical; font: inherit; line-height: 1.5; }
 .agent-form .agent-ro { display: flex; align-items: center; gap: 10px; text-transform: none; letter-spacing: 0; border: none; padding: 0; color: var(--text); font-size: 13px; }
-.agent-form .settings-btn { align-self: flex-start; }
+.agent-form .u-btn { align-self: flex-start; }
 .sp-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; font-weight: 600; }
 .sp-line { display: flex; justify-content: space-between; padding: 5px 10px; }
 .sp-manage { width: 100%; margin-top: 6px; background: var(--elev2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 8px; }
@@ -7538,6 +7536,7 @@ button.chip { cursor: pointer; }
 .u-btn-strong { background: var(--text); border-color: var(--text); color: var(--bg); }
 .u-btn-strong:disabled { background: var(--elev); border-color: var(--border); color: var(--faint); }
 .u-btn-danger { color: var(--bad); }
+.u-btn.ghost { background: transparent; padding: var(--s-2) var(--s-4); min-width: 0; }
 .u-btn:focus-visible { outline: var(--ring); outline-offset: var(--s-1); }
 .u-btn:disabled { opacity: 0.5; cursor: default; }
 
@@ -7546,6 +7545,7 @@ button.chip { cursor: pointer; }
   padding: var(--s-3) var(--s-5); border-radius: var(--r-sm);
   font-family: var(--sans); font-size: var(--fs-3); line-height: var(--lh-body);
   color: var(--text);
+  background: transparent; border: none; text-align: left;
 }
 .u-row:hover { background: var(--elev); }
 .u-row.is-active { background: var(--elev2); }
