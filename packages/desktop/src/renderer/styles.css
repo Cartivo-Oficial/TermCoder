@@ -102,7 +102,7 @@ svg { display: block; }
 
 :root[data-density="compact"] .transcript-inner { gap: var(--s-4); }
 :root[data-density="compact"] .bubble.user { padding: var(--s-3) var(--s-5); }
-:root[data-density="compact"] .session-card { padding-top: var(--s-3); padding-bottom: var(--s-3); }
+:root[data-density="compact"] .session-card .u-panel-body { padding-top: var(--s-3); padding-bottom: var(--s-3); }
 :root[data-density="compact"] .srow { padding-top: var(--s-3); padding-bottom: var(--s-3); }
 :root[data-density="compact"] .composer { padding: var(--s-3) var(--s-4); }
 :root[data-density="compact"] .side-head { padding: var(--s-4) var(--s-5) var(--s-2); }
@@ -243,12 +243,10 @@ svg { display: block; }
 .icon.sm svg { width: 13px; height: 13px; }
 
 .session-list { display: flex; flex-direction: column; gap: 1px; /* off-scale: hairline separator between session cards */ overflow-y: auto; flex: 1; }
-.session-card { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-4) var(--s-5); border-radius: 9px; border: 1px solid transparent; transition: background 0.12s; }
+.session-card.u-panel { border-radius: 9px; border-color: transparent; background: transparent; transition: background 0.12s; }
 .session-card:hover { background: var(--elev); }
-.session-card.active {
-  background: var(--elev2); border-color: var(--border);
-  box-shadow: inset 2px 0 0 var(--accent), var(--sh-float);
-}
+.session-card.u-panel.is-selected { background: var(--elev2); border-color: var(--border); }
+.session-card .u-panel-body { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-4) var(--s-5); }
 .session-card .sc-top { display: flex; align-items: center; gap: var(--s-3); }
 .session-card .sc-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); background: transparent; border: none; padding: 0; text-align: left; cursor: pointer; font-family: inherit; font-size: var(--fs-3); font-weight: 500; }
 .session-card .sc-title:focus-visible { outline: var(--ring); outline-offset: calc(var(--s-1) * -1); }

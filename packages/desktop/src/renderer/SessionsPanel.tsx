@@ -1,5 +1,6 @@
 import { IconNewChat, IconTrash } from "./Icons";
 import { useI18n } from "./i18n";
+import { Panel } from "./ui";
 
 export interface SessionCardData {
   id: string;
@@ -83,7 +84,7 @@ export function SessionsPanel({
           const active = s.id === currentId;
           const dotClass = active && busy ? "gen" : "idle";
           return (
-            <div key={s.id} className={`session-card ${active ? "active" : ""}`}>
+            <Panel key={s.id} className="session-card" selected={active}>
               <div className="sc-top">
                 <span className={`dot ${dotClass}`} />
                 <button className="sc-title" onClick={() => onOpen(s.id)}>
@@ -108,7 +109,7 @@ export function SessionsPanel({
                   </span>
                 ) : null}
               </div>
-            </div>
+            </Panel>
           );
         })}
       </div>

@@ -81,6 +81,29 @@ describe("Settings converted controls", () => {
   });
 });
 
+describe("Sessions panel converted controls", () => {
+  it("a selected session card carries both the primitive's shared class and its own layout class", () => {
+    const html = renderToStaticMarkup(
+      <Panel className="session-card" selected>
+        <div className="sc-top">x</div>
+      </Panel>,
+    );
+    expect(html).toContain("u-panel");
+    expect(html).toContain("session-card");
+    expect(html).toContain("is-selected");
+  });
+
+  it("an unselected session card keeps the layout class but not is-selected", () => {
+    const html = renderToStaticMarkup(
+      <Panel className="session-card">
+        <div className="sc-top">x</div>
+      </Panel>,
+    );
+    expect(html).toContain("session-card");
+    expect(html).not.toContain("is-selected");
+  });
+});
+
 describe("Chip", () => {
   it("is a button that announces its pressed state when interactive", () => {
     const html = renderToStaticMarkup(<Chip interactive on onClick={() => {}}>x</Chip>);
