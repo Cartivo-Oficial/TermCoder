@@ -104,6 +104,37 @@ describe("Sessions panel converted controls", () => {
   });
 });
 
+describe("Composer and terminal converted controls", () => {
+  it("the composer's branch pill is a static span, not a toggle button", () => {
+    const html = renderToStaticMarkup(<Chip className="cpill static">main</Chip>);
+    expect(html).toContain("<span");
+    expect(html).not.toContain("<button");
+    expect(html).not.toContain("aria-pressed");
+    expect(html).toContain("cpill");
+    expect(html).toContain("static");
+  });
+
+  it("a terminal tab label converts to a real button carrying its own layout class", () => {
+    const html = renderToStaticMarkup(
+      <Row as="button" className="term-tab-label" onClick={() => {}}>
+        Terminal 1
+      </Row>,
+    );
+    expect(html).toContain("<button");
+    expect(html).toContain("term-tab-label");
+  });
+
+  it("a terminal tab's close button keeps its title through the conversion", () => {
+    const html = renderToStaticMarkup(
+      <Row as="button" className="term-tab-close" title="Close terminal" onClick={() => {}}>
+        {"×"}
+      </Row>,
+    );
+    expect(html).toContain("<button");
+    expect(html).toContain('title="Close terminal"');
+  });
+});
+
 describe("Chip", () => {
   it("is a button that announces its pressed state when interactive", () => {
     const html = renderToStaticMarkup(<Chip interactive on onClick={() => {}}>x</Chip>);

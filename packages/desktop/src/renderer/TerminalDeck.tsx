@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { TerminalPane } from "./TerminalPane";
 import { TerminalGrid } from "./TerminalGrid";
+import { Row } from "./ui";
 
 export function TerminalDeck({
   cwd,
@@ -60,10 +61,11 @@ export function TerminalDeck({
       <div className="term-tabs">
         {terminals.map((id, i) => (
           <div key={id} className={`term-tab ${id === activeId ? "active" : ""}`}>
-            <button className="term-tab-label" onClick={() => setActiveId(id)}>
+            <Row as="button" className="term-tab-label" onClick={() => setActiveId(id)}>
               Terminal {i + 1}
-            </button>
-            <button
+            </Row>
+            <Row
+              as="button"
               className="term-tab-close"
               title="Close terminal"
               onClick={(e) => {
@@ -72,7 +74,7 @@ export function TerminalDeck({
               }}
             >
               ×
-            </button>
+            </Row>
           </div>
         ))}
         <button className="term-tab-add" title="New terminal" onClick={addTerminal}>

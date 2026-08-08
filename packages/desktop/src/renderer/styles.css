@@ -603,7 +603,7 @@ svg { display: block; }
 }
 .cpill:hover { background: var(--elev); }
 .cpill:focus-visible { outline: var(--ring); outline-offset: var(--s-1); }
-.cpill.static { cursor: default; }
+.cpill.static { cursor: default; gap: var(--s-3); padding: 0 var(--s-4); border: none; border-radius: 8px; color: var(--text); font-size: var(--fs-3); } /* off-scale: this element also carries .u-chip now, these override its gap/padding/border/radius/color/size so the branch pill keeps its pre-primitive look */
 .cpill.static:hover { background: transparent; }
 .cpill svg { color: var(--faint); flex-shrink: 0; }
 .cpill-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
@@ -1225,12 +1225,13 @@ button.chip { cursor: pointer; }
 .term-tab { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; background: var(--elev); flex-shrink: 0; }
 .term-tab.active { border-color: var(--accent); }
 .term-tab-label { font-family: var(--mono); font-size: var(--fs-1); color: var(--muted); background: transparent; border: none; padding: var(--s-2) var(--s-2) var(--s-2) var(--s-4); cursor: pointer; white-space: nowrap; }
+.term-tab-label.u-row { font-family: var(--mono); font-size: var(--fs-1); color: var(--muted); padding: var(--s-2) var(--s-2) var(--s-2) var(--s-4); border-radius: 0; } /* off-scale: this element also carries .u-row now, so these restate its font/padding/radius over the primitive's before the active-tab override below */
 .term-tab.active .term-tab-label { color: var(--text); }
 .term-tab-close { font-size: var(--fs-3); line-height: 1; color: var(--faint); background: transparent; border: none; padding: var(--s-1) var(--s-3); cursor: pointer; }
+.term-tab-close.u-row { font-size: var(--fs-3); line-height: 1; color: var(--faint); padding: var(--s-1) var(--s-3); border-radius: 0; } /* off-scale: this element also carries .u-row now; .term-tab-close is shared with IDELayout.tsx's own tab strip, which never gets .u-row, so its rules are left untouched */
 .term-tab-close:hover { color: var(--accent); }
 .term-tab-add { font-family: var(--mono); font-size: var(--fs-3); line-height: 1; color: var(--muted); background: var(--elev); border: 1px solid var(--border); border-radius: 7px; padding: var(--s-2) var(--s-4); cursor: pointer; flex-shrink: 0; }
 .term-tab-add:hover { color: var(--text); border-color: var(--accent); }
-.term-tab-label:focus-visible,
 .term-tab-close:focus-visible,
 .term-tab-add:focus-visible { outline: var(--ring); outline-offset: calc(var(--s-1) * -1); }
 .term-deck-body { position: relative; flex: 1; min-height: 0; }

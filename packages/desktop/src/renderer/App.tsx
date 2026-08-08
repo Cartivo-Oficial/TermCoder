@@ -28,6 +28,7 @@ import { emptyGraph, reduceGraph, type SessionEventLike } from "./canvas/runGrap
 import { SidePanel } from "./SidePanel";
 import { SessionsPanel } from "./SessionsPanel";
 import { DiffBody, ToolCard, type DiffComment } from "./ToolCard";
+import { Chip } from "./ui";
 import { CodeEditor } from "./CodeEditor";
 import { enqueue, resolveItem, resolveAll, findByTarget, type ReviewQueue } from "./review/queue";
 import { marksFromPatch, type ReviewMark } from "./review/decorations";
@@ -1799,10 +1800,10 @@ export function App() {
           <span className="cpill-t">{project}</span>
         </button>
         {currentBranch ? (
-          <span className="cpill static">
+          <Chip className="cpill static">
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="4.5" cy="3.5" r="1.6" stroke="currentColor" strokeWidth="1.2" /><circle cx="4.5" cy="12.5" r="1.6" stroke="currentColor" strokeWidth="1.2" /><circle cx="11.5" cy="4.5" r="1.6" stroke="currentColor" strokeWidth="1.2" /><path d="M4.5 5.1v5.8M6.1 4.5h2.4c1 0 1.5.5 1.5 1.5v.6M11.5 6.1c0 3-2 3.4-7 3.4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" /></svg>
             <span className="cpill-t">{currentBranch}</span>
-          </span>
+          </Chip>
         ) : null}
       </div>
       <div className="composer-status">
