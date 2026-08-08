@@ -1,9 +1,13 @@
-import type { HTMLAttributes } from "react";
+import type { ComponentPropsWithoutRef, ElementType } from "react";
 
-export function Row({
+type RowTag = "div" | "button" | "a";
+
+export function Row<T extends RowTag = "div">({
+  as,
   active = false,
   className = "",
   ...rest
-}: { active?: boolean } & HTMLAttributes<HTMLDivElement>) {
-  return <div className={`u-row ${active ? "is-active" : ""} ${className}`.trim()} {...rest} />;
+}: { as?: T; active?: boolean } & Omit<ComponentPropsWithoutRef<T>, "as">) {
+  const Tag = (as ?? "div") as ElementType;
+  return <Tag className={`u-row ${active ? "is-active" : ""} ${className}`.trim()} {...rest} />;
 }

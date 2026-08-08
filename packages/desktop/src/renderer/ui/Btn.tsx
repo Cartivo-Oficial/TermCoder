@@ -7,6 +7,6 @@ export function Btn({
   tone = "quiet",
   className = "",
   ...rest
-}: { size?: "sm" | "md"; tone?: "quiet" | "solid" | "danger" } & ButtonHTMLAttributes<HTMLButtonElement>) {
+}: { size?: "sm" | "md"; tone?: "quiet" | "solid" | "strong" | "danger" } & ButtonHTMLAttributes<HTMLButtonElement>) {
   return <button className={`u-btn u-btn-${size} u-btn-${tone} ${className}`.trim()} {...rest} />;
 }

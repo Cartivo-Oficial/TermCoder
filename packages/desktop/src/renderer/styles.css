@@ -7539,6 +7539,8 @@ button.chip { cursor: pointer; }
 .u-btn-md { padding: var(--s-3) var(--s-5); }
 .u-btn-quiet:hover { background: var(--elev2); }
 .u-btn-solid { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.u-btn-strong { background: var(--text); border-color: var(--text); color: var(--bg); }
+.u-btn-strong:disabled { background: var(--elev); border-color: var(--border); color: var(--faint); }
 .u-btn-danger { color: var(--bad); }
 .u-btn:focus-visible { outline: var(--ring); outline-offset: var(--s-1); }
 .u-btn:disabled { opacity: 0.5; cursor: default; }
@@ -7559,6 +7561,7 @@ button.chip { cursor: pointer; }
 }
 .u-panel-flat { box-shadow: var(--sh-flat); }
 .u-panel-raised { background: var(--elev); box-shadow: var(--sh-raised); }
+.u-panel.is-selected { box-shadow: inset 2px 0 0 var(--accent), var(--sh-float); } /* off-scale: a 2px selection rail, not elevation */
 .u-panel-head {
   padding: var(--s-4) var(--s-5); border-bottom: 1px solid var(--border);
   font-family: var(--sans); font-size: var(--fs-2); font-weight: var(--fw-semibold);
