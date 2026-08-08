@@ -478,6 +478,10 @@ const en: Dict = {
   "term.exited": "Process exited ({code})",
   "term.restart": "Restart",
   "keybind.toggleTerminal": "Toggle terminal",
+  "work.diff": "Diff",
+  "work.terminal": "Terminal",
+  "work.canvas": "Canvas",
+  "work.close": "Close",
 };
 
 const pt: Dict = {
@@ -926,6 +930,10 @@ const pt: Dict = {
   "term.exited": "Processo encerrado ({code})",
   "term.restart": "Reiniciar",
   "keybind.toggleTerminal": "Alternar terminal",
+  "work.diff": "Diferenças",
+  "work.terminal": "Terminal",
+  "work.canvas": "Canvas",
+  "work.close": "Fechar",
 };
 
 const es: Dict = {
@@ -1374,6 +1382,10 @@ const es: Dict = {
   "term.exited": "Proceso terminado ({code})",
   "term.restart": "Reiniciar",
   "keybind.toggleTerminal": "Alternar terminal",
+  "work.diff": "Diferencias",
+  "work.terminal": "Terminal",
+  "work.canvas": "Lienzo",
+  "work.close": "Cerrar",
 };
 
 const fr: Dict = {
@@ -1409,6 +1421,10 @@ const fr: Dict = {
   "settings.theme": "Thème",
   "settings.dark": "Sombre",
   "settings.light": "Clair",
+  "work.diff": "Différences",
+  "work.terminal": "Terminal",
+  "work.canvas": "Canevas",
+  "work.close": "Fermer",
 };
 
 const de: Dict = {
@@ -1444,6 +1460,10 @@ const de: Dict = {
   "settings.theme": "Thema",
   "settings.dark": "Dunkel",
   "settings.light": "Hell",
+  "work.diff": "Unterschiede",
+  "work.terminal": "Terminal",
+  "work.canvas": "Leinwand",
+  "work.close": "Schließen",
 };
 
 const it: Dict = {
@@ -1479,6 +1499,10 @@ const it: Dict = {
   "settings.theme": "Tema",
   "settings.dark": "Scuro",
   "settings.light": "Chiaro",
+  "work.diff": "Differenze",
+  "work.terminal": "Terminale",
+  "work.canvas": "Tela",
+  "work.close": "Chiudi",
 };
 
 const ru: Dict = {
@@ -1514,6 +1538,10 @@ const ru: Dict = {
   "settings.theme": "Тема",
   "settings.dark": "Тёмная",
   "settings.light": "Светлая",
+  "work.diff": "Различия",
+  "work.terminal": "Терминал",
+  "work.canvas": "Холст",
+  "work.close": "Закрыть",
 };
 
 const zh: Dict = {
@@ -1549,6 +1577,10 @@ const zh: Dict = {
   "settings.theme": "主题",
   "settings.dark": "深色",
   "settings.light": "浅色",
+  "work.diff": "差异",
+  "work.terminal": "终端",
+  "work.canvas": "画布",
+  "work.close": "关闭",
 };
 
 const ja: Dict = {
@@ -1584,6 +1616,10 @@ const ja: Dict = {
   "settings.theme": "テーマ",
   "settings.dark": "ダーク",
   "settings.light": "ライト",
+  "work.diff": "差分",
+  "work.terminal": "ターミナル",
+  "work.canvas": "キャンバス",
+  "work.close": "閉じる",
 };
 
 const hi: Dict = {
@@ -1619,6 +1655,10 @@ const hi: Dict = {
   "settings.theme": "थीम",
   "settings.dark": "गहरा",
   "settings.light": "हल्का",
+  "work.diff": "अंतर",
+  "work.terminal": "टर्मिनल",
+  "work.canvas": "कैनवास",
+  "work.close": "बंद करें",
 };
 
 const ar: Dict = {
@@ -1654,6 +1694,10 @@ const ar: Dict = {
   "settings.theme": "السمة",
   "settings.dark": "داكن",
   "settings.light": "فاتح",
+  "work.diff": "الفروق",
+  "work.terminal": "الطرفية",
+  "work.canvas": "اللوحة",
+  "work.close": "إغلاق",
 };
 
 const translations: Record<Lang, Dict> = { en, pt, es, fr, de, it, ru, zh, ja, hi, ar };

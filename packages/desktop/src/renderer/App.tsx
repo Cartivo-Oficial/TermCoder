@@ -17,7 +17,8 @@ import { ErrorBoundary } from "./ErrorBoundary";
 import { RoomView } from "./room/RoomView";
 import { useRoom } from "./room/useRoom";
 import { RecipesPanel } from "./RecipesPanel";
-import { ViewSwitcher } from "./ViewSwitcher";
+import { WorkPanel } from "./workpanel/WorkPanel";
+import { closedWork, closeWork, pinWork, reduceWork } from "./workpanel/decide";
 import { ClassroomPanel } from "./ClassroomPanel";
 import { ModelBrowser } from "./ModelBrowser";
 import { Rail } from "./Rail";
@@ -400,7 +401,7 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [connected, setConnected] = useState(false);
   const [cwd, setCwd] = useState<string | null>(null);
-  const [centerTab, setCenterTab] = useState<"chat" | "terminal" | "canvas">("chat");
+  const [work, setWork] = useState(closedWork);
   const [graph, setGraph] = useState(() => emptyGraph("root"));
   const [termMounted, setTermMounted] = useState(false);
   const [model, setModel] = useState<string>(MODELS[0]!);
@@ -433,6 +434,7 @@ export function App() {
     myNameRef.current = myName;
     localStorage.setItem("tc-name", myName);
   }, [myName]);
+  useEffect(() => { if (work.open && work.tab === "terminal") setTermMounted(true); }, [work.open, work.tab]);
   const [onboarded, setOnboarded] = useState(() => localStorage.getItem("tc-onboarded") === "1");
   const [studentMode, setStudentMode] = useState(() => localStorage.getItem("tc-student") === "1");
   const [theme, setTheme] = useState<"dark" | "light">(
@@ -752,7 +754,7 @@ export function App() {
       } else if (matchCombo(e, bind("toggleTerminal"))) {
         e.preventDefault();
         setTermMounted(true);
-        setCenterTab((tab) => (tab === "terminal" ? "chat" : "terminal"));
+        setWork((w) => pinWork(w, "terminal"));
       } else if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "t") {
         e.preventDefault();
         reopenClosedTab();
@@ -967,7 +969,7 @@ export function App() {
       await fetch(`${httpBase}/sessions`, { method: "POST", headers: { "content-type": "application/json" }, body })
     ).json()) as { id: string; cwd: string; model: string };
     setCurrentId(record.id);
-    setCenterTab("chat");
+    setWork(closedWork);
     addOpenTab(record.id);
     resetTokenMeters();
     localStorage.setItem("tc-session", record.id);
@@ -1298,6 +1300,7 @@ export function App() {
 
   function onEvent(e: StreamEvent) {
     setGraph((g) => reduceGraph(g, e as unknown as SessionEventLike));
+    setWork((w) => reduceWork(w, e as unknown as SessionEventLike));
     if ((e as { sourceId?: string }).sourceId || e.type === "subagent-start" || e.type === "subagent-end") return;
     if (e.type === "room-locked") {
       setMessages((prev) => [...prev, { role: "notice", text: t("pro.roomLocked") }]);
@@ -1738,11 +1741,11 @@ export function App() {
       hint: t("palette.hint.command"),
       run: () => {
         setTermMounted(true);
-        setCenterTab("terminal");
+        setWork((w) => pinWork(w, "terminal"));
       },
     },
-    { id: "canvas", label: t("canvas.tab"), hint: t("palette.hint.command"), run: () => setCenterTab("canvas") },
-    { id: "chat", label: t("tab.chat"), hint: t("palette.hint.command"), run: () => setCenterTab("chat") },
+    { id: "canvas", label: t("canvas.tab"), hint: t("palette.hint.command"), run: () => setWork((w) => pinWork(w, "canvas")) },
+    { id: "chat", label: t("tab.chat"), hint: t("palette.hint.command"), run: () => setWork(closeWork) },
     {
       id: "theme",
       label: t("palette.switchTheme", { theme: t(theme === "dark" ? "theme.light" : "theme.dark") }),
@@ -1769,7 +1772,7 @@ export function App() {
       meta: `${s.messageCount} ${t("home.turns")}`,
       when: relativeTime(sessionTime(s), Date.now()),
     }));
-  const isHome = centerTab === "chat" && messages.length === 0;
+  const isHome = messages.length === 0 && !work.open;
 
   const composerEl = (
     <div
@@ -2061,15 +2064,6 @@ export function App() {
                 );
               })}
               <button className="stab-new" title={t("nav.newSession")} onClick={() => void newSession()}>+</button>
-              {!isHome ? (
-                <ViewSwitcher
-                  view={centerTab}
-                  onSelect={(v) => {
-                    if (v === "terminal") { setTermMounted(true); setCenterTab("terminal"); }
-                    else { setCenterTab(v); }
-                  }}
-                />
-              ) : null}
             </div>
           ) : null}
         </div>
@@ -2364,17 +2358,25 @@ export function App() {
           </div>
           </>
           )}
-
-          {termMounted ? (
-            <TerminalDeck
-              cwd={cwd}
-              hidden={centerTab !== "terminal"}
-              themeKey={`${theme}:${colorTheme}:${accent}`}
-            />
-          ) : null}
-
-          <AgentCanvas graph={graph} hidden={centerTab !== "canvas"} />
         </main>
+
+        <WorkPanel
+          state={work}
+          onPick={(tab) => { if (tab === "terminal") setTermMounted(true); setWork((w) => pinWork(w, tab)); }}
+          onClose={() => setWork(closeWork)}
+          diff={
+            <ReviewStrip
+              queue={reviewQueue}
+              openFile={openFilePath}
+              onAccept={(id) => answer(id, "allow")}
+              onReject={(id) => answer(id, "deny")}
+              onAlways={(id) => answer(id, "allow-always")}
+              onAcceptAll={answerAll}
+            />
+          }
+          terminal={termMounted ? <TerminalDeck cwd={cwd} hidden={false} themeKey={`${theme}:${colorTheme}:${accent}`} /> : null}
+          canvas={<AgentCanvas graph={graph} hidden={false} />}
+        />
 
         {sidePanel ? (
           <SidePanel
