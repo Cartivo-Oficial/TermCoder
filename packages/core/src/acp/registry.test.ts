@@ -32,7 +32,7 @@ describe("finding the agents on this machine", () => {
     });
     expect(found.map((a) => a.id)).toEqual(["claude"]);
     expect(found[0]?.command).toBe("npx");
-    expect(found[0]?.args).toContain("@zed-industries/claude-code-acp");
+    expect(found[0]?.args).toContain("@agentclientprotocol/claude-agent-acp");
   });
 
   it("takes a user's own agent, and lets it override a known one", () => {

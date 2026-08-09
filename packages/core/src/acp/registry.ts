@@ -14,14 +14,14 @@ export const KNOWN_AGENTS: AgentSpec[] = [
     label: "Claude Code",
     requires: "claude",
     command: "npx",
-    args: ["-y", "@zed-industries/claude-code-acp"],
+    args: ["-y", "@agentclientprotocol/claude-agent-acp"],
   },
   {
     id: "codex",
     label: "Codex",
     requires: "codex",
     command: "npx",
-    args: ["-y", "@zed-industries/codex-acp"],
+    args: ["-y", "@agentclientprotocol/codex-acp"],
   },
   { id: "opencode", label: "opencode", requires: "opencode", command: "opencode", args: ["acp"] },
   {
