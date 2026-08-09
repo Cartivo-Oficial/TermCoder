@@ -2,6 +2,22 @@
 
 New releases and improvements to TermCoder.
 
+## 0.13.0
+2026-08-08
+
+### TermCoder runs other coding agents
+- **Delegate a task to Claude Code, Codex, opencode or Gemini CLI, and watch it work beside your own agents.** Ask for it by name in a `task` — `claude`, `codex`, `opencode` — and it becomes a node of the same run, streaming what it reads, edits and runs into the canvas alongside everything else.
+- **Whatever you have installed is what you are offered.** TermCoder looks for the agents already on your machine and never mentions one you do not have. Install another tomorrow and it appears, with no update to this app.
+- This works through the Agent Client Protocol, the open standard some thirty coding agents already speak — so this is one protocol rather than a fragile adapter per tool, and an agent released next month works without us shipping anything.
+- **An external agent asks before it writes.** Its permission requests go through the same gate as our own tools, with the same settings you already chose, and it is launched with the session's working directory and nothing wider.
+
+### The canvas
+- **Rebuilt to show a run.** Curved connectors from a parent to its children, an icon per agent so Codex and Claude are distinguishable at a glance, and a summary of how many are running and how many are done.
+
+### Fixed
+- **Cancelling a turn now reaches the tools it started.** A delegated agent kept running after you cancelled — and kept costing you.
+- When an external agent fails, it says what to do: a stale sign-in asks you to sign in, a missing binary points at your PATH, a rate limit says to wait. It used to surface the raw protocol error.
+
 ## 0.12.0
 2026-08-08
 
