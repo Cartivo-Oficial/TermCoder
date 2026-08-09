@@ -33,6 +33,7 @@ import { CodeEditor } from "./CodeEditor";
 import { enqueue, resolveItem, resolveAll, findByTarget, type ReviewQueue } from "./review/queue";
 import { marksFromPatch, type ReviewMark } from "./review/decorations";
 import { ReviewStrip } from "./review/ReviewStrip";
+import type { PatchHunk } from "@termcoder/core";
 import { blobToWav, blobToBase64 } from "./audio";
 import {
   IconBack,
@@ -142,6 +143,8 @@ interface Message {
   status?: "running" | "done" | "error";
   detail?: string;
   images?: string[];
+  patch?: PatchHunk[];
+  target?: string;
 }
 interface PendingImage {
   dataUrl: string;
@@ -1413,11 +1416,18 @@ export function App() {
       return;
     }
 
+    const targetOf = (e: StreamEvent) => {
+      if ((e.name === "write" || e.name === "edit") && typeof (e.args as any)?.path === "string") {
+        return (e.args as any).path;
+      }
+      return undefined;
+    };
+
     if (e.type === "tool-call") {
       appendRef.current = false;
       setMessages((prev) => [
         ...prev,
-        { role: "tool", name: e.name, text: e.title ?? "", status: "running", detail: e.detail },
+        { role: "tool", name: e.name, text: e.title ?? "", status: "running", detail: e.detail, patch: e.patch, target: targetOf(e) },
       ]);
       return;
     }
