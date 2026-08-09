@@ -28,6 +28,8 @@ import { emptyGraph, reduceGraph, type SessionEventLike } from "./canvas/runGrap
 import { SidePanel } from "./SidePanel";
 import { SessionsPanel } from "./SessionsPanel";
 import { DiffBody, ToolCard, type DiffComment } from "./ToolCard";
+import { WorkSummary } from "./chat/WorkSummary";
+import { elapsedSeconds, lastUserIndex, turnCards, type TurnClock } from "./chat/summary";
 import { Chip } from "./ui";
 import { CodeEditor } from "./CodeEditor";
 import { enqueue, resolveItem, resolveAll, findByTarget, type ReviewQueue } from "./review/queue";
@@ -399,10 +401,13 @@ export function App() {
   });
   const closedTabsRef = useRef<string[]>([]);
   const dragTabRef = useRef<string | null>(null);
+  const messagesRef = useRef<Message[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [busy, setBusy] = useState(false);
+  const [clocks, setClocks] = useState<Record<number, TurnClock>>({});
+  const [now, setNow] = useState(() => Date.now());
   const [connected, setConnected] = useState(false);
   const [cwd, setCwd] = useState<string | null>(null);
   const [work, setWork] = useState(closedWork);
@@ -819,6 +824,29 @@ export function App() {
     if (autoScroll) scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages, busy, autoScroll]);
 
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    const at = lastUserIndex(messagesRef.current);
+    if (at < 0) return;
+    const stamp = Date.now();
+    setNow(stamp);
+    setClocks((prev) => {
+      if (busy) return { ...prev, [at]: { start: stamp } };
+      const open = prev[at];
+      if (!open || open.end !== undefined) return prev;
+      return { ...prev, [at]: { start: open.start, end: stamp } };
+    });
+  }, [busy]);
+
+  useEffect(() => {
+    if (!busy) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [busy]);
+
   async function refreshSessions() {
     try {
       setSessions((await (await fetch(`${httpBase}/sessions`)).json()) as SessionSummary[]);
@@ -989,6 +1017,7 @@ export function App() {
       setModel(record.model);
     }
     setMessages([]);
+    setClocks({});
     setGraph(emptyGraph("root"));
     setWorkingDir(record.cwd);
     connect(record.id);
@@ -1018,6 +1047,7 @@ export function App() {
       localStorage.setItem("tc-session", id);
       setModel(record.model);
       setMessages(segments.map(segToMessage));
+      setClocks({});
       setGraph(emptyGraph("root"));
       setWorkingDir(record.cwd);
       connect(id);
@@ -1739,6 +1769,13 @@ export function App() {
   const workingDetail = runningTool?.text ?? "";
   const workingTokens = liveTokens || tokens;
 
+  const cards = useMemo(() => turnCards(messages), [messages]);
+  const cardFor = (i: number) => {
+    const card = cards.get(i);
+    if (!card) return null;
+    return <WorkSummary summary={card.summary} seconds={elapsedSeconds(clocks[card.start], now)} />;
+  };
+
   const paletteItems: PaletteItem[] = [
     { id: "new", label: t("nav.newSession"), hint: t("palette.hint.command"), run: () => void newSession() },
     { id: "folder", label: t("nav.chooseFolder"), hint: t("palette.hint.command"), run: () => void chooseFolder() },
@@ -2266,6 +2303,7 @@ export function App() {
                   </div>
                 ) : null}
                 {m.role === "notice" ? <div className="notice">{m.text}</div> : null}
+                {m.role === "assistant" ? cardFor(i) : null}
                 {m.role === "assistant" ? (
                   busy && i === messages.length - 1 ? (
                     <div className="bubble assistant streaming">{m.text}</div>

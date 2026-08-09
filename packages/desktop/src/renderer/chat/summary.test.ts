@@ -1,6 +1,14 @@
 import { filePatch } from "@termcoder/core";
 import { describe, expect, it } from "vitest";
-import { countPatch, turnSummary } from "./summary";
+import {
+  countPatch,
+  elapsedSeconds,
+  formatDuration,
+  lastUserIndex,
+  splitPath,
+  turnCards,
+  turnSummary,
+} from "./summary";
 
 const edit = (target: string, before: string, after: string) => ({
   role: "tool",
@@ -81,5 +89,104 @@ describe("summarising a turn", () => {
   it("ignores a tool still running", () => {
     const s = turnSummary([{ ...edit("a.ts", "1\n", "1\n2\n"), status: "running" }]);
     expect(s.files).toEqual([]);
+  });
+});
+
+describe("splitting a path for a narrow row", () => {
+  it("keeps the file name whole and the directory separate", () => {
+    expect(splitPath("packages/desktop/src/renderer/App.tsx")).toEqual({
+      dir: "packages/desktop/src/renderer/",
+      base: "App.tsx",
+    });
+  });
+
+  it("handles a bare file name", () => {
+    expect(splitPath("README.md")).toEqual({ dir: "", base: "README.md" });
+  });
+
+  it("handles a windows separator", () => {
+    expect(splitPath("src\\main\\index.ts")).toEqual({ dir: "src\\main\\", base: "index.ts" });
+  });
+});
+
+describe("formatting a duration", () => {
+  it("reads in seconds under a minute", () => {
+    expect(formatDuration(12)).toBe("12s");
+    expect(formatDuration(0)).toBe("0s");
+  });
+
+  it("reads in minutes and padded seconds over one", () => {
+    expect(formatDuration(60)).toBe("1m 00s");
+    expect(formatDuration(125)).toBe("2m 05s");
+  });
+
+  it("rounds rather than showing a fraction", () => {
+    expect(formatDuration(12.4)).toBe("12s");
+  });
+});
+
+describe("the turn clock", () => {
+  it("measures a finished turn end to start", () => {
+    expect(elapsedSeconds({ start: 1000, end: 13_000 }, 99_000)).toBe(12);
+  });
+
+  it("measures a running turn against now", () => {
+    expect(elapsedSeconds({ start: 1000 }, 4000)).toBe(3);
+  });
+
+  it("has nothing to say about a turn it never timed", () => {
+    expect(elapsedSeconds(undefined, 4000)).toBeUndefined();
+  });
+
+  it("never goes negative when the clock is behind", () => {
+    expect(elapsedSeconds({ start: 5000 }, 1000)).toBe(0);
+  });
+});
+
+describe("finding the turn a card belongs to", () => {
+  const user = (text: string) => ({ role: "user", text });
+  const reply = (text: string) => ({ role: "assistant", text });
+
+  it("points at the last user message", () => {
+    expect(lastUserIndex([user("a"), reply("b"), user("c"), reply("d")])).toBe(2);
+    expect(lastUserIndex([reply("b")])).toBe(-1);
+  });
+
+  it("hangs one card off the reply that closes the turn", () => {
+    const cards = turnCards([
+      user("fix it"),
+      reply("On it."),
+      edit("src/a.ts", "one\n", "one\ntwo\n"),
+      reply("Done."),
+    ]);
+    expect([...cards.keys()]).toEqual([3]);
+    expect(cards.get(3)?.start).toBe(0);
+    expect(cards.get(3)?.summary.files.map((f) => f.path)).toEqual(["src/a.ts"]);
+  });
+
+  it("keeps each turn's work to itself", () => {
+    const cards = turnCards([
+      user("first"),
+      edit("a.ts", "1\n", "1\n2\n"),
+      reply("did a"),
+      user("second"),
+      edit("b.ts", "1\n", "1\n2\n"),
+      reply("did b"),
+    ]);
+    expect([...cards.keys()]).toEqual([2, 5]);
+    expect(cards.get(2)?.summary.files.map((f) => f.path)).toEqual(["a.ts"]);
+    expect(cards.get(5)?.summary.files.map((f) => f.path)).toEqual(["b.ts"]);
+  });
+
+  it("hangs no card off a turn that only talked", () => {
+    expect(turnCards([user("hello"), reply("hi")]).size).toBe(0);
+  });
+
+  it("waits for a reply before it has somewhere to hang the card", () => {
+    expect(turnCards([user("fix it"), edit("a.ts", "1\n", "1\n2\n")]).size).toBe(0);
+  });
+
+  it("ignores work that arrived before any turn began", () => {
+    expect(turnCards([edit("a.ts", "1\n", "1\n2\n"), reply("stray")]).size).toBe(0);
   });
 });

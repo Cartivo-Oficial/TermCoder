@@ -19,6 +19,17 @@ export interface TurnSummary {
   didWork: boolean;
 }
 
+export interface TurnClock {
+  start: number;
+  end?: number;
+}
+
+export interface TurnCard {
+  start: number;
+  anchor: number;
+  summary: TurnSummary;
+}
+
 export interface SummaryInput {
   role: string;
   name?: string;
@@ -88,4 +99,58 @@ export function turnSummary(messages: SummaryInput[]): TurnSummary {
     checks,
     didWork: files.length > 0 || checks.length > 0,
   };
+}
+
+export function splitPath(path: string): { dir: string; base: string } {
+  const cut = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
+  if (cut < 0) return { dir: "", base: path };
+  return { dir: path.slice(0, cut + 1), base: path.slice(cut + 1) };
+}
+
+export function formatDuration(seconds: number): string {
+  const whole = Math.max(0, Math.round(seconds));
+  if (whole < 60) return `${whole}s`;
+  const minutes = Math.floor(whole / 60);
+  return `${minutes}m ${String(whole % 60).padStart(2, "0")}s`;
+}
+
+export function elapsedSeconds(clock: TurnClock | undefined, now: number): number | undefined {
+  if (!clock) return undefined;
+  return Math.max(0, ((clock.end ?? now) - clock.start) / 1000);
+}
+
+export function lastUserIndex(messages: SummaryInput[]): number {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i]?.role === "user") return i;
+  }
+  return -1;
+}
+
+export function turnCards(messages: SummaryInput[]): Map<number, TurnCard> {
+  const cards = new Map<number, TurnCard>();
+  let start = -1;
+
+  const close = (end: number) => {
+    if (start < 0) return;
+
+    let anchor = -1;
+    for (let i = start; i < end; i++) {
+      if (messages[i]?.role === "assistant") anchor = i;
+    }
+    if (anchor < 0) return;
+
+    const summary = turnSummary(messages.slice(start, end));
+    if (!summary.didWork) return;
+
+    cards.set(anchor, { start, anchor, summary });
+  };
+
+  messages.forEach((message, i) => {
+    if (message.role !== "user") return;
+    close(i);
+    start = i;
+  });
+  close(messages.length);
+
+  return cards;
 }

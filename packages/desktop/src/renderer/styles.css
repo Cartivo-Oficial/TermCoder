@@ -440,6 +440,25 @@ svg { display: block; }
 .msg-copy:focus-visible { opacity: 1; outline: var(--ring); outline-offset: var(--s-1); }
 .md-fallback { white-space: pre-wrap; word-break: break-word; font: inherit; margin: 0; }
 
+.work-summary { margin-bottom: var(--s-4); max-width: 100%; }
+.work-summary .u-panel-head { display: flex; align-items: center; gap: var(--s-4); font-family: var(--mono); font-size: var(--fs-2); font-variant-numeric: tabular-nums; color: var(--text); }
+.work-summary .u-panel-body { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-4) var(--s-5); }
+.ws-file { display: flex; align-items: baseline; gap: var(--s-4); min-width: 0; font-size: var(--fs-2); line-height: var(--lh-tight); }
+.ws-check { display: flex; align-items: baseline; gap: var(--s-4); min-width: 0; font-size: var(--fs-2); line-height: var(--lh-tight); }
+.ws-path { display: flex; flex: 1; min-width: 0; font-family: var(--mono); }
+.ws-dir { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--faint); }
+.ws-base { flex: none; white-space: nowrap; color: var(--text); }
+.ws-counts { flex: none; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.ws-add { color: var(--ok); }
+.ws-del { color: var(--bad); }
+.ws-time { color: var(--muted); font-size: var(--fs-1); font-variant-numeric: tabular-nums; }
+.ws-mark { flex: none; width: 10px; font-family: var(--mono); color: var(--muted); }
+.ws-cmd { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); color: var(--text); }
+.ws-outcome { flex: none; font-size: var(--fs-1); color: var(--muted); }
+.ws-check[data-ok="yes"] .ws-mark { color: var(--ok); }
+.ws-check[data-ok="no"] .ws-mark { color: var(--bad); }
+.ws-check[data-ok="no"] .ws-outcome { color: var(--bad); }
+
 .crash { height: 100%; display: flex; align-items: center; justify-content: center; padding: 24px; background: var(--bg); }
 .crash-card { width: min(520px, 92%); background: var(--floating); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: 0 24px 80px rgba(0,0,0,0.5), inset 0 1px 0 var(--seam); padding: 22px; }
 .crash-title { font-weight: 600; margin-bottom: 10px; }
