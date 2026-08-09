@@ -1773,7 +1773,13 @@ export function App() {
   const cardFor = (i: number) => {
     const card = cards.get(i);
     if (!card) return null;
-    return <WorkSummary summary={card.summary} seconds={elapsedSeconds(clocks[card.start], now)} />;
+    return (
+      <WorkSummary
+        summary={card.summary}
+        seconds={elapsedSeconds(clocks[card.start], now)}
+        labels={{ passed: t("work.passed"), failed: t("work.failed") }}
+      />
+    );
   };
 
   const paletteItems: PaletteItem[] = [

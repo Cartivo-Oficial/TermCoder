@@ -22,7 +22,9 @@ function FileRow({ file }: { file: FileChange }) {
   );
 }
 
-function CheckRow({ check }: { check: CheckRun }) {
+export interface CheckLabels { passed: string; failed: string }
+
+function CheckRow({ check, labels }: { check: CheckRun; labels: CheckLabels }) {
   return (
     <div className="ws-check" data-ok={check.ok ? "yes" : "no"}>
       <span className="ws-mark" aria-hidden="true">
@@ -31,12 +33,12 @@ function CheckRow({ check }: { check: CheckRun }) {
       <span className="ws-cmd" title={check.command}>
         {check.command}
       </span>
-      <span className="ws-outcome">{check.ok ? "passed" : "failed"}</span>
+      <span className="ws-outcome">{check.ok ? labels.passed : labels.failed}</span>
     </div>
   );
 }
 
-export function WorkSummary({ summary, seconds }: { summary: TurnSummary; seconds?: number }) {
+export function WorkSummary({ summary, seconds, labels }: { summary: TurnSummary; seconds?: number; labels: CheckLabels }) {
   if (!summary.didWork) return null;
 
   return (
@@ -53,7 +55,7 @@ export function WorkSummary({ summary, seconds }: { summary: TurnSummary; second
       ))}
       {seconds === undefined ? null : <div className="ws-time">{formatDuration(seconds)}</div>}
       {summary.checks.map((check, i) => (
-        <CheckRow key={`${check.command}-${i}`} check={check} />
+        <CheckRow key={`${check.command}-${i}`} check={check} labels={labels} />
       ))}
     </Panel>
   );

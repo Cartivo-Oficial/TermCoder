@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 import { WorkSummary } from "./WorkSummary";
 import type { TurnSummary } from "./summary";
 
+const LABELS = { passed: "passed", failed: "failed" };
+
 const css = readFileSync(fileURLToPath(new URL("../styles.css", import.meta.url)), "utf8");
 
 const rule = (selector: string): string => {
@@ -36,22 +38,22 @@ const bare = (html: string) => html.replace(/\s(?:class|style|data-[a-z-]+)="[^"
 
 describe("the work summary card", () => {
   it("renders nothing when the turn did no work", () => {
-    expect(renderToStaticMarkup(<WorkSummary summary={summary()} seconds={4} />)).toBe("");
+    expect(renderToStaticMarkup(<WorkSummary labels={LABELS} summary={summary()} seconds={4} />)).toBe("");
   });
 
   it("renders nothing when a turn with a stray count still did no work", () => {
     const s = summary({ added: 9, removed: 2 });
-    expect(renderToStaticMarkup(<WorkSummary summary={s} seconds={4} />)).toBe("");
+    expect(renderToStaticMarkup(<WorkSummary labels={LABELS} summary={s} seconds={4} />)).toBe("");
   });
 
   it("opens with the totals for the whole turn", () => {
-    const html = renderToStaticMarkup(<WorkSummary summary={withFiles} seconds={12} />);
+    const html = renderToStaticMarkup(<WorkSummary labels={LABELS} summary={withFiles} seconds={12} />);
     expect(html).toContain("+543");
     expect(html).toContain("−152");
   });
 
   it("shows every file it touched, with that file's own counts", () => {
-    const html = renderToStaticMarkup(<WorkSummary summary={withFiles} seconds={12} />);
+    const html = renderToStaticMarkup(<WorkSummary labels={LABELS} summary={withFiles} seconds={12} />);
     expect(html).toContain("App.tsx");
     expect(html).toContain("packages/desktop/src/renderer/");
     expect(html).toContain("agent.ts");
@@ -62,14 +64,14 @@ describe("the work summary card", () => {
   });
 
   it("shows the elapsed time it was handed", () => {
-    expect(renderToStaticMarkup(<WorkSummary summary={withFiles} seconds={12} />)).toContain("12s");
-    expect(renderToStaticMarkup(<WorkSummary summary={withFiles} seconds={125} />)).toContain(
+    expect(renderToStaticMarkup(<WorkSummary labels={LABELS} summary={withFiles} seconds={12} />)).toContain("12s");
+    expect(renderToStaticMarkup(<WorkSummary labels={LABELS} summary={withFiles} seconds={125} />)).toContain(
       "2m 05s",
     );
   });
 
   it("leaves the time out rather than inventing a zero when no clock ran", () => {
-    const html = renderToStaticMarkup(<WorkSummary summary={withFiles} />);
+    const html = renderToStaticMarkup(<WorkSummary labels={LABELS} summary={withFiles} />);
     expect(html).not.toContain("ws-time");
     expect(html).not.toContain("0s");
   });
@@ -82,7 +84,7 @@ describe("the work summary card", () => {
       ],
       didWork: true,
     });
-    const html = bare(renderToStaticMarkup(<WorkSummary summary={s} seconds={3} />));
+    const html = bare(renderToStaticMarkup(<WorkSummary labels={LABELS} summary={s} seconds={3} />));
     expect(html).toContain("passed");
     expect(html).toContain("failed");
     expect(html).toContain("pnpm typecheck");
@@ -91,14 +93,14 @@ describe("the work summary card", () => {
 
   it("names the outcome for a screen reader and hides the bare glyph", () => {
     const s = summary({ checks: [{ command: "pnpm test", ok: false }], didWork: true });
-    const html = renderToStaticMarkup(<WorkSummary summary={s} seconds={3} />);
+    const html = renderToStaticMarkup(<WorkSummary labels={LABELS} summary={s} seconds={3} />);
     expect(html).toContain('aria-hidden="true"');
     expect(html).toContain("✗");
   });
 
   it("drops the totals when the turn ran checks and touched no file", () => {
     const s = summary({ checks: [{ command: "pnpm build", ok: true }], didWork: true });
-    const html = renderToStaticMarkup(<WorkSummary summary={s} seconds={3} />);
+    const html = renderToStaticMarkup(<WorkSummary labels={LABELS} summary={s} seconds={3} />);
     expect(html).not.toContain("u-panel-head");
     expect(html).toContain("pnpm build");
   });
@@ -111,7 +113,7 @@ describe("the work summary card", () => {
       removed: 0,
       didWork: true,
     });
-    const html = renderToStaticMarkup(<WorkSummary summary={s} seconds={1} />);
+    const html = renderToStaticMarkup(<WorkSummary labels={LABELS} summary={s} seconds={1} />);
     expect(html).toContain(`title="${long}"`);
     expect(html).toContain("AgentCanvasInspectorPanel.tsx");
   });
@@ -119,13 +121,13 @@ describe("the work summary card", () => {
   it("keeps a long command reachable too", () => {
     const long = "pnpm --filter @termcoder/desktop exec vitest run packages/desktop/src/renderer";
     const s = summary({ checks: [{ command: long, ok: true }], didWork: true });
-    expect(renderToStaticMarkup(<WorkSummary summary={s} seconds={1} />)).toContain(
+    expect(renderToStaticMarkup(<WorkSummary labels={LABELS} summary={s} seconds={1} />)).toContain(
       `title="${long}"`,
     );
   });
 
   it("is built on the shared panel primitive", () => {
-    const html = renderToStaticMarkup(<WorkSummary summary={withFiles} seconds={1} />);
+    const html = renderToStaticMarkup(<WorkSummary labels={LABELS} summary={withFiles} seconds={1} />);
     expect(html).toContain("u-panel");
     expect(html).toContain("u-panel-body");
     expect(html).toContain("work-summary");

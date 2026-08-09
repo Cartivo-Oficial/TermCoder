@@ -33,6 +33,8 @@ const RTL: ReadonlySet<Lang> = new Set<Lang>(["ar"]);
 type Dict = Record<string, string>;
 
 const en: Dict = {
+  "work.passed": "passed",
+  "work.failed": "failed",
   "app.serverUnreachable": "Could not reach the termcoder server.",
   "search.placeholder": "Search {project}",
   "nav.menu": "Menu",
@@ -485,6 +487,8 @@ const en: Dict = {
 };
 
 const pt: Dict = {
+  "work.passed": "passou",
+  "work.failed": "falhou",
   "app.serverUnreachable": "Não foi possível conectar ao servidor termcoder.",
   "search.placeholder": "Pesquisar {project}",
   "nav.menu": "Menu",
@@ -937,6 +941,8 @@ const pt: Dict = {
 };
 
 const es: Dict = {
+  "work.passed": "pasó",
+  "work.failed": "falló",
   "app.serverUnreachable": "No se pudo conectar con el servidor termcoder.",
   "search.placeholder": "Buscar {project}",
   "nav.menu": "Menú",
@@ -1389,6 +1395,8 @@ const es: Dict = {
 };
 
 const fr: Dict = {
+  "work.passed": "réussi",
+  "work.failed": "échoué",
   "search.placeholder": "Rechercher {project}",
   "nav.newSession": "Nouvelle session",
   "nav.openFolder": "Ouvrir le dossier…",
@@ -1428,6 +1436,8 @@ const fr: Dict = {
 };
 
 const de: Dict = {
+  "work.passed": "bestanden",
+  "work.failed": "fehlgeschlagen",
   "search.placeholder": "{project} durchsuchen",
   "nav.newSession": "Neue Sitzung",
   "nav.openFolder": "Ordner öffnen…",
@@ -1467,6 +1477,8 @@ const de: Dict = {
 };
 
 const it: Dict = {
+  "work.passed": "superato",
+  "work.failed": "fallito",
   "search.placeholder": "Cerca {project}",
   "nav.newSession": "Nuova sessione",
   "nav.openFolder": "Apri cartella…",
@@ -1506,6 +1518,8 @@ const it: Dict = {
 };
 
 const ru: Dict = {
+  "work.passed": "пройден",
+  "work.failed": "не пройден",
   "search.placeholder": "Искать {project}",
   "nav.newSession": "Новая сессия",
   "nav.openFolder": "Открыть папку…",
@@ -1545,6 +1559,8 @@ const ru: Dict = {
 };
 
 const zh: Dict = {
+  "work.passed": "通过",
+  "work.failed": "失败",
   "search.placeholder": "搜索 {project}",
   "nav.newSession": "新建会话",
   "nav.openFolder": "打开文件夹…",
@@ -1584,6 +1600,8 @@ const zh: Dict = {
 };
 
 const ja: Dict = {
+  "work.passed": "成功",
+  "work.failed": "失敗",
   "search.placeholder": "{project} を検索",
   "nav.newSession": "新しいセッション",
   "nav.openFolder": "フォルダーを開く…",
@@ -1623,6 +1641,8 @@ const ja: Dict = {
 };
 
 const hi: Dict = {
+  "work.passed": "सफल",
+  "work.failed": "विफल",
   "search.placeholder": "{project} खोजें",
   "nav.newSession": "नया सत्र",
   "nav.openFolder": "फ़ोल्डर खोलें…",
@@ -1662,6 +1682,8 @@ const hi: Dict = {
 };
 
 const ar: Dict = {
+  "work.passed": "نجح",
+  "work.failed": "فشل",
   "search.placeholder": "بحث في {project}",
   "nav.newSession": "جلسة جديدة",
   "nav.openFolder": "فتح مجلد…",
