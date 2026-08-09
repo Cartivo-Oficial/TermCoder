@@ -1416,11 +1416,10 @@ export function App() {
       return;
     }
 
-    const targetOf = (e: StreamEvent) => {
-      if ((e.name === "write" || e.name === "edit") && typeof (e.args as any)?.path === "string") {
-        return (e.args as any).path;
-      }
-      return undefined;
+    const targetOf = (e: StreamEvent): string | undefined => {
+      if (e.name !== "write" && e.name !== "edit") return undefined;
+      const args = e.args as { path?: unknown } | undefined;
+      return typeof args?.path === "string" ? args.path : undefined;
     };
 
     if (e.type === "tool-call") {
