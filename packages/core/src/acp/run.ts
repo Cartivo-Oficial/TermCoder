@@ -115,11 +115,20 @@ function killTree(child: ChildProcess): void {
   child.kill();
 }
 
+export function agentEnv(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const out: NodeJS.ProcessEnv = {};
+  for (const [key, value] of Object.entries(source)) {
+    if (key === "CLAUDECODE" || key.startsWith("CLAUDE_CODE_")) continue;
+    out[key] = value;
+  }
+  return out;
+}
+
 export async function runAgent(opts: RunAgentOptions): Promise<void> {
   const { spec, env, ...rest } = opts;
   const child = spawn(spec.command, spec.args, {
     cwd: rest.cwd,
-    env: env ?? process.env,
+    env: agentEnv(env ?? process.env),
     stdio: ["pipe", "pipe", "inherit"],
     shell: process.platform === "win32",
   });

@@ -1,7 +1,7 @@
 import { agent, type AgentApp } from "@agentclientprotocol/sdk";
 import { describe, expect, it } from "vitest";
 import type { SessionEvent } from "../session/session";
-import { runSession } from "./run";
+import { agentEnv, runSession } from "./run";
 
 function talkingAgent(): AgentApp {
   return agent()
@@ -155,5 +155,20 @@ describe("running an agent", () => {
     control.abort();
     await run;
     expect(events).toEqual([{ type: "done", sourceId: "node-5" }]);
+  });
+});
+
+describe("the child agent does not inherit our session", () => {
+  it("strips the markers that make a nested Claude Code refuse to start", () => {
+    const out = agentEnv({
+      PATH: "/usr/bin",
+      HOME: "/home/u",
+      CLAUDECODE: "1",
+      CLAUDE_CODE_ENTRYPOINT: "cli",
+    });
+    expect(out.PATH).toBe("/usr/bin");
+    expect(out.HOME).toBe("/home/u");
+    expect(out.CLAUDECODE).toBeUndefined();
+    expect(out.CLAUDE_CODE_ENTRYPOINT).toBeUndefined();
   });
 });
