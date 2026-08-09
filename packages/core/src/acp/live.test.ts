@@ -12,6 +12,7 @@ function envOutsideAnyClaudeSession(): NodeJS.ProcessEnv {
   for (const key of Object.keys(env)) {
     if (key === "CLAUDECODE" || key.startsWith("CLAUDE_CODE_")) delete env[key];
   }
+  env.ANTHROPIC_MODEL ??= "claude-sonnet-5";
   return env;
 }
 
