@@ -355,7 +355,7 @@ export class Session {
       attachments?: Array<{ dataUrl: string; mediaType: string }>;
     } = {},
   ): AsyncGenerator<SessionEvent, void> {
-    const ctx: ToolContext = { cwd: this.record.cwd };
+    const ctx: ToolContext = { cwd: this.record.cwd, signal: opts.signal };
     if (this.deps.config.providers.anthropic?.oauth) {
       await ensureFreshClaudeConfig(this.deps.config);
     }
