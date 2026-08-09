@@ -18,17 +18,30 @@ describe("finding the agents on this machine", () => {
 
   it("knows how to launch each one it knows about", () => {
     for (const spec of KNOWN_AGENTS) {
+      expect(spec.requires).toBeTruthy();
       expect(spec.command).toBeTruthy();
       expect(Array.isArray(spec.args)).toBe(true);
       expect(spec.label).toBeTruthy();
     }
   });
 
+  it("looks for the CLI the user installed, not for the adapter it launches", () => {
+    const found = discoverAgents({
+      path: PATH,
+      exists: (file) => file.includes("claude"),
+    });
+    expect(found.map((a) => a.id)).toEqual(["claude"]);
+    expect(found[0]?.command).toBe("npx");
+    expect(found[0]?.args).toContain("@zed-industries/claude-code-acp");
+  });
+
   it("takes a user's own agent, and lets it override a known one", () => {
-    const extra = [{ id: "claude", label: "My build", command: "/opt/claude", args: ["acp"] }];
+    const extra = [
+      { id: "claude", label: "My build", requires: "claude", command: "/opt/claude-acp", args: [] },
+    ];
     const found = discoverAgents({ path: PATH, exists: () => true, extra });
     const claude = found.find((a) => a.id === "claude");
-    expect(claude?.command).toBe("/opt/claude");
+    expect(claude?.command).toBe("/opt/claude-acp");
     expect(found.filter((a) => a.id === "claude")).toHaveLength(1);
   });
 });
