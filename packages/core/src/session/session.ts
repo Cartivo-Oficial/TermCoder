@@ -25,18 +25,18 @@ import { ensureFreshClaudeConfig } from "../auth/oauth";
 import { ensureFreshChatGPTConfig } from "../auth/chatgpt-oauth";
 
 export type SessionEventKind =
-  | { type: "text-delta"; text: string }
-  | { type: "reasoning-delta"; text: string }
-  | { type: "reasoning-end" }
-  | { type: "tool-call"; id: string; name: string; args: unknown; title?: string; detail?: string; patch?: PatchHunk[] }
-  | { type: "tool-result"; id: string; name: string; output: string; isError: boolean }
-  | { type: "usage"; inputTokens: number; outputTokens: number }
-  | { type: "subagent-start"; sessionId: string; agent: string; prompt: string; parentToolCallId?: string }
-  | { type: "subagent-end"; sessionId: string; status: "done" | "error" }
-  | { type: "done" }
-  | { type: "error"; error: string };
+  | { type: "text-delta"; text: string; sourceId?: string }
+  | { type: "reasoning-delta"; text: string; sourceId?: string }
+  | { type: "reasoning-end"; sourceId?: string }
+  | { type: "tool-call"; id: string; name: string; args: unknown; title?: string; detail?: string; patch?: PatchHunk[]; sourceId?: string }
+  | { type: "tool-result"; id: string; name: string; output: string; isError: boolean; sourceId?: string }
+  | { type: "usage"; inputTokens: number; outputTokens: number; sourceId?: string }
+  | { type: "subagent-start"; sessionId: string; agent: string; prompt: string; parentToolCallId?: string; sourceId?: string }
+  | { type: "subagent-end"; sessionId: string; status: "done" | "error"; sourceId?: string }
+  | { type: "done"; sourceId?: string }
+  | { type: "error"; error: string; sourceId?: string };
 
-export type SessionEvent = SessionEventKind & { sourceId?: string };
+export type SessionEvent = SessionEventKind;
 
 export interface ModelStreamResult {
   fullStream: AsyncIterable<{ type: string; text?: string; error?: unknown }>;
