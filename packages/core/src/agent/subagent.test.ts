@@ -10,7 +10,7 @@ import { ToolRegistry } from "../tools";
 import type { ModelRunner, SessionEvent } from "../session/session";
 import type { AgentSpec } from "../acp/registry";
 import type { PermissionAsk, RunAgentOptions } from "../acp/run";
-import { createSubagentTool } from "./subagent";
+import { agentFailure, createSubagentTool } from "./subagent";
 
 interface Step {
   chunks: Array<{ type: string; text?: string }>;
@@ -260,10 +260,11 @@ describe("delegating to an installed coding agent", () => {
     );
     const errors = events.filter((e) => e.type === "error");
     expect(errors).toHaveLength(1);
-    expect((errors[0] as { error: string }).error).toContain("ENOENT");
+    expect((errors[0] as { error: string }).error).toContain("PATH");
     const last = events[events.length - 1];
     expect(last).toMatchObject({ type: "subagent-end", status: "error" });
-    expect(res.output).toContain("ENOENT");
+    expect(res.output).toContain("PATH");
+    expect(res.output).toContain("Claude Code");
   });
 
   it("ends with an error when the agent reports one", async () => {
@@ -355,5 +356,28 @@ describe("delegating to an installed coding agent", () => {
     const one = tool({ installed: [CLAUDE] });
     expect(one.description).toContain("claude (Claude Code)");
     expect(one.description).not.toContain("codex");
+  });
+});
+
+describe("what the user is told when an external agent fails", () => {
+  it("names the sign-in, because that is the fix", () => {
+    const raw = "Internal error: Failed to authenticate: OAuth session expired and could not be refreshed";
+    const said = agentFailure("Claude Code", raw);
+    expect(said).toContain("not signed in");
+    expect(said).toContain("Claude Code");
+    expect(said).not.toContain("Internal error");
+  });
+
+  it("names the PATH when the binary is missing", () => {
+    expect(agentFailure("Codex", "spawn codex ENOENT")).toContain("PATH");
+  });
+
+  it("says to wait when the agent is rate limited", () => {
+    expect(agentFailure("Codex", "429 rate limit exceeded")).toContain("rate limited");
+  });
+
+  it("passes anything it does not recognise through, rather than swallowing it", () => {
+    const said = agentFailure("Goose", "socket hang up");
+    expect(said).toContain("socket hang up");
   });
 });

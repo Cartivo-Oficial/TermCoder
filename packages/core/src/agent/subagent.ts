@@ -74,6 +74,20 @@ function messageOf(error: unknown): string {
   return String(error);
 }
 
+export function agentFailure(label: string, raw: string): string {
+  const s = raw.toLowerCase();
+  if (s.includes("authenticate") || s.includes("oauth") || s.includes("unauthorized") || s.includes("401")) {
+    return `${label} is installed but not signed in. Run it once in a terminal and sign in, then try again.`;
+  }
+  if (s.includes("enoent") || s.includes("not recognized") || s.includes("command not found")) {
+    return `${label} could not be launched. Check that it is installed and on your PATH.`;
+  }
+  if (s.includes("rate limit") || s.includes("429")) {
+    return `${label} is rate limited right now. Try again shortly.`;
+  }
+  return `${label} failed: ${raw}`;
+}
+
 function externalNote(installed: AgentSpec[]): string {
   if (installed.length === 0) return "";
   const list = installed.map((spec) => `${spec.id} (${spec.label})`).join(", ");
@@ -148,11 +162,11 @@ export function createSubagentTool(deps: SubagentDeps): TermTool {
         env: deps.env,
       });
     } catch (error) {
-      const message = messageOf(error);
+      const message = agentFailure(spec.label, messageOf(error));
       ctx.emit?.({ type: "error", error: message, sourceId: sessionId });
       ctx.emit?.({ type: "subagent-end", sessionId, status: "error" });
       return {
-        output: `Agent ${spec.id} failed: ${message}`,
+        output: message,
         meta: { sessionId, agent: spec.id, external: true, failed: true },
       };
     }
