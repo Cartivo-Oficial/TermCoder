@@ -3,12 +3,15 @@ import { layoutGraph } from "./layout";
 import { useZoomPan } from "./useZoomPan";
 import { NodeCard } from "./NodeCard";
 import { Inspector } from "./Inspector";
+import { runSummary } from "./summary";
+import { useI18n } from "../i18n";
 import type { RunGraph } from "./runGraph";
 
-const NODE_W = 176;
-const NODE_H = 104;
+const NODE_W = 196;
+const NODE_H = 110;
 
 export function AgentCanvas({ graph, hidden }: { graph: RunGraph; hidden: boolean }) {
+  const { t } = useI18n();
   const [selected, setSelected] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [now, setNow] = useState(() => Date.now());
@@ -45,11 +48,23 @@ export function AgentCanvas({ graph, hidden }: { graph: RunGraph; hidden: boolea
   }, [graph]);
 
   const node = selected ? graph.nodes[selected] : null;
+  const summary = useMemo(() => runSummary(graph), [graph]);
 
   const toggle = (id: string) => setCollapsed((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   return (
     <div className={`agent-canvas ${hidden ? "hidden" : ""}`}>
+      <div className="agent-summary" role="status">
+        <span className="agent-summary-item"><i className="agent-summary-dot running" />{summary.running} {t("canvas.status.thinking")}</span>
+        <span className="agent-summary-sep">·</span>
+        <span className="agent-summary-item"><i className="agent-summary-dot done" />{summary.done} {t("canvas.status.done")}</span>
+        {summary.failed > 0 ? (
+          <>
+            <span className="agent-summary-sep">·</span>
+            <span className="agent-summary-item failed"><i className="agent-summary-dot failed" />{summary.failed} {t("canvas.status.error")}</span>
+          </>
+        ) : null}
+      </div>
       <div className="agent-canvas-viewport" ref={viewportRef} onWheel={zp.onWheel} onPointerDown={zp.onPointerDown}>
         <div className="agent-canvas-layer" style={{ transform: `translate(${zp.tx}px, ${zp.ty}px) scale(${zp.scale})`, width, height }}>
           <svg className="agent-canvas-edges" width={width} height={height}>
@@ -59,7 +74,8 @@ export function AgentCanvas({ graph, hidden }: { graph: RunGraph; hidden: boolea
               const p = pos[n.parentId]!; const c = pos[id]!;
               const x1 = p.x - minX + NODE_W / 2; const y1 = p.y - minY + NODE_H;
               const x2 = c.x - minX + NODE_W / 2; const y2 = c.y - minY;
-              return <path key={id} className={`agent-edge ${n.status === "thinking" || n.status === "tool" ? "active" : ""}`} d={`M ${x1} ${y1} C ${x1} ${(y1 + y2) / 2}, ${x2} ${(y1 + y2) / 2}, ${x2} ${y2}`} fill="none" />;
+              const bend = Math.max(0, y2 - y1) / 2;
+              return <path key={id} className={`agent-edge ${n.status} ${n.status === "thinking" || n.status === "tool" ? "active" : ""}`} d={`M ${x1} ${y1} C ${x1} ${y1 + bend}, ${x2} ${y2 - bend}, ${x2} ${y2}`} fill="none" />;
             })}
           </svg>
           {visibleIds.map((id) => {

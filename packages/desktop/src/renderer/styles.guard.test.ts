@@ -4,20 +4,21 @@ import { describe, expect, it } from "vitest";
 
 // The surfaces still off the scale. This is no longer a sweep-in-progress
 // list: the finish pass swept Home, the composer and chat, the rail and
-// sessions, the terminal, Settings and the side panels, and stopped there.
-// What follows is the honest register of what was NOT done — 254 selectors
+// sessions, the terminal, Settings and the side panels, and the canvas rebuild
+// swept the run graph's node card (`.agent-node` and everything under it).
+// What follows is the honest register of what was NOT done — 261 selectors
 // the guard would otherwise fail on, listed exactly rather than by prefix so
 // that a loose substring cannot silently un-guard swept work.
 //
 // To resume: delete a family from this list, sweep it onto the scale, and the
 // guard tells you the moment you miss one. Roughly, by size: room 27,
-// agent canvas 24, search 20, file tree 17, git 15, inline editor 14,
-// chip 13, task runner 11, debugger 11, quick open 10.
+// search 20, file tree 17, git 15, inline editor 14, chip 13,
+// task runner 11, debugger 11, quick open 10, canvas inspector 10.
 const UNSWEPT: string[] = [
   ".side-actions", ".side-head-row", ".side-head-title", ".model-item", ".model-list", ".palette",
   ".preview", ".ide-", ".scm-", ".editor-", ".test-", ".advanced-search-caret",
   ".advanced-search-header", ".agent-canvas-scroll", ".agent-canvas-tools", ".agent-form", ".agent-inspector", ".agent-inspector-metrics",
-  ".agent-inspector-reasoning", ".agent-node", ".agent-node-hit", ".agent-node-metrics", ".agent-node-status", ".agent-ro",
+  ".agent-inspector-reasoning", ".agent-ro",
   ".agent-tool-copy", ".agent-tool-name", ".agent-tool-out", ".badge", ".bc-seg", ".breadcrumb-separator",
   ".call-dot", ".ch-title-edit", ".chip", ".chip-sm", ".cm-fold-marker", ".code-context-action-btn",
   ".code-context-caret", ".code-context-code", ".code-context-header", ".code-context-icon", ".code-context-item-actions", ".code-context-item-header",

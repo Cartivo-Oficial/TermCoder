@@ -245,6 +245,25 @@ export {
 export { createSubagentTool, type SubagentDeps } from "./agent/subagent";
 
 export {
+  discoverAgents as discoverInstalledAgents,
+  KNOWN_AGENTS,
+  type AgentSpec,
+} from "./acp/registry";
+
+export {
+  runAgent,
+  runSession,
+  agentEnv,
+  type AskPermission,
+  type PermissionAsk,
+  type PermissionChoice,
+  type RunAgentOptions,
+  type RunSessionOptions,
+} from "./acp/run";
+
+export { translateStop, translateUpdate } from "./acp/translate";
+
+export {
   discoverAgents,
   resolveAgent,
   agentToolFilter,

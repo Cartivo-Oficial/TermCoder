@@ -1262,18 +1262,33 @@ button.chip { cursor: pointer; }
 .agent-canvas { position: absolute; inset: 0; display: flex; background: var(--bg); }
 .agent-canvas.hidden { display: none; }
 .agent-canvas-scroll { position: relative; flex: 1; overflow: auto; padding: 40px; }
-.agent-canvas-edges { position: absolute; top: 40px; left: 40px; pointer-events: none; overflow: visible; }
-.agent-edge { stroke: var(--border); stroke-width: 2; }
-.agent-edge.active { stroke: var(--accent); }
-.agent-node { position: absolute; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; text-align: left; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--elev); cursor: pointer; transition: border-color .12s ease, box-shadow .12s ease; }
-.agent-node:hover { border-color: var(--accent); }
-.agent-node.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-.agent-node.thinking, .agent-node.tool { border-color: var(--accent); box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 35%, transparent); } /* off-scale: an accent glow on the agent-canvas node (unrelated to ToolCard — the ".tool" state class here just happens to match the prefix), not elevation the --sh-* tokens can express */
-.agent-node.error { border-color: #e5484d; }
-.agent-node-name { font-size: 13px; font-weight: 600; color: var(--text); }
-.agent-node-status { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--faint); }
+.agent-canvas-edges { position: absolute; top: 0; left: 0; pointer-events: none; overflow: visible; }
+.agent-edge { stroke: var(--border); stroke-width: 1.5; fill: none; }
+.agent-edge.done { stroke: color-mix(in srgb, var(--text) 12%, transparent); }
+.agent-edge.error { stroke: color-mix(in srgb, var(--bad) 55%, transparent); }
+.agent-edge.active { stroke: color-mix(in srgb, var(--accent) 70%, transparent); stroke-width: 2; }
+.agent-node { position: relative; width: 100%; height: 100%; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--elev); box-shadow: var(--sh-raised); transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease), opacity var(--t-fast) var(--ease); }
+.agent-node.done { opacity: 0.76; background: var(--panel); }
+.agent-node.thinking, .agent-node.tool { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); background: var(--elev2); }
+.agent-node.error { border-color: color-mix(in srgb, var(--bad) 70%, var(--border)); }
+.agent-node:hover { opacity: 1; border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+.agent-node.selected { opacity: 1; border-color: var(--accent); box-shadow: var(--sh-float); }
+.agent-node-head { display: flex; align-items: center; gap: var(--s-3); width: 100%; min-width: 0; }
+.agent-node-icon { flex: 0 0 auto; display: grid; place-items: center; width: 22px; height: 22px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--panel2); color: var(--muted); }
+.agent-node.thinking .agent-node-icon, .agent-node.tool .agent-node-icon, .agent-node.selected .agent-node-icon { color: var(--text); border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); }
+.agent-node-name { flex: 1 1 auto; min-width: 0; font-family: var(--mono); font-size: var(--fs-2); font-weight: var(--fw-semibold); letter-spacing: -0.01em; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent-node-dot { flex: 0 0 auto; width: 5px; height: 5px; border-radius: 999px; background: var(--faint); }
+.agent-node-dot.thinking, .agent-node-dot.tool { background: var(--accent); animation: agent-node-pulse 1.4s var(--ease) infinite; }
+.agent-node-dot.done { background: var(--ok); }
+.agent-node-dot.error { background: var(--bad); }
+@keyframes agent-node-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.28; } }
+.agent-node-time { flex: 0 0 auto; font-size: var(--fs-1); color: var(--faint); font-variant-numeric: tabular-nums; }
+.agent-node-role { width: 100%; min-width: 0; font-size: var(--fs-1); line-height: var(--lh-tight); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent-node-acts { display: flex; flex-direction: column; gap: var(--s-1); width: 100%; min-width: 0; margin-top: auto; }
+.agent-node-act { min-width: 0; font-family: var(--mono); font-size: var(--fs-1); line-height: var(--lh-tight); color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent-node-status { font-size: var(--fs-1); text-transform: uppercase; letter-spacing: 0.05em; color: var(--faint); }
 .agent-node-status.thinking, .agent-node-status.tool { color: var(--accent); }
-.agent-node-activity { font-size: 11px; color: var(--muted); font-family: var(--mono); max-width: 144px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent-node-status.error { color: var(--bad); }
 .agent-inspector { position: absolute; right: 0; top: 0; bottom: 0; z-index: 2; width: 320px; flex-shrink: 0; border-left: 1px solid var(--border); display: flex; flex-direction: column; padding: 14px; gap: 10px; overflow-y: auto; }
 .agent-inspector-head { display: flex; align-items: center; justify-content: space-between; }
 .agent-inspector-prompt { font-size: 12px; color: var(--muted); font-style: italic; }
@@ -1283,15 +1298,24 @@ button.chip { cursor: pointer; }
 .agent-tool-row.err { border-color: #e5484d; }
 .agent-tool-name { color: var(--accent); font-family: var(--mono); font-size: 11.5px; }
 .agent-tool-out { color: var(--muted); font-family: var(--mono); font-size: 11px; white-space: pre-wrap; }
-.agent-canvas-viewport { position: absolute; inset: 0; overflow: hidden; cursor: grab; }
+.agent-canvas-viewport { position: absolute; inset: 0; overflow: hidden; cursor: grab; background-image: radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--text) 8%, transparent) 1px, transparent 0); background-size: 24px 24px; }
 .agent-canvas-viewport:active { cursor: grabbing; }
 .agent-canvas-layer { position: absolute; transform-origin: 0 0; }
 .agent-node-wrap { position: absolute; }
-.agent-node-hit { display: flex; flex-direction: column; gap: 3px; width: 100%; height: 100%; text-align: left; background: transparent; border: none; padding: 10px 12px; color: inherit; cursor: pointer; }
-.agent-node-metrics { display: flex; gap: 8px; margin-top: auto; font-size: 10.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
-.agent-node-collapse { position: absolute; right: 4px; top: 4px; width: 18px; height: 18px; border-radius: 5px; border: 1px solid var(--border); background: var(--elev); color: var(--muted); font-size: 12px; line-height: 1; cursor: pointer; }
-.agent-node-collapse:hover { color: var(--text); background: var(--elev2); }
-.agent-node.error { box-shadow: inset 0 0 0 1px var(--bad); }
+.agent-node-hit { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); width: 100%; height: 100%; overflow: hidden; text-align: left; background: transparent; border: none; border-radius: var(--r-md); padding: var(--s-4); color: inherit; font: inherit; cursor: pointer; }
+.agent-node-hit:focus-visible { outline: var(--ring); outline-offset: calc(var(--s-1) * -1); }
+.agent-node-metrics { display: flex; align-items: center; gap: var(--s-4); width: 100%; min-width: 0; overflow: hidden; white-space: nowrap; font-size: var(--fs-1); line-height: var(--lh-tight); color: var(--faint); font-variant-numeric: tabular-nums; }
+.agent-node-collapse { position: absolute; left: 50%; bottom: 0; transform: translate(-50%, 50%); z-index: 1; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 999px; border: 1px solid var(--border); background: var(--elev2); color: var(--muted); font-size: var(--fs-2); line-height: 1; cursor: pointer; }
+.agent-node-collapse:hover { color: var(--text); border-color: var(--accent); }
+.agent-node-collapse:focus-visible { outline: var(--ring); outline-offset: var(--s-1); }
+.agent-summary { position: absolute; left: 50%; top: var(--s-5); transform: translateX(-50%); z-index: 3; display: flex; align-items: center; gap: var(--s-4); padding: var(--s-2) var(--s-5); border: 1px solid var(--border); border-radius: 999px; background: var(--surface); backdrop-filter: blur(12px); box-shadow: var(--sh-float); font-size: var(--fs-1); color: var(--muted); font-variant-numeric: tabular-nums; pointer-events: none; }
+.agent-summary-item { display: flex; align-items: center; gap: var(--s-3); white-space: nowrap; }
+.agent-summary-item.failed { color: var(--bad); }
+.agent-summary-dot { flex: 0 0 auto; width: 5px; height: 5px; border-radius: 999px; background: var(--faint); }
+.agent-summary-dot.running { background: var(--accent); }
+.agent-summary-dot.done { background: var(--ok); }
+.agent-summary-dot.failed { background: var(--bad); }
+.agent-summary-sep { flex: 0 0 auto; color: var(--faint); }
 .agent-canvas-tools { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 4px; background: var(--floating); border: 1px solid var(--border); border-radius: 9px; padding: 4px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
 .agent-inspector-metrics { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px 0 4px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .agent-tool-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }

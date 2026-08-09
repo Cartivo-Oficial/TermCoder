@@ -9,6 +9,7 @@ export interface ToolContext {
   toolCallId?: string;
   emit?: (event: SessionEvent) => void;
   tools?: TermTool[];
+  signal?: AbortSignal;
 }
 
 export interface ToolResult {
