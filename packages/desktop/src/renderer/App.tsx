@@ -28,11 +28,15 @@ import { emptyGraph, reduceGraph, type SessionEventLike } from "./canvas/runGrap
 import { SidePanel } from "./SidePanel";
 import { SessionsPanel } from "./SessionsPanel";
 import { DiffBody, ToolCard, type DiffComment } from "./ToolCard";
+import { WorkSummary } from "./chat/WorkSummary";
+import { AssistantMessage, UserMessage } from "./chat/MessageCard";
+import { elapsedSeconds, lastUserIndex, turnCards, type TurnClock } from "./chat/summary";
 import { Chip } from "./ui";
 import { CodeEditor } from "./CodeEditor";
 import { enqueue, resolveItem, resolveAll, findByTarget, type ReviewQueue } from "./review/queue";
 import { marksFromPatch, type ReviewMark } from "./review/decorations";
 import { ReviewStrip } from "./review/ReviewStrip";
+import type { PatchHunk } from "@termcoder/core";
 import { blobToWav, blobToBase64 } from "./audio";
 import {
   IconBack,
@@ -142,6 +146,8 @@ interface Message {
   status?: "running" | "done" | "error";
   detail?: string;
   images?: string[];
+  patch?: PatchHunk[];
+  target?: string;
 }
 interface PendingImage {
   dataUrl: string;
@@ -396,10 +402,13 @@ export function App() {
   });
   const closedTabsRef = useRef<string[]>([]);
   const dragTabRef = useRef<string | null>(null);
+  const messagesRef = useRef<Message[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [busy, setBusy] = useState(false);
+  const [clocks, setClocks] = useState<Record<number, TurnClock>>({});
+  const [now, setNow] = useState(() => Date.now());
   const [connected, setConnected] = useState(false);
   const [cwd, setCwd] = useState<string | null>(null);
   const [work, setWork] = useState(closedWork);
@@ -816,6 +825,29 @@ export function App() {
     if (autoScroll) scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages, busy, autoScroll]);
 
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    const at = lastUserIndex(messagesRef.current);
+    if (at < 0) return;
+    const stamp = Date.now();
+    setNow(stamp);
+    setClocks((prev) => {
+      if (busy) return { ...prev, [at]: { start: stamp } };
+      const open = prev[at];
+      if (!open || open.end !== undefined) return prev;
+      return { ...prev, [at]: { start: open.start, end: stamp } };
+    });
+  }, [busy]);
+
+  useEffect(() => {
+    if (!busy) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [busy]);
+
   async function refreshSessions() {
     try {
       setSessions((await (await fetch(`${httpBase}/sessions`)).json()) as SessionSummary[]);
@@ -986,6 +1018,7 @@ export function App() {
       setModel(record.model);
     }
     setMessages([]);
+    setClocks({});
     setGraph(emptyGraph("root"));
     setWorkingDir(record.cwd);
     connect(record.id);
@@ -1015,6 +1048,7 @@ export function App() {
       localStorage.setItem("tc-session", id);
       setModel(record.model);
       setMessages(segments.map(segToMessage));
+      setClocks({});
       setGraph(emptyGraph("root"));
       setWorkingDir(record.cwd);
       connect(id);
@@ -1413,11 +1447,17 @@ export function App() {
       return;
     }
 
+    const targetOf = (e: StreamEvent): string | undefined => {
+      if (e.name !== "write" && e.name !== "edit") return undefined;
+      const args = e.args as { path?: unknown } | undefined;
+      return typeof args?.path === "string" ? args.path : undefined;
+    };
+
     if (e.type === "tool-call") {
       appendRef.current = false;
       setMessages((prev) => [
         ...prev,
-        { role: "tool", name: e.name, text: e.title ?? "", status: "running", detail: e.detail },
+        { role: "tool", name: e.name, text: e.title ?? "", status: "running", detail: e.detail, patch: e.patch, target: targetOf(e) },
       ]);
       return;
     }
@@ -1729,6 +1769,19 @@ export function App() {
   const workingLabel = runningTool?.name ?? t("chat.thinking");
   const workingDetail = runningTool?.text ?? "";
   const workingTokens = liveTokens || tokens;
+
+  const cards = useMemo(() => turnCards(messages), [messages]);
+  const cardFor = (i: number) => {
+    const card = cards.get(i);
+    if (!card) return null;
+    return (
+      <WorkSummary
+        summary={card.summary}
+        seconds={elapsedSeconds(clocks[card.start], now)}
+        labels={{ passed: t("work.passed"), failed: t("work.failed") }}
+      />
+    );
+  };
 
   const paletteItems: PaletteItem[] = [
     { id: "new", label: t("nav.newSession"), hint: t("palette.hint.command"), run: () => void newSession() },
@@ -2244,43 +2297,42 @@ export function App() {
             ) : null}
             {messages.map((m, i) => (
               <div key={i} className={`msg ${m.role}`}>
-                {m.role === "user" ? (
-                  <div className="bubble user">
-                    {m.images && m.images.length ? (
-                      <div className="msg-images">
-                        {m.images.map((src, k) => (
-                          <img key={k} src={src} alt="attachment" />
-                        ))}
-                      </div>
-                    ) : null}
-                    {m.text}
-                  </div>
-                ) : null}
+                {m.role === "user" ? <UserMessage text={m.text} images={m.images} /> : null}
                 {m.role === "notice" ? <div className="notice">{m.text}</div> : null}
+                {m.role === "assistant" ? cardFor(i) : null}
                 {m.role === "assistant" ? (
                   busy && i === messages.length - 1 ? (
-                    <div className="bubble assistant streaming">{m.text}</div>
+                    <AssistantMessage sender="termcoder" className="streaming">
+                      {m.text}
+                    </AssistantMessage>
                   ) : (
-                    <div className="assistant-wrap">
-                      <div className="msg-meta"><span className="msg-spine" />termcoder</div>
-                      <div className="bubble assistant markdown">
-                        <ErrorBoundary fallback={() => <pre className="md-fallback">{m.text}</pre>}>
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            rehypePlugins={[[rehypeHighlight, { ignoreMissing: true, detect: true }]]}
-                          >
-                            {m.text}
-                          </ReactMarkdown>
-                        </ErrorBoundary>
-                      </div>
-                      <button className="msg-copy" title={t("msg.copy")} onClick={() => void copyText(m.text)}>
-                        <IconCopy />
-                      </button>
-                    </div>
+                    <AssistantMessage
+                      sender="termcoder"
+                      className="markdown"
+                      copyLabel={t("msg.copy")}
+                      copyIcon={<IconCopy />}
+                      onCopy={() => void copyText(m.text)}
+                    >
+                      <ErrorBoundary fallback={() => <pre className="md-fallback">{m.text}</pre>}>
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          rehypePlugins={[[rehypeHighlight, { ignoreMissing: true, detect: true }]]}
+                        >
+                          {m.text}
+                        </ReactMarkdown>
+                      </ErrorBoundary>
+                    </AssistantMessage>
                   )
                 ) : null}
                 {m.role === "tool" ? (
-                  <ToolCard name={m.name} text={m.text} status={m.status} detail={m.detail} defaultOpen={expandTools} />
+                  <ToolCard
+                    name={m.name}
+                    text={m.text}
+                    status={m.status}
+                    detail={m.detail}
+                    target={m.target}
+                    defaultOpen={expandTools}
+                  />
                 ) : null}
                 {m.role === "error" ? <div className="bubble error">✗ {m.text}</div> : null}
               </div>
