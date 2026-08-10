@@ -2,6 +2,15 @@
 
 New releases and improvements to TermCoder.
 
+## 0.15.0
+2026-08-08
+
+### The chat, read properly
+- **The agent's reply is typeset.** It had no styling of its own — the rule that governed it was one line that removed a border, and it had not changed since 0.11.5. It is now set for reading: a larger size on generous leading, a line length that stops at 68 characters instead of running the full width of the window, real space between paragraphs, section titles as quiet labels rather than headings that compete with the text, and code with a border instead of a grey rectangle.
+- **The text no longer resizes when a reply finishes.** While the agent was typing you were reading one size, and the moment it stopped the whole message reflowed into another. Both now match.
+- Each file in the change summary carries its own icon, from the same set the file tree uses.
+- A finished reply says when it landed and how long it took.
+
 ## 0.14.0
 2026-08-08
 
