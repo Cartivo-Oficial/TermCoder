@@ -114,6 +114,15 @@ export function formatDuration(seconds: number): string {
   return `${minutes}m ${String(whole % 60).padStart(2, "0")}s`;
 }
 
+export function formatStamp(clock: TurnClock | undefined): string | undefined {
+  if (!clock?.end) return undefined;
+  const at = new Date(clock.end);
+  const hh = String(at.getHours()).padStart(2, "0");
+  const mm = String(at.getMinutes()).padStart(2, "0");
+  const took = Math.max(0, Math.round((clock.end - clock.start) / 1000));
+  return `${hh}:${mm} · ${formatDuration(took)}`;
+}
+
 export function elapsedSeconds(clock: TurnClock | undefined, now: number): number | undefined {
   if (!clock) return undefined;
   return Math.max(0, ((clock.end ?? now) - clock.start) / 1000);

@@ -1,3 +1,4 @@
+import { fileIcon } from "../FileIcons";
 import { Panel } from "../ui";
 import { formatDuration, splitPath, type CheckRun, type FileChange, type TurnSummary } from "./summary";
 
@@ -13,6 +14,7 @@ function FileRow({ file }: { file: FileChange }) {
   const { dir, base } = splitPath(file.path);
   return (
     <div className="ws-file" title={file.path}>
+      <span className="ws-icon" aria-hidden="true">{fileIcon(base)}</span>
       <span className="ws-path">
         <span className="ws-dir">{dir}</span>
         <span className="ws-base">{base}</span>

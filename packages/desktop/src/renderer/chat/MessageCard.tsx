@@ -22,6 +22,7 @@ export function AssistantMessage({
   copyLabel,
   copyIcon,
   onCopy,
+  stamp,
   children,
 }: {
   sender: string;
@@ -29,6 +30,7 @@ export function AssistantMessage({
   copyLabel?: string;
   copyIcon?: ReactNode;
   onCopy?: () => void;
+  stamp?: string;
   children: ReactNode;
 }) {
   return (
@@ -42,6 +44,7 @@ export function AssistantMessage({
       }
     >
       <div className={`bubble assistant ${className}`.trim()}>{children}</div>
+      {stamp ? <div className="msg-stamp">{stamp}</div> : null}
       {onCopy ? (
         <button className="msg-copy" title={copyLabel} onClick={onCopy}>
           {copyIcon}

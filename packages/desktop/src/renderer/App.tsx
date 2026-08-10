@@ -30,7 +30,7 @@ import { SessionsPanel } from "./SessionsPanel";
 import { DiffBody, ToolCard, type DiffComment } from "./ToolCard";
 import { WorkSummary } from "./chat/WorkSummary";
 import { AssistantMessage, UserMessage } from "./chat/MessageCard";
-import { elapsedSeconds, lastUserIndex, turnCards, type TurnClock } from "./chat/summary";
+import { elapsedSeconds, formatStamp, lastUserIndex, turnCards, type TurnClock } from "./chat/summary";
 import { Chip } from "./ui";
 import { CodeEditor } from "./CodeEditor";
 import { enqueue, resolveItem, resolveAll, findByTarget, type ReviewQueue } from "./review/queue";
@@ -1783,6 +1783,13 @@ export function App() {
     );
   };
 
+  const stampFor = (i: number) => {
+    const card = cards.get(i);
+    if (card) return formatStamp(clocks[card.start]);
+    const start = lastUserIndex(messages.slice(0, i + 1));
+    return start < 0 ? undefined : formatStamp(clocks[start]);
+  };
+
   const paletteItems: PaletteItem[] = [
     { id: "new", label: t("nav.newSession"), hint: t("palette.hint.command"), run: () => void newSession() },
     { id: "folder", label: t("nav.chooseFolder"), hint: t("palette.hint.command"), run: () => void chooseFolder() },
@@ -2312,6 +2319,7 @@ export function App() {
                       copyLabel={t("msg.copy")}
                       copyIcon={<IconCopy />}
                       onCopy={() => void copyText(m.text)}
+                      stamp={stampFor(i)}
                     >
                       <ErrorBoundary fallback={() => <pre className="md-fallback">{m.text}</pre>}>
                         <ReactMarkdown
