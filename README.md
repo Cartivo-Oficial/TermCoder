@@ -1,9 +1,10 @@
 <h1 align="center">TermCoder</h1>
 
 <p align="center">
-  <b>The open-source AI coding agent that lives in your terminal — and a tutor that teaches you.</b><br/>
-  Runs with <b>no API key</b>. Bring one of twelve providers when you want it, or stay local with Ollama.<br/>
-  One engine, two minds.
+  <b>The open-source AI coding agent that lives in your terminal — and runs the other ones too.</b><br/>
+  Starts with <b>no API key</b>. Delegate to Claude Code, Codex or opencode and watch them work
+  beside it.<br/>
+  Bring a provider when you want one, or stay local with Ollama.
 </p>
 
 <p align="center">
@@ -13,15 +14,16 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/@termcoder/tui"><img alt="npm" src="https://img.shields.io/npm/v/@termcoder/tui?color=ff7a45&label=%40termcoder%2Ftui"></a>
   <img alt="license" src="https://img.shields.io/badge/license-MIT-blue">
-  <img alt="node" src="https://img.shields.io/badge/node-%E2%89%A518-3a3a42">
+  <img alt="node" src="https://img.shields.io/badge/node-%E2%89%A520-3a3a42">
   <img alt="platforms" src="https://img.shields.io/badge/windows%20%C2%B7%20macOS%20%C2%B7%20linux-1c1c22">
 </p>
 
 <p align="center">
   <a href="#install">Install</a> ·
   <a href="#quick-start">Quick start</a> ·
+  <a href="#running-other-coding-agents">Run other agents</a> ·
   <a href="docs/">Docs</a> ·
-  <a href="website/">Website</a> ·
+  <a href="https://cartivo-oficial.github.io/TermCoder/">Website</a> ·
   <a href="docs/termexplorer.md">Study mode</a>
 </p>
 
@@ -40,6 +42,7 @@ anything.
 
 | | |
 |---|---|
+| **It runs other agents** | Hand a task to Claude Code, Codex, opencode, Gemini CLI or Goose and it runs as a node of the same session, streaming what it reads, edits and runs into one canvas. Over the [Agent Client Protocol](https://agentclientprotocol.com), so an agent released next month works without an update here. |
 | **No API key** | It opens on a free, keyless model. No card, no sign-up, no config file. Connect a provider later, or never. |
 | **Any model, or local** | Twelve providers behind one path — or a local Ollama model, with no account and nothing leaving your machine. |
 | **The right model per turn** | `termcoder/auto` classifies each prompt and routes it to a fast or a strong tier. No LLM in the routing loop — a regex and a table. |
@@ -54,7 +57,7 @@ anything.
 
 ## Install
 
-Requires [Node.js 18+](https://nodejs.org). Install the CLI once — it adds two equivalent
+Requires [Node.js 20+](https://nodejs.org). Install the CLI once — it adds two equivalent
 commands, `term` and `termcoder`.
 
 ```sh
@@ -132,6 +135,26 @@ ollama pull qwen2.5-coder
 - **Skills** — reusable playbooks in `.termcoder/skills/` load only when a task needs them, so
   idle skills cost nothing. List them with `/skills`.
 
+## Running other coding agents
+
+TermCoder can hand a task to another agent you already have installed — **Claude Code, Codex,
+opencode, Gemini CLI or Goose** — and run it as a node of the same session. What it reads, edits
+and runs streams into the same canvas as TermCoder's own sub-agents.
+
+```
+❯ ask codex to port the auth module to the new client and run the tests
+```
+
+Only what is actually on your machine is offered; install another tomorrow and it appears with
+no update here. It works over the [Agent Client Protocol](https://agentclientprotocol.com), the
+open standard roughly thirty coding agents already speak — one protocol rather than a brittle
+adapter per tool.
+
+**It asks before it writes.** An external agent's permission requests go through the same gate as
+TermCoder's own tools, with the settings you already chose, and it is launched with the session's
+working directory and nothing wider. Its credentials are its own — TermCoder passes none of yours
+and reads none of its configuration.
+
 ## Memory & retrieval
 
 Tell it something once and it keeps it. Memory lives as markdown in `.termcoder/memory` (shared
@@ -204,10 +227,16 @@ classroom, needs a licence — the host pays, the guests never do.
 ## Desktop app
 
 `@termcoder/desktop` is an Electron app that embeds the local server and opens a window with a
-React UI — the same engine as the CLI. Chat, an editor and a **real shell** live in one window:
-the `Chat | Terminal` tabs (`Ctrl`+`` ` ``) run your default shell in the project folder and drop
-a one-click chip on every coding CLI found on your `PATH` — Claude Code, Codex, Gemini CLI. The
-shell keeps running while you are on the Chat tab.
+React UI — the same engine as the CLI.
+
+The chat is the session. A **work panel** opens beside it the moment there is something to show:
+the diff when a file changes, a real shell when a command runs, the canvas when an agent starts.
+It follows the newest activity until you pick a tab, then stays where you put it. A reply that did
+work opens with what it did — the files it touched and how much each moved, how long the turn
+took, and which commands ran.
+
+The **canvas** draws the run as a tree: every sub-agent and every external agent as its own node,
+with what it is doing and how many are still going.
 
 Download an installer for your system from
 [**Releases**](https://github.com/Cartivo-Oficial/TermCoder/releases): Windows (`.exe`),
@@ -266,7 +295,9 @@ A pnpm monorepo with a clean split between the engine and the interface:
 
 - **`@termcoder/core`** — the headless agent engine: agent loop, providers (via the
   [Vercel AI SDK](https://sdk.vercel.ai)), tools, permissions, sessions, and config. Emits
-  typed events; knows nothing about the terminal.
+  typed events; knows nothing about the terminal. Its `acp/` speaks the Agent Client Protocol,
+  turning another agent's session updates into the same event stream everything else reads —
+  which is why an external agent needs no separate plumbing to appear on the canvas.
 - **`@termcoder/tui`** — an [Ink](https://github.com/vadimdemedes/ink) (React) terminal client
   that consumes the core's event stream. Ships the `term` / `termcoder` binary.
 - **`@termcoder/server`** — an HTTP + WebSocket server wrapping the same core; the foundation
