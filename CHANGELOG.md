@@ -2,6 +2,15 @@
 
 New releases and improvements to TermCoder.
 
+## 0.14.0
+2026-08-08
+
+### The chat
+- **A reply opens with what it did.** When the agent edits nine files and runs the tests, that used to arrive as paragraphs with cards scattered through them, and the part you wanted first was the part you had to hunt for. A reply that did work now leads with the files it touched and how much each moved, how long the turn took, and which commands ran — and only then explains itself.
+- **A check says what the command was and whether it exited clean.** Not "all checks pass". We do not read a tool's output looking for a green tick, because the day that output changes we would be announcing a passing build over a broken one.
+- A reply that only talked shows no summary. Most replies only talk.
+- The transcript has a hierarchy now: your message, the agent's, and each tool card are structures rather than text separated by rules.
+
 ## 0.13.0
 2026-08-08
 
