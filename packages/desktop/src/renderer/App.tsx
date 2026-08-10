@@ -29,6 +29,7 @@ import { SidePanel } from "./SidePanel";
 import { SessionsPanel } from "./SessionsPanel";
 import { DiffBody, ToolCard, type DiffComment } from "./ToolCard";
 import { WorkSummary } from "./chat/WorkSummary";
+import { AssistantMessage, UserMessage } from "./chat/MessageCard";
 import { elapsedSeconds, lastUserIndex, turnCards, type TurnClock } from "./chat/summary";
 import { Chip } from "./ui";
 import { CodeEditor } from "./CodeEditor";
@@ -2296,44 +2297,42 @@ export function App() {
             ) : null}
             {messages.map((m, i) => (
               <div key={i} className={`msg ${m.role}`}>
-                {m.role === "user" ? (
-                  <div className="bubble user">
-                    {m.images && m.images.length ? (
-                      <div className="msg-images">
-                        {m.images.map((src, k) => (
-                          <img key={k} src={src} alt="attachment" />
-                        ))}
-                      </div>
-                    ) : null}
-                    {m.text}
-                  </div>
-                ) : null}
+                {m.role === "user" ? <UserMessage text={m.text} images={m.images} /> : null}
                 {m.role === "notice" ? <div className="notice">{m.text}</div> : null}
                 {m.role === "assistant" ? cardFor(i) : null}
                 {m.role === "assistant" ? (
                   busy && i === messages.length - 1 ? (
-                    <div className="bubble assistant streaming">{m.text}</div>
+                    <AssistantMessage sender="termcoder" className="streaming">
+                      {m.text}
+                    </AssistantMessage>
                   ) : (
-                    <div className="assistant-wrap">
-                      <div className="msg-meta"><span className="msg-spine" />termcoder</div>
-                      <div className="bubble assistant markdown">
-                        <ErrorBoundary fallback={() => <pre className="md-fallback">{m.text}</pre>}>
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            rehypePlugins={[[rehypeHighlight, { ignoreMissing: true, detect: true }]]}
-                          >
-                            {m.text}
-                          </ReactMarkdown>
-                        </ErrorBoundary>
-                      </div>
-                      <button className="msg-copy" title={t("msg.copy")} onClick={() => void copyText(m.text)}>
-                        <IconCopy />
-                      </button>
-                    </div>
+                    <AssistantMessage
+                      sender="termcoder"
+                      className="markdown"
+                      copyLabel={t("msg.copy")}
+                      copyIcon={<IconCopy />}
+                      onCopy={() => void copyText(m.text)}
+                    >
+                      <ErrorBoundary fallback={() => <pre className="md-fallback">{m.text}</pre>}>
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          rehypePlugins={[[rehypeHighlight, { ignoreMissing: true, detect: true }]]}
+                        >
+                          {m.text}
+                        </ReactMarkdown>
+                      </ErrorBoundary>
+                    </AssistantMessage>
                   )
                 ) : null}
                 {m.role === "tool" ? (
-                  <ToolCard name={m.name} text={m.text} status={m.status} detail={m.detail} defaultOpen={expandTools} />
+                  <ToolCard
+                    name={m.name}
+                    text={m.text}
+                    status={m.status}
+                    detail={m.detail}
+                    target={m.target}
+                    defaultOpen={expandTools}
+                  />
                 ) : null}
                 {m.role === "error" ? <div className="bubble error">✗ {m.text}</div> : null}
               </div>
