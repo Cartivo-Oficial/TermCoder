@@ -476,11 +476,18 @@ svg { display: block; }
 /* Prose spacing below is in em, not px: heading/paragraph rhythm that scales
    with each element's own font-size is the point, and the guard only reads
    px — these are intentionally off the fixed --s-* grid. */
-.markdown :is(h1, h2, h3) { color: var(--text); margin: 0.5em 0 0.25em; font-weight: 650; }
-.markdown p { margin: 0.4em 0; }
-.markdown ul, .markdown ol { margin: 0.35em 0; padding-left: 1.4em; }
-.markdown code { background: var(--elev2); padding: var(--s-1) var(--s-3); border-radius: 5px; font-size: 0.9em; }
-.markdown pre { background: #08080a; border: 1px solid var(--border); border-radius: 9px; padding: var(--s-5); overflow-x: auto; }
+.markdown { font-size: var(--fs-4); line-height: 1.65; } /* off-scale: 1.65 is a leading ratio, not a spacing step */
+.markdown > * { margin: 0; }
+.markdown > * + * { margin-top: 0.9em; } /* off-scale: em-relative prose rhythm, tied to the reading size rather than the grid */
+.markdown p { max-width: 68ch; } /* off-scale: a measure in characters, which is what keeps a line readable */
+.markdown :is(h1, h2, h3) {
+  color: var(--muted); font-size: var(--fs-3); font-weight: var(--fw-semibold);
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
+.markdown ul, .markdown ol { padding-left: 1.2em; display: flex; flex-direction: column; gap: 0.4em; } /* off-scale: em-relative, so the marker stays with the text size */
+.markdown li::marker { color: var(--faint); }
+.markdown code { background: var(--elev); border: 1px solid var(--border); padding: 0 var(--s-3); border-radius: 5px; font-size: 0.88em; }
+.markdown pre { background: var(--elev); border: 1px solid var(--border); border-radius: var(--r-sm); padding: var(--s-5) var(--s-6); line-height: 1.6; overflow-x: auto; } /* off-scale: 1.6 is a leading ratio */
 .markdown pre code { background: none; padding: 0; }
 .markdown a { color: var(--text); text-decoration: underline; }
 .markdown table { border-collapse: collapse; }
@@ -832,7 +839,7 @@ svg { display: block; }
 .compare-base select { flex: 1; background: var(--elev); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: var(--s-2) var(--s-3); font-size: var(--fs-2); }
 .compare-base select:focus-visible { outline: var(--ring); outline-offset: var(--s-1); }
 
-.bubble.assistant.streaming { border-left: none; padding-left: 0; white-space: pre-wrap; word-break: break-word; }
+.bubble.assistant.streaming { border-left: none; padding-left: 0; white-space: pre-wrap; word-break: break-word; font-size: var(--fs-4); line-height: 1.65; max-width: 68ch; } /* off-scale: matches the prose it becomes, so the text does not resize when the turn ends */
 
 .perm { position: absolute; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 20; }
 .perm-card { background: var(--floating); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: 0 24px 80px rgba(0,0,0,0.5), inset 0 1px 0 var(--seam); padding: 18px 20px; width: min(640px, 86%); }
