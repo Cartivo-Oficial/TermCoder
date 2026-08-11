@@ -26,6 +26,16 @@ function join(...parts: Array<string | null | undefined>): string {
 import { CodeEditor, type CodeEditorHandle } from "./CodeEditor";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { ToolCard } from "./ToolCard";
+import { WorkSummary } from "./chat/WorkSummary";
+import { AssistantMessage, UserMessage } from "./chat/MessageCard";
+import {
+  elapsedSeconds,
+  formatStamp,
+  lastUserIndex,
+  turnCards,
+  turnTitle,
+  type TurnClock,
+} from "./chat/summary";
 import {
   IconBack,
   IconChevronDown,
@@ -85,6 +95,7 @@ import {
 import { useI18n } from "./i18n";
 import type { Tab } from "./App";
 import type { DiffComment } from "./ToolCard";
+import type { PatchHunk } from "@termcoder/core";
 
 export type { Tab };
 
@@ -95,6 +106,8 @@ export interface IDEMessage {
   status?: "running" | "done" | "error";
   detail?: string;
   images?: string[];
+  patch?: PatchHunk[];
+  target?: string;
 }
 
 export interface IDEProps {
@@ -119,6 +132,8 @@ export interface IDEProps {
   port: number;
   wordWrap: boolean;
   messages: IDEMessage[];
+  clocks: Record<number, TurnClock>;
+  now: number;
   input: string;
   onInputChange: (v: string) => void;
   onSend: () => void;
@@ -1351,6 +1366,26 @@ export function IDELayout(p: IDEProps) {
   // Parse messages to extract file information
   const parsedMessages = useMessageParser(p.messages);
 
+  const cards = useMemo(() => turnCards(p.messages), [p.messages]);
+  const cardFor = (i: number) => {
+    const card = cards.get(i);
+    if (!card) return null;
+    return (
+      <WorkSummary
+        summary={card.summary}
+        seconds={elapsedSeconds(p.clocks[card.start], p.now)}
+        labels={{ passed: p.t("work.passed"), failed: p.t("work.failed") }}
+        title={turnTitle(p.messages[card.start]?.text ?? "")}
+      />
+    );
+  };
+  const stampFor = (i: number) => {
+    const card = cards.get(i);
+    if (card) return formatStamp(p.clocks[card.start]);
+    const start = lastUserIndex(p.messages.slice(0, i + 1));
+    return start < 0 ? undefined : formatStamp(p.clocks[start]);
+  };
+
   // Keyboard shortcuts IDE-level
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -2390,29 +2425,21 @@ export function IDELayout(p: IDEProps) {
                     const m = parsed.original;
                     return (
                       <div key={i} className={`msg ${m.role}`}>
-                        {m.role === "user" ? (
-                          <div className="bubble user">
-                            {m.images && m.images.length ? (
-                              <div className="msg-images">
-                                {m.images.map((src, k) => (
-                                  <img key={k} src={src} alt="attachment" />
-                                ))}
-                              </div>
-                            ) : null}
-                            {m.text}
-                          </div>
-                        ) : null}
+                        {m.role === "user" ? <UserMessage text={m.text} images={m.images} /> : null}
                         {m.role === "notice" ? <div className="notice">{m.text}</div> : null}
+                        {m.role === "assistant" ? cardFor(i) : null}
                         {m.role === "assistant" ? (
                           p.busy && i === p.messages.length - 1 ? (
-                            <div className="bubble assistant streaming">{m.text}</div>
+                            <AssistantMessage className="streaming">{m.text}</AssistantMessage>
                           ) : (
-                            <div className="assistant-wrap">
-                              <div className="msg-meta">
-                                <span className="msg-spine" />
-                                termcoder
-                              </div>
-                              <div className="bubble assistant markdown">
+                            <>
+                              <AssistantMessage
+                                className="markdown"
+                                copyLabel={p.t("msg.copy")}
+                                copyIcon={<IconCopy />}
+                                onCopy={() => p.onCopyText(m.text)}
+                                stamp={stampFor(i)}
+                              >
                                 <ErrorBoundary fallback={() => <pre className="md-fallback">{m.text}</pre>}>
                                   <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
@@ -2421,7 +2448,7 @@ export function IDELayout(p: IDEProps) {
                                     {m.text}
                                   </ReactMarkdown>
                                 </ErrorBoundary>
-                              </div>
+                              </AssistantMessage>
                               {parsed.files.length > 0 && (
                                 <div className="msg-files">
                                   <div className="msg-files-header">
@@ -2435,8 +2462,7 @@ export function IDELayout(p: IDEProps) {
                                       language={file.language}
                                       lineCount={file.lineCount}
                                       onOpen={p.onOpenFile}
-                                      onEdit={(path, content) => {
-                                        // Open file in editor for editing
+                                      onEdit={(path) => {
                                         p.onOpenFile(path);
                                       }}
                                       cwd={p.cwd || undefined}
@@ -2444,14 +2470,7 @@ export function IDELayout(p: IDEProps) {
                                   ))}
                                 </div>
                               )}
-                              <button
-                                className="msg-copy"
-                                title={p.t("msg.copy")}
-                                onClick={() => p.onCopyText(m.text)}
-                              >
-                                copy
-                              </button>
-                            </div>
+                            </>
                           )
                         ) : null}
                         {m.role === "tool" ? (

@@ -53,7 +53,7 @@ import {
   IconSend,
   IconSun,
 } from "./Icons";
-import { IDELayout, type IDEMessage } from "./IDELayout";
+import { IDELayout } from "./IDELayout";
 
 declare global {
   interface Window {
@@ -2483,7 +2483,9 @@ export function App() {
           codeTheme={codeTheme}
           port={port}
           wordWrap={wordWrap}
-          messages={messages as IDEMessage[]}
+          messages={messages}
+          clocks={clocks}
+          now={now}
           input={input}
           onInputChange={setInput}
           onSend={() => void send()}
