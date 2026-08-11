@@ -107,6 +107,16 @@ export function splitPath(path: string): { dir: string; base: string } {
   return { dir: path.slice(0, cut + 1), base: path.slice(cut + 1) };
 }
 
+export function turnTitle(text: string, limit = 72): string {
+  const first = text.split("\n").find((line) => line.trim().length > 0);
+  if (!first) return "";
+
+  const flat = first.trim().replace(/\s+/g, " ");
+  if (flat.length <= limit) return flat;
+
+  return `${flat.slice(0, limit - 1).trimEnd()}…`;
+}
+
 export function formatDuration(seconds: number): string {
   const whole = Math.max(0, Math.round(seconds));
   if (whole < 60) return `${whole}s`;

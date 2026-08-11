@@ -17,7 +17,6 @@ export function UserMessage({ text, images }: { text: string; images?: string[] 
 }
 
 export function AssistantMessage({
-  sender,
   className = "",
   copyLabel,
   copyIcon,
@@ -25,7 +24,6 @@ export function AssistantMessage({
   stamp,
   children,
 }: {
-  sender: string;
   className?: string;
   copyLabel?: string;
   copyIcon?: ReactNode;
@@ -34,21 +32,17 @@ export function AssistantMessage({
   children: ReactNode;
 }) {
   return (
-    <Panel
-      className="msg-card assistant-wrap"
-      head={
-        <div className="msg-meta">
-          <span className="msg-spine" />
-          {sender}
-        </div>
-      }
-    >
+    <Panel className="msg-card assistant-wrap">
       <div className={`bubble assistant ${className}`.trim()}>{children}</div>
-      {stamp ? <div className="msg-stamp">{stamp}</div> : null}
-      {onCopy ? (
-        <button className="msg-copy" title={copyLabel} onClick={onCopy}>
-          {copyIcon}
-        </button>
+      {stamp || onCopy ? (
+        <div className="msg-foot">
+          <span className="msg-stamp">{stamp}</span>
+          {onCopy ? (
+            <button className="msg-copy" title={copyLabel} onClick={onCopy}>
+              {copyIcon}
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </Panel>
   );

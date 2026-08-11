@@ -9,6 +9,7 @@ import {
   splitPath,
   turnCards,
   turnSummary,
+  turnTitle,
 } from "./summary";
 
 const edit = (target: string, before: string, after: string) => ({
@@ -123,6 +124,44 @@ describe("formatting a duration", () => {
 
   it("rounds rather than showing a fraction", () => {
     expect(formatDuration(12.4)).toBe("12s");
+  });
+});
+
+describe("titling a turn from the message that began it", () => {
+  it("passes a short single line through untouched", () => {
+    expect(turnTitle("fix the transcript")).toBe("fix the transcript");
+  });
+
+  it("truncates a long line to one line's worth, with an ellipsis", () => {
+    const long =
+      "redesign the chat surface so a turn reads as one block instead of two cards stacked with a gutter between them";
+    const title = turnTitle(long, 40);
+    expect(title.length).toBeLessThanOrEqual(40);
+    expect(title.length).toBeGreaterThan(30);
+    expect(title.endsWith("…")).toBe(true);
+    expect(long.startsWith(title.slice(0, -1))).toBe(true);
+  });
+
+  it("keeps a line that lands exactly on the limit whole", () => {
+    const exact = "0123456789";
+    expect(turnTitle(exact, 10)).toBe(exact);
+  });
+
+  it("has nothing to say about an empty message", () => {
+    expect(turnTitle("")).toBe("");
+    expect(turnTitle("   \n\n  ")).toBe("");
+  });
+
+  it("takes the first line that says something from a multi-line message", () => {
+    expect(turnTitle("\n\nfix the header\nand then the footer\nand the rest")).toBe("fix the header");
+  });
+
+  it("collapses the runs of whitespace a pasted line carries", () => {
+    expect(turnTitle("fix   the\theader")).toBe("fix the header");
+  });
+
+  it("never ends a truncated title on a trailing space", () => {
+    expect(turnTitle("aaaa bbbbbbbbbb", 6)).toBe("aaaa…");
   });
 });
 

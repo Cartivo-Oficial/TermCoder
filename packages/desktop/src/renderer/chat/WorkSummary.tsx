@@ -40,15 +40,35 @@ function CheckRow({ check, labels }: { check: CheckRun; labels: CheckLabels }) {
   );
 }
 
-export function WorkSummary({ summary, seconds, labels }: { summary: TurnSummary; seconds?: number; labels: CheckLabels }) {
+export function WorkSummary({
+  summary,
+  seconds,
+  labels,
+  title,
+}: {
+  summary: TurnSummary;
+  seconds?: number;
+  labels: CheckLabels;
+  title?: string;
+}) {
   if (!summary.didWork) return null;
+
+  const counts = summary.files.length > 0;
+  const head = Boolean(title) || counts;
 
   return (
     <Panel
       className="work-summary"
       head={
-        summary.files.length > 0 ? (
-          <Counts added={summary.added} removed={summary.removed} />
+        head ? (
+          <>
+            {title ? (
+              <span className="ws-title" title={title}>
+                {title}
+              </span>
+            ) : null}
+            {counts ? <Counts added={summary.added} removed={summary.removed} /> : null}
+          </>
         ) : undefined
       }
     >

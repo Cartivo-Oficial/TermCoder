@@ -52,6 +52,39 @@ describe("the work summary card", () => {
     expect(html).toContain("−152");
   });
 
+  it("heads the turn with the task on the left and the totals on the right", () => {
+    const html = renderToStaticMarkup(
+      <WorkSummary labels={LABELS} summary={withFiles} seconds={12} title="redesign the transcript" />,
+    );
+    const head = html.slice(html.indexOf("u-panel-head"), html.indexOf("u-panel-body"));
+    expect(head).toContain("redesign the transcript");
+    expect(head).toContain("+543");
+    expect(head.indexOf("redesign the transcript")).toBeLessThan(head.indexOf("+543"));
+  });
+
+  it("keeps the whole task reachable when the head has to truncate it", () => {
+    const html = renderToStaticMarkup(
+      <WorkSummary labels={LABELS} summary={withFiles} seconds={12} title="redesign the transcript" />,
+    );
+    expect(html).toContain('title="redesign the transcript"');
+    expect(html).toContain("ws-title");
+  });
+
+  it("heads a turn that only ran checks with the task alone", () => {
+    const s = summary({ checks: [{ command: "pnpm build", ok: true }], didWork: true });
+    const html = renderToStaticMarkup(<WorkSummary labels={LABELS} summary={s} seconds={3} title="build it" />);
+    expect(html).toContain("u-panel-head");
+    expect(html).toContain("build it");
+    expect(html).not.toContain("ws-counts");
+  });
+
+  it("grows no head from an empty task", () => {
+    const s = summary({ checks: [{ command: "pnpm build", ok: true }], didWork: true });
+    expect(renderToStaticMarkup(<WorkSummary labels={LABELS} summary={s} seconds={3} title="" />)).not.toContain(
+      "u-panel-head",
+    );
+  });
+
   it("shows every file it touched, with that file's own counts", () => {
     const html = renderToStaticMarkup(<WorkSummary labels={LABELS} summary={withFiles} seconds={12} />);
     expect(html).toContain("App.tsx");
@@ -143,5 +176,14 @@ describe("the card's width holds", () => {
   it("ellipsises a long command", () => {
     expect(rule(".ws-cmd")).toContain("text-overflow: ellipsis");
     expect(rule(".ws-cmd")).toContain("min-width: 0");
+  });
+
+  it("ellipsises a long task title rather than pushing the totals off the row", () => {
+    expect(rule(".ws-title")).toContain("text-overflow: ellipsis");
+    expect(rule(".ws-title")).toContain("min-width: 0");
+  });
+
+  it("pins the totals to the right of the head", () => {
+    expect(rule(".work-summary .u-panel-head")).toContain("justify-content: space-between");
   });
 });

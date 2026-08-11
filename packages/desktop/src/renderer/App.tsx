@@ -30,7 +30,7 @@ import { SessionsPanel } from "./SessionsPanel";
 import { DiffBody, ToolCard, type DiffComment } from "./ToolCard";
 import { WorkSummary } from "./chat/WorkSummary";
 import { AssistantMessage, UserMessage } from "./chat/MessageCard";
-import { elapsedSeconds, formatStamp, lastUserIndex, turnCards, type TurnClock } from "./chat/summary";
+import { elapsedSeconds, formatStamp, lastUserIndex, turnCards, turnTitle, type TurnClock } from "./chat/summary";
 import { Chip } from "./ui";
 import { CodeEditor } from "./CodeEditor";
 import { enqueue, resolveItem, resolveAll, findByTarget, type ReviewQueue } from "./review/queue";
@@ -1779,6 +1779,7 @@ export function App() {
         summary={card.summary}
         seconds={elapsedSeconds(clocks[card.start], now)}
         labels={{ passed: t("work.passed"), failed: t("work.failed") }}
+        title={turnTitle(messages[card.start]?.text ?? "")}
       />
     );
   };
@@ -2309,12 +2310,9 @@ export function App() {
                 {m.role === "assistant" ? cardFor(i) : null}
                 {m.role === "assistant" ? (
                   busy && i === messages.length - 1 ? (
-                    <AssistantMessage sender="termcoder" className="streaming">
-                      {m.text}
-                    </AssistantMessage>
+                    <AssistantMessage className="streaming">{m.text}</AssistantMessage>
                   ) : (
                     <AssistantMessage
-                      sender="termcoder"
                       className="markdown"
                       copyLabel={t("msg.copy")}
                       copyIcon={<IconCopy />}
