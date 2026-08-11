@@ -18,10 +18,10 @@ export interface HomeViewProps {
 function BlockWordmark() {
   return (
     <svg className="home-wm-svg" viewBox="0 0 794 129" fill="none" aria-hidden="true">
-      <g opacity="0.6">
+      <g opacity="0.85">
         <g mask="url(#home-wm-mask)">
-          <g opacity="0.16">
-            <g opacity="0.7" fill="currentColor">
+          <g opacity="0.42">
+            <g opacity="0.8" fill="currentColor">
               <path d="M442.846 36.4286H387.462V91.7143H442.846V110.143H369V18H442.846V36.4286Z" />
               <path d="M517.385 36.4286H480.462V91.7143H517.385V36.4286ZM535.846 110.143H462V18H535.846V110.143Z" />
               <path d="M609.385 36.8571H572.462V92.1429H609.385V36.8571ZM627.846 110.571H554V18.4286H609.385V0H627.846V110.571Z" />
@@ -81,8 +81,8 @@ function BlockWordmark() {
           <rect width="794" height="129" fill="url(#home-wm-grad)" />
         </mask>
         <linearGradient id="home-wm-grad" x1="397" y1="68" x2="397" y2="129" gradientUnits="userSpaceOnUse">
-          <stop stopColor="white" stopOpacity="0.7" />
-          <stop offset="1" stopColor="white" stopOpacity="0" />
+          <stop stopColor="white" stopOpacity="1" />
+          <stop offset="1" stopColor="white" stopOpacity="0.15" />
         </linearGradient>
       </defs>
     </svg>
