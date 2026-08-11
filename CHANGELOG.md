@@ -2,6 +2,18 @@
 
 New releases and improvements to TermCoder.
 
+## 0.16.0
+2026-08-08
+
+### The chat you were actually looking at
+- **The IDE panel had its own chat, and it was never getting any of the work.** Several releases of improvement — the typography, the change summary, the timestamp — landed on the main window's chat while the IDE panel hand-rolled its own copy of the markup and overrode the type back down to 12.5px. There is one chat now. If you use the IDE tab, this is the release where all of it arrives at once.
+- **A turn opens on the answer, not on a label.** Every reply used to spend a line on `TERMCODER` in uppercase before saying anything. The content leads now; who is speaking was never in doubt.
+- A turn that did work is headed by the task that started it, with the totals on the right.
+- The copy button on a reply in the IDE panel was invisible to the keyboard — its own styling bypassed the focus rule that reveals it. It follows the shared one now.
+
+### Fixed
+- **The wordmark on the home screen was invisible.** Three nested SVG group opacities multiply, and a gradient mask capped what was left: it rendered at 4.7% opacity — in the page, absent from the screen.
+
 ## 0.15.0
 2026-08-08
 
